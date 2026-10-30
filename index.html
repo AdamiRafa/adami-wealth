@@ -616,15 +616,16 @@ var SESSAO=null;
 try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
 var PERFIS={}, EU={admin:false,super:false,nome:"",id:null};
 
-function idDoToken(tk){
+function payloadDoToken(tk){
   try{
     var b=tk.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
-    return JSON.parse(decodeURIComponent(escape(atob(b+"===".slice((b.length+3)%4))))).sub||null;
+    return JSON.parse(decodeURIComponent(escape(atob(b+"===".slice((b.length+3)%4)))));
   }catch(e){ return null; }
 }
+function idDoToken(tk){ var p=payloadDoToken(tk); return (p&&p.sub)||null; }
 function guardarSessao(d){
   SESSAO={access_token:d.access_token,refresh_token:d.refresh_token,
-          email:(d.user&&d.user.email)||"",
+          email:(d.user&&d.user.email)||(payloadDoToken(d.access_token||"")||{}).email||"",
           id:(d.user&&d.user.id)||idDoToken(d.access_token||"")};
   try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){}
 }
@@ -658,7 +659,12 @@ function primeiroAcesso(email,senha){
    Supabase entrega 2 por hora no projeto inteiro. Só funciona de
    verdade com SMTP próprio configurado no painel.                  */
 function recuperarSenha(email){
-  return fetch(SB_URL+"/auth/v1/recover",{
+  /* redirect_to explícito em vez de depender só do "Site URL" configurado no
+     painel do Supabase -- assim o link volta pro endereço que a pessoa está
+     usando de verdade (vercel.app ou o domínio próprio), mesmo que o painel
+     esteja desatualizado. */
+  var volta=encodeURIComponent(location.origin+location.pathname);
+  return fetch(SB_URL+"/auth/v1/recover?redirect_to="+volta,{
     method:"POST",
     headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
     body:JSON.stringify({email:email})
@@ -1106,7 +1112,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.81";
+var VERSAO="versão 2.82";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3552,8 +3558,8 @@ function iconeOlho(aberto){
   }
   return base+'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
 }
-function verSenha(){
-  var i=document.getElementById("lgSenha"), b=document.getElementById("lgOlho");
+function verSenha(idCampo,idBotao){
+  var i=document.getElementById(idCampo||"lgSenha"), b=document.getElementById(idBotao||"lgOlho");
   if(!i) return;
   var mostrar=(i.type==="password");
   i.type=mostrar?"text":"password";
@@ -3659,12 +3665,97 @@ function esqueciSenha(){
   var b=document.getElementById("lgBtn"); if(b) b.disabled=true;
   recuperarSenha(e)
     .then(function(){
+      /* O Supabase devolve 200 mesmo quando o e-mail nao sai (limite de
+         2 por hora no projeto inteiro sem SMTP proprio, ou endereco nao
+         cadastrado) -- nao da pra saber por aqui se chegou de verdade.
+         Por isso a mensagem avisa que pode nao chegar e ja deixa o caminho
+         alternativo (pedir pro master trocar), em vez de um "enviado" que
+         deixa a pessoa esperando um e-mail que pode nunca vir. */
       document.getElementById("view").innerHTML=
-        viewLogin("Se este e-mail tiver conta, o link de redefinição foi enviado. Verifique a caixa de entrada e o spam.");
+        viewLogin("Se este e-mail tiver conta, mandamos um link para trocar a senha — confira a caixa de entrada e o spam nos próximos minutos. Não chegou? Peça a um master para trocar sua senha por você.");
     })
     .catch(function(err){
       document.getElementById("view").innerHTML=viewLogin(String(err.message||err));
     });
+}
+
+/* ===================== Redefinir senha (link de recuperação) =====================
+   O link que o Supabase manda chega com o token no HASH da URL (#access_token=...
+   &type=recovery), nunca processado antes -- clicar no link so abria o portal
+   normal, sem nenhum jeito de digitar a senha nova. Essa tela fecha esse buraco. */
+var TOKEN_RECUPERACAO=null;
+function detectarRecuperacaoNaUrl(){
+  var hash=location.hash||"";
+  if(!hash || hash.indexOf("type=recovery")===-1) return null;
+  var params=new URLSearchParams(hash.replace(/^#/,""));
+  var at=params.get("access_token");
+  if(!at) return null;
+  return {access_token:at, refresh_token:params.get("refresh_token")||""};
+}
+function viewRedefinirSenha(erro){
+  return '<div class="auth">'+
+    '<div class="auth-side">'+
+      '<img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">'+
+      '<div class="auth-say"><div class="rule"></div>'+
+        '<h2>Apoiando famílias, planejando o futuro</h2>'+
+        '<p>'+EMPRESA.chamada+'</p>'+
+      '</div>'+
+      '<div class="auth-meta"><span>Acesso restrito</span><span>'+VERSAO+'</span></div>'+
+      '<div class="auth-copy">&copy; '+new Date().getFullYear()+' '+EMPRESA.nome+'. Todos os direitos reservados.</div>'+
+    '</div>'+
+    '<div class="auth-form"><div class="auth-card">'+
+      '<div class="rule"></div>'+
+      '<h1>Defina sua nova senha</h1>'+
+      '<p class="hint">Escolha a nova senha da sua conta.</p>'+
+      (erro?'<div class="erro">'+esc(erro)+'</div>':'')+
+      '<label for="rsSenha1">Nova senha</label>'+
+      '<div class="campo"><input type="password" id="rsSenha1" autocomplete="new-password" placeholder="••••••••">'+
+        '<button type="button" class="olho" id="rsOlho1" onclick="verSenha(\'rsSenha1\',\'rsOlho1\')" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
+      '<label for="rsSenha2">Confirme a senha</label>'+
+      '<div class="campo"><input type="password" id="rsSenha2" autocomplete="new-password" placeholder="••••••••">'+
+        '<button type="button" class="olho" id="rsOlho2" onclick="verSenha(\'rsSenha2\',\'rsOlho2\')" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
+      '<p class="hint" style="margin:-6px 0 14px">Mínimo de 6 caracteres.</p>'+
+      '<button class="entrar" id="rsBtn" onclick="salvarNovaSenha()">Salvar nova senha</button>'+
+      '<div class="pe-links">'+
+        '<button type="button" class="link" onclick="cancelarRedefinicao()">Cancelar e voltar para o login</button>'+
+      '</div>'+
+    '</div></div>'+
+  '</div>';
+}
+function cancelarRedefinicao(){
+  TOKEN_RECUPERACAO=null;
+  MODO_LOGIN="entrar";
+  document.getElementById("view").innerHTML=viewLogin();
+}
+function salvarNovaSenha(){
+  if(!TOKEN_RECUPERACAO){ cancelarRedefinicao(); return; }
+  var p1=document.getElementById("rsSenha1").value;
+  var p2=document.getElementById("rsSenha2").value;
+  if(!p1||!p2){ document.getElementById("view").innerHTML=viewRedefinirSenha("Preencha os dois campos de senha."); return; }
+  if(p1.length<6){ document.getElementById("view").innerHTML=viewRedefinirSenha("A senha precisa ter pelo menos 6 caracteres."); return; }
+  if(p1!==p2){ document.getElementById("view").innerHTML=viewRedefinirSenha("As senhas digitadas são diferentes."); return; }
+  var b=document.getElementById("rsBtn"); if(b){ b.disabled=true; b.textContent="Salvando…"; }
+  fetch(SB_URL+"/auth/v1/user",{
+    method:"PUT",
+    headers:{"apikey":SB_KEY,"Authorization":"Bearer "+TOKEN_RECUPERACAO.access_token,"Content-Type":"application/json"},
+    body:JSON.stringify({password:p1})
+  }).then(function(res){
+    return res.json().then(function(j){
+      if(!res.ok){
+        var m=(j&&(j.msg||j.error_description||j.message))||"Não foi possível trocar a senha.";
+        if(/expired|invalid/i.test(m)) m="Esse link expirou ou já foi usado. Peça um novo em \"Esqueci minha senha\".";
+        throw new Error(m);
+      }
+      return j;
+    });
+  }).then(function(){
+    var tk=TOKEN_RECUPERACAO;
+    TOKEN_RECUPERACAO=null;
+    guardarSessao(tk);
+    return prosseguirLogin();
+  }).catch(function(err){
+    document.getElementById("view").innerHTML=viewRedefinirSenha(String(err.message||err));
+  });
 }
 function prosseguirLogin(){
   return carregar().then(function(){
@@ -3783,7 +3874,18 @@ function render(manterScroll){
   if(manterScroll) window.scrollTo(0,scrollAntes); else window.scrollTo(0,0);
 }
 
-if(SESSAO&&SESSAO.access_token){
+TOKEN_RECUPERACAO=detectarRecuperacaoNaUrl();
+if(TOKEN_RECUPERACAO){
+  /* Tira o token da barra de endereço assim que lido -- ele não precisa
+     continuar visível ali, e sobreviveria a um F5 sem motivo. */
+  history.replaceState(null,"",location.pathname+location.search);
+  document.getElementById("view").innerHTML=viewRedefinirSenha(null);
+  document.querySelector(".rail").style.display="none";
+  document.querySelector(".topbar").style.display="none";
+  document.querySelector(".main").style.margin="0";
+  document.querySelector(".main").style.padding="0";
+  setTimeout(function(){ var i=document.getElementById("rsSenha1"); if(i) i.focus(); },30);
+}else if(SESSAO&&SESSAO.access_token){
   carregar().then(function(){
     if(db.clientes.length) S.cliente=db.clientes[0].id;
     montarRascunho(); render();

@@ -212,9 +212,23 @@ Não existe criação de conta pelo administrador, porque isso exigiria a chave
 O convite é marcado como consumido em vez de apagado, para não depender da ordem em que
 os gatilhos rodam.
 
-**Recuperação de senha** está construída na tela, mas só funciona depois de configurar
-SMTP próprio no Supabase. O serviço embutido entrega 2 e-mails por hora, somente para
-endereços pré-autorizados, e falha em silêncio.
+**Recuperação de senha** manda o link por `POST /auth/v1/recover`, com `redirect_to`
+explícito (a origem+caminho atual) em vez de depender só do "Site URL" do painel — mas
+o Supabase só segue esse `redirect_to` se a URL estiver na lista de "Redirect URLs"
+em Authentication → URL Configuration. O link volta com o token no **hash** da URL
+(`#access_token=...&type=recovery`); `detectarRecuperacaoNaUrl()` lê isso no boot da
+página, antes de checar sessão, e mostra a tela de "defina sua nova senha"
+(`viewRedefinirSenha`), que troca a senha com `PUT /auth/v1/user` autenticado pelo
+token do link. Esse pedaço não existia até 09/2026 — o link chegava e não tinha pra onde
+ir.
+
+O serviço de e-mail embutido do Supabase entrega só 2 por hora, **no projeto inteiro**
+(não por pessoa), e sempre responde 200 mesmo quando não entrega — por isso a tela não
+promete "enviado", avisa que pode não chegar e já indica o caminho alternativo (pedir a
+um master pra trocar a senha pela própria tela do Supabase: Authentication → Users →
+a pessoa → Reset Password, não precisa de e-mail nenhum). Só funciona de verdade,
+pros dois lados (envio e `redirect_to`), depois de configurar SMTP próprio e cadastrar a
+URL do portal nas Redirect URLs — ver pendência na seção 14.
 
 ### Login único entre portal e CRM
 
@@ -397,7 +411,9 @@ PDF" na lista de ativos das Carteiras — lê o Relatório de Performance (BTG/N
 Extrato de cliente (Sinosserra) direto do PDF, sem precisar digitar nem montar planilha** ·
 **2.81 tira as janelas de 3 e 6 meses da lista de ativos (planilha, PDF e relatório
 impresso) — nenhuma fonte de dado usada na importação informa essas duas janelas por
-ativo, só mês/ano/12 meses/desde o início**.
+ativo, só mês/ano/12 meses/desde o início** · **2.82 conserta "Esqueci minha senha": o
+link do e-mail de recuperação não tinha nenhuma tela esperando por ele, então clicar não
+levava a lugar nenhum — existe a tela de "defina sua nova senha" agora**.
 
 ---
 
@@ -418,8 +434,11 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 
 ## 14. Pendências
 
-- **SMTP próprio no Supabase.** Sem ele o botão de recuperação de senha existe mas não
-  entrega.
+- **SMTP próprio no Supabase, e cadastrar a URL do portal em Redirect URLs.** Sem o
+  SMTP, o e-mail de recuperação de senha não entrega (limite de 2/hora do serviço
+  embutido). Sem a Redirect URL cadastrada, o `redirect_to` do link é ignorado e ele
+  pode voltar pro lugar errado. A tela que recebe o link (clique no link → defina a
+  senha nova) já existe desde a 2.82 — falta só isso pra funcionar ponta a ponta.
 - **Domínio `portal.adamicaptal.com.br`** apontado para a Vercel, para contornar o
   bloqueio do wi-fi do escritório.
 - **Decidir se a importação passa a criar clientes novos** já vinculados ao assessor pelo
