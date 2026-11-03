@@ -540,11 +540,21 @@ média com mês faltando) — ainda não dá pra validar contra o PPTX porque s�
 está salvo no banco; assim que o Emil salvar mais meses o comparativo começa a valer de
 verdade.
 
-**Pendente (fatias 2 a 6, nessa ordem, conforme combinado):** gráficos (destino das
-aplicações, série histórica de NNM); telas de renda fixa, fundos e renda variável;
-clientes; ofertas públicas, secundário (já tem os parsers de `ordens`/book de
-reservas/dashboard testados contra arquivo real, faltando a tela) e câmbio; FGC, alertas
-e exportação Excel.
+**Gráficos (entregue):** SVG à mão, sem lib nova, mesmo padrão do `chartEvolucao` do
+`index.html`. Dois gráficos na Visão Geral: série histórica de Net New Money (barra por
+mês, verde quando positivo e vermelho quando negativo, eixo em zero — usa todos os meses
+já salvos mais o mês em tela mesmo que ainda não esteja salvo) e destino das aplicações
+do mês (barra por classe — renda fixa, fundos, renda variável, previdência). Paleta
+categórica das 4 classes validada pela skill de dataviz (azul/laranja/água/amarelo, ordem
+fixa, ΔE ≥ 8 contra daltonismo e ≥ 15 visão normal) — não reaproveita verde/vermelho de
+positivo/negativo pra não confundir com o sinal dos cards. Testado com meses sintéticos
+(inclusive NNM negativo, pra confirmar a cor e a barra pra baixo do zero) e com
+screenshot real via Playwright, sem sobreposição de rótulo.
+
+**Pendente (fatias 3 a 6, nessa ordem, conforme combinado):** telas de renda fixa,
+fundos e renda variável; clientes; ofertas públicas, secundário (já tem os parsers de
+`ordens`/book de reservas/dashboard testados contra arquivo real, faltando a tela) e
+câmbio; FGC, alertas e exportação Excel.
 
 SQL em `adami_completo.sql`, seção 8.5: tabelas `fluxo_snapshots`, `fluxo_lancamentos`,
 `fluxo_distribuicao` (schema pronto pra fatia 5, ainda sem tela) e a função

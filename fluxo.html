@@ -151,7 +151,7 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 1.3";
+var VERSAO_FLUXO="versão 1.4";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
 var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,
@@ -368,6 +368,73 @@ function processarLinhas(linhas, paresDesmarcados, transacoesExcluidas){
 
 function brl(v){ v=v||0; var neg=v<0; v=Math.abs(v); var s="R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); return neg?"-"+s:s; }
 function sinalClasse(v){ return v>0?"pos":(v<0?"neg":""); }
+function brlCurto(v){
+  v=v||0; var neg=v<0; v=Math.abs(v); var s;
+  if(v>=1e6) s="R$ "+(v/1e6).toLocaleString("pt-BR",{maximumFractionDigits:1})+" mi";
+  else if(v>=1e3) s="R$ "+(v/1e3).toLocaleString("pt-BR",{maximumFractionDigits:0})+" mil";
+  else s=brl(v);
+  return neg?"-"+s:s;
+}
+
+/* ---------------- gráficos (SVG à mão, sem lib — paleta categórica validada: skill dataviz) ---------------- */
+function graficoBarrasCategorico(dados){
+  if(!dados.length) return "";
+  var W=Math.max(340,dados.length*110+24),H=190,pt=26,pb=40;
+  var vmax=Math.max.apply(null,dados.map(function(d){return d.valor;}).concat([0]));
+  var topo=vmax>0?vmax*1.18:1;
+  var alturaUtil=H-pt-pb;
+  var slot=(W-24)/dados.length, bw=Math.min(72,slot-24);
+  var out='<line x1="16" y1="'+(H-pb)+'" x2="'+(W-8)+'" y2="'+(H-pb)+'" stroke="#E2E6ED"/>';
+  dados.forEach(function(d,i){
+    var hh=Math.max(2,(d.valor/topo)*alturaUtil);
+    var x=16+i*slot+(slot-bw)/2, y=H-pb-hh;
+    out+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" rx="4" fill="'+d.cor+'"/>'+
+      '<text x="'+(x+bw/2)+'" y="'+(y-7)+'" text-anchor="middle" font-size="11" fill="#0C1626" font-family="IBM Plex Mono,Consolas,monospace" font-weight="500">'+brlCurto(d.valor)+'</text>'+
+      '<text x="'+(x+bw/2)+'" y="'+(H-pb+17)+'" text-anchor="middle" font-size="10.5" fill="#5C6B7F">'+esc(d.rotulo)+'</text>';
+  });
+  return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto">'+out+'</svg></div>';
+}
+function graficoSerieNNM(serie){
+  if(serie.length<2) return "";
+  var W=Math.max(420,serie.length*84+24),H=210,pt=26,pb=38;
+  var vals=serie.map(function(s){return s.nnm;});
+  var vmax=Math.max.apply(null,vals.concat([0])), vmin=Math.min.apply(null,vals.concat([0]));
+  var topo=vmax>0?vmax*1.18:1, base=vmin<0?vmin*1.18:0;
+  var faixa=(topo-base)||1, alturaUtil=H-pt-pb;
+  var yZero=H-pb-((0-base)/faixa)*alturaUtil;
+  var slot=(W-24)/serie.length, bw=Math.min(56,slot-22);
+  var curto=serie.length>7;
+  var out='<line x1="16" y1="'+yZero+'" x2="'+(W-8)+'" y2="'+yZero+'" stroke="#CCD3DD"/>';
+  serie.forEach(function(s,i){
+    var hh=Math.max(2,Math.abs(s.nnm)/faixa*alturaUtil);
+    var x=16+i*slot+(slot-bw)/2;
+    var y=s.nnm>=0?yZero-hh:yZero;
+    var cor=s.nnm>=0?"#2F7A56":"#B3403A";
+    var yTxt=s.nnm>=0?(y-7):(y+hh+13);
+    var rotuloMes=curto?NOMES_MES[s.mes].slice(0,3):NOMES_MES[s.mes];
+    out+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" rx="3" fill="'+cor+'"/>'+
+      '<text x="'+(x+bw/2)+'" y="'+yTxt+'" text-anchor="middle" font-size="10" fill="#0C1626" font-family="IBM Plex Mono,Consolas,monospace">'+brlCurto(s.nnm)+'</text>'+
+      '<text x="'+(x+bw/2)+'" y="'+(H-10)+'" text-anchor="middle" font-size="9.5" fill="#7A8698">'+rotuloMes+"/"+String(s.ano).slice(2)+'</text>';
+  });
+  return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto">'+out+'</svg></div>';
+}
+var CORES_CLASSE_APLICACAO=["#2a78d6","#eb6834","#1baf7a","#eda100"]; /* ordem categórica fixa, validada (ΔE CVD >=8, normal-vision >=15) */
+function atualizarGraficoHistorico(){
+  var div=document.getElementById("graficoHistoricoNNM");
+  if(!div||!ESTADO.resultado) return;
+  var mapa={};
+  ESTADO.snapshots.forEach(function(s){ mapa[s.mes+"-"+s.ano]={mes:s.mes,ano:s.ano}; });
+  mapa[ESTADO.mes+"-"+ESTADO.ano]={mes:ESTADO.mes,ano:ESTADO.ano};
+  var meses=Object.values(mapa).sort(function(a,b){ return (a.ano*12+a.mes)-(b.ano*12+b.mes); });
+  if(meses.length<2){ div.innerHTML='<div class="desc">Importe e salve pelo menos dois meses pra ver a série histórica de NNM.</div>'; return; }
+  Promise.all(meses.map(function(s){
+    if(s.mes===ESTADO.mes&&s.ano===ESTADO.ano) return Promise.resolve({mes:s.mes,ano:s.ano,nnm:ESTADO.resultado.nnm});
+    return obterResultadoMes(s.mes,s.ano).then(function(r){ return r?{mes:s.mes,ano:s.ano,nnm:r.nnm}:null; });
+  })).then(function(serie){
+    serie=serie.filter(Boolean);
+    div.innerHTML=serie.length>=2?graficoSerieNNM(serie):'<div class="desc">Importe e salve pelo menos dois meses pra ver a série histórica de NNM.</div>';
+  }).catch(function(){ div.innerHTML='<div class="desc">Não consegui carregar a série histórica.</div>'; });
+}
 
 function importarArquivo(input){
   var f=input.files[0]; if(!f) return;
@@ -420,7 +487,7 @@ function mudarAba(a){
 
 var NOMES_MES=["","Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-function renderTudo(){ renderVisaoGeral(); renderComparativo(); renderAuditoria(); mudarAba("visao"); }
+function renderTudo(){ renderVisaoGeral(); renderComparativo(); renderAuditoria(); mudarAba("visao"); atualizarGraficoHistorico(); }
 
 function renderVisaoGeral(){
   var r=ESTADO.resultado;
@@ -432,13 +499,22 @@ function renderVisaoGeral(){
       cardHtml("Transferência de custódia", r.custodia.liquido, "entra no NNM, não no fluxo financeiro")+
       cardHtml("Portabilidade nova (previdência)", r.prev.portabilidadeNova, "exclui provável reciclagem")+
     '</div></div>'+
+    '<div class="secao"><h2>Série histórica de Net New Money</h2>'+
+    '<div class="desc">NNM mês a mês, com todos os meses já salvos no banco (mais o mês em tela, se ainda não salvo)</div>'+
+    '<div id="graficoHistoricoNNM"><div class="desc">Carregando…</div></div></div>'+
     '<div class="secao"><h2>Aplicações e resgates</h2><div class="desc">Por classe de ativo</div>'+
     '<table><thead><tr><th>Classe</th><th class="num">Aplicado</th><th class="num">Resgatado</th></tr></thead><tbody>'+
       linhaApRe("Renda fixa", r.aplic.rendaFixa.total, r.resg.rendaFixa.total)+
       linhaApRe("Fundos", r.aplic.fundos.total, r.resg.fundos.total)+
       linhaApRe("Renda variável", r.aplic.rendaVariavel.total, r.resg.rendaVariavel.total)+
       linhaApRe("Previdência", r.aplic.previdencia.total, 0)+
-    '</tbody></table></div>'+
+    '</tbody></table>'+
+    '<div style="margin-top:14px">'+graficoBarrasCategorico([
+      {rotulo:"Renda fixa", valor:r.aplic.rendaFixa.total, cor:CORES_CLASSE_APLICACAO[0]},
+      {rotulo:"Fundos", valor:r.aplic.fundos.total, cor:CORES_CLASSE_APLICACAO[1]},
+      {rotulo:"Renda variável", valor:r.aplic.rendaVariavel.total, cor:CORES_CLASSE_APLICACAO[2]},
+      {rotulo:"Previdência", valor:r.aplic.previdencia.total, cor:CORES_CLASSE_APLICACAO[3]},
+    ])+'</div></div>'+
     '<div class="secao"><h2>Renda passiva distribuída</h2>'+
     '<div class="cards">'+
       cardHtml("Total no mês", r.passiva.total, r.passiva.qtd+" lançamentos")+
@@ -525,6 +601,7 @@ function salvarSnapshot(){
   });
   api("rpc/fluxo_substituir_mes",{method:"POST",body:{p_mes:ESTADO.mes,p_ano:ESTADO.ano,p_fonte:"movimentacao_geral",p_lancamentos:payload}})
     .then(function(id){ ESTADO.snapshotAtualId=id; alert("Salvo."); b.textContent="Salvo ✓"; return carregarSnapshotsDisponiveis(); })
+    .then(function(){ atualizarGraficoHistorico(); })
     .catch(function(e){ alert("Não consegui salvar.\n\n"+e.message); b.disabled=false; b.textContent="Salvar este mês"; });
 }
 
