@@ -129,19 +129,21 @@ function api(path,opts){
 
 <div class="wrap">
   <div id="areaUpload" class="upload-area">
-    <label for="arqMovimentacao">Importar Movimentação geral (.xlsx)</label>
+    <label for="arqMovimentacao">Importar arquivo do BTG (.xlsx)</label>
     <input type="file" id="arqMovimentacao" accept=".xlsx,.xls" onchange="importarArquivo(this)">
-    <div class="ajuda">Export do BTG, aba "Export", identificado pelas colunas (Conta, Mercado, Sub Mercado, Lançamento…), não pelo nome do arquivo.</div>
+    <div class="ajuda">Reconhece pelas colunas, não pelo nome do arquivo: Movimentação geral, ordens no secundário (intermediação de cotas), dashboard de ofertas públicas ou book de reservas.</div>
   </div>
 
   <div id="resultado" style="display:none">
     <div class="tabs">
       <button class="on" id="tabVisao" onclick="mudarAba('visao')">Visão geral</button>
       <button id="tabComp" onclick="mudarAba('comparativo')">Comparativo</button>
+      <button id="tabDist" onclick="mudarAba('distribuicao')">Ofertas e Secundário</button>
       <button id="tabAud" onclick="mudarAba('auditoria')">Auditoria</button>
     </div>
     <div id="painelVisao"></div>
     <div id="painelComparativo" style="display:none"></div>
+    <div id="painelDistribuicao" style="display:none"></div>
     <div id="painelAuditoria" style="display:none"></div>
   </div>
 </div>
@@ -151,11 +153,12 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 1.4";
+var VERSAO_FLUXO="versão 1.5";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
 var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,
-  cacheMeses:{}, comparacao:null, comparacaoResultados:null, comparacaoAlvos:null };
+  cacheMeses:{}, comparacao:null, comparacaoResultados:null, comparacaoAlvos:null,
+  distribuicao:{ ordens_secundario:null, oferta_dashboard:null, oferta_book:null } };
 
 /* ---------------- gate de master ---------------- */
 api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super,admin").then(function(r){
@@ -180,10 +183,41 @@ function dataISO(d){
 
 /* ---------------- identificação do arquivo pelas colunas ---------------- */
 var COLUNAS_MOVIMENTACAO_GERAL=["Conta","Mercado","Sub Mercado","Movimentação","Lançamento","Emissor","Indexador","Vencimento","Valor Líquido"];
+var COLUNAS_ORDENS_SECUNDARIO=["Número da conta","Nome do titular","Nome do fundos","Status","Data da solicitação","Tipo de operação","Quantidade","Preço Unitário","Valor"];
+var COLUNAS_OFERTA_DASHBOARD=["CONTA","TITULAR","ASSESSOR","DATA SOLICITAÇÃO","NOME DA OFERTA","ATIVO","VALOR DE RESERVA","VALOR OBTIDO"];
+var COLUNAS_OFERTA_BOOK=["Número da Conta","Nome do Titular","Nome da Oferta","Data Solicitação","Valor Desejado","Valor Obtido","Status da Reserva"];
+function temTodasColunas(colunas, exigidas){ return exigidas.every(function(c){ return colunas.indexOf(c)!==-1; }); }
 function identificarFonte(colunas){
-  var faltam=COLUNAS_MOVIMENTACAO_GERAL.filter(function(c){ return colunas.indexOf(c)===-1; });
-  if(!faltam.length) return "movimentacao_geral";
+  if(temTodasColunas(colunas,COLUNAS_MOVIMENTACAO_GERAL)) return "movimentacao_geral";
+  if(temTodasColunas(colunas,COLUNAS_ORDENS_SECUNDARIO)) return "ordens_secundario";
+  if(temTodasColunas(colunas,COLUNAS_OFERTA_DASHBOARD)) return "oferta_dashboard";
+  if(temTodasColunas(colunas,COLUNAS_OFERTA_BOOK)) return "oferta_book";
   return null;
+}
+/* Datas desses dois exports vêm em formatos diferentes (ISO com T, ISO com
+   espaço, ou DD/MM/AAAA) -- nenhuma delas vem como Date de verdade do XLSX,
+   só texto. Daí o parser aceitar os dois formatos em vez de confiar só no
+   cellDates do SheetJS. */
+function parseDataFlexivel(v){
+  if(ehData(v)) return v;
+  if(v==null||v==="") return null;
+  var s=String(v).trim();
+  var mIso=/^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if(mIso) return new Date(Date.UTC(+mIso[1],+mIso[2]-1,+mIso[3]));
+  var mBr=/^(\d{2})\/(\d{2})\/(\d{4})/.exec(s);
+  if(mBr) return new Date(Date.UTC(+mBr[3],+mBr[2]-1,+mBr[1]));
+  return null;
+}
+function dataISOFlexivel(v){ var d=parseDataFlexivel(v); return d?dataISO(d):""; }
+function agruparPorMes(linhas, campoData){
+  var grupos={};
+  linhas.forEach(function(l){
+    var d=parseDataFlexivel(l[campoData]);
+    if(!d) return;
+    var k=d.getUTCFullYear()+"-"+(d.getUTCMonth()+1);
+    (grupos[k]=grupos[k]||[]).push(l);
+  });
+  return grupos;
 }
 
 /* ---------------- seção 1: fluxo financeiro externo ---------------- */
@@ -450,38 +484,53 @@ function importarArquivo(input){
     if(!linhas.length){ alert("Essa planilha não tem linhas."); return; }
     var colunas=Object.keys(linhas[0]);
     var fonte=identificarFonte(colunas);
-    if(!fonte){ alert("Não reconheci esse arquivo pelas colunas. Por enquanto só leio a Movimentação geral (aba Export)."); return; }
-    linhas=linhas.filter(function(l){ return l["Conta"]!==""; });
-    if(!linhas.length){ alert("Não encontrei nenhuma linha com conta preenchida."); return; }
-    // mês/ano de referência: o mais frequente em "Data Compra"
-    var porMes={};
-    linhas.forEach(function(l){ var d=l["Data Compra"]; if(ehData(d)){ var k=d.getUTCFullYear()+"-"+(d.getUTCMonth()+1); porMes[k]=(porMes[k]||0)+1; } });
-    var melhor=Object.entries(porMes).sort(function(a,b){ return b[1]-a[1]; })[0];
-    if(!melhor){ alert("Não encontrei nenhuma data válida em \"Data Compra\"."); return; }
-    var partes=melhor[0].split("-");
-    ESTADO.ano=parseInt(partes[0],10); ESTADO.mes=parseInt(partes[1],10);
-    ESTADO.lancamentos=linhas;
-    ESTADO.paresDesmarcados={};
-    ESTADO.transacoesExcluidas={};
-    ESTADO.snapshotAtualId=null;
-    document.getElementById("seletorMes").value="";
-    resetarComparacao();
-    ESTADO.resultado=processarLinhas(linhas);
-    document.getElementById("resultado").style.display="block";
-    document.getElementById("btnSalvar").disabled=false;
-    document.getElementById("seletorComparacao").disabled=false;
-    renderTudo();
+    if(!fonte){ alert("Não reconheci esse arquivo pelas colunas. Leio: Movimentação geral, ordens no secundário, dashboard de ofertas públicas e book de reservas."); return; }
+    if(fonte==="movimentacao_geral"){ processarImportMovimentacaoGeral(linhas); return; }
+    var campoData = fonte==="ordens_secundario" ? "Data da solicitação" : (fonte==="oferta_dashboard" ? "DATA SOLICITAÇÃO" : "Data Solicitação");
+    processarImportDistribuicao(linhas, fonte, campoData);
   };
   fr.onerror=function(){ alert("Não consegui ler o arquivo."); };
   fr.readAsArrayBuffer(f);
+}
+function processarImportMovimentacaoGeral(linhas){
+  linhas=linhas.filter(function(l){ return l["Conta"]!==""; });
+  if(!linhas.length){ alert("Não encontrei nenhuma linha com conta preenchida."); return; }
+  // mês/ano de referência: o mais frequente em "Data Compra"
+  var porMes={};
+  linhas.forEach(function(l){ var d=l["Data Compra"]; if(ehData(d)){ var k=d.getUTCFullYear()+"-"+(d.getUTCMonth()+1); porMes[k]=(porMes[k]||0)+1; } });
+  var melhor=Object.entries(porMes).sort(function(a,b){ return b[1]-a[1]; })[0];
+  if(!melhor){ alert("Não encontrei nenhuma data válida em \"Data Compra\"."); return; }
+  var partes=melhor[0].split("-");
+  ESTADO.ano=parseInt(partes[0],10); ESTADO.mes=parseInt(partes[1],10);
+  ESTADO.lancamentos=linhas;
+  ESTADO.paresDesmarcados={};
+  ESTADO.transacoesExcluidas={};
+  ESTADO.snapshotAtualId=null;
+  document.getElementById("seletorMes").value="";
+  resetarComparacao();
+  ESTADO.resultado=processarLinhas(linhas);
+  document.getElementById("resultado").style.display="block";
+  document.getElementById("btnSalvar").disabled=false;
+  document.getElementById("seletorComparacao").disabled=false;
+  renderTudo();
+}
+function processarImportDistribuicao(linhas, fonte, campoData){
+  var grupos=agruparPorMes(linhas, campoData);
+  if(!Object.keys(grupos).length){ alert("Não encontrei nenhuma data válida em \""+campoData+"\"."); return; }
+  ESTADO.distribuicao[fonte]={ grupos:grupos, campoData:campoData, salvo:false };
+  document.getElementById("resultado").style.display="block";
+  renderDistribuicao();
+  mudarAba("distribuicao");
 }
 
 function mudarAba(a){
   document.getElementById("tabVisao").className=a==="visao"?"on":"";
   document.getElementById("tabComp").className=a==="comparativo"?"on":"";
+  document.getElementById("tabDist").className=a==="distribuicao"?"on":"";
   document.getElementById("tabAud").className=a==="auditoria"?"on":"";
   document.getElementById("painelVisao").style.display=a==="visao"?"block":"none";
   document.getElementById("painelComparativo").style.display=a==="comparativo"?"block":"none";
+  document.getElementById("painelDistribuicao").style.display=a==="distribuicao"?"block":"none";
   document.getElementById("painelAuditoria").style.display=a==="auditoria"?"block":"none";
 }
 
@@ -581,6 +630,135 @@ function alternarTransacao(id){
   ESTADO.resultado=processarLinhas(ESTADO.lancamentos);
   renderTudo();
   mudarAba("auditoria");
+}
+
+/* ---------------- ofertas públicas e secundário (fatia 5) ---------------- */
+function calcularSecundarioMes(linhas){
+  var executadas=linhas.filter(function(l){ return l["Status"]==="EXECUTADA"; });
+  var compras=executadas.filter(function(l){ return l["Tipo de operação"]==="COMPRA"; });
+  var vendas=executadas.filter(function(l){ return l["Tipo de operação"]==="VENDA"; });
+  function soma(l){ return l.reduce(function(a,x){ return a+(Number(x["Valor"])||0); },0); }
+  var porStatus={};
+  linhas.forEach(function(l){ var s=l["Status"]||"(vazio)"; porStatus[s]=(porStatus[s]||0)+1; });
+  return { qtdTotal:linhas.length, qtdExecutadas:executadas.length, valorComprado:soma(compras), valorVendido:soma(vendas),
+    liquido:soma(compras)-soma(vendas), porStatus:porStatus };
+}
+function calcularOfertasDashboardMes(linhas){
+  function soma(campo){ return linhas.reduce(function(a,x){ return a+(Number(x[campo])||0); },0); }
+  return { qtd:linhas.length, valorReserva:soma("VALOR DE RESERVA"), valorPossivel:soma("VALOR POSSÍVEL"), valorObtido:soma("VALOR OBTIDO") };
+}
+function calcularOfertasBookMes(linhas){
+  function soma(campo){ return linhas.reduce(function(a,x){ return a+(Number(x[campo])||0); },0); }
+  var porStatus={};
+  linhas.forEach(function(l){ var s=l["Status da Reserva"]||"(vazio)"; porStatus[s]=(porStatus[s]||0)+1; });
+  return { qtd:linhas.length, valorDesejado:soma("Valor Desejado"), valorObtido:soma("Valor Obtido"), porStatus:porStatus };
+}
+function chavesMesOrdenadas(grupos){ return Object.keys(grupos).sort().reverse(); }
+function mesAnoDaChave(k){ var p=k.split("-"); return { ano:parseInt(p[0],10), mes:parseInt(p[1],10) }; }
+function renderDistribuicao(){
+  var painel=document.getElementById("painelDistribuicao");
+  if(!painel) return;
+  var d=ESTADO.distribuicao, h="";
+  h+='<div class="secao"><h2>Ordens no secundário</h2>'+
+    '<div class="desc">Intermediação de cotas de fundos — compra e venda entre clientes/contrapartes. "Status" e "Ordem direta" vêm do próprio export do BTG, sem reinterpretação. Só contam no comprado/vendido as ordens com status EXECUTADA.</div>';
+  if(d.ordens_secundario){
+    var chaves=chavesMesOrdenadas(d.ordens_secundario.grupos);
+    h+=(d.ordens_secundario.salvo?'<div class="desc">Salvo.</div>':'<button class="btn ouro" onclick="salvarDistribuicao(\'ordens_secundario\')">Salvar '+chaves.length+' mês(es) deste arquivo</button>')+
+      '<table style="margin-top:12px"><thead><tr><th>Mês</th><th class="num">Ordens</th><th class="num">Executadas</th><th class="num">Comprado</th><th class="num">Vendido</th><th class="num">Líquido</th></tr></thead><tbody>'+
+      chaves.map(function(k){ var ma=mesAnoDaChave(k), r=calcularSecundarioMes(d.ordens_secundario.grupos[k]);
+        return '<tr><td>'+NOMES_MES[ma.mes]+'/'+ma.ano+'</td><td class="num">'+r.qtdTotal+'</td><td class="num">'+r.qtdExecutadas+'</td><td class="num">'+brl(r.valorComprado)+'</td><td class="num">'+brl(r.valorVendido)+'</td><td class="num '+sinalClasse(r.liquido)+'">'+brl(r.liquido)+'</td></tr>'; }).join("")+
+      '</tbody></table>';
+  } else {
+    h+='<div class="desc">Importe o arquivo de ordens pra ver aqui.</div>';
+  }
+  h+='</div>';
+
+  h+='<div class="secao"><h2>Ofertas públicas</h2>';
+  if(d.oferta_dashboard){
+    var chavesDa=chavesMesOrdenadas(d.oferta_dashboard.grupos);
+    h+='<h3 style="font-size:13px;margin:4px 0 6px;color:var(--navy)">Histórico (dashboard)</h3>'+
+      (d.oferta_dashboard.salvo?'<div class="desc">Salvo.</div>':'<button class="btn ouro" onclick="salvarDistribuicao(\'oferta_dashboard\')">Salvar '+chavesDa.length+' mês(es) deste arquivo</button>')+
+      '<table style="margin-top:10px"><thead><tr><th>Mês</th><th class="num">Solicitações</th><th class="num">Valor reservado</th><th class="num">Valor obtido</th></tr></thead><tbody>'+
+      chavesDa.map(function(k){ var ma=mesAnoDaChave(k), r=calcularOfertasDashboardMes(d.oferta_dashboard.grupos[k]);
+        return '<tr><td>'+NOMES_MES[ma.mes]+'/'+ma.ano+'</td><td class="num">'+r.qtd+'</td><td class="num">'+brl(r.valorReserva)+'</td><td class="num">'+brl(r.valorObtido)+'</td></tr>'; }).join("")+
+      '</tbody></table>';
+  } else {
+    h+='<div class="desc">Importe o histórico de ofertas (dashboard) pra ver aqui.</div>';
+  }
+  if(d.oferta_book){
+    var chavesB=chavesMesOrdenadas(d.oferta_book.grupos);
+    h+='<h3 style="font-size:13px;margin:16px 0 6px;color:var(--navy)">Book de reservas (detalhe recente)</h3>'+
+      '<div class="desc">Pode se sobrepor ao histórico do dashboard acima — some com cuidado, é um corte complementar, não some os dois totais.</div>'+
+      (d.oferta_book.salvo?'<div class="desc">Salvo.</div>':'<button class="btn ouro" onclick="salvarDistribuicao(\'oferta_book\')">Salvar '+chavesB.length+' mês(es) deste arquivo</button>')+
+      '<table style="margin-top:10px"><thead><tr><th>Mês</th><th class="num">Reservas</th><th class="num">Desejado</th><th class="num">Obtido</th></tr></thead><tbody>'+
+      chavesB.map(function(k){ var ma=mesAnoDaChave(k), r=calcularOfertasBookMes(d.oferta_book.grupos[k]);
+        return '<tr><td>'+NOMES_MES[ma.mes]+'/'+ma.ano+'</td><td class="num">'+r.qtd+'</td><td class="num">'+brl(r.valorDesejado)+'</td><td class="num">'+brl(r.valorObtido)+'</td></tr>'; }).join("")+
+      '</tbody></table>';
+  } else {
+    h+='<div class="desc" style="margin-top:14px">Importe o book de reservas pra ver aqui.</div>';
+  }
+  h+='</div>';
+  painel.innerHTML=h;
+}
+/* mapeia cada linha pro formato da RPC -- reaproveita "modalidade" pra guardar
+   Tipo de operação e "motivo_status" pra guardar Ordem direta nas ordens de
+   secundário, já que essas duas colunas não existem nesse export e criar
+   coluna nova só pra isso não compensava (ver tipo_operacao/ordem_direta,
+   que são as colunas de verdade -- modalidade/motivo_status aqui ficam só
+   pros outros dois fontes, que são os que realmente usam esse nome). */
+function mapearLinhaDistribuicao(l, fonte){
+  if(fonte==="ordens_secundario"){
+    return {
+      conta:normalizarConta(l["Número da conta"]), nome_titular:l["Nome do titular"]||"",
+      ativo:l["Nome do fundos"]||"", status:l["Status"]||"",
+      data_solicitacao:dataISOFlexivel(l["Data da solicitação"]),
+      valor_obtido:l["Valor"]||"", preco_unitario:l["Preço Unitário"]||"", spread:l["Spread"]||"",
+      quantidade:l["Quantidade"]||"", tipo_operacao:l["Tipo de operação"]||"",
+      ordem_direta:(l["Ordem direta"]==="true"||l["Ordem direta"]==="false")?l["Ordem direta"]:"",
+      id_origem:normalizarConta(l["Número da conta"])+"|"+(l["Data da solicitação"]||"")+"|"+(l["Nome do fundos"]||""),
+    };
+  }
+  if(fonte==="oferta_dashboard"){
+    return {
+      conta:normalizarConta(l["CONTA"]), nome_titular:l["TITULAR"]||"", assessor:l["ASSESSOR"]||"",
+      nome_oferta:l["NOME DA OFERTA"]||"", ativo:l["ATIVO"]||"",
+      data_solicitacao:dataISOFlexivel(l["DATA SOLICITAÇÃO"]), data_liquidacao:dataISOFlexivel(l["DATA DE LIQUIDAÇÃO"]),
+      valor_desejado:l["VALOR DE RESERVA"]||"", valor_obtido:l["VALOR OBTIDO"]||"", preco_unitario:l["PREÇO UNITÁRIO"]||"",
+      modalidade:l["MODALIDADE"]||"",
+      id_origem:normalizarConta(l["CONTA"])+"|"+(l["DATA SOLICITAÇÃO"]||"")+"|"+(l["NOME DA OFERTA"]||""),
+    };
+  }
+  return {
+    conta:normalizarConta(l["Número da Conta"]), nome_titular:l["Nome do Titular"]||"", assessor:l["Assessor"]||"",
+    nome_oferta:l["Nome da Oferta"]||"", status:l["Status da Reserva"]||"", motivo_status:l["Motivo do Status"]||"",
+    data_solicitacao:dataISOFlexivel(l["Data Solicitação"]), data_liquidacao:dataISOFlexivel(l["Data Liquidação"]),
+    valor_desejado:l["Valor Desejado"]||"", valor_obtido:l["Valor Obtido"]||"", preco_unitario:l["Preço Unitário"]||"",
+    modalidade:l["Modalidade"]||"",
+    id_origem:normalizarConta(l["Número da Conta"])+"|"+(l["Data Solicitação"]||"")+"|"+(l["Nome da Oferta"]||""),
+  };
+}
+function salvarDistribuicao(fonte){
+  var info=ESTADO.distribuicao[fonte];
+  if(!info) return;
+  var chaves=Object.keys(info.grupos);
+  if(!confirm("Salvar "+chaves.length+" mês(es)? Isso substitui o que já estiver salvo pra esses meses, nessa fonte.")) return;
+  var ok=0, falhas=[];
+  var seq=Promise.resolve();
+  chaves.forEach(function(k){
+    var ma=mesAnoDaChave(k);
+    var payload=info.grupos[k].map(function(l){ return mapearLinhaDistribuicao(l,fonte); });
+    seq=seq.then(function(){
+      return api("rpc/fluxo_substituir_distribuicao",{method:"POST",body:{p_mes:ma.mes,p_ano:ma.ano,p_fonte:fonte,p_registros:payload}})
+        .then(function(){ ok++; })
+        .catch(function(e){ falhas.push(NOMES_MES[ma.mes]+"/"+ma.ano+": "+e.message); });
+    });
+  });
+  seq.then(function(){
+    info.salvo=(falhas.length===0);
+    alert("Salvo "+ok+" de "+chaves.length+" mês(es)."+(falhas.length?"\n\nFalhas:\n"+falhas.join("\n"):""));
+    renderDistribuicao();
+    return carregarSnapshotsDisponiveis();
+  }).then(function(){ atualizarGraficoHistorico(); });
 }
 
 /* ---------------- salvar no banco ---------------- */

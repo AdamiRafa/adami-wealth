@@ -551,10 +551,45 @@ positivo/negativo pra não confundir com o sinal dos cards. Testado com meses si
 (inclusive NNM negativo, pra confirmar a cor e a barra pra baixo do zero) e com
 screenshot real via Playwright, sem sobreposição de rótulo.
 
-**Pendente (fatias 3 a 6, nessa ordem, conforme combinado):** telas de renda fixa,
-fundos e renda variável; clientes; ofertas públicas, secundário (já tem os parsers de
-`ordens`/book de reservas/dashboard testados contra arquivo real, faltando a tela) e
-câmbio; FGC, alertas e exportação Excel.
+**Ofertas públicas e secundário (entregue, fatia 5 adiantada):** nova aba "Ofertas e
+Secundário". Reconhece mais 3 tipos de arquivo pelas colunas, no mesmo input de upload
+de sempre: ordens no secundário (intermediação de cotas de fundos — compra/venda entre
+clientes/contrapartes), dashboard de ofertas públicas (histórico) e book de reservas.
+Diferença importante desses 3 em relação à Movimentação geral: **cada arquivo cobre
+vários meses de histórico, não um mês só** (o de ordens, por exemplo, tinha 36 meses
+diferentes, de setembro/2023 a novembro/2026). Por isso a tela agrupa por mês a partir da
+data de solicitação e mostra uma tabela com todos os meses encontrados de uma vez; salvar
+dispara uma chamada no banco por mês (função nova `fluxo_substituir_distribuicao`, mesmo
+padrão de `fluxo_substituir_mes`, mas gravando em `fluxo_distribuicao`).
+
+No secundário, só conta como "comprado/vendido" a ordem com status `EXECUTADA` — as
+outras (`CANCELADA`, `REJEITADA`, `AGUARDANDO_*`, `PARCIAL`) aparecem na contagem total
+mas não entram na soma, porque não é volume de verdade. O campo "Ordem direta" do export
+do BTG é salvo como veio, sem a tela tentar adivinhar se isso quer dizer CETIP direto ou
+outra coisa — não dava pra confirmar o significado exato só pelo nome da coluna, e já
+levou engano no passado tentar inferir regra de negócio de nome de coluna ambíguo (ver
+"Fluxo financeiro externo" acima). Pendente: perguntar pro Emil o que "Ordem direta"
+significa de verdade pra decidir se vira um indicador próprio.
+
+Dashboard e book de ofertas são tratados como **duas tabelas separadas, nunca somadas**:
+cobrem o mesmo processo de reserva de oferta pública por ângulos diferentes (dashboard é
+o histórico completo, book parece ser um corte mais recente/operacional) e muito
+provavelmente se sobrepõem. A tela avisa isso na tela em vez de arriscar contar a mesma
+reserva duas vezes.
+
+Datas desses 3 arquivos vêm em formatos diferentes mesmo dentro do mesmo arquivo (ISO com
+"T", ISO com espaço, ou `DD/MM/AAAA`) e nenhuma vem como data de verdade do Excel, só
+texto — por isso o parser (`parseDataFlexivel`) aceita os três formatos em vez de confiar
+no `cellDates` do SheetJS.
+
+Schema (`adami_completo.sql`, seção 8.5): `fluxo_distribuicao` ganhou duas colunas,
+`tipo_operacao` e `ordem_direta` (só usadas pelo secundário — criei colunas novas em vez
+de reaproveitar `modalidade`/`motivo_status` com significado trocado, pra não virar
+armadilha depois). **Se o SQL já foi colado antes, precisa colar de novo** — são `alter
+table add column if not exists`, não quebra nada do que já tem.
+
+**Pendente (fatias 3, 4 e 6, nessa ordem):** telas de renda fixa, fundos e renda
+variável; clientes; câmbio; FGC, alertas e exportação Excel.
 
 SQL em `adami_completo.sql`, seção 8.5: tabelas `fluxo_snapshots`, `fluxo_lancamentos`,
 `fluxo_distribuicao` (schema pronto pra fatia 5, ainda sem tela) e a função

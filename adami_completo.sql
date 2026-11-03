@@ -1184,11 +1184,76 @@ create table if not exists public.fluxo_distribuicao (
   spread           numeric,
   quantidade       numeric,
   modalidade       text,
+  tipo_operacao    text,                -- só ordens_secundario: COMPRA/VENDA
+  ordem_direta     boolean,             -- só ordens_secundario: campo "Ordem direta" do export
   id_origem        text,
   criado_em        timestamptz not null default now()
 );
+alter table public.fluxo_distribuicao add column if not exists tipo_operacao text;
+alter table public.fluxo_distribuicao add column if not exists ordem_direta boolean;
 create index if not exists fluxo_dist_snapshot_idx on public.fluxo_distribuicao(snapshot_id);
 create index if not exists fluxo_dist_mes_ano_idx on public.fluxo_distribuicao(ano, mes);
+create index if not exists fluxo_dist_fonte_idx on public.fluxo_distribuicao(fonte);
+
+-- Mesmo substituir-por-mês da Movimentação geral, só que pra ordens/ofertas
+-- (fluxo_distribuicao) -- um arquivo desses cobre vários meses de histórico,
+-- então a tela chama essa função uma vez por mês encontrado no arquivo.
+create or replace function public.fluxo_substituir_distribuicao(
+  p_mes int, p_ano int, p_fonte text, p_registros jsonb
+)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare
+  v_snapshot_id uuid;
+  v_qtd_antes int;
+  v_qtd_depois int;
+  v_email text := auth.jwt() ->> 'email';
+begin
+  if not public.eh_super() then
+    raise exception 'Só master pode importar dados de fluxo.';
+  end if;
+
+  insert into public.fluxo_snapshots (mes, ano, importado_por)
+  values (p_mes, p_ano, auth.uid())
+  on conflict (mes, ano) do update set atualizado_em = now()
+  returning id into v_snapshot_id;
+
+  select count(*) into v_qtd_antes from public.fluxo_distribuicao
+    where snapshot_id = v_snapshot_id and fonte = p_fonte;
+
+  delete from public.fluxo_distribuicao where snapshot_id = v_snapshot_id and fonte = p_fonte;
+
+  insert into public.fluxo_distribuicao (
+    snapshot_id, mes, ano, fonte, conta, nome_titular, assessor, nome_oferta, ativo, status,
+    motivo_status, data_solicitacao, data_liquidacao, valor_desejado, valor_obtido, preco_unitario,
+    spread, quantidade, modalidade, tipo_operacao, ordem_direta, id_origem
+  )
+  select
+    v_snapshot_id, p_mes, p_ano, p_fonte,
+    x->>'conta', x->>'nome_titular', x->>'assessor', x->>'nome_oferta', x->>'ativo', x->>'status',
+    x->>'motivo_status', nullif(x->>'data_solicitacao','')::date, nullif(x->>'data_liquidacao','')::date,
+    nullif(x->>'valor_desejado','')::numeric, nullif(x->>'valor_obtido','')::numeric, nullif(x->>'preco_unitario','')::numeric,
+    nullif(x->>'spread','')::numeric, nullif(x->>'quantidade','')::numeric, x->>'modalidade', x->>'tipo_operacao',
+    nullif(x->>'ordem_direta','')::boolean, x->>'id_origem'
+  from jsonb_array_elements(p_registros) as x;
+
+  get diagnostics v_qtd_depois = row_count;
+
+  update public.fluxo_snapshots set
+    fontes = jsonb_set(fontes, array[p_fonte], jsonb_build_object(
+      'importado_em', now(), 'linhas', v_qtd_depois
+    )),
+    atualizado_em = now()
+  where id = v_snapshot_id;
+
+  insert into public.auditoria (usuario, acao, alvo, detalhe)
+  values (v_email, 'importou fluxo', p_fonte||' '||p_mes||'/'||p_ano,
+    'linhas antes: '||v_qtd_antes||' -> depois: '||v_qtd_depois);
+
+  return v_snapshot_id;
+end;
+$$;
+revoke all on function public.fluxo_substituir_distribuicao(int,int,text,jsonb) from public;
+grant execute on function public.fluxo_substituir_distribuicao(int,int,text,jsonb) to authenticated;
 
 -- Parâmetros editáveis -- reaproveita a tabela configuracoes (curva de Selic, régua de câmbio,
 -- limites de alerta, de-paras). Nada novo aqui: configuracoes(chave text pk, valor text) já existe.
