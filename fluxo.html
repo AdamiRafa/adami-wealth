@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fluxo e Captação — Adami Captal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root{
+  --navy:#05132A; --navy-2:#0C2246;
+  --ink:#0C1626; --ink-muted:#5C6B7F; --ink-faint:#95A1B0;
+  --border:#E2E6ED; --border-strong:#CCD3DD;
+  --surface:#FFFFFF; --bg:#F4F6F9;
+  --gold:#B08A2E; --gold-tint:#F7F0DC;
+  --success:#2F7A56; --success-tint:#E6F1EC;
+  --danger:#B3403A; --danger-tint:#FBEBEA;
+  --serif:'Fraunces',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',Consolas,Menlo,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+.topo{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:50;flex-wrap:wrap}
+.topo h1{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--navy)}
+.topo .sub{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+.topo-acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.selo{font-size:11px;color:var(--ink-faint)}
+.btn{font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;
+  border:1px solid var(--border-strong);background:#fff;color:var(--navy);cursor:pointer}
+.btn:hover{border-color:var(--navy-2)}
+.btn.ouro{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn.ouro:hover{background:var(--navy-2)}
+.btn:disabled{opacity:.5;cursor:default}
+.wrap{max-width:1180px;margin:0 auto;padding:24px}
+.aviso{background:var(--gold-tint);border:1px solid var(--gold);border-radius:10px;padding:14px 16px;
+  font-size:13px;color:var(--navy);margin-bottom:18px;line-height:1.55}
+.aviso.erro{background:var(--danger-tint);border-color:var(--danger);color:var(--danger)}
+.upload-area{border:1.5px dashed var(--border-strong);border-radius:12px;padding:28px;text-align:center;
+  background:var(--surface);margin-bottom:20px}
+.upload-area input[type=file]{display:none}
+.upload-area label{display:inline-block;padding:10px 18px;background:var(--navy);color:#fff;border-radius:8px;
+  font-size:13px;font-weight:600;cursor:pointer}
+.upload-area .ajuda{font-size:12px;color:var(--ink-faint);margin-top:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.card .rotulo{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-muted);font-weight:600}
+.card .valor{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--navy);margin-top:6px}
+.card .valor.pos{color:var(--success)}
+.card .valor.neg{color:var(--danger)}
+.card .nota{font-size:11px;color:var(--ink-faint);margin-top:4px}
+.secao{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:18px}
+.secao h2{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--navy);margin-bottom:4px}
+.secao .desc{font-size:12px;color:var(--ink-faint);margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;padding:8px 10px;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--ink-muted);border-bottom:1px solid var(--border);font-weight:600}
+td{padding:8px 10px;border-bottom:1px solid #EEF1F5}
+td.num{text-align:right;font-family:var(--mono);white-space:nowrap}
+tr.desmarcado{opacity:.4;text-decoration:line-through}
+.chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600}
+.chip.ok{background:var(--success-tint);color:var(--success)}
+.chip.falta{background:var(--danger-tint);color:var(--danger)}
+.tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--border)}
+.tabs button{font-family:inherit;font-size:13px;font-weight:600;padding:10px 16px;border:0;background:none;
+  color:var(--ink-muted);cursor:pointer;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--navy);border-bottom-color:var(--navy)}
+.linkmini{font-size:11.5px;color:var(--navy-2);cursor:pointer;text-decoration:underline;background:none;border:0;font-family:inherit}
+#awVoltar{position:fixed;bottom:18px;left:18px;background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:999px;padding:9px 16px;font-size:12.5px;color:var(--navy);cursor:pointer;box-shadow:0 2px 8px rgba(5,19,42,.08)}
+.bloqueado{max-width:480px;margin:80px auto;text-align:center;padding:32px;background:var(--surface);
+  border:1px solid var(--border);border-radius:14px}
+.bloqueado h1{font-family:var(--serif);font-size:19px;color:var(--navy);margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<script>
+/* Acesso restrito: sessão do portal + conferir que é master (eh_super).
+   O botão/card só é ocultado por educação -- quem segura de verdade é a
+   política de RLS no banco (fluxo_*_master), igual ao resto do projeto. */
+var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
+var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
+var SESSAO=null;
+try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
+if(!SESSAO||!SESSAO.access_token){ location.replace("index.html"); }
+
+function api(path,opts){
+  opts=opts||{};
+  var tk=(SESSAO&&SESSAO.access_token)||SB_KEY;
+  var h={"apikey":SB_KEY,"Authorization":"Bearer "+tk,"Content-Type":"application/json"};
+  if(opts.prefer) h["Prefer"]=opts.prefer;
+  return fetch(SB_URL+"/rest/v1/"+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined})
+    .then(function(res){
+      if(!res.ok) return res.text().then(function(t){ throw new Error(t||("HTTP "+res.status)); });
+      return res.status===204?null:res.json();
+    });
+}
+</script>
+
+<div id="telaBloqueada" style="display:none" class="bloqueado">
+  <h1>Acesso restrito</h1>
+  <p style="font-size:13px;color:var(--ink-muted);line-height:1.6">Esta tela mostra captação da casa inteira, de todos os assessores — só o master entra aqui.</p>
+  <button class="btn ouro" style="margin-top:16px" onclick="location.href='index.html'">Voltar ao início</button>
+</div>
+
+<div id="app" style="display:none">
+<div class="topo">
+  <div>
+    <h1>Fluxo e Captação</h1>
+    <div class="sub">Mapa de movimentações do BTG — captação, aplicações, resgates e o que sustenta a reunião do comitê.</div>
+  </div>
+  <div class="topo-acoes">
+    <span class="selo" id="selo"></span>
+    <button class="btn" id="btnSalvar" onclick="salvarSnapshot()" disabled>Salvar este mês</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div id="areaUpload" class="upload-area">
+    <label for="arqMovimentacao">Importar Movimentação geral (.xlsx)</label>
+    <input type="file" id="arqMovimentacao" accept=".xlsx,.xls" onchange="importarArquivo(this)">
+    <div class="ajuda">Export do BTG, aba "Export", identificado pelas colunas (Conta, Mercado, Sub Mercado, Lançamento…), não pelo nome do arquivo.</div>
+  </div>
+
+  <div id="resultado" style="display:none">
+    <div class="tabs">
+      <button class="on" id="tabVisao" onclick="mudarAba('visao')">Visão geral</button>
+      <button id="tabAud" onclick="mudarAba('auditoria')">Auditoria</button>
+    </div>
+    <div id="painelVisao"></div>
+    <div id="painelAuditoria" style="display:none"></div>
+  </div>
+</div>
+
+<button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
+</div>
+
+<script src="vendor/xlsx-0.18.5.full.min.js"></script>
+<script>
+var VERSAO_FLUXO="versão 1.0";
+document.getElementById("selo").textContent=VERSAO_FLUXO;
+
+var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{} };
+
+/* ---------------- gate de master ---------------- */
+api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super,admin").then(function(r){
+  var sou = r && r[0] && r[0].super;
+  if(!sou){ document.getElementById("telaBloqueada").style.display="block"; return; }
+  document.getElementById("app").style.display="block";
+}).catch(function(){
+  document.getElementById("telaBloqueada").style.display="block";
+});
+
+/* ---------------- normalização ---------------- */
+function normalizarConta(v){
+  var s=String(v==null?"":v).trim().replace(/\D/g,"");
+  return s?s.padStart(9,"0"):"";
+}
+function ehData(d){ return d && Object.prototype.toString.call(d)==="[object Date]" && !isNaN(d); }
+function dataISO(d){
+  if(!ehData(d)) return null;
+  return d.toISOString().slice(0,10);
+}
+
+/* ---------------- identificação do arquivo pelas colunas ---------------- */
+var COLUNAS_MOVIMENTACAO_GERAL=["Conta","Mercado","Sub Mercado","Movimentação","Lançamento","Emissor","Indexador","Vencimento","Valor Líquido"];
+function identificarFonte(colunas){
+  var faltam=COLUNAS_MOVIMENTACAO_GERAL.filter(function(c){ return colunas.indexOf(c)===-1; });
+  if(!faltam.length) return "movimentacao_geral";
+  return null;
+}
+
+/* ---------------- seção 1: fluxo financeiro externo ---------------- */
+var PREFIXOS_ENTRADA=["DEPÓSITO EM C/C VIA RESERVA","TRANSFERÊNCIA A CRÉDITO VIA PIX","RECEBIMENTO TRANSFERÊNCIA"];
+var PREFIXOS_SAIDA=["ENVIO TRANSFERÊNCIA","DÉBITO EM C/C VIA CIP","PAGAMENTO FATURA DE CARTAO"];
+function textoSemPrefixoConta(mov){ return String(mov||"").replace(/^\d{6,}\s*-\s*/,"").trim(); }
+function classificarMovimentoCC(mov){
+  var t=textoSemPrefixoConta(mov);
+  if(PREFIXOS_ENTRADA.some(function(p){ return t.indexOf(p)===0; })) return "entrada";
+  if(PREFIXOS_SAIDA.some(function(p){ return t.indexOf(p)===0; })) return "saida";
+  return null;
+}
+function calcularFluxoExterno(linhasCC, desmarcados){
+  var movimentos=linhasCC.map(function(l){
+    var tipo=classificarMovimentoCC(l["Movimentação"]);
+    if(!tipo) return null;
+    return {conta:l._conta, data:dataISO(l["Data Compra"]), valor:Math.abs(Number(l["Valor Líquido"])||0), tipo:tipo, texto:l["Movimentação"], id:String(l["ID"])};
+  }).filter(Boolean);
+  var entradas=movimentos.filter(function(m){ return m.tipo==="entrada"; });
+  var saidas=movimentos.filter(function(m){ return m.tipo==="saida"; });
+  var entradasDisp=entradas.slice();
+  var pares=[];
+  saidas.forEach(function(s){
+    var idx=entradasDisp.findIndex(function(e){ return e.data===s.data && Math.abs(e.valor-s.valor)<0.005 && e.conta!==s.conta; });
+    if(idx!==-1){ pares.push({saida:s, entrada:entradasDisp[idx]}); entradasDisp.splice(idx,1); }
+  });
+  var idsNeutralizados={};
+  pares.forEach(function(p,i){
+    var chave=p.saida.id+"|"+p.entrada.id;
+    if(desmarcados[chave]) return; // par desmarcado manualmente: conta normal
+    idsNeutralizados[p.saida.id]=true; idsNeutralizados[p.entrada.id]=true;
+  });
+  function somaAtiva(lista){ return lista.filter(function(m){ return !idsNeutralizados[m.id]; }).reduce(function(a,m){ return a+m.valor; },0); }
+  return { totalEntradas:somaAtiva(entradas), totalSaidas:somaAtiva(saidas), liquido:somaAtiva(entradas)-somaAtiva(saidas), pares:pares };
+}
+
+/* ---------------- seção 2: transferência de custódia ---------------- */
+function calcularCustodia(linhas){
+  var entradas=linhas.filter(function(l){ return (l["Mercado"]==="RENDA FIXA"&&l["Lançamento"]==="DEPÓSITO DE CUSTÓDIA")||(l["Mercado"]==="RENDA VARIÁVEL"&&l["Lançamento"]==="DEPÓSITO"); });
+  var saidas=linhas.filter(function(l){ return (l["Mercado"]==="RENDA FIXA"&&l["Lançamento"]==="RETIRADA DE CUSTÓDIA")||(l["Mercado"]==="RENDA VARIÁVEL"&&l["Lançamento"]==="RETIRADA"); });
+  function soma(l){ return l.reduce(function(a,x){ return a+Math.abs(Number(x["Valor Líquido"])||0); },0); }
+  return { totalEntradas:soma(entradas), totalSaidas:soma(saidas), liquido:soma(entradas)-soma(saidas), entradas:entradas, saidas:saidas };
+}
+
+/* ---------------- seção 3: previdência + reciclagem ----------------
+   Detector precisa de histórico (mês corrente + 4 anteriores). Com só
+   um mês importado, só pega reciclagem resgate+portabilidade NO MESMO MÊS
+   -- casos como o da Maristela (portabilidade de julho, resgate em outubro)
+   só são pegos depois que os meses anteriores também estiverem salvos. */
+function extrairResgatesPrevidencia(linhas){
+  var porMercado=linhas.filter(function(l){ return l["Mercado"]==="PREVIDÊNCIA"&&l["Lançamento"]==="RESGATE PARCIAL EM REAIS"; });
+  var porCC=linhas.filter(function(l){ return l["Mercado"]==="CONTA CORRENTE"&&/^RESGATE PREVID/i.test(textoSemPrefixoConta(l["Movimentação"])); });
+  var vistos={}, todos=[];
+  porMercado.concat(porCC).forEach(function(l){
+    var v=Math.abs(Number(l["Valor Líquido"])||0), d=dataISO(l["Data Compra"]);
+    var chave=l._conta+"|"+d+"|"+v.toFixed(2);
+    if(vistos[chave]) return; vistos[chave]=true;
+    todos.push({conta:l._conta, nome:l["Nome"], data:d, valor:v});
+  });
+  return todos;
+}
+function extrairPortabilidades(linhas){
+  return linhas.filter(function(l){ return l["Mercado"]==="PREVIDÊNCIA"&&l["Lançamento"]==="PORTABILIDADE DE ENTRADA"; })
+    .map(function(l){ return {conta:l._conta, nome:l["Nome"], data:dataISO(l["Data Compra"]), valor:Math.abs(Number(l["Valor Líquido"])||0)}; });
+}
+function calcularPrevidencia(linhas){
+  var portabilidades=extrairPortabilidades(linhas);
+  var resgates=extrairResgatesPrevidencia(linhas); // só do mês corrente, por ora
+  var comFlag=portabilidades.map(function(p){
+    var match=resgates.find(function(r){ return r.conta===p.conta && Math.abs(p.valor-r.valor)/r.valor<=0.20; });
+    return Object.assign({},p,{provavelReciclagem:!!match, resgateCasado:match||null});
+  });
+  var genuinas=comFlag.filter(function(p){ return !p.provavelReciclagem; });
+  var recicladas=comFlag.filter(function(p){ return p.provavelReciclagem; });
+  function soma(l){ return l.reduce(function(a,x){ return a+x.valor; },0); }
+  return { portabilidadeNova:soma(genuinas), reciclagemExcluida:soma(recicladas), genuinas:genuinas, recicladas:recicladas, resgates:resgates };
+}
+
+/* ---------------- seções 5/6: aplicações e resgates por classe ---------------- */
+function somaAbs(l){ return l.reduce(function(a,x){ return a+Math.abs(Number(x["Valor Líquido"])||0); },0); }
+function calcularAplicacoes(linhas){
+  var rf=linhas.filter(function(l){ return l["Mercado"]==="RENDA FIXA"&&(l["Lançamento"]==="COMPRA"||l["Lançamento"]==="COMPRA DEFINITIVA"); });
+  var fundos=linhas.filter(function(l){ return l["Mercado"]==="FUNDOS"&&Number(l["Valor Líquido"])>0; });
+  var rv=linhas.filter(function(l){ return l["Mercado"]==="RENDA VARIÁVEL"&&l["Lançamento"]==="COMPRA"; });
+  var prev=linhas.filter(function(l){ return l["Mercado"]==="PREVIDÊNCIA"&&(l["Lançamento"]==="APORTE"||l["Lançamento"]==="CONTRIBUIÇÃO"); });
+  return { rendaFixa:{total:somaAbs(rf),qtd:rf.length}, fundos:{total:somaAbs(fundos),qtd:fundos.length}, rendaVariavel:{total:somaAbs(rv),qtd:rv.length}, previdencia:{total:somaAbs(prev),qtd:prev.length} };
+}
+function calcularResgates(linhas){
+  var fundos=linhas.filter(function(l){ return l["Mercado"]==="FUNDOS"&&Number(l["Valor Líquido"])<0; });
+  var rf=linhas.filter(function(l){ var lanc=l["Lançamento"]; return l["Mercado"]==="RENDA FIXA"&&(lanc==="VENCIMENTO DE TÍTULO"||lanc==="VENDA DEFINITIVA"||lanc==="AMORTIZAÇÃO"||lanc==="RETIRADA DE CUSTÓDIA"); });
+  var rv=linhas.filter(function(l){ return l["Mercado"]==="RENDA VARIÁVEL"&&l["Lançamento"]==="VENDA"; });
+  return { fundos:{total:somaAbs(fundos),qtd:fundos.length}, rendaFixa:{total:somaAbs(rf),qtd:rf.length}, rendaVariavel:{total:somaAbs(rv),qtd:rv.length} };
+}
+
+/* ---------------- seção 7: renda passiva ---------------- */
+function calcularRendaPassiva(linhas){
+  var rf=linhas.filter(function(l){ return l["Mercado"]==="RENDA FIXA"&&(l["Lançamento"]==="JUROS"||l["Lançamento"]==="AMORTIZAÇÃO"); });
+  var rv=linhas.filter(function(l){ var lanc=l["Lançamento"]; return l["Mercado"]==="RENDA VARIÁVEL"&&(lanc==="RENDIMENTO"||lanc==="JUROS S/CAPITAL"||lanc==="RECEBIMENTO DIVIDENDOS"||lanc==="RESTITUIÇÃO DE CAPITAL"); });
+  var coe=linhas.filter(function(l){ return l["Mercado"]==="COE"&&(l["Lançamento"]==="JUROS"||l["Lançamento"]==="AMORTIZAÇÃO"); });
+  var todas=rf.concat(rv,coe);
+  var porConta={};
+  todas.forEach(function(l){ var c=l._conta; porConta[c]=porConta[c]||{conta:c,nome:l["Nome"],total:0}; porConta[c].total+=Math.abs(Number(l["Valor Líquido"])||0); });
+  var contasAplicaram={};
+  linhas.forEach(function(l){
+    var aplicou=(l["Mercado"]==="RENDA FIXA"&&(l["Lançamento"]==="COMPRA"||l["Lançamento"]==="COMPRA DEFINITIVA"))||(l["Mercado"]==="FUNDOS"&&Number(l["Valor Líquido"])>0)||(l["Mercado"]==="RENDA VARIÁVEL"&&l["Lançamento"]==="COMPRA")||(l["Mercado"]==="PREVIDÊNCIA"&&(l["Lançamento"]==="APORTE"||l["Lançamento"]==="CONTRIBUIÇÃO"));
+    if(aplicou) contasAplicaram[l._conta]=true;
+  });
+  var contas=Object.values(porConta);
+  contas.forEach(function(c){ c.reinvestiu=!!contasAplicaram[c.conta]; });
+  return { total:somaAbs(todas), qtd:todas.length, rf:somaAbs(rf), rv:somaAbs(rv), coe:somaAbs(coe),
+    reinvestiram:contas.filter(function(c){return c.reinvestiu;}), naoAplicaram:contas.filter(function(c){return !c.reinvestiu;}) };
+}
+
+/* ---------------- seção 8: caixa acumulado ---------------- */
+function calcularCaixa(linhasCC, limite){
+  limite=limite==null?20000:limite;
+  var porConta={};
+  linhasCC.forEach(function(l){ var c=l._conta; porConta[c]=porConta[c]||{conta:c,nome:l["Nome"],variacao:0}; porConta[c].variacao+=Number(l["Valor Líquido"])||0; });
+  var todas=Object.values(porConta);
+  var acima=todas.filter(function(c){ return c.variacao>=limite; }).sort(function(a,b){ return b.variacao-a.variacao; });
+  return { acima:acima, somaAcima:acima.reduce(function(a,c){ return a+c.variacao; },0) };
+}
+
+/* ---------------- mapa geral + canal de fundos (pra "quanto foi intermediação direta x CETIP") ---------------- */
+function mapearMovimentacoes(linhas){
+  var porGrupo={};
+  linhas.forEach(function(l){
+    var chave=[l["Mercado"]||"(vazio)", l["Sub Mercado"]||"(vazio)", l["Lançamento"]||"(vazio)"].join(" › ");
+    if(!porGrupo[chave]) porGrupo[chave]={mercado:l["Mercado"],subMercado:l["Sub Mercado"],lancamento:l["Lançamento"],qtd:0,somaAbs:0};
+    porGrupo[chave].qtd++; porGrupo[chave].somaAbs+=Math.abs(Number(l["Valor Líquido"])||0);
+  });
+  return Object.values(porGrupo).sort(function(a,b){ return b.somaAbs-a.somaAbs; });
+}
+function mapearCanalFundos(linhasCC){
+  var porCanal={};
+  linhasCC.forEach(function(l){
+    var t=l["Movimentação"]||""; if(!/FUNDO/i.test(t)) return;
+    var canal=/\bPCO\b/.test(t)?"PCO (direto BTG)":(/CETIP/i.test(t)?"CETIP":"outro/oferta pública");
+    var direcao=/AQUISICAO/i.test(t)?"aquisição":(/RESGATE/i.test(t)?"resgate":"outro");
+    var chave=canal+" | "+direcao;
+    if(!porCanal[chave]) porCanal[chave]={canal:canal,direcao:direcao,qtd:0,soma:0};
+    porCanal[chave].qtd++; porCanal[chave].soma+=Math.abs(Number(l["Valor Líquido"])||0);
+  });
+  return Object.values(porCanal).sort(function(a,b){ return b.soma-a.soma; });
+}
+
+/* ---------------- orquestração ---------------- */
+function processarLinhas(linhas){
+  linhas.forEach(function(l){ l._conta=normalizarConta(l["Conta"]); });
+  linhas=linhas.filter(function(l){ return l._conta; });
+  var cc=linhas.filter(function(l){ return l["Mercado"]==="CONTA CORRENTE"; });
+  var fluxo=calcularFluxoExterno(cc, ESTADO.paresDesmarcados);
+  var custodia=calcularCustodia(linhas);
+  var prev=calcularPrevidencia(linhas);
+  var aplic=calcularAplicacoes(linhas);
+  var resg=calcularResgates(linhas);
+  var passiva=calcularRendaPassiva(linhas);
+  var caixa=calcularCaixa(cc, 20000);
+  var mapa=mapearMovimentacoes(linhas);
+  var canalFundos=mapearCanalFundos(cc);
+  var contasComMovimento={};
+  linhas.forEach(function(l){ contasComMovimento[l._conta]=true; });
+  var nnm=fluxo.liquido + custodia.liquido + prev.portabilidadeNova;
+  return {
+    linhas:linhas, cc:cc, fluxo:fluxo, custodia:custodia, prev:prev, aplic:aplic, resg:resg,
+    passiva:passiva, caixa:caixa, mapa:mapa, canalFundos:canalFundos,
+    contasComMovimento:Object.keys(contasComMovimento).length,
+    nnm:nnm,
+  };
+}
+
+function brl(v){ v=v||0; var neg=v<0; v=Math.abs(v); var s="R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); return neg?"-"+s:s; }
+function sinalClasse(v){ return v>0?"pos":(v<0?"neg":""); }
+
+function importarArquivo(input){
+  var f=input.files[0]; if(!f) return;
+  if(typeof XLSX==="undefined"){ alert("A biblioteca de planilha ainda não carregou. Recarregue a página e tente de novo."); return; }
+  var fr=new FileReader();
+  fr.onload=function(){
+    var wb;
+    try{ wb=XLSX.read(fr.result,{type:"array",cellDates:true}); }
+    catch(e){ alert("Não consegui ler esse arquivo.\n\n"+e.message); return; }
+    var nomeAba=wb.SheetNames.filter(function(n){ return n.toLowerCase()==="export"; })[0]||wb.SheetNames[0];
+    var ws=wb.Sheets[nomeAba];
+    var linhas=XLSX.utils.sheet_to_json(ws,{defval:""});
+    if(!linhas.length){ alert("Essa planilha não tem linhas."); return; }
+    var colunas=Object.keys(linhas[0]);
+    var fonte=identificarFonte(colunas);
+    if(!fonte){ alert("Não reconheci esse arquivo pelas colunas. Por enquanto só leio a Movimentação geral (aba Export)."); return; }
+    linhas=linhas.filter(function(l){ return l["Conta"]!==""; });
+    if(!linhas.length){ alert("Não encontrei nenhuma linha com conta preenchida."); return; }
+    // mês/ano de referência: o mais frequente em "Data Compra"
+    var porMes={};
+    linhas.forEach(function(l){ var d=l["Data Compra"]; if(ehData(d)){ var k=d.getUTCFullYear()+"-"+(d.getUTCMonth()+1); porMes[k]=(porMes[k]||0)+1; } });
+    var melhor=Object.entries(porMes).sort(function(a,b){ return b[1]-a[1]; })[0];
+    if(!melhor){ alert("Não encontrei nenhuma data válida em \"Data Compra\"."); return; }
+    var partes=melhor[0].split("-");
+    ESTADO.ano=parseInt(partes[0],10); ESTADO.mes=parseInt(partes[1],10);
+    ESTADO.lancamentos=linhas;
+    ESTADO.paresDesmarcados={};
+    ESTADO.resultado=processarLinhas(linhas);
+    document.getElementById("resultado").style.display="block";
+    document.getElementById("btnSalvar").disabled=false;
+    renderTudo();
+  };
+  fr.onerror=function(){ alert("Não consegui ler o arquivo."); };
+  fr.readAsArrayBuffer(f);
+}
+
+function mudarAba(a){
+  document.getElementById("tabVisao").className=a==="visao"?"on":"";
+  document.getElementById("tabAud").className=a==="auditoria"?"on":"";
+  document.getElementById("painelVisao").style.display=a==="visao"?"block":"none";
+  document.getElementById("painelAuditoria").style.display=a==="auditoria"?"block":"none";
+}
+
+var NOMES_MES=["","Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+function renderTudo(){ renderVisaoGeral(); renderAuditoria(); mudarAba("visao"); }
+
+function renderVisaoGeral(){
+  var r=ESTADO.resultado;
+  var h='<div class="secao"><h2>'+NOMES_MES[ESTADO.mes]+' de '+ESTADO.ano+'</h2>'+
+    '<div class="desc">'+r.linhas.length+' lançamentos · '+r.contasComMovimento+' contas com movimento</div>'+
+    '<div class="cards">'+
+      cardHtml("Net New Money", r.nnm, "custódia + portabilidade nova + fluxo financeiro")+
+      cardHtml("Fluxo financeiro líquido", r.fluxo.liquido, "TED e PIX, líquido de pares intra-escritório")+
+      cardHtml("Transferência de custódia", r.custodia.liquido, "entra no NNM, não no fluxo financeiro")+
+      cardHtml("Portabilidade nova (previdência)", r.prev.portabilidadeNova, "exclui provável reciclagem")+
+    '</div></div>'+
+    '<div class="secao"><h2>Aplicações e resgates</h2><div class="desc">Por classe de ativo</div>'+
+    '<table><thead><tr><th>Classe</th><th class="num">Aplicado</th><th class="num">Resgatado</th></tr></thead><tbody>'+
+      linhaApRe("Renda fixa", r.aplic.rendaFixa.total, r.resg.rendaFixa.total)+
+      linhaApRe("Fundos", r.aplic.fundos.total, r.resg.fundos.total)+
+      linhaApRe("Renda variável", r.aplic.rendaVariavel.total, r.resg.rendaVariavel.total)+
+      linhaApRe("Previdência", r.aplic.previdencia.total, 0)+
+    '</tbody></table></div>'+
+    '<div class="secao"><h2>Renda passiva distribuída</h2>'+
+    '<div class="cards">'+
+      cardHtml("Total no mês", r.passiva.total, r.passiva.qtd+" lançamentos")+
+      cardHtml("Reinvestiram", r.passiva.reinvestiram.reduce(function(a,c){return a+c.total;},0), r.passiva.reinvestiram.length+" contas")+
+      cardHtml("Não aplicaram nada", r.passiva.naoAplicaram.reduce(function(a,c){return a+c.total;},0), r.passiva.naoAplicaram.length+" contas — lista de ação")+
+    '</div></div>'+
+    '<div class="secao"><h2>Caixa acumulado em conta corrente</h2><div class="desc">Contas com variação de caixa acima de R$ 20 mil no mês (não é o saldo, é a variação)</div>'+
+    '<table><thead><tr><th>Conta</th><th>Nome</th><th class="num">Variação</th></tr></thead><tbody>'+
+      r.caixa.acima.map(function(c){ return '<tr><td>'+c.conta+'</td><td>'+esc(c.nome)+'</td><td class="num">'+brl(c.variacao)+'</td></tr>'; }).join("")+
+    '</tbody></table></div>';
+  document.getElementById("painelVisao").innerHTML=h;
+}
+function cardHtml(rotulo,valor,nota){
+  return '<div class="card"><div class="rotulo">'+rotulo+'</div><div class="valor '+sinalClasse(valor)+'">'+brl(valor)+'</div><div class="nota">'+nota+'</div></div>';
+}
+function linhaApRe(nome,ap,re){
+  return '<tr><td>'+nome+'</td><td class="num">'+brl(ap)+'</td><td class="num">'+brl(re)+'</td></tr>';
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+function renderAuditoria(){
+  var r=ESTADO.resultado;
+  var h='<div class="secao"><h2>Pares intra-escritório neutralizados</h2>'+
+    '<div class="desc">Mesma data, mesmo valor, contas diferentes — não entram no fluxo financeiro. Desmarque se algum não for de verdade uma transferência interna.</div>'+
+    '<table><thead><tr><th>Data</th><th>Valor</th><th>Conta saída</th><th>Conta entrada</th><th></th></tr></thead><tbody>'+
+    r.fluxo.pares.map(function(p,i){
+      var chave=p.saida.id+"|"+p.entrada.id;
+      var desmarcado=!!ESTADO.paresDesmarcados[chave];
+      return '<tr class="'+(desmarcado?"desmarcado":"")+'"><td>'+p.saida.data+'</td><td class="num">'+brl(p.saida.valor)+'</td>'+
+        '<td>'+p.saida.conta+'</td><td>'+p.entrada.conta+'</td>'+
+        '<td><button class="linkmini" onclick="alternarPar(\''+chave.replace(/'/g,"\\'")+'\')">'+(desmarcado?"recolocar":"desmarcar")+'</button></td></tr>';
+    }).join("")+
+    '</tbody></table></div>'+
+    '<div class="secao"><h2>Liquidação de fundos pelo canal</h2><div class="desc">PCO = plataforma direta do BTG. CETIP = registro externo, normalmente fundo mais exclusivo/menos líquido.</div>'+
+    '<table><thead><tr><th>Canal</th><th>Direção</th><th class="num">Qtd</th><th class="num">Soma</th></tr></thead><tbody>'+
+    r.canalFundos.map(function(c){ return '<tr><td>'+c.canal+'</td><td>'+c.direcao+'</td><td class="num">'+c.qtd+'</td><td class="num">'+brl(c.soma)+'</td></tr>'; }).join("")+
+    '</tbody></table></div>'+
+    '<div class="secao"><h2>Mapa geral de movimentações</h2><div class="desc">Todo lançamento do mês, agrupado por mercado/submercado/lançamento — pra achar qualquer recorte que não tenha card pronto ainda.</div>'+
+    '<table><thead><tr><th>Mercado</th><th>Sub mercado</th><th>Lançamento</th><th class="num">Qtd</th><th class="num">Soma (abs)</th></tr></thead><tbody>'+
+    r.mapa.map(function(g){ return '<tr><td>'+esc(g.mercado)+'</td><td>'+esc(g.subMercado)+'</td><td>'+esc(g.lancamento)+'</td><td class="num">'+g.qtd+'</td><td class="num">'+brl(g.somaAbs)+'</td></tr>'; }).join("")+
+    '</tbody></table></div>';
+  document.getElementById("painelAuditoria").innerHTML=h;
+}
+function alternarPar(chave){
+  if(ESTADO.paresDesmarcados[chave]) delete ESTADO.paresDesmarcados[chave];
+  else ESTADO.paresDesmarcados[chave]=true;
+  ESTADO.resultado=processarLinhas(ESTADO.lancamentos);
+  renderTudo();
+  mudarAba("auditoria");
+}
+
+/* ---------------- salvar no banco ---------------- */
+function salvarSnapshot(){
+  if(!ESTADO.lancamentos){ return; }
+  if(!confirm("Salvar "+NOMES_MES[ESTADO.mes]+"/"+ESTADO.ano+"? Isso substitui o que já estiver salvo pra esse mês (Movimentação geral).")) return;
+  var b=document.getElementById("btnSalvar"); b.disabled=true; b.textContent="Salvando…";
+  var payload=ESTADO.lancamentos.map(function(l){
+    return {
+      conta:l._conta, nome_titular:l["Nome"]||"", mercado:l["Mercado"]||"", sub_mercado:l["Sub Mercado"]||"",
+      produto:l["Produto"]||"", lancamento:l["Lançamento"]||"", emissor:l["Emissor"]||"", ativo:l["Ativo"]||"",
+      tipo_previdencia:l["Tipo Previdência"]||"", indexador:l["Indexador"]||"", taxa_emissao:l["Taxa Emissão"]||"",
+      taxa_compra:l["Taxa Compra"]||"", data_lancamento:dataISO(l["Data Compra"])||"", vencimento:dataISO(l["Vencimento"])||"",
+      quantidade:l["Quantidade"]||"", valor_bruto:l["Valor Bruto"]||"", ir:l["IR"]||"", iof:l["IOF"]||"",
+      valor_liquido:l["Valor Líquido"]||"", data_cotizacao:"", data_liquidacao:dataISO(l["Data Liquidação"])||"",
+      id_origem:String(l["ID"]||""),
+    };
+  });
+  api("rpc/fluxo_substituir_mes",{method:"POST",body:{p_mes:ESTADO.mes,p_ano:ESTADO.ano,p_fonte:"movimentacao_geral",p_lancamentos:payload}})
+    .then(function(){ alert("Salvo."); b.textContent="Salvo ✓"; })
+    .catch(function(e){ alert("Não consegui salvar.\n\n"+e.message); b.disabled=false; b.textContent="Salvar este mês"; });
+}
+</script>
+</body>
+</html>

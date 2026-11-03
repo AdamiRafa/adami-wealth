@@ -413,7 +413,9 @@ Extrato de cliente (Sinosserra) direto do PDF, sem precisar digitar nem montar p
 impresso) — nenhuma fonte de dado usada na importação informa essas duas janelas por
 ativo, só mês/ano/12 meses/desde o início** · **2.82 conserta "Esqueci minha senha": o
 link do e-mail de recuperação não tinha nenhuma tela esperando por ele, então clicar não
-levava a lugar nenhum — existe a tela de "defina sua nova senha" agora**.
+levava a lugar nenhum — existe a tela de "defina sua nova senha" agora** ·
+**2.83 Fluxo e Captação (`fluxo.html`), fatia 1: importa a Movimentação geral do BTG,
+calcula NNM/aplicações/resgates/renda passiva/caixa, tela de auditoria — ver seção 15**.
 
 ---
 
@@ -452,3 +454,58 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 - **Segurança:** tokens do GitHub e chaves do Supabase já foram expostos em conversa mais
   de uma vez e precisam de revogação confirmada. Não pedir nem aceitar credencial por
   chat: ela não funciona no ambiente de execução e fica registrada no histórico.
+
+---
+
+## 15. Fluxo e Captação (`fluxo.html`)
+
+BI de captação construído a partir dos exports de movimentação do BTG, pra alimentar o
+comitê de política de alocação. Acesso restrito a master (`eh_super()`), porque mostra
+captação da casa inteira, de todos os assessores — não só a carteira de quem está
+logado. Entra no hub com `restritoMaster:true`, que esconde o card de quem não é master
+(a segurança de verdade é a RLS de `fluxo_snapshots`/`fluxo_lancamentos`, o esconder no
+hub é só pra não mostrar um link morto).
+
+**Entregue até agora (fatia 1):** importa a Movimentação geral (aba "Export" do BTG,
+identificada pelo conjunto de colunas, nunca pelo nome do arquivo), normaliza a conta
+pra 9 dígitos com zero-fill, calcula fluxo financeiro externo (com neutralização de
+pares intra-escritório, editável na tela de Auditoria), transferência de custódia,
+portabilidade de previdência, aplicações e resgates por classe, renda passiva
+distribuída, caixa acumulado e um mapa geral de movimentações por
+Mercado/Submercado/Lançamento. Salva em `public.fluxo_lancamentos`, um snapshot por
+mês/ano, substituível (reimportar apaga e grava de novo, com registro em `auditoria`).
+
+**Validado contra o PPTX real de outubro/2026** (que o Emil mandou como referência):
+aplicações de renda fixa, fundos e renda variável bateram exatas; resgates totais,
+renda passiva (até o centavo, incluindo quem reinvestiu e quem não) e caixa acumulado
+também bateram. A transferência de custódia bateu com a leitura de "líquido" usada na
+fórmula do NNM (não com o destaque de "só as duas contas novas" do slide, que é uma
+subfatia editorial, não o total).
+
+**Em aberto, não é bug:**
+- **Fluxo financeiro externo não reconcilia com o PPTX** (regra escrita dá
+  -R$ 9,97 milhões em outubro, o PPTX mostra -R$ 6,0 milhões). Contas de pessoa
+  jurídica com bastante entrada e saída dentro do mesmo mês (ex.: TFL DO BRASIL
+  INDUSTRIA QUIMICA, INSTITUTO R B LTDA em três contas diferentes) parecem ser
+  movimentação de tesouraria, não captação/resgate de cliente — mas a regra documentada
+  não prevê exceção pra isso. Falta decidir com o Emil se existe um filtro (ex.: por
+  tipo de conta PF/PJ) que o processo manual aplicava sem estar escrito.
+- **Detector de reciclagem de previdência só pega o que resgata e porta no mesmo mês
+  importado.** O caso real que inspirou a regra (Maristela: portou em julho, resgatou
+  em outubro, portou de volta em outubro) só é pego depois que os meses anteriores
+  também estiverem salvos no banco — é inerente ao desenho (precisa de histórico), não
+  uma falha da fatia 1.
+- **"Aplicações totais" do card de resumo não soma exatamente igual ao número do PPTX**
+  (26,8 mi contra 27,6 mi) — as 3 classes individuais (RF/Fundos/RV) batem exatas, a
+  diferença está em algo não quebrado na tabela de métricas do Emil (possivelmente
+  COE ou criptoativo, que não têm regra de "aplicação" escrita).
+
+**Pendente (fatias 2 a 6, nessa ordem, conforme combinado):** navegação mês a mês e
+comparação de período; telas de renda fixa, fundos e renda variável; clientes; ofertas
+públicas, secundário (já tem os parsers de `ordens`/book de reservas/dashboard testados
+contra arquivo real, faltando a tela) e câmbio; FGC, alertas e exportação Excel.
+
+SQL em `adami_completo.sql`, seção 8.5: tabelas `fluxo_snapshots`, `fluxo_lancamentos`,
+`fluxo_distribuicao` (schema pronto pra fatia 5, ainda sem tela) e a função
+`fluxo_substituir_mes`. Precisa ser colado no SQL Editor do Supabase antes do módulo
+funcionar de ponta a ponta (sem isso, a tela calcula e mostra tudo, só não salva).

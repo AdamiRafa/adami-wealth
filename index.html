@@ -1112,7 +1112,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.82";
+var VERSAO="versão 2.83";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3436,6 +3436,8 @@ var APPS=[
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>'},
   {id:"alocacao",grupo:"ferramentas",nome:"Política de Alocação",desc:"Material do comitê do mês: macro, desempenho, diretrizes e as 3 carteiras recomendadas, prontos para gerar o PDF.",tag:"Disponível",ativo:true,url:"alocacao.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12L18 16"/><path d="M12 12L6.5 16.5"/></svg>'},
+  {id:"fluxo",grupo:"ferramentas",nome:"Fluxo e Captação",desc:"Mapa das movimentações do BTG: captação, aplicações, resgates — a base do comitê de alocação. Acesso restrito a master.",tag:"Disponível",ativo:true,url:"fluxo.html",restritoMaster:true,
+   ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>'},
   {id:"agio",grupo:"simuladores",nome:"Ágio e Troca de Ativos",desc:"Em quanto tempo a taxa melhor compensa o deságio assumido na saída antecipada.",tag:"Disponível",ativo:true,url:"agio.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 18C7 18 9 6 13 6s5 6 8 6"/><path d="M3 9c4 0 6 9 10 9"/><circle cx="12.4" cy="11.4" r="1.6"/></svg>'},
   {id:"liberdade",grupo:"simuladores",nome:"Liberdade Financeira",desc:"Quanto juntar para manter o padrão e quanto dá para retirar por mês, em termos reais.",tag:"Disponível",ativo:true,url:"liberdade.html",
@@ -3488,7 +3490,7 @@ function viewHub(){
    abre a tela: cards maiores, faixa dourada e o texto do grupo visivel.
    Os demais vem abaixo, em cards normais.                              */
 function secaoHub(gr){
-  var lista=APPS.filter(function(a){ return (a.grupo||"ferramentas")===gr.id; });
+  var lista=APPS.filter(function(a){ return (a.grupo||"ferramentas")===gr.id && (!a.restritoMaster||EU.super); });
   if(!lista.length) return "";
   var d=!!gr.destaque;
   return '<section class="hub-sec'+(d?" destaque":"")+'" id="sec-'+gr.id+'">'+
@@ -3516,7 +3518,7 @@ function gaveta(){
     '<button class="gav-x" onclick="fecharMenu()" aria-label="Fechar">&times;</button></div>'+
     '<div class="gav-lista">';
   GRUPOS.forEach(function(gr){
-    var n=APPS.filter(function(a){ return (a.grupo||"ferramentas")===gr.id; }).length;
+    var n=APPS.filter(function(a){ return (a.grupo||"ferramentas")===gr.id && (!a.restritoMaster||EU.super); }).length;
     h+='<button class="gav-grupo'+(gr.id===GRUPO_ATIVO?" on":"")+'" onclick="verGrupo(\''+gr.id+'\')">'+
        esc(gr.nome)+'<span>'+n+'</span></button>';
   });

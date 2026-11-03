@@ -1100,6 +1100,180 @@ from auth.users u
 where u.id = pr.id and lower(split_part(u.email,'@',1)) = 'thiago.miranda';
 
 -- ============================================================
+--  8.5. BI DE FLUXO/ALOCAÇÃO — snapshots mensais das movimentações do BTG
+--     Acesso restrito a master (eh_super()): dado de captação da casa
+--     inteira, não só da carteira de um assessor. Usado por fluxo.html.
+-- ============================================================
+
+-- Snapshots: um por mês/ano, controla o que foi importado
+create table if not exists public.fluxo_snapshots (
+  id            uuid primary key default gen_random_uuid(),
+  mes           smallint not null check (mes between 1 and 12),
+  ano           smallint not null check (ano between 2020 and 2100),
+  fontes        jsonb not null default '{}'::jsonb,
+  -- fontes = {"movimentacao_geral": {"importado_em": "...", "linhas": 7812},
+  --           "movimentacao_fundos": null, "ordens": {...}, "oferta_dashboard": {...}, "oferta_book": {...}}
+  -- null/ausente = fonte não veio nesse mês -- a tela mostra "não informado", nunca zero.
+  importado_por uuid references auth.users(id) on delete set null,
+  importado_em  timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  unique (mes, ano)
+);
+
+-- Lançamentos normalizados -- Movimentação geral/Fundos/RF/RV (seções 1 a 10 do dicionário)
+create table if not exists public.fluxo_lancamentos (
+  id               uuid primary key default gen_random_uuid(),
+  snapshot_id      uuid not null references public.fluxo_snapshots(id) on delete cascade,
+  mes              smallint not null,
+  ano              smallint not null,
+  fonte            text not null check (fonte in ('movimentacao_geral','movimentacao_fundos','movimentacao_rf','movimentacao_rv')),
+  conta            text not null,       -- normalizada: 9 dígitos, zero-fill
+  nome_titular     text,
+  mercado          text,
+  sub_mercado      text,
+  produto          text,
+  lancamento       text,
+  emissor          text,
+  ativo            text,
+  tipo_previdencia text,
+  indexador        text,
+  taxa_emissao     text,
+  taxa_compra      text,
+  data_lancamento  date,                -- "Data Compra" do export -- é a data de referência pro mês, não o vencimento
+  vencimento       date,
+  quantidade       numeric,
+  valor_bruto      numeric,
+  ir               numeric,
+  iof              numeric,
+  valor_liquido    numeric,
+  data_cotizacao   date,
+  data_liquidacao  date,
+  cnpj_fundo       text,                -- só vem na planilha de Fundos (enriquecimento)
+  administrador    text,
+  gestor           text,
+  id_origem        text not null,       -- "ID" da linha no export BTG -- chave de deduplicação
+  criado_em        timestamptz not null default now()
+);
+create index if not exists fluxo_lanc_snapshot_idx on public.fluxo_lancamentos(snapshot_id);
+create index if not exists fluxo_lanc_mes_ano_idx on public.fluxo_lancamentos(ano, mes);
+create index if not exists fluxo_lanc_conta_idx on public.fluxo_lancamentos(conta);
+create index if not exists fluxo_lanc_mercado_idx on public.fluxo_lancamentos(mercado, sub_mercado, lancamento);
+create unique index if not exists fluxo_lanc_origem_uniq on public.fluxo_lancamentos(fonte, id_origem) where id_origem is not null and id_origem <> '';
+
+-- Distribuição: ordens de fundos no secundário + ofertas públicas (seções 11 e 12 -- fatia 5, schema já pronto)
+create table if not exists public.fluxo_distribuicao (
+  id               uuid primary key default gen_random_uuid(),
+  snapshot_id      uuid not null references public.fluxo_snapshots(id) on delete cascade,
+  mes              smallint not null,
+  ano              smallint not null,
+  fonte            text not null check (fonte in ('ordens_secundario','oferta_dashboard','oferta_book')),
+  conta            text not null,
+  nome_titular     text,
+  assessor         text,
+  nome_oferta      text,
+  ativo            text,
+  status           text,
+  motivo_status    text,
+  data_solicitacao date,
+  data_liquidacao  date,
+  valor_desejado   numeric,
+  valor_obtido     numeric,
+  preco_unitario   numeric,
+  spread           numeric,
+  quantidade       numeric,
+  modalidade       text,
+  id_origem        text,
+  criado_em        timestamptz not null default now()
+);
+create index if not exists fluxo_dist_snapshot_idx on public.fluxo_distribuicao(snapshot_id);
+create index if not exists fluxo_dist_mes_ano_idx on public.fluxo_distribuicao(ano, mes);
+
+-- Parâmetros editáveis -- reaproveita a tabela configuracoes (curva de Selic, régua de câmbio,
+-- limites de alerta, de-paras). Nada novo aqui: configuracoes(chave text pk, valor text) já existe.
+-- Chaves usadas por este módulo: fluxo_curva_selic, fluxo_ipca_projetado, fluxo_regua_cambio,
+-- fluxo_limite_alerta_mov, fluxo_limite_caixa, fluxo_fgc_vermelho, fluxo_fgc_amarelo,
+-- fluxo_depara_conglomerado, fluxo_depara_assessor.
+
+-- Substituir um mês inteiro, de forma atômica, com auditoria
+create or replace function public.fluxo_substituir_mes(
+  p_mes int, p_ano int, p_fonte text, p_lancamentos jsonb
+)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare
+  v_snapshot_id uuid;
+  v_qtd_antes int;
+  v_qtd_depois int;
+  v_email text := auth.jwt() ->> 'email';
+begin
+  if not public.eh_super() then
+    raise exception 'Só master pode importar dados de fluxo.';
+  end if;
+
+  insert into public.fluxo_snapshots (mes, ano, importado_por)
+  values (p_mes, p_ano, auth.uid())
+  on conflict (mes, ano) do update set atualizado_em = now()
+  returning id into v_snapshot_id;
+
+  select count(*) into v_qtd_antes from public.fluxo_lancamentos
+    where snapshot_id = v_snapshot_id and fonte = p_fonte;
+
+  delete from public.fluxo_lancamentos where snapshot_id = v_snapshot_id and fonte = p_fonte;
+
+  insert into public.fluxo_lancamentos (
+    snapshot_id, mes, ano, fonte, conta, nome_titular, mercado, sub_mercado, produto,
+    lancamento, emissor, ativo, tipo_previdencia, indexador, taxa_emissao, taxa_compra,
+    data_lancamento, vencimento, quantidade, valor_bruto, ir, iof, valor_liquido,
+    data_cotizacao, data_liquidacao, cnpj_fundo, administrador, gestor, id_origem
+  )
+  select
+    v_snapshot_id, p_mes, p_ano, p_fonte,
+    x->>'conta', x->>'nome_titular', x->>'mercado', x->>'sub_mercado', x->>'produto',
+    x->>'lancamento', x->>'emissor', x->>'ativo', x->>'tipo_previdencia', x->>'indexador',
+    x->>'taxa_emissao', x->>'taxa_compra',
+    nullif(x->>'data_lancamento','')::date, nullif(x->>'vencimento','')::date,
+    nullif(x->>'quantidade','')::numeric, nullif(x->>'valor_bruto','')::numeric,
+    nullif(x->>'ir','')::numeric, nullif(x->>'iof','')::numeric, nullif(x->>'valor_liquido','')::numeric,
+    nullif(x->>'data_cotizacao','')::date, nullif(x->>'data_liquidacao','')::date,
+    x->>'cnpj_fundo', x->>'administrador', x->>'gestor', x->>'id_origem'
+  from jsonb_array_elements(p_lancamentos) as x;
+
+  get diagnostics v_qtd_depois = row_count;
+
+  update public.fluxo_snapshots set
+    fontes = jsonb_set(fontes, array[p_fonte], jsonb_build_object(
+      'importado_em', now(), 'linhas', v_qtd_depois
+    )),
+    atualizado_em = now()
+  where id = v_snapshot_id;
+
+  insert into public.auditoria (usuario, acao, alvo, detalhe)
+  values (v_email, 'importou fluxo', p_fonte||' '||p_mes||'/'||p_ano,
+    'linhas antes: '||v_qtd_antes||' -> depois: '||v_qtd_depois);
+
+  return v_snapshot_id;
+end;
+$$;
+revoke all on function public.fluxo_substituir_mes(int,int,text,jsonb) from public;
+grant execute on function public.fluxo_substituir_mes(int,int,text,jsonb) to authenticated;
+
+-- RLS -- só master lê e escreve
+alter table public.fluxo_snapshots enable row level security;
+alter table public.fluxo_lancamentos enable row level security;
+alter table public.fluxo_distribuicao enable row level security;
+
+drop policy if exists fluxo_snapshots_master on public.fluxo_snapshots;
+create policy fluxo_snapshots_master on public.fluxo_snapshots for all to authenticated
+  using (public.eh_super()) with check (public.eh_super());
+
+drop policy if exists fluxo_lancamentos_master on public.fluxo_lancamentos;
+create policy fluxo_lancamentos_master on public.fluxo_lancamentos for all to authenticated
+  using (public.eh_super()) with check (public.eh_super());
+
+drop policy if exists fluxo_distribuicao_master on public.fluxo_distribuicao;
+create policy fluxo_distribuicao_master on public.fluxo_distribuicao for all to authenticated
+  using (public.eh_super()) with check (public.eh_super());
+
+-- ============================================================
 --  9. CONFERÊNCIA — é esta tabela que importa
 --     Os três masters saem com master, administrador e admin no CRM.
 --     A coluna "codigo" é a que vai para a planilha de clientes; se

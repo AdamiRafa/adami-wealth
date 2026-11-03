@@ -41,6 +41,12 @@ lado:
 | `patrimonial.html` | Gerador de Planos Patrimoniais |
 | `imobiliario.html` | Relatório Imobiliário |
 | `simulador.html` | Simulador de receita RV |
+| `alocacao.html` | Política de Alocação (material do comitê, gera PDF) |
+| `fluxo.html` | Fluxo e Captação — mapa das movimentações do BTG, acesso só master |
+| `boletas.html` | Controle de Boletas |
+| `agio.html` | Ágio e Troca de Ativos |
+| `liberdade.html` | Liberdade Financeira |
+| `processo.html` | Processo Comercial |
 | `adami_completo.sql` | Banco inteiro, portal + CRM |
 
 Backend: Supabase (`ghxjqmjtmbqzvogwzylo.supabase.co`), Postgres com RLS.
