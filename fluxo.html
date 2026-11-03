@@ -116,6 +116,13 @@ function api(path,opts){
     <select class="btn" id="seletorMes" onchange="carregarMesDoBanco(this.value)" style="font-weight:600">
       <option value="">Novo mês (importar arquivo)</option>
     </select>
+    <select class="btn" id="seletorComparacao" onchange="aplicarComparacao(this.value)" style="font-weight:600" disabled>
+      <option value="">Sem comparação</option>
+      <option value="anterior">Vs. mês anterior</option>
+      <option value="ano_anterior">Vs. mesmo mês, ano anterior</option>
+      <option value="media3">Vs. média dos últimos 3 meses</option>
+      <option value="media6">Vs. média dos últimos 6 meses</option>
+    </select>
     <button class="btn" id="btnSalvar" onclick="salvarSnapshot()" disabled>Salvar este mês</button>
   </div>
 </div>
@@ -130,9 +137,11 @@ function api(path,opts){
   <div id="resultado" style="display:none">
     <div class="tabs">
       <button class="on" id="tabVisao" onclick="mudarAba('visao')">Visão geral</button>
+      <button id="tabComp" onclick="mudarAba('comparativo')">Comparativo</button>
       <button id="tabAud" onclick="mudarAba('auditoria')">Auditoria</button>
     </div>
     <div id="painelVisao"></div>
+    <div id="painelComparativo" style="display:none"></div>
     <div id="painelAuditoria" style="display:none"></div>
   </div>
 </div>
@@ -142,10 +151,11 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 1.2";
+var VERSAO_FLUXO="versão 1.3";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
-var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null };
+var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,
+  cacheMeses:{}, comparacao:null, comparacaoResultados:null, comparacaoAlvos:null };
 
 /* ---------------- gate de master ---------------- */
 api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super,admin").then(function(r){
@@ -330,11 +340,13 @@ function mapearCanalFundos(linhasCC){
 }
 
 /* ---------------- orquestração ---------------- */
-function processarLinhas(linhas){
+function processarLinhas(linhas, paresDesmarcados, transacoesExcluidas){
+  paresDesmarcados = paresDesmarcados || ESTADO.paresDesmarcados;
+  transacoesExcluidas = transacoesExcluidas || ESTADO.transacoesExcluidas;
   linhas.forEach(function(l){ l._conta=normalizarConta(l["Conta"]); });
   linhas=linhas.filter(function(l){ return l._conta; });
   var cc=linhas.filter(function(l){ return l["Mercado"]==="CONTA CORRENTE"; });
-  var fluxo=calcularFluxoExterno(cc, ESTADO.paresDesmarcados, ESTADO.transacoesExcluidas);
+  var fluxo=calcularFluxoExterno(cc, paresDesmarcados, transacoesExcluidas);
   var custodia=calcularCustodia(linhas);
   var prev=calcularPrevidencia(linhas);
   var aplic=calcularAplicacoes(linhas);
@@ -386,9 +398,11 @@ function importarArquivo(input){
     ESTADO.transacoesExcluidas={};
     ESTADO.snapshotAtualId=null;
     document.getElementById("seletorMes").value="";
+    resetarComparacao();
     ESTADO.resultado=processarLinhas(linhas);
     document.getElementById("resultado").style.display="block";
     document.getElementById("btnSalvar").disabled=false;
+    document.getElementById("seletorComparacao").disabled=false;
     renderTudo();
   };
   fr.onerror=function(){ alert("Não consegui ler o arquivo."); };
@@ -397,14 +411,16 @@ function importarArquivo(input){
 
 function mudarAba(a){
   document.getElementById("tabVisao").className=a==="visao"?"on":"";
+  document.getElementById("tabComp").className=a==="comparativo"?"on":"";
   document.getElementById("tabAud").className=a==="auditoria"?"on":"";
   document.getElementById("painelVisao").style.display=a==="visao"?"block":"none";
+  document.getElementById("painelComparativo").style.display=a==="comparativo"?"block":"none";
   document.getElementById("painelAuditoria").style.display=a==="auditoria"?"block":"none";
 }
 
 var NOMES_MES=["","Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-function renderTudo(){ renderVisaoGeral(); renderAuditoria(); mudarAba("visao"); }
+function renderTudo(){ renderVisaoGeral(); renderComparativo(); renderAuditoria(); mudarAba("visao"); }
 
 function renderVisaoGeral(){
   var r=ESTADO.resultado;
@@ -560,6 +576,8 @@ function carregarMesDoBanco(snapshotId){
     ESTADO.snapshotAtualId=null; ESTADO.lancamentos=null; ESTADO.resultado=null;
     document.getElementById("resultado").style.display="none";
     document.getElementById("btnSalvar").disabled=true;
+    document.getElementById("seletorComparacao").disabled=true;
+    resetarComparacao();
     return;
   }
   var snap=ESTADO.snapshots.find(function(s){ return s.id===snapshotId; });
@@ -571,13 +589,106 @@ function carregarMesDoBanco(snapshotId){
       ESTADO.ano=snap.ano; ESTADO.mes=snap.mes; ESTADO.snapshotAtualId=snapshotId;
       ESTADO.lancamentos=rows.map(linhaDoBanco);
       ESTADO.paresDesmarcados={}; ESTADO.transacoesExcluidas={};
+      resetarComparacao();
       ESTADO.resultado=processarLinhas(ESTADO.lancamentos);
+      ESTADO.cacheMeses[snap.mes+"-"+snap.ano]=ESTADO.resultado;
       document.getElementById("resultado").style.display="block";
       document.getElementById("btnSalvar").disabled=true;
+      document.getElementById("seletorComparacao").disabled=false;
       renderTudo();
     })
     .catch(function(e){ alert("Não consegui carregar esse mês.\n\n"+e.message); })
     .then(function(){ sel.disabled=false; renderSeletorMes(); });
+}
+
+/* ---------------- comparativo de período ---------------- */
+function resetarComparacao(){
+  ESTADO.comparacao=null; ESTADO.comparacaoResultados=null; ESTADO.comparacaoAlvos=null;
+  var sel=document.getElementById("seletorComparacao"); if(sel) sel.value="";
+}
+function deslocarMes(mes, ano, passos){
+  var abs=ano*12+mes-1-passos;
+  return { ano:Math.floor(abs/12), mes:(abs%12)+1 };
+}
+function indicadoresDe(r){
+  return [
+    {rotulo:"Net New Money", valor:r.nnm},
+    {rotulo:"Fluxo financeiro líquido", valor:r.fluxo.liquido},
+    {rotulo:"Transferência de custódia", valor:r.custodia.liquido},
+    {rotulo:"Portabilidade nova (previdência)", valor:r.prev.portabilidadeNova},
+    {rotulo:"Aplicações — renda fixa", valor:r.aplic.rendaFixa.total},
+    {rotulo:"Aplicações — fundos", valor:r.aplic.fundos.total},
+    {rotulo:"Aplicações — renda variável", valor:r.aplic.rendaVariavel.total},
+    {rotulo:"Aplicações — previdência", valor:r.aplic.previdencia.total},
+    {rotulo:"Resgates — renda fixa", valor:r.resg.rendaFixa.total},
+    {rotulo:"Resgates — fundos", valor:r.resg.fundos.total},
+    {rotulo:"Resgates — renda variável", valor:r.resg.rendaVariavel.total},
+    {rotulo:"Renda passiva distribuída", valor:r.passiva.total},
+    {rotulo:"Caixa acumulado (acima do limite)", valor:r.caixa.somaAcima},
+  ];
+}
+function obterResultadoMes(mes, ano){
+  var chave=mes+"-"+ano;
+  if(ESTADO.cacheMeses[chave]) return Promise.resolve(ESTADO.cacheMeses[chave]);
+  var snap=ESTADO.snapshots.find(function(s){ return s.mes===mes && s.ano===ano; });
+  if(!snap) return Promise.resolve(null);
+  return apiPaginado("fluxo_lancamentos?snapshot_id=eq."+snap.id+"&fonte=eq.movimentacao_geral&select=*").then(function(rows){
+    if(!rows.length) return null;
+    var r=processarLinhas(rows.map(linhaDoBanco), {}, {});
+    ESTADO.cacheMeses[chave]=r;
+    return r;
+  });
+}
+var ROTULOS_COMPARACAO={anterior:"mês anterior", ano_anterior:"mesmo mês, ano anterior", media3:"média dos últimos 3 meses", media6:"média dos últimos 6 meses"};
+function aplicarComparacao(tipo){
+  ESTADO.comparacao=tipo||null;
+  if(!tipo||!ESTADO.resultado){ ESTADO.comparacaoResultados=null; ESTADO.comparacaoAlvos=null; renderComparativo(); return; }
+  var mes=ESTADO.mes, ano=ESTADO.ano, alvos;
+  if(tipo==="anterior") alvos=[deslocarMes(mes,ano,1)];
+  else if(tipo==="ano_anterior") alvos=[deslocarMes(mes,ano,12)];
+  else if(tipo==="media3") alvos=[1,2,3].map(function(n){ return deslocarMes(mes,ano,n); });
+  else alvos=[1,2,3,4,5,6].map(function(n){ return deslocarMes(mes,ano,n); });
+  var sel=document.getElementById("seletorComparacao"); sel.disabled=true;
+  Promise.all(alvos.map(function(a){ return obterResultadoMes(a.mes,a.ano); }))
+    .then(function(resultados){
+      ESTADO.comparacaoResultados=resultados.filter(Boolean);
+      ESTADO.comparacaoAlvos=alvos;
+      renderComparativo();
+      mudarAba("comparativo");
+    })
+    .catch(function(e){ alert("Não consegui montar a comparação.\n\n"+e.message); })
+    .then(function(){ sel.disabled=false; });
+}
+function renderComparativo(){
+  var painel=document.getElementById("painelComparativo");
+  if(!painel||!ESTADO.resultado){ if(painel) painel.innerHTML=""; return; }
+  if(!ESTADO.comparacao){
+    painel.innerHTML='<div class="secao"><div class="desc">Escolha uma comparação no topo da tela pra ver a variação contra o mês anterior, o mesmo mês do ano anterior ou a média dos últimos meses.</div></div>';
+    return;
+  }
+  var alvos=ESTADO.comparacaoAlvos||[];
+  var achados=ESTADO.comparacaoResultados||[];
+  var rotuloComp=ROTULOS_COMPARACAO[ESTADO.comparacao]||"";
+  if(!achados.length){
+    painel.innerHTML='<div class="aviso">Nenhum dos meses necessários pra essa comparação ('+alvos.map(function(a){return NOMES_MES[a.mes]+"/"+a.ano;}).join(", ")+') está salvo no banco ainda. Importa e salva esses meses pra habilitar o comparativo.</div>';
+    return;
+  }
+  if(achados.length<alvos.length) rotuloComp+=" (só achei "+achados.length+" de "+alvos.length+" meses salvos)";
+  var indAtuais=indicadoresDe(ESTADO.resultado);
+  var indsComp=achados.map(indicadoresDe);
+  var h='<div class="secao"><h2>'+NOMES_MES[ESTADO.mes]+"/"+ESTADO.ano+" vs. "+esc(rotuloComp)+'</h2>'+
+    '<table><thead><tr><th>Indicador</th><th class="num">'+NOMES_MES[ESTADO.mes]+"/"+ESTADO.ano+'</th><th class="num">comparação</th><th class="num">Variação</th><th class="num">Variação %</th></tr></thead><tbody>'+
+    indAtuais.map(function(ia,i){
+      var valoresComp=indsComp.map(function(lista){ return lista[i].valor; });
+      var media=valoresComp.reduce(function(a,v){ return a+v; },0)/valoresComp.length;
+      var delta=ia.valor-media;
+      var pct=media!==0?(delta/Math.abs(media))*100:null;
+      return '<tr><td>'+ia.rotulo+'</td><td class="num">'+brl(ia.valor)+'</td><td class="num">'+brl(media)+'</td>'+
+        '<td class="num '+sinalClasse(delta)+'">'+brl(delta)+'</td>'+
+        '<td class="num '+sinalClasse(delta)+'">'+(pct==null?"—":(pct>=0?"+":"")+pct.toFixed(1)+"%")+'</td></tr>';
+    }).join("")+
+    '</tbody></table></div>';
+  painel.innerHTML=h;
 }
 </script>
 </body>

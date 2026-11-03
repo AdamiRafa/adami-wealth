@@ -526,11 +526,25 @@ seções que leem o texto da movimentação, não só Mercado/Sub Mercado/Lança
 SQL já foi colado antes sem essa coluna, colar de novo não quebra nada: é só um `alter
 table add column if not exists`, idempotente.
 
-**Pendente (fatias 2 a 6, nessa ordem, conforme combinado):** comparação de período (mês
-anterior / mesmo mês ano anterior / média); gráficos (destino das aplicações, série
-histórica de NNM); telas de renda fixa, fundos e renda variável; clientes; ofertas
-públicas, secundário (já tem os parsers de `ordens`/book de reservas/dashboard testados
-contra arquivo real, faltando a tela) e câmbio; FGC, alertas e exportação Excel.
+**Comparativo de período (entregue):** segundo seletor no topo, habilitado quando tem um
+mês carregado — mês anterior, mesmo mês do ano anterior, média dos últimos 3 ou 6 meses.
+Aba nova "Comparativo" mostra uma tabela com cada indicador (NNM, fluxo financeiro,
+custódia, portabilidade, aplicações e resgates por classe, renda passiva, caixa),
+valor do mês atual, valor/média do período comparado, variação em R$ e em %. Busca os
+meses de comparação direto do banco (com cache em memória pra não repetir a mesma
+consulta) e nunca trava se faltar algum: numa média de 3 meses com só 2 salvos, calcula
+com os 2 e avisa "só achei 2 de 3"; se nenhum mês necessário estiver salvo, avisa e some
+pede pra importar/salvar esses meses — nunca mostra comparação incompleta sem dizer.
+Validado com meses sintéticos (matemática de deslocar mês, inclusive virada de ano, e de
+média com mês faltando) — ainda não dá pra validar contra o PPTX porque só outubro/2026
+está salvo no banco; assim que o Emil salvar mais meses o comparativo começa a valer de
+verdade.
+
+**Pendente (fatias 2 a 6, nessa ordem, conforme combinado):** gráficos (destino das
+aplicações, série histórica de NNM); telas de renda fixa, fundos e renda variável;
+clientes; ofertas públicas, secundário (já tem os parsers de `ordens`/book de
+reservas/dashboard testados contra arquivo real, faltando a tela) e câmbio; FGC, alertas
+e exportação Excel.
 
 SQL em `adami_completo.sql`, seção 8.5: tabelas `fluxo_snapshots`, `fluxo_lancamentos`,
 `fluxo_distribuicao` (schema pronto pra fatia 5, ainda sem tela) e a função
