@@ -1151,9 +1151,11 @@ create table if not exists public.fluxo_lancamentos (
   cnpj_fundo       text,                -- só vem na planilha de Fundos (enriquecimento)
   administrador    text,
   gestor           text,
+  movimentacao     text,                -- texto cru da coluna "Movimentação" -- sem ele não reclassifica fluxo externo/canal de fundos ao recarregar o mês
   id_origem        text not null,       -- "ID" da linha no export BTG -- chave de deduplicação
   criado_em        timestamptz not null default now()
 );
+alter table public.fluxo_lancamentos add column if not exists movimentacao text;
 create index if not exists fluxo_lanc_snapshot_idx on public.fluxo_lancamentos(snapshot_id);
 create index if not exists fluxo_lanc_mes_ano_idx on public.fluxo_lancamentos(ano, mes);
 create index if not exists fluxo_lanc_conta_idx on public.fluxo_lancamentos(conta);
@@ -1223,7 +1225,7 @@ begin
     snapshot_id, mes, ano, fonte, conta, nome_titular, mercado, sub_mercado, produto,
     lancamento, emissor, ativo, tipo_previdencia, indexador, taxa_emissao, taxa_compra,
     data_lancamento, vencimento, quantidade, valor_bruto, ir, iof, valor_liquido,
-    data_cotizacao, data_liquidacao, cnpj_fundo, administrador, gestor, id_origem
+    data_cotizacao, data_liquidacao, cnpj_fundo, administrador, gestor, movimentacao, id_origem
   )
   select
     v_snapshot_id, p_mes, p_ano, p_fonte,
@@ -1234,7 +1236,7 @@ begin
     nullif(x->>'quantidade','')::numeric, nullif(x->>'valor_bruto','')::numeric,
     nullif(x->>'ir','')::numeric, nullif(x->>'iof','')::numeric, nullif(x->>'valor_liquido','')::numeric,
     nullif(x->>'data_cotizacao','')::date, nullif(x->>'data_liquidacao','')::date,
-    x->>'cnpj_fundo', x->>'administrador', x->>'gestor', x->>'id_origem'
+    x->>'cnpj_fundo', x->>'administrador', x->>'gestor', x->>'movimentacao', x->>'id_origem'
   from jsonb_array_elements(p_lancamentos) as x;
 
   get diagnostics v_qtd_depois = row_count;

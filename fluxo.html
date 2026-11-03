@@ -113,6 +113,9 @@ function api(path,opts){
   </div>
   <div class="topo-acoes">
     <span class="selo" id="selo"></span>
+    <select class="btn" id="seletorMes" onchange="carregarMesDoBanco(this.value)" style="font-weight:600">
+      <option value="">Novo mês (importar arquivo)</option>
+    </select>
     <button class="btn" id="btnSalvar" onclick="salvarSnapshot()" disabled>Salvar este mês</button>
   </div>
 </div>
@@ -139,16 +142,17 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 1.1";
+var VERSAO_FLUXO="versão 1.2";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
-var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{} };
+var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null };
 
 /* ---------------- gate de master ---------------- */
 api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super,admin").then(function(r){
   var sou = r && r[0] && r[0].super;
   if(!sou){ document.getElementById("telaBloqueada").style.display="block"; return; }
   document.getElementById("app").style.display="block";
+  carregarSnapshotsDisponiveis();
 }).catch(function(){
   document.getElementById("telaBloqueada").style.display="block";
 });
@@ -380,6 +384,8 @@ function importarArquivo(input){
     ESTADO.lancamentos=linhas;
     ESTADO.paresDesmarcados={};
     ESTADO.transacoesExcluidas={};
+    ESTADO.snapshotAtualId=null;
+    document.getElementById("seletorMes").value="";
     ESTADO.resultado=processarLinhas(linhas);
     document.getElementById("resultado").style.display="block";
     document.getElementById("btnSalvar").disabled=false;
@@ -498,12 +504,80 @@ function salvarSnapshot(){
       taxa_compra:l["Taxa Compra"]||"", data_lancamento:dataISO(l["Data Compra"])||"", vencimento:dataISO(l["Vencimento"])||"",
       quantidade:l["Quantidade"]||"", valor_bruto:l["Valor Bruto"]||"", ir:l["IR"]||"", iof:l["IOF"]||"",
       valor_liquido:l["Valor Líquido"]||"", data_cotizacao:"", data_liquidacao:dataISO(l["Data Liquidação"])||"",
-      id_origem:String(l["ID"]||""),
+      movimentacao:l["Movimentação"]||"", id_origem:String(l["ID"]||""),
     };
   });
   api("rpc/fluxo_substituir_mes",{method:"POST",body:{p_mes:ESTADO.mes,p_ano:ESTADO.ano,p_fonte:"movimentacao_geral",p_lancamentos:payload}})
-    .then(function(){ alert("Salvo."); b.textContent="Salvo ✓"; })
+    .then(function(id){ ESTADO.snapshotAtualId=id; alert("Salvo."); b.textContent="Salvo ✓"; return carregarSnapshotsDisponiveis(); })
     .catch(function(e){ alert("Não consegui salvar.\n\n"+e.message); b.disabled=false; b.textContent="Salvar este mês"; });
+}
+
+/* ---------------- navegação mês a mês: carregar snapshots já salvos ---------------- */
+function apiPaginado(baseQuery, limite){
+  limite=limite||1000;
+  var tudo=[];
+  function proxima(offset){
+    return api(baseQuery+"&limit="+limite+"&offset="+offset).then(function(r){
+      tudo=tudo.concat(r);
+      if(r.length===limite) return proxima(offset+limite);
+      return tudo;
+    });
+  }
+  return proxima(0);
+}
+function carregarSnapshotsDisponiveis(){
+  return api("fluxo_snapshots?select=id,mes,ano,fontes&order=ano.desc,mes.desc").then(function(r){
+    ESTADO.snapshots=r||[];
+    renderSeletorMes();
+  }).catch(function(){ /* dropdown fica só com "novo mês" -- tela ainda funciona pra importar */ });
+}
+function renderSeletorMes(){
+  var sel=document.getElementById("seletorMes");
+  if(!sel) return;
+  var opcoes='<option value="">Novo mês (importar arquivo)</option>';
+  ESTADO.snapshots.forEach(function(s){
+    var mov=s.fontes&&s.fontes.movimentacao_geral;
+    opcoes+='<option value="'+s.id+'"'+(s.id===ESTADO.snapshotAtualId?" selected":"")+'>'+NOMES_MES[s.mes]+"/"+s.ano+(mov&&mov.linhas?" ("+mov.linhas+" lanç.)":" (sem Movimentação geral)")+'</option>';
+  });
+  sel.innerHTML=opcoes;
+}
+function linhaDoBanco(r){
+  return {
+    "Conta":r.conta, "Nome":r.nome_titular||"", "Mercado":r.mercado||"", "Sub Mercado":r.sub_mercado||"",
+    "Produto":r.produto||"", "Lançamento":r.lancamento||"", "Emissor":r.emissor||"", "Ativo":r.ativo||"",
+    "Tipo Previdência":r.tipo_previdencia||"", "Indexador":r.indexador||"", "Taxa Emissão":r.taxa_emissao||"",
+    "Taxa Compra":r.taxa_compra||"",
+    "Data Compra":r.data_lancamento?new Date(r.data_lancamento+"T00:00:00Z"):null,
+    "Vencimento":r.vencimento?new Date(r.vencimento+"T00:00:00Z"):null,
+    "Quantidade":r.quantidade||"", "Valor Bruto":r.valor_bruto||"", "IR":r.ir||"", "IOF":r.iof||"",
+    "Valor Líquido":r.valor_liquido||"",
+    "Data Liquidação":r.data_liquidacao?new Date(r.data_liquidacao+"T00:00:00Z"):null,
+    "Movimentação":r.movimentacao||"", "ID":r.id_origem||"",
+  };
+}
+function carregarMesDoBanco(snapshotId){
+  if(!snapshotId){
+    ESTADO.snapshotAtualId=null; ESTADO.lancamentos=null; ESTADO.resultado=null;
+    document.getElementById("resultado").style.display="none";
+    document.getElementById("btnSalvar").disabled=true;
+    return;
+  }
+  var snap=ESTADO.snapshots.find(function(s){ return s.id===snapshotId; });
+  if(!snap){ alert("Não achei esse mês na lista."); renderSeletorMes(); return; }
+  var sel=document.getElementById("seletorMes"); sel.disabled=true;
+  apiPaginado("fluxo_lancamentos?snapshot_id=eq."+snapshotId+"&fonte=eq.movimentacao_geral&select=*")
+    .then(function(rows){
+      if(!rows.length){ alert("Esse mês não tem lançamentos de Movimentação geral salvos."); return; }
+      ESTADO.ano=snap.ano; ESTADO.mes=snap.mes; ESTADO.snapshotAtualId=snapshotId;
+      ESTADO.lancamentos=rows.map(linhaDoBanco);
+      ESTADO.paresDesmarcados={}; ESTADO.transacoesExcluidas={};
+      ESTADO.resultado=processarLinhas(ESTADO.lancamentos);
+      document.getElementById("resultado").style.display="block";
+      document.getElementById("btnSalvar").disabled=true;
+      renderTudo();
+    })
+    .catch(function(e){ alert("Não consegui carregar esse mês.\n\n"+e.message); })
+    .then(function(){ sel.disabled=false; renderSeletorMes(); });
 }
 </script>
 </body>

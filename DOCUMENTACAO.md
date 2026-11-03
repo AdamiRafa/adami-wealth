@@ -506,8 +506,29 @@ em aberto com o Emil.
   diferença está em algo não quebrado na tabela de métricas do Emil (possivelmente
   COE ou criptoativo, que não têm regra de "aplicação" escrita).
 
-**Pendente (fatias 2 a 6, nessa ordem, conforme combinado):** navegação mês a mês e
-comparação de período; telas de renda fixa, fundos e renda variável; clientes; ofertas
+**Navegação mês a mês (entregue):** seletor no topo da tela lista os meses já salvos em
+`fluxo_snapshots` (mais recente primeiro, com a contagem de lançamentos). Escolher um mês
+busca `fluxo_lancamentos` paginado (o PostgREST do Supabase devolve no máximo 1000 linhas
+por vez — a tela busca em lotes de 1000 até não vir mais nada) e reconstrói exatamente o
+mesmo objeto que o upload de arquivo monta, rodando o motor de cálculo de novo em cima do
+dado salvo. Testado ponta a ponta: importar o arquivo real de outubro/2026 (7.812 linhas),
+salvar, zerar a tela, recarregar pelo seletor — todos os indicadores (NNM, fluxo
+financeiro, custódia, previdência, aplicações/resgates, renda passiva, canal de fundos)
+saem idênticos ao do import original. Os botões de desmarcar par/excluir transação da
+Auditoria não persistem no banco (ficam só na sessão) — ao recarregar um mês salvo, eles
+voltam ao estado padrão (nada desmarcado), igual a toda vez que um arquivo é importado de
+novo.
+
+**Coluna nova em `fluxo_lancamentos`: `movimentacao`.** O texto cru da coluna
+"Movimentação" do export do BTG não estava sendo salvo — sem ele, recarregar um mês do
+banco não conseguia reclassificar fluxo financeiro externo nem canal de fundos (as duas
+seções que leem o texto da movimentação, não só Mercado/Sub Mercado/Lançamento). Se esse
+SQL já foi colado antes sem essa coluna, colar de novo não quebra nada: é só um `alter
+table add column if not exists`, idempotente.
+
+**Pendente (fatias 2 a 6, nessa ordem, conforme combinado):** comparação de período (mês
+anterior / mesmo mês ano anterior / média); gráficos (destino das aplicações, série
+histórica de NNM); telas de renda fixa, fundos e renda variável; clientes; ofertas
 públicas, secundário (já tem os parsers de `ordens`/book de reservas/dashboard testados
 contra arquivo real, faltando a tela) e câmbio; FGC, alertas e exportação Excel.
 
