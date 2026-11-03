@@ -139,10 +139,10 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 1.0";
+var VERSAO_FLUXO="versão 1.1";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
-var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{} };
+var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{} };
 
 /* ---------------- gate de master ---------------- */
 api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super,admin").then(function(r){
@@ -182,11 +182,17 @@ function classificarMovimentoCC(mov){
   if(PREFIXOS_SAIDA.some(function(p){ return t.indexOf(p)===0; })) return "saida";
   return null;
 }
-function calcularFluxoExterno(linhasCC, desmarcados){
+/* Não dá pra adivinhar "isso é tesouraria de empresa" só pelo nome da
+   contraparte -- testei um filtro por LTDA/S.A. e ele pegava junto o caso
+   do M.H.Linden (R$ 8,35 milhões), que é pra CONTAR, é a história real do
+   mês. Em vez de uma regra automática arriscada, a tela separa as maiores
+   movimentações não pareadas pra quem conhece o cliente decidir, uma por
+   uma -- mesmo mecanismo de "desmarcar" dos pares, só que por transação. */
+function calcularFluxoExterno(linhasCC, desmarcados, excluidasManualmente){
   var movimentos=linhasCC.map(function(l){
     var tipo=classificarMovimentoCC(l["Movimentação"]);
     if(!tipo) return null;
-    return {conta:l._conta, data:dataISO(l["Data Compra"]), valor:Math.abs(Number(l["Valor Líquido"])||0), tipo:tipo, texto:l["Movimentação"], id:String(l["ID"])};
+    return {conta:l._conta, nome:l["Nome"], data:dataISO(l["Data Compra"]), valor:Math.abs(Number(l["Valor Líquido"])||0), tipo:tipo, texto:l["Movimentação"], id:String(l["ID"])};
   }).filter(Boolean);
   var entradas=movimentos.filter(function(m){ return m.tipo==="entrada"; });
   var saidas=movimentos.filter(function(m){ return m.tipo==="saida"; });
@@ -196,14 +202,17 @@ function calcularFluxoExterno(linhasCC, desmarcados){
     var idx=entradasDisp.findIndex(function(e){ return e.data===s.data && Math.abs(e.valor-s.valor)<0.005 && e.conta!==s.conta; });
     if(idx!==-1){ pares.push({saida:s, entrada:entradasDisp[idx]}); entradasDisp.splice(idx,1); }
   });
-  var idsNeutralizados={};
-  pares.forEach(function(p,i){
+  var idsPareados={}, idsNeutralizados={};
+  pares.forEach(function(p){
+    idsPareados[p.saida.id]=true; idsPareados[p.entrada.id]=true;
     var chave=p.saida.id+"|"+p.entrada.id;
     if(desmarcados[chave]) return; // par desmarcado manualmente: conta normal
     idsNeutralizados[p.saida.id]=true; idsNeutralizados[p.entrada.id]=true;
   });
-  function somaAtiva(lista){ return lista.filter(function(m){ return !idsNeutralizados[m.id]; }).reduce(function(a,m){ return a+m.valor; },0); }
-  return { totalEntradas:somaAtiva(entradas), totalSaidas:somaAtiva(saidas), liquido:somaAtiva(entradas)-somaAtiva(saidas), pares:pares };
+  function excluido(m){ return idsNeutralizados[m.id] || excluidasManualmente[m.id]; }
+  function somaAtiva(lista){ return lista.filter(function(m){ return !excluido(m); }).reduce(function(a,m){ return a+m.valor; },0); }
+  var naoPareadas=movimentos.filter(function(m){ return !idsPareados[m.id]; }).sort(function(a,b){ return b.valor-a.valor; });
+  return { totalEntradas:somaAtiva(entradas), totalSaidas:somaAtiva(saidas), liquido:somaAtiva(entradas)-somaAtiva(saidas), pares:pares, naoPareadas:naoPareadas };
 }
 
 /* ---------------- seção 2: transferência de custódia ---------------- */
@@ -321,7 +330,7 @@ function processarLinhas(linhas){
   linhas.forEach(function(l){ l._conta=normalizarConta(l["Conta"]); });
   linhas=linhas.filter(function(l){ return l._conta; });
   var cc=linhas.filter(function(l){ return l["Mercado"]==="CONTA CORRENTE"; });
-  var fluxo=calcularFluxoExterno(cc, ESTADO.paresDesmarcados);
+  var fluxo=calcularFluxoExterno(cc, ESTADO.paresDesmarcados, ESTADO.transacoesExcluidas);
   var custodia=calcularCustodia(linhas);
   var prev=calcularPrevidencia(linhas);
   var aplic=calcularAplicacoes(linhas);
@@ -370,6 +379,7 @@ function importarArquivo(input){
     ESTADO.ano=parseInt(partes[0],10); ESTADO.mes=parseInt(partes[1],10);
     ESTADO.lancamentos=linhas;
     ESTADO.paresDesmarcados={};
+    ESTADO.transacoesExcluidas={};
     ESTADO.resultado=processarLinhas(linhas);
     document.getElementById("resultado").style.display="block";
     document.getElementById("btnSalvar").disabled=false;
@@ -440,6 +450,16 @@ function renderAuditoria(){
         '<td><button class="linkmini" onclick="alternarPar(\''+chave.replace(/'/g,"\\'")+'\')">'+(desmarcado?"recolocar":"desmarcar")+'</button></td></tr>';
     }).join("")+
     '</tbody></table></div>'+
+    '<div class="secao"><h2>Maiores movimentações de conta corrente (não pareadas)</h2>'+
+    '<div class="desc">Entradas e saídas que contam pra captação/resgate financeiro, mas não foram casadas como transferência interna. Se reconhecer alguma como movimentação de tesouraria/empresa (não captação real de cliente), exclua — fica registrado, e dá pra recolocar.</div>'+
+    (Object.keys(ESTADO.transacoesExcluidas).length ? '<div class="aviso">'+Object.keys(ESTADO.transacoesExcluidas).length+' transação(ões) excluída(s) manualmente do fluxo financeiro.</div>' : '')+
+    '<table><thead><tr><th>Data</th><th>Tipo</th><th>Conta</th><th>Nome</th><th>Contraparte (texto do BTG)</th><th class="num">Valor</th><th></th></tr></thead><tbody>'+
+    r.fluxo.naoPareadas.slice(0,40).map(function(m){
+      var excluida=!!ESTADO.transacoesExcluidas[m.id];
+      return '<tr class="'+(excluida?"desmarcado":"")+'"><td>'+m.data+'</td><td>'+m.tipo+'</td><td>'+m.conta+'</td><td>'+esc(m.nome)+'</td><td>'+esc(m.texto)+'</td><td class="num">'+brl(m.valor)+'</td>'+
+        '<td><button class="linkmini" onclick="alternarTransacao(\''+m.id+'\')">'+(excluida?"recolocar":"excluir")+'</button></td></tr>';
+    }).join("")+
+    '</tbody></table></div>'+
     '<div class="secao"><h2>Liquidação de fundos pelo canal</h2><div class="desc">PCO = plataforma direta do BTG. CETIP = registro externo, normalmente fundo mais exclusivo/menos líquido.</div>'+
     '<table><thead><tr><th>Canal</th><th>Direção</th><th class="num">Qtd</th><th class="num">Soma</th></tr></thead><tbody>'+
     r.canalFundos.map(function(c){ return '<tr><td>'+c.canal+'</td><td>'+c.direcao+'</td><td class="num">'+c.qtd+'</td><td class="num">'+brl(c.soma)+'</td></tr>'; }).join("")+
@@ -453,6 +473,13 @@ function renderAuditoria(){
 function alternarPar(chave){
   if(ESTADO.paresDesmarcados[chave]) delete ESTADO.paresDesmarcados[chave];
   else ESTADO.paresDesmarcados[chave]=true;
+  ESTADO.resultado=processarLinhas(ESTADO.lancamentos);
+  renderTudo();
+  mudarAba("auditoria");
+}
+function alternarTransacao(id){
+  if(ESTADO.transacoesExcluidas[id]) delete ESTADO.transacoesExcluidas[id];
+  else ESTADO.transacoesExcluidas[id]=true;
   ESTADO.resultado=processarLinhas(ESTADO.lancamentos);
   renderTudo();
   mudarAba("auditoria");

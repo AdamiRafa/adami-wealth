@@ -482,14 +482,20 @@ também bateram. A transferência de custódia bateu com a leitura de "líquido"
 fórmula do NNM (não com o destaque de "só as duas contas novas" do slide, que é uma
 subfatia editorial, não o total).
 
-**Em aberto, não é bug:**
-- **Fluxo financeiro externo não reconcilia com o PPTX** (regra escrita dá
-  -R$ 9,97 milhões em outubro, o PPTX mostra -R$ 6,0 milhões). Contas de pessoa
-  jurídica com bastante entrada e saída dentro do mesmo mês (ex.: TFL DO BRASIL
-  INDUSTRIA QUIMICA, INSTITUTO R B LTDA em três contas diferentes) parecem ser
-  movimentação de tesouraria, não captação/resgate de cliente — mas a regra documentada
-  não prevê exceção pra isso. Falta decidir com o Emil se existe um filtro (ex.: por
-  tipo de conta PF/PJ) que o processo manual aplicava sem estar escrito.
+**Fluxo financeiro externo não reconcilia sozinho com o PPTX** (regra escrita dá
+-R$ 9,97 milhões em outubro, o PPTX mostra -R$ 6,0 milhões), **e isso é proposital, não
+uma pendência.** Testei filtrar automaticamente contraparte com nome de empresa
+(LTDA/S.A./INSTITUTO) e o filtro pegava junto o M.H.Linden — R$ 8,35 milhões que o
+próprio PPTX quer CONTADOS, é a história do mês (slide "Os Dois Eventos do Mês"). Não dá
+pra distinguir "tesouraria de empresa" de "resgate real de cliente pessoa jurídica" só
+pelo nome da contraparte. Por isso a tela não tenta adivinhar: a seção "Maiores
+movimentações de conta corrente (não pareadas)" na Auditoria lista as entradas/saídas
+não casadas por valor, e cada uma tem botão de excluir/recolocar — quem conhece o
+cliente decide, transação por transação, igual já funcionava para os pares. Testei
+excluindo as 5 transações da TFL DO BRASIL (identificada como provável tesouraria, bastante
+entrada e saída na mesma conta no mês): o líquido muda exatamente R$ 506.352,76 (o líquido
+delas) e volta ao valor original ao recolocar — mecanismo correto, decisão de negócio
+em aberto com o Emil.
 - **Detector de reciclagem de previdência só pega o que resgata e porta no mesmo mês
   importado.** O caso real que inspirou a regra (Maristela: portou em julho, resgatou
   em outubro, portou de volta em outubro) só é pego depois que os meses anteriores
