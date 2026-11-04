@@ -63,7 +63,8 @@ dados usam o mesmo Supabase e as mesmas tabelas de identidade, para não criar u
 segunda noção de usuário dentro da mesma casa.
 
 **Hospedagem:** Vercel, publicação automática a cada commit na branch `main` do GitHub
-`emilstade/adami-wealth`.
+`AdamiRafa/adami-wealth` (transferido de `emilstade/adami-wealth` em novembro/2026 —
+ver pendência de conferir a conexão Vercel↔GitHub depois da troca, seção 14).
 
 **Backend:** Supabase (PostgreSQL + PostgREST + Auth + Row Level Security).
 Projeto ativo: `ghxjqmjtmbqzvogwzylo.supabase.co`. A chave *publishable* vive no código
@@ -341,7 +342,7 @@ A Vercel republica sozinha a cada commit na `main`. O commit é feito pelo assis
 
 **Para o assistente conseguir commitar**, duas condições:
 
-1. O Claude GitHub App precisa estar instalado em `emilstade/adami-wealth`
+1. O Claude GitHub App precisa estar instalado em `AdamiRafa/adami-wealth`
    (`github.com/apps/claude`).
 2. A sessão precisa ter nascido com esse repositório selecionado, em `claude.ai/code`.
 
@@ -350,8 +351,22 @@ o repositório não ganha acesso depois, nem com token: as credenciais ficam for
 ambiente e um proxy autentica por fora, então **chave de API colada na conversa não
 funciona** e não deve ser pedida nem enviada.
 
-Sem isso, o caminho é o assistente entregar os arquivos e o Emil subir em
-**Add file → Upload files** na raiz do repositório, com os mesmos nomes.
+**Isso vale até trocar de dono do repositório, também** — foi o que aconteceu em
+novembro/2026: o repositório saiu de `emilstade/adami-wealth` e foi transferido pra
+`AdamiRafa/adami-wealth`. A sessão que estava em andamento na hora da troca perdeu a
+permissão de escrita no meio da conversa (ela nasceu amarrada ao endereço antigo) e não
+teve como recuperar — nem reconectando o repositório na sessão (o ambiente organiza a
+pasta pelo nome do repositório, e os dois se chamam `adami-wealth`, então não dá pra ter
+os dois ligados ao mesmo tempo), nem trocando a URL remota à mão (bloqueado de propósito
+pela proteção do próprio Claude Code, como contorno de permissão). A sessão antiga
+continuou lendo o repositório (ele é público, e por um tempo o GitHub redireciona
+sozinho do endereço antigo pro novo), mas não conseguiu mais publicar nada. Se isso
+acontecer de novo — trocar o dono do repositório com uma sessão em andamento — a saída é
+sempre abrir uma conversa nova em `claude.ai/code` já apontando pro endereço novo.
+
+Sem o app instalado ou sem a sessão poder publicar, o caminho é o assistente entregar os
+arquivos e o Emil subir em **Add file → Upload files** na raiz do repositório, com os
+mesmos nomes.
 
 **Nunca usar `raw.githubusercontent.com` para conferir se um commit subiu.** O CDN serve
 conteúdo velho e já causou duas reversões silenciosas de trabalho publicado. Conferir
