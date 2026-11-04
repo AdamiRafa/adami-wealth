@@ -754,6 +754,25 @@ idêntico, ainda sem aviso); paginação de verdade (deixar o conteúdo fluir pr
 folha em vez de cortar) seria a correção definitiva, mas é uma mudança de arquitetura
 maior — não entrou nesta rodada.
 
+**"Alterações no Mês" automática (entregue).** Antes era um campo de texto livre, só o
+que o Emil escrevesse à mão — normalmente ficava "Sem alterações no mês" por preguiça de
+redigitar. Agora tem um botão, "Comparar com mês anterior e preencher", que busca no
+Supabase a última política salva antes do mês em edição (acha o mês anterior mesmo com
+buraco no histórico — se agosto não foi salvo, compara com julho) e escreve sozinho o que
+mudou: ativo adicionado/removido/com % alterado em cada uma das três carteiras (Brasil,
+Internacional, Previdência), trade idea adicionada/removida/com texto atualizado, ativo
+sugerido adicionado/removido. A comparação casa por nome do ativo ou título da ideia, não
+por posição na lista, pra não se confundir quando um item é inserido no meio. O texto cai
+pronto no mesmo campo que já existia e continua 100% editável — dá pra completar, cortar
+ou reescrever à mão antes de salvar ou imprimir, exatamente como pedido ("deixa um espaço
+pra eu poder editar"). Se já tiver texto digitado ali (diferente do placeholder padrão),
+pede confirmação antes de sobrescrever, pra não apagar uma observação manual sem querer.
+Ganhou o mesmo aviso de limite de caracteres da página de Ativos Sugeridos (pode ficar
+grande numa comparação com muita coisa nova), reaproveitando a mesma função de aviso
+(`avisoCorteDePagina`) ao invés de duplicar a lógica. Testado com jsdom simulando dois
+meses com carteira, trade ideas e ativos sugeridos diferentes, e com Playwright pro visual
+do botão/aviso/texto gerado.
+
 **Bug corrigido: sessão expirava e o "Salvar" travava com "JWT expired" (entregue).**
 O token de acesso do Supabase dura cerca de 1 hora. Nem `fluxo.html` nem `alocacao.html`
 tinham lógica pra renovar esse token sozinho — `index.html` já tinha (`renovar()`), os

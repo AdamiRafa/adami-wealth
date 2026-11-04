@@ -263,7 +263,7 @@ function api(path,opts,jaTentou){
 <div id="msg"></div>
 
 <script>
-var VERSAO_ALOC="versão 1.6";
+var VERSAO_ALOC="versão 1.7";
 document.getElementById("selo").textContent=VERSAO_ALOC;
 
 var CHAVE="aw_alocacao";
@@ -733,13 +733,120 @@ function blocoAtivosSugeridos(){
 function addAtivoSugerido(){ EST.ativosSugeridos.push(ativoSugeridoNovo()); montarFormPreservandoAbertos(); montarTudo(); }
 function removerAtivoSugerido(i){ EST.ativosSugeridos.splice(i,1); montarFormPreservandoAbertos(); montarTudo(); }
 
+var LIMITE_CARACTERES_ALTERACOES=1600;
 function blocoAlteracoes(){
   return '<details class="bloco-form"><summary>Alterações no Mês '+setaSvg()+'</summary><div class="corpo">'+
-    '<div class="campo"><label>Título da seção</label>'+
+    '<p class="ajuda">O botão compara a carteira recomendada, as trade ideas e os ativos sugeridos deste mês com a última política salva antes dele, e escreve o que mudou. O texto gerado entra no campo abaixo já pronto pra imprimir, mas pode ser editado ou completado à mão antes de salvar.</p>'+
+    '<button class="btn claro sm" id="btnGerarAlteracoes" onclick="gerarAlteracoesAutomaticas()">Comparar com mês anterior e preencher</button>'+
+    '<div id="avisoAlteracoes" style="margin-top:10px"></div>'+
+    '<div class="campo" style="margin-top:4px"><label>Título da seção</label>'+
     '<input value="'+esc(EST.alteracoesTitulo)+'" oninput="EST.alteracoesTitulo=this.value;montarTudo()"></div>'+
     '<div class="campo"><label>Texto</label>'+
-    '<textarea oninput="EST.alteracoesTexto=this.value;montarTudo()" style="min-height:90px">'+esc(EST.alteracoesTexto)+'</textarea></div>'+
+    '<textarea oninput="EST.alteracoesTexto=this.value;montarTudo()" style="min-height:160px">'+esc(EST.alteracoesTexto)+'</textarea></div>'+
   '</div></details>';
+}
+
+/* --------------------------------------------------- comparar c/ mes anterior
+   Mesma estrutura fixa de categorias em todo mes (política do escritório) --
+   so a lista de ativos dentro de cada categoria-folha, e as listas de trade
+   ideas/ativos sugeridos, mudam de fato. Casa por nome/titulo, nao por
+   posicao, pra aguentar item adicionado/removido no meio da lista. */
+function difPct(a,b){ return Math.abs(n(a)-n(b))>0.009; }
+function diffLinhasAtivo(antigas, novas, caminhoTxt, out){
+  var porNomeAntigo={};
+  (antigas||[]).forEach(function(l){ if(l.nome&&l.nome.trim()) porNomeAntigo[l.nome]=l; });
+  var vistos={};
+  (novas||[]).forEach(function(l){
+    if(!l.nome||!l.nome.trim()) return;
+    vistos[l.nome]=true;
+    var old=porNomeAntigo[l.nome];
+    if(!old){
+      out.push('+ "'+l.nome+'" adicionado em '+caminhoTxt+' (Conservador '+pct2(l.c)+', Moderado '+pct2(l.m)+', Sofisticado '+pct2(l.s)+')');
+      return;
+    }
+    var mudancas=[];
+    if(difPct(old.c,l.c)) mudancas.push('Conservador '+pct2(old.c)+' → '+pct2(l.c));
+    if(difPct(old.m,l.m)) mudancas.push('Moderado '+pct2(old.m)+' → '+pct2(l.m));
+    if(difPct(old.s,l.s)) mudancas.push('Sofisticado '+pct2(old.s)+' → '+pct2(l.s));
+    if(mudancas.length) out.push('"'+l.nome+'" em '+caminhoTxt+': '+mudancas.join(', '));
+  });
+  (antigas||[]).forEach(function(l){
+    if(!l.nome||!l.nome.trim()) return;
+    if(!vistos[l.nome]) out.push('– "'+l.nome+'" removido de '+caminhoTxt+' (estava em Conservador '+pct2(l.c)+', Moderado '+pct2(l.m)+', Sofisticado '+pct2(l.s)+')');
+  });
+}
+function diffCategorias(antigas, novas, caminho, out){
+  var porNomeAntigo={};
+  (antigas||[]).forEach(function(c){ porNomeAntigo[c.nome]=c; });
+  (novas||[]).forEach(function(cat){
+    var catAntiga=porNomeAntigo[cat.nome];
+    var meuCaminho=caminho.concat([cat.nome]);
+    if(cat.filhos){
+      diffCategorias(catAntiga?catAntiga.filhos:[], cat.filhos, meuCaminho, out);
+    } else {
+      diffLinhasAtivo(catAntiga?(catAntiga.linhas||[]):[], cat.linhas||[], meuCaminho.join(' > '), out);
+    }
+  });
+}
+function diffListaTituloTexto(antigas, novas, out){
+  var porTituloAntigo={};
+  (antigas||[]).forEach(function(it){ if(it.titulo&&it.titulo.trim()) porTituloAntigo[it.titulo]=it; });
+  var vistos={};
+  (novas||[]).forEach(function(it){
+    if(!it.titulo||!it.titulo.trim()) return;
+    vistos[it.titulo]=true;
+    var old=porTituloAntigo[it.titulo];
+    if(!old){ out.push('+ "'+it.titulo+'" adicionado'); return; }
+    if((old.texto||'')!==(it.texto||'')) out.push('"'+it.titulo+'" com o texto atualizado');
+  });
+  (antigas||[]).forEach(function(it){
+    if(!it.titulo||!it.titulo.trim()) return;
+    if(!vistos[it.titulo]) out.push('– "'+it.titulo+'" removido');
+  });
+}
+function compararEstados(antigo, novo, rotuloMesAnterior){
+  var secoes=[];
+  [['brasil','Carteira Recomendada — Brasil'],
+   ['internacional','Carteira Recomendada — Conta Internacional'],
+   ['previdencia','Carteira Recomendada — Previdência']].forEach(function(par){
+    var linhas=[];
+    diffCategorias((antigo.carteiras||{})[par[0]]||[], (novo.carteiras||{})[par[0]]||[], [], linhas);
+    if(linhas.length) secoes.push(par[1]+':\n'+linhas.map(function(l){ return '- '+l; }).join('\n'));
+  });
+  var linhasTI=[];
+  diffListaTituloTexto(antigo.tradeIdeas||[], novo.tradeIdeas||[], linhasTI);
+  if(linhasTI.length) secoes.push('Trade Ideas do Mês:\n'+linhasTI.map(function(l){ return '- '+l; }).join('\n'));
+  var linhasAS=[];
+  diffListaTituloTexto(antigo.ativosSugeridos||[], novo.ativosSugeridos||[], linhasAS);
+  if(linhasAS.length) secoes.push('Ativos e Emissores Sugeridos:\n'+linhasAS.map(function(l){ return '- '+l; }).join('\n'));
+  var cabecalho='Comparado com '+rotuloMesAnterior+':';
+  if(!secoes.length) return cabecalho+'\n\nSem alterações na carteira recomendada, nas trade ideas ou nos ativos sugeridos.';
+  return cabecalho+'\n\n'+secoes.join('\n\n');
+}
+function gerarAlteracoesAutomaticas(){
+  var b=document.getElementById('btnGerarAlteracoes');
+  if(b){ b.disabled=true; b.textContent='Comparando…'; }
+  carregarSnapshotsPolitica().then(function(){
+    var mesAtual=numeroDoMes(EST.mes), anoAtual=n(EST.ano)||new Date().getFullYear();
+    var candidatos=SNAPSHOTS_POLITICA.filter(function(s){ return (s.ano<anoAtual) || (s.ano===anoAtual && s.mes<mesAtual); });
+    candidatos.sort(function(x,y){ return (y.ano-x.ano) || (y.mes-x.mes); });
+    var anterior=candidatos[0];
+    if(!anterior){
+      alert('Não achei nenhuma política salva de um mês anterior a '+EST.mes+'/'+EST.ano+' pra comparar.');
+      return;
+    }
+    return api('politica_alocacao_snapshots?id=eq.'+anterior.id+'&select=dados').then(function(r){
+      if(!r||!r.length) throw new Error('não achei os dados dessa política');
+      var rotulo=MESES_ALOC[anterior.mes-1]+'/'+anterior.ano;
+      var textoGerado=compararEstados(r[0].dados, EST, rotulo);
+      var vazio=!EST.alteracoesTexto || !EST.alteracoesTexto.trim() || EST.alteracoesTexto.trim()==='Sem alterações no mês';
+      if(!vazio && !confirm('Já tem texto escrito nessa seção. Substituir pelo texto gerado automaticamente (comparando com '+rotulo+')?')) return;
+      EST.alteracoesTexto=textoGerado;
+      montarFormPreservandoAbertos(); montarTudo();
+      aviso('Comparado com '+rotulo+'.');
+    });
+  }).catch(function(e){ alert('Não consegui comparar com o mês anterior.\n\n'+e.message); })
+    .then(function(){ if(b){ b.disabled=false; b.textContent='Comparar com mês anterior e preencher'; } });
 }
 
 /* --- carteira: arvore fixa de categorias, linhas de ativo editaveis --- */
@@ -846,14 +953,24 @@ function montarPreview(){
   h+=paginaAtivosSugeridos();
   document.getElementById('painelPreview').innerHTML=h;
   atualizarAvisoAtivosSugeridos();
+  atualizarAvisoAlteracoes();
+}
+function avisoCorteDePagina(totalCaracteres, limite){
+  return totalCaracteres>limite
+    ? '<p style="background:var(--gold-tint);border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;color:#3a2e0f">Texto longo demais pra uma página só — ao imprimir, o que passar do limite da folha é cortado sem aviso. Reduza o texto e confira no "Imprimir / gerar PDF" antes de mandar pro comitê.</p>'
+    : '';
 }
 function atualizarAvisoAtivosSugeridos(){
   var div=document.getElementById('avisoAtivosSugeridos');
   if(!div) return;
   var totalCaracteres=EST.ativosSugeridos.reduce(function(a,t){ return a+t.titulo.length+t.texto.length; },0);
-  div.innerHTML = totalCaracteres>LIMITE_CARACTERES_ATIVOS_SUGERIDOS
-    ? '<p style="background:var(--gold-tint);border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;color:#3a2e0f">Texto longo demais pra uma página só — ao imprimir, o que passar do limite da folha é cortado sem aviso. Reduza o número de itens ou encurte o texto, e confira no "Imprimir / gerar PDF" antes de mandar pro comitê.</p>'
-    : '';
+  div.innerHTML = avisoCorteDePagina(totalCaracteres, LIMITE_CARACTERES_ATIVOS_SUGERIDOS);
+}
+function atualizarAvisoAlteracoes(){
+  var div=document.getElementById('avisoAlteracoes');
+  if(!div) return;
+  var totalCaracteres=(EST.alteracoesTitulo||'').length+(EST.alteracoesTexto||'').length;
+  div.innerHTML = avisoCorteDePagina(totalCaracteres, LIMITE_CARACTERES_ALTERACOES);
 }
 
 function rodape(numero){
