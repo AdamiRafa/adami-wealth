@@ -1,818 +1,238 @@
-# Adami Captal — documentação técnica do portal
-
-Documento de contexto para o projeto **Adami Captal**. Existe um portal irmão, da
-**Alom Capital**, com codebase quase idêntico e projeto separado. Nada deste documento
-se aplica à outra empresa sem verificação explícita.
-
-Última atualização: 17 de setembro de 2026 · versão do portal: **2.51**
-
-> O nome da firma se escreve **Adami Captal**, sem "i" no final. Aparece assim em toda
-> a interface e em todo o código. "Adami Wealth" é grafia antiga e só sobrevive em
-> textos herdados.
-
----
-
-## 1. Contexto
-
-A Adami Captal é uma gestora de patrimônio. O portal é a **plataforma administrativa
-interna da firma**, o lugar onde a operação vai reunindo todas as suas ferramentas.
-Não é um sistema de relatório com acessórios em volta: é um admin da empresa, e o
-consolidado de carteiras é hoje o módulo mais desenvolvido dentro dele, não o propósito
-único.
-
-Isso tem consequência prática: quando surgir uma demanda nova da operação, um controle,
-um cálculo, um cadastro, o caminho natural é virar **mais um módulo no portal**, e não
-um sistema à parte. Trate pedidos futuros com essa premissa.
-
-O módulo Carteiras, o mais maduro, é onde os assessores lançam mês a mês a posição das
-carteiras dos clientes e geram o relatório consolidado de performance em PDF, enviado ao
-cliente por e-mail.
-
-**Emil Stade** é o fundador e é quem conduz o desenvolvimento. Ele não é técnico: não
-roda comandos, não edita código. Ele descreve o problema em linguagem comum, revisa o
-resultado visual e aponta o que está errado. Todo trabalho de código e publicação é
-feito pelo assistente. Instruções para ele devem ser sempre clique a clique.
-
----
 
-## 2. Arquitetura
-
-**Frontend:** HTML puro, sem build, sem framework. Os arquivos ficam na raiz do
-repositório e precisam permanecer lado a lado porque se referenciam por caminho
-relativo:
-
-| Arquivo | Módulo |
-|---|---|
-| `index.html` | **Hub de entrada** + módulo Carteiras + tela de Equipe |
-| `crm.html` | CRM: jornada do cliente, negócios, carteira, Net New Money |
-| `rv.html` | Mesa RV: operações de renda variável e alocações |
-| `diagnostico.html` | Ferramenta Wealth Planning |
-| `patrimonial.html` | Gerador de Planos Patrimoniais |
-| `imobiliario.html` | Relatório Imobiliário |
-| `simulador.html` | Simulador de receita RV |
-| `adami_completo.sql` | Banco inteiro, portal + CRM, num arquivo só |
-| `vendor/` | React, ReactDOM, jsPDF e supabase-js, servidos localmente |
-
-**O hub é a porta da plataforma.** Depois do login, o usuário vê os cards dos módulos
-agrupados em Ferramentas e Simuladores, e escolhe onde entrar. O hub existe justamente
-porque a plataforma é feita para crescer em módulos.
-
-**Como nasce um módulo novo:** um arquivo HTML próprio na raiz, no mesmo padrão visual,
-mais um card no hub apontando para ele por caminho relativo. Módulos que precisarem de
-dados usam o mesmo Supabase e as mesmas tabelas de identidade, para não criar uma
-segunda noção de usuário dentro da mesma casa.
-
-**Hospedagem:** Vercel, publicação automática a cada commit na branch `main` do GitHub
-`emilstade/adami-wealth`.
-
-**Backend:** Supabase (PostgreSQL + PostgREST + Auth + Row Level Security).
-Projeto ativo: `ghxjqmjtmbqzvogwzylo.supabase.co`. A chave *publishable* vive no código
-do navegador, o que é correto: a proteção real está na RLS. A chave *service_role* nunca
-deve aparecer em arquivo servido pelo navegador.
+Adami Captal — documentação técnica do portal
+Documento de contexto para o projeto Adami Captal. Existe um portal irmão, da Alom Capital, com codebase quase idêntico e projeto separado. Nada deste documento se aplica à outra empresa sem verificação explícita.
 
-**Por que HTML puro:** o projeto nasceu em React + Vite e passou os primeiros dias
-quebrando no build da Vercel. Em 13/08 foi reescrito como HTML estático e nunca mais
-houve falha de deploy. **Esta decisão é definitiva.** Não proponha reintroduzir
-framework ou etapa de build.
+Última atualização: 17 de setembro de 2026 · versão do portal: 2.51
 
-O `crm.html` é a exceção aparente: ele é React, porque veio pronto de um sócio. Mas
-continua sendo um arquivo HTML sem build, com as bibliotecas servidas de `vendor/` em
-vez de CDN. Nenhuma etapa de compilação foi introduzida.
+O nome da firma se escreve Adami Captal, sem "i" no final. Aparece assim em toda a interface e em todo o código. "Adami Wealth" é grafia antiga e só sobrevive em textos herdados.
 
-**Bloco `EMPRESA`:** no topo do `<script>` existe um objeto com nome da empresa,
-domínio de e-mail, texto de apresentação e as chaves do Supabase. É o único trecho que
-difere entre este portal e o da Alom. Logos ficam em `LOGO_AZUL` (fundo claro) e
-`LOGO_BRANCO` (fundo escuro), como data URI. Portar uma melhoria de um portal para o
-outro significa copiar tudo menos esse bloco e os dois logos.
+1. Contexto
+A Adami Captal é uma gestora de patrimônio. O portal é a plataforma administrativa interna da firma, o lugar onde a operação vai reunindo todas as suas ferramentas. Não é um sistema de relatório com acessórios em volta: é um admin da empresa, e o consolidado de carteiras é hoje o módulo mais desenvolvido dentro dele, não o propósito único.
 
----
+Isso tem consequência prática: quando surgir uma demanda nova da operação, um controle, um cálculo, um cadastro, o caminho natural é virar mais um módulo no portal, e não um sistema à parte. Trate pedidos futuros com essa premissa.
 
-## 3. Modelo de dados
+O módulo Carteiras, o mais maduro, é onde os assessores lançam mês a mês a posição das carteiras dos clientes e geram o relatório consolidado de performance em PDF, enviado ao cliente por e-mail.
 
-### Portal
+Emil Stade é o fundador e é quem conduz o desenvolvimento. Ele não é técnico: não roda comandos, não edita código. Ele descreve o problema em linguagem comum, revisa o resultado visual e aponta o que está errado. Todo trabalho de código e publicação é feito pelo assistente. Instruções para ele devem ser sempre clique a clique.
 
-| Tabela | Conteúdo |
-|---|---|
-| `perfis` | `user_id`, `nome`, `codigo`, `admin`, `mesa_rv`, `super` |
-| `clientes` | `id`, `nome`, `assessor_id` (→ auth.users), `criado_em` |
-| `lancamentos` | `cliente_id`, `mes`, `ano`, `contas` (jsonb), `indicadores` (jsonb) |
-| `cartas` | `mes`, `ano`, `conteudo`. O comentário é **da casa**, não do cliente |
-| `auditoria` | `quando`, `usuario`, `acao`, `alvo`, `detalhe` |
-| `backups` | dump completo em jsonb, **exclusivo do admin** |
-| `rv_operacoes` | operações da Mesa RV, com status e desfecho |
-| `rv_alocacoes` | alocação de cada cliente numa operação |
-| `convites` | e-mail liberado para primeiro acesso, com os papéis já definidos |
+2. Arquitetura
+Frontend: HTML puro, sem build, sem framework. Os arquivos ficam na raiz do repositório e precisam permanecer lado a lado porque se referenciam por caminho relativo:
 
-### CRM
+Arquivo	Módulo
+index.html	Hub de entrada + módulo Carteiras + tela de Equipe
+crm.html	CRM: jornada do cliente, negócios, carteira, Net New Money
+rv.html	Mesa RV: operações de renda variável e alocações
+diagnostico.html	Ferramenta Wealth Planning
+patrimonial.html	Gerador de Planos Patrimoniais
+imobiliario.html	Relatório Imobiliário
+simulador.html	Simulador de receita RV
+adami_completo.sql	Banco inteiro, portal + CRM, num arquivo só
+vendor/	React, ReactDOM, jsPDF e supabase-js, servidos localmente
+O hub é a porta da plataforma. Depois do login, o usuário vê os cards dos módulos agrupados em Ferramentas e Simuladores, e escolhe onde entrar. O hub existe justamente porque a plataforma é feita para crescer em módulos.
 
-| Tabela | Conteúdo |
-|---|---|
-| `profiles` | `id`, `nome`, `role`, `status`, `produtos` |
-| `leads` | jornada do cliente, contas BTG, movimentações, histórico |
-| `configuracoes` | pares chave/valor, hoje a cotação do dólar |
+Como nasce um módulo novo: um arquivo HTML próprio na raiz, no mesmo padrão visual, mais um card no hub apontando para ele por caminho relativo. Módulos que precisarem de dados usam o mesmo Supabase e as mesmas tabelas de identidade, para não criar uma segunda noção de usuário dentro da mesma casa.
 
-`perfis` e `profiles` são a mesma pessoa vista de dois ângulos: `perfis.user_id` e
-`profiles.id` apontam para o mesmo `auth.users`. Não existe colisão de nome entre os
-dois esquemas, o que foi verificado objeto a objeto antes de juntar os dois no mesmo
-projeto Supabase.
+Hospedagem: Vercel, publicação automática a cada commit na branch main do GitHub AdamiRafa/adami-wealth (transferido de emilstade/adami-wealth em novembro/2026 — ver pendência de conferir a conexão Vercel↔GitHub depois da troca, seção 14).
 
-**`contas`** é um array. Cada conta: `nome`, `inst`, `saldo`, `apl`, `res`, `rendRs`,
-`rendPct`, `moeda` (`"BRL"` ou `"USD"`; ausente significa BRL, por compatibilidade).
+Backend: Supabase (PostgreSQL + PostgREST + Auth + Row Level Security). Projeto ativo: ghxjqmjtmbqzvogwzylo.supabase.co. A chave publishable vive no código do navegador, o que é correto: a proteção real está na RLS. A chave service_role nunca deve aparecer em arquivo servido pelo navegador.
 
-**`indicadores`** é um objeto com `cdi`, `ipca`, `ibov`, `sp500`, `poup`, `dolar`,
-`ouro`, `ifix`, `ptax`, `vencimentos`, `estrategias` e `secoes`.
+Por que HTML puro: o projeto nasceu em React + Vite e passou os primeiros dias quebrando no build da Vercel. Em 13/08 foi reescrito como HTML estático e nunca mais houve falha de deploy. Esta decisão é definitiva. Não proponha reintroduzir framework ou etapa de build.
 
-Gravação usa upsert com `?on_conflict=cliente_id,mes,ano` na URL. Sem isso a gravação
-falha silenciosamente. Foi bug real.
+O crm.html é a exceção aparente: ele é React, porque veio pronto de um sócio. Mas continua sendo um arquivo HTML sem build, com as bibliotecas servidas de vendor/ em vez de CDN. Nenhuma etapa de compilação foi introduzida.
 
----
+Bloco EMPRESA: no topo do <script> existe um objeto com nome da empresa, domínio de e-mail, texto de apresentação e as chaves do Supabase. É o único trecho que difere entre este portal e o da Alom. Logos ficam em LOGO_AZUL (fundo claro) e LOGO_BRANCO (fundo escuro), como data URI. Portar uma melhoria de um portal para o outro significa copiar tudo menos esse bloco e os dois logos.
 
-## 4. Regras de negócio, não quebrar
-
-**Rentabilidade % e rentabilidade R$ são campos independentes.** Aportes no meio do mês
-rompem a relação matemática entre os dois, então a instituição informa o percentual e o
-resultado em reais separadamente. O percentual da **carteira** é média ponderada pelo
-saldo de abertura de cada conta, nunca derivado do valor em reais.
+3. Modelo de dados
+Portal
+Tabela	Conteúdo
+perfis	user_id, nome, codigo, admin, mesa_rv, super
+clientes	id, nome, assessor_id (→ auth.users), criado_em
+lancamentos	cliente_id, mes, ano, contas (jsonb), indicadores (jsonb)
+cartas	mes, ano, conteudo. O comentário é da casa, não do cliente
+auditoria	quando, usuario, acao, alvo, detalhe
+backups	dump completo em jsonb, exclusivo do admin
+rv_operacoes	operações da Mesa RV, com status e desfecho
+rv_alocacoes	alocação de cada cliente numa operação
+convites	e-mail liberado para primeiro acesso, com os papéis já definidos
+CRM
+Tabela	Conteúdo
+profiles	id, nome, role, status, produtos
+leads	jornada do cliente, contas BTG, movimentações, histórico
+configuracoes	pares chave/valor, hoje a cotação do dólar
+perfis e profiles são a mesma pessoa vista de dois ângulos: perfis.user_id e profiles.id apontam para o mesmo auth.users. Não existe colisão de nome entre os dois esquemas, o que foi verificado objeto a objeto antes de juntar os dois no mesmo projeto Supabase.
 
-**Saldo de abertura** = saldo final − rendimento − aplicações + resgates. Quando o
-resultado dá zero ou negativo, o sistema usa o saldo final como fallback e a conferência
-aponta a inconsistência.
+contas é um array. Cada conta: nome, inst, saldo, apl, res, rendRs, rendPct, moeda ("BRL" ou "USD"; ausente significa BRL, por compatibilidade).
 
-**Aplicações e resgates são movimentos, sempre positivos.** O sinal já está na fórmula
-da abertura. Um resgate digitado com menos inverte a soma e erra a abertura em **duas
-vezes** o valor. Os campos bloqueiam o sinal negativo de propósito.
+indicadores é um objeto com cdi, ipca, ibov, sp500, poup, dolar, ouro, ifix, ptax, vencimentos, estrategias e secoes.
 
-**Onshore (R$) e offshore (US$) nunca são somados.** São dois blocos independentes, cada
-um com seu total e sua ponderação. A PTAX aparece apenas como referência de conversão,
-nunca para consolidar. A rentabilidade offshore é medida em dólar e portanto **não
-incorpora variação cambial**, o que está escrito no rodapé do relatório e não deve ser
-removido.
+Gravação usa upsert com ?on_conflict=cliente_id,mes,ano na URL. Sem isso a gravação falha silenciosamente. Foi bug real.
 
-**Rentabilidades compostas**, nunca somadas: `comp()` multiplica `(1+p/100)`.
+4. Regras de negócio, não quebrar
+Rentabilidade % e rentabilidade R$ são campos independentes. Aportes no meio do mês rompem a relação matemática entre os dois, então a instituição informa o percentual e o resultado em reais separadamente. O percentual da carteira é média ponderada pelo saldo de abertura de cada conta, nunca derivado do valor em reais.
 
-**Numeração de seções é dinâmica** (`nx()`), para não abrir buraco quando uma seção é
-desligada.
+Saldo de abertura = saldo final − rendimento − aplicações + resgates. Quando o resultado dá zero ou negativo, o sistema usa o saldo final como fallback e a conferência aponta a inconsistência.
 
-**Indicadores de mercado são globais por mês**: ao salvar, são replicados para todos os
-outros clientes com lançamento naquele mês. Apenas campos **preenchidos** sobrescrevem:
-um campo em branco nunca zera o do vizinho. Vencimentos, estratégias e contas nunca são
-replicados.
+Aplicações e resgates são movimentos, sempre positivos. O sinal já está na fórmula da abertura. Um resgate digitado com menos inverte a soma e erra a abertura em duas vezes o valor. Os campos bloqueiam o sinal negativo de propósito.
 
-**Herança de contas entre meses.** Offshore e onshore são herdados do mês anterior, mas
-conta que fechou o mês com saldo zero ou negativo não ressuscita. A chave de comparação
-é nome + instituição, normalizada.
+Onshore (R$) e offshore (US$) nunca são somados. São dois blocos independentes, cada um com seu total e sua ponderação. A PTAX aparece apenas como referência de conversão, nunca para consolidar. A rentabilidade offshore é medida em dólar e portanto não incorpora variação cambial, o que está escrito no rodapé do relatório e não deve ser removido.
 
-**Rótulos dos indicadores** refletem o benchmark realmente usado: "Inflação (IMA-B)",
-"Ouro (USD)", "S&P 500 (USD)". Meses históricos ainda guardam valores antigos sob os
-rótulos novos, e isso está pendente de decisão.
+Rentabilidades compostas, nunca somadas: comp() multiplica (1+p/100).
 
----
+Numeração de seções é dinâmica (nx()), para não abrir buraco quando uma seção é desligada.
 
-## 5. Controle de acesso
+Indicadores de mercado são globais por mês: ao salvar, são replicados para todos os outros clientes com lançamento naquele mês. Apenas campos preenchidos sobrescrevem: um campo em branco nunca zera o do vizinho. Vencimentos, estratégias e contas nunca são replicados.
 
-Três níveis no portal, guardados em `perfis`:
+Herança de contas entre meses. Offshore e onshore são herdados do mês anterior, mas conta que fechou o mês com saldo zero ou negativo não ressuscita. A chave de comparação é nome + instituição, normalizada.
 
-| Coluna | Na tela | O que dá |
-|---|---|---|
-| `super` | **master** | concede e revoga privilégio, convida, gere a equipe |
-| `admin` | administrador | enxerga todos os clientes e os backups |
-| `mesa_rv` | Mesa RV | escreve nas operações de renda variável |
+Rótulos dos indicadores refletem o benchmark realmente usado: "Inflação (IMA-B)", "Ouro (USD)", "S&P 500 (USD)". Meses históricos ainda guardam valores antigos sob os rótulos novos, e isso está pendente de decisão.
 
-Master manda em tudo que admin manda, e admin manda em tudo que mesa_rv manda. Hoje são
-master: Emil, Bibiana e Rafael.
+5. Controle de acesso
+Três níveis no portal, guardados em perfis:
 
-**A escrita direta em privilégio está fechada em três camadas**, e isso é deliberado.
-Já houve a falha oposta: uma política permitia que qualquer assessor fizesse `PATCH` em
-`admin = true` na própria linha e virasse administrador sozinho.
+Coluna	Na tela	O que dá
+super	master	concede e revoga privilégio, convida, gere a equipe
+admin	administrador	enxerga todos os clientes e os backups
+mesa_rv	Mesa RV	escreve nas operações de renda variável
+Master manda em tudo que admin manda, e admin manda em tudo que mesa_rv manda. Hoje são master: Emil, Bibiana e Rafael.
 
-1. Permissão de coluna: pela API o autenticado só escreve em `nome`.
-2. Gatilho `proteger_privilegios` em `perfis`, que recusa alteração de `admin`,
-   `mesa_rv` e `super` por quem não é master. `auth.uid()` nulo, que é o caso do SQL
-   Editor, continua passando: é a saída de emergência.
-3. Política de RLS.
+A escrita direta em privilégio está fechada em três camadas, e isso é deliberado. Já houve a falha oposta: uma política permitia que qualquer assessor fizesse PATCH em admin = true na própria linha e virasse administrador sozinho.
 
-Toda mudança de permissão passa por função `security definer` (`definir_privilegio`,
-`definir_papel_crm`, `definir_codigo`), que confere quem está chamando antes de gravar
-e registra em `auditoria`.
+Permissão de coluna: pela API o autenticado só escreve em nome.
+Gatilho proteger_privilegios em perfis, que recusa alteração de admin, mesa_rv e super por quem não é master. auth.uid() nulo, que é o caso do SQL Editor, continua passando: é a saída de emergência.
+Política de RLS.
+Toda mudança de permissão passa por função security definer (definir_privilegio, definir_papel_crm, definir_codigo), que confere quem está chamando antes de gravar e registra em auditoria.
 
-**Filtrar no navegador não é segurança.** Se surgir demanda de restrição de acesso, ela
-tem que ser resolvida no banco, com política, nunca escondendo elemento na tela.
+Filtrar no navegador não é segurança. Se surgir demanda de restrição de acesso, ela tem que ser resolvida no banco, com política, nunca escondendo elemento na tela.
 
-### Convite e primeiro acesso
+Convite e primeiro acesso
+Não existe criação de conta pelo administrador, porque isso exigiria a chave service_role no navegador. O fluxo é:
 
-Não existe criação de conta pelo administrador, porque isso exigiria a chave
-`service_role` no navegador. O fluxo é:
+O master convida pelo hub, em Equipe → Convidar pessoa. O convite já carrega os papéis do portal e do CRM.
+A pessoa entra pelo "Primeiro acesso" na tela de login e escolhe a própria senha.
+Um gatilho em auth.users recusa cadastro de e-mail sem convite, cria o perfil do portal e o do CRM com os papéis do convite, e marca o convite como consumido.
+O convite é marcado como consumido em vez de apagado, para não depender da ordem em que os gatilhos rodam.
 
-1. O master convida pelo hub, em Equipe → Convidar pessoa. O convite já carrega os
-   papéis do portal e do CRM.
-2. A pessoa entra pelo "Primeiro acesso" na tela de login e escolhe a própria senha.
-3. Um gatilho em `auth.users` recusa cadastro de e-mail sem convite, cria o perfil do
-   portal e o do CRM com os papéis do convite, e marca o convite como consumido.
+Recuperação de senha manda o link por POST /auth/v1/recover, com redirect_to explícito (a origem+caminho atual) em vez de depender só do "Site URL" do painel — mas o Supabase só segue esse redirect_to se a URL estiver na lista de "Redirect URLs" em Authentication → URL Configuration. O link volta com o token no hash da URL (#access_token=...&type=recovery); detectarRecuperacaoNaUrl() lê isso no boot da página, antes de checar sessão, e mostra a tela de "defina sua nova senha" (viewRedefinirSenha), que troca a senha com PUT /auth/v1/user autenticado pelo token do link. Esse pedaço não existia até 09/2026 — o link chegava e não tinha pra onde ir.
 
-O convite é marcado como consumido em vez de apagado, para não depender da ordem em que
-os gatilhos rodam.
+O serviço de e-mail embutido do Supabase entrega só 2 por hora, no projeto inteiro (não por pessoa), e sempre responde 200 mesmo quando não entrega — por isso a tela não promete "enviado", avisa que pode não chegar e já indica o caminho alternativo (pedir a um master pra trocar a senha pela própria tela do Supabase: Authentication → Users → a pessoa → Reset Password, não precisa de e-mail nenhum). Só funciona de verdade, pros dois lados (envio e redirect_to), depois de configurar SMTP próprio e cadastrar a URL do portal nas Redirect URLs — ver pendência na seção 14.
 
-**Recuperação de senha** manda o link por `POST /auth/v1/recover`, com `redirect_to`
-explícito (a origem+caminho atual) em vez de depender só do "Site URL" do painel — mas
-o Supabase só segue esse `redirect_to` se a URL estiver na lista de "Redirect URLs"
-em Authentication → URL Configuration. O link volta com o token no **hash** da URL
-(`#access_token=...&type=recovery`); `detectarRecuperacaoNaUrl()` lê isso no boot da
-página, antes de checar sessão, e mostra a tela de "defina sua nova senha"
-(`viewRedefinirSenha`), que troca a senha com `PUT /auth/v1/user` autenticado pelo
-token do link. Esse pedaço não existia até 09/2026 — o link chegava e não tinha pra onde
-ir.
+Login único entre portal e CRM
+O portal guarda a sessão em localStorage sob a chave aw_sessao. O crm.html lê essa chave e adota a sessão com setSession, então o login é um só. Quando o token é renovado dentro do CRM, ele devolve a sessão atualizada ao portal.
 
-O serviço de e-mail embutido do Supabase entrega só 2 por hora, **no projeto inteiro**
-(não por pessoa), e sempre responde 200 mesmo quando não entrega — por isso a tela não
-promete "enviado", avisa que pode não chegar e já indica o caminho alternativo (pedir a
-um master pra trocar a senha pela própria tela do Supabase: Authentication → Users →
-a pessoa → Reset Password, não precisa de e-mail nenhum). Só funciona de verdade,
-pros dois lados (envio e `redirect_to`), depois de configurar SMTP próprio e cadastrar a
-URL do portal nas Redirect URLs — ver pendência na seção 14.
+Recusar acesso ao CRM não é logout. Com login único, chamar signOut() ali derrubaria a pessoa do portal inteiro. Quem não tem perfil ativo no CRM vê uma tela de bloqueio com botão para voltar ao hub, e a sessão continua de pé. Isso já foi bug.
 
-### Login único entre portal e CRM
+A gestão de usuários acontece só no hub. A tela de equipe do CRM é somente leitura, com um botão que leva ao hub.
 
-O portal guarda a sessão em `localStorage` sob a chave `aw_sessao`. O `crm.html` lê essa
-chave e adota a sessão com `setSession`, então o login é um só. Quando o token é
-renovado dentro do CRM, ele devolve a sessão atualizada ao portal.
+6. Código do assessor
+Cada pessoa em perfis tem um codigo, gerado sozinho e sequencial (A001, A002…) e editável pelo master na tela de Equipe. Ele existe para uma coisa: ligar a planilha de clientes ao assessor na importação do CRM.
 
-**Recusar acesso ao CRM não é logout.** Com login único, chamar `signOut()` ali
-derrubaria a pessoa do portal inteiro. Quem não tem perfil ativo no CRM vê uma tela de
-bloqueio com botão para voltar ao hub, e a sessão continua de pé. Isso já foi bug.
+O nome não serve para isso. "RAFAEL", "Rafael Souza" e "R. SOUZA" são a mesma pessoa para quem lê e três strings diferentes para o computador, e um vínculo errado de carteira mexe em comissão.
 
-A gestão de usuários acontece **só no hub**. A tela de equipe do CRM é somente leitura,
-com um botão que leva ao hub.
+Na importação da base BTG, se a planilha trouxer uma coluna de código (aceita em várias grafias: Código do assessor, Cód. Assessor, ID Assessor, Codigo Assessor), o vínculo é aplicado e fica no histórico do cliente. Sem a coluna, vale a regra antiga: o assessor que vem no arquivo do BTG gera apenas um aviso, nunca uma transferência.
 
----
+A diferença é intencional. O código foi digitado por quem monta a planilha olhando a tela de Equipe, então é instrução. O nome vindo do BTG é palpite.
 
-## 6. Código do assessor
+Códigos que não pertencem a ninguém aparecem numa seção própria da prévia e não alteram nada.
 
-Cada pessoa em `perfis` tem um `codigo`, gerado sozinho e sequencial (A001, A002…) e
-editável pelo master na tela de Equipe. Ele existe para uma coisa: **ligar a planilha de
-clientes ao assessor na importação do CRM**.
+O índice de unicidade é sobre upper(codigo), porque a comparação com a planilha também ignora maiúscula.
 
-O nome não serve para isso. "RAFAEL", "Rafael Souza" e "R. SOUZA" são a mesma pessoa
-para quem lê e três strings diferentes para o computador, e um vínculo errado de
-carteira mexe em comissão.
+7. Importação da base BTG (CRM)
+Toda semana chega um export do BTG com a carteira inteira. A reconciliação é por conta, nunca por nome: o export traz só o primeiro nome e há 84 primeiros nomes cobrindo 273 contas. Nome é rótulo, conta é identidade.
 
-Na importação da base BTG, se a planilha trouxer uma coluna de código (aceita em várias
-grafias: `Código do assessor`, `Cód. Assessor`, `ID Assessor`, `Codigo Assessor`), o
-vínculo é **aplicado** e fica no histórico do cliente. Sem a coluna, vale a regra antiga:
-o assessor que vem no arquivo do BTG gera apenas um aviso, nunca uma transferência.
+A conta é normalizada antes de comparar, porque abrir o .xlsx no Excel e salvar come os zeros à esquerda, e "9990002" deixaria de casar com "009990002" em silêncio.
 
-A diferença é intencional. O código foi digitado por quem monta a planilha olhando a
-tela de Equipe, então é instrução. O nome vindo do BTG é palpite.
+O que a importação não faz, por decisão: não cria cliente que ainda não existe, não exclui quem sumiu do arquivo, e não transfere carteira pelo nome. Os casos são sinalizados para alguém decidir. Um export incompleto não pode derrubar a carteira do escritório em silêncio.
 
-Códigos que não pertencem a ninguém aparecem numa seção própria da prévia e não alteram
-nada.
+O BTG manda o saldo, nunca o movimento. Não há como distinguir aporte novo de valorização olhando dois arquivos. Por isso a diferença nunca vira movimentação, que viraria captação líquida inflada pela alta da bolsa. Ela sobrescreve o saldo e, quando não se explica pelo que o assessor lançou, gera alerta no card do cliente. A faixa é de 0,5% por importação semanal.
 
-O índice de unicidade é sobre `upper(codigo)`, porque a comparação com a planilha também
-ignora maiúscula.
+O que se grava é o valor inicial, não o saldo do arquivo: as movimentações lançadas somam por cima e seriam contadas duas vezes.
 
----
+Nada é gravado antes da prévia. A prévia não é cortesia, é o único ponto em que alguém confere centenas de linhas antes de elas mexerem na carteira.
 
-## 7. Importação da base BTG (CRM)
-
-Toda semana chega um export do BTG com a carteira inteira. A reconciliação é **por
-conta**, nunca por nome: o export traz só o primeiro nome e há 84 primeiros nomes
-cobrindo 273 contas. Nome é rótulo, conta é identidade.
-
-A conta é normalizada antes de comparar, porque abrir o `.xlsx` no Excel e salvar come
-os zeros à esquerda, e "9990002" deixaria de casar com "009990002" em silêncio.
-
-**O que a importação não faz, por decisão:** não cria cliente que ainda não existe, não
-exclui quem sumiu do arquivo, e não transfere carteira pelo nome. Os casos são
-sinalizados para alguém decidir. Um export incompleto não pode derrubar a carteira do
-escritório em silêncio.
-
-**O BTG manda o saldo, nunca o movimento.** Não há como distinguir aporte novo de
-valorização olhando dois arquivos. Por isso a diferença nunca vira movimentação, que
-viraria captação líquida inflada pela alta da bolsa. Ela sobrescreve o saldo e, quando
-não se explica pelo que o assessor lançou, gera alerta no card do cliente. A faixa é de
-0,5% por importação semanal.
-
-O que se grava é o valor **inicial**, não o saldo do arquivo: as movimentações lançadas
-somam por cima e seriam contadas duas vezes.
-
-Nada é gravado antes da prévia. A prévia não é cortesia, é o único ponto em que alguém
-confere centenas de linhas antes de elas mexerem na carteira.
-
----
-
-## 8. Impressão
-
+8. Impressão
 Todos os relatórios são impressos pelo navegador, sem biblioteca de PDF.
 
-**A armadilha central:** margem de página não se falsifica com `padding`. Padding de um
-elemento que atravessa várias folhas aparece **uma vez**, no topo da primeira e no pé da
-última. Da segunda folha em diante o conteúdo encosta na borda do papel e a impressora
-come o que não cabe. Use `@page { margin: … }` de verdade.
+A armadilha central: margem de página não se falsifica com padding. Padding de um elemento que atravessa várias folhas aparece uma vez, no topo da primeira e no pé da última. Da segunda folha em diante o conteúdo encosta na borda do papel e a impressora come o que não cabe. Use @page { margin: … } de verdade.
 
-Quando a capa precisa sangrar até a borda, ela ganha **página nomeada** com margem zero
-(`@page capa { margin: 0 }` e `page: capa` no elemento). Margem negativa não resolve: o
-navegador recorta o que passa da área útil.
+Quando a capa precisa sangrar até a borda, ela ganha página nomeada com margem zero (@page capa { margin: 0 } e page: capa no elemento). Margem negativa não resolve: o navegador recorta o que passa da área útil.
 
-**`break-inside: avoid` só vale para o que cabe numa folha.** Pedir isso a um bloco mais
-alto que a página não impede a quebra, só faz o navegador quebrar onde ele quiser, em
-geral no meio de um cartão. Trave a peça pequena (cartão, tabela, gráfico), deixe a
-seção fluir. Antes de travar um bloco, meça a altura dele contra a área útil.
+break-inside: avoid só vale para o que cabe numa folha. Pedir isso a um bloco mais alto que a página não impede a quebra, só faz o navegador quebrar onde ele quiser, em geral no meio de um cartão. Trave a peça pequena (cartão, tabela, gráfico), deixe a seção fluir. Antes de travar um bloco, meça a altura dele contra a área útil.
 
-`!important` na folha de impressão sobrescreve mudança feita no CSS de tela. A capa já
-ficou branca na tela e azul no PDF por isso.
+!important na folha de impressão sobrescreve mudança feita no CSS de tela. A capa já ficou branca na tela e azul no PDF por isso.
 
----
+9. Como o Emil trabalha
+Descreve o problema visualmente ("ficou cagado", "não tá indo"). Espera diagnóstico de causa raiz, não perguntas de esclarecimento técnico.
+Escreve curto, misturando português e inglês.
+Prefere receber um arquivo para baixar ou um passo para clicar.
+Cada conjunto de mudanças ganha um número de versão, visível no rodapé. O selo existe para ele perceber quando está vendo cache ou arquivo local.
+Scripts SQL são rodados por ele no SQL Editor do Supabase, colando o arquivo inteiro. O aviso "Potential issues detected" é falso positivo: a orientação é Run without RLS.
+10. Publicação
+A Vercel republica sozinha a cada commit na main. O commit é feito pelo assistente.
 
-## 9. Como o Emil trabalha
+Para o assistente conseguir commitar, duas condições:
 
-- Descreve o problema visualmente ("ficou cagado", "não tá indo"). Espera diagnóstico de
-  causa raiz, não perguntas de esclarecimento técnico.
-- Escreve curto, misturando português e inglês.
-- Prefere receber um arquivo para baixar ou um passo para clicar.
-- Cada conjunto de mudanças ganha um número de versão, visível no rodapé. O selo existe
-  para ele perceber quando está vendo cache ou arquivo local.
-- Scripts SQL são rodados por ele no SQL Editor do Supabase, colando o arquivo inteiro.
-  O aviso "Potential issues detected" é falso positivo: a orientação é **Run without RLS**.
+O Claude GitHub App precisa estar instalado em AdamiRafa/adami-wealth (github.com/apps/claude).
+A sessão precisa ter nascido com esse repositório selecionado, em claude.ai/code.
+A autorização é por sessão e vale a partir do nascimento dela. Uma sessão que começou sem o repositório não ganha acesso depois, nem com token: as credenciais ficam fora do ambiente e um proxy autentica por fora, então chave de API colada na conversa não funciona e não deve ser pedida nem enviada.
 
----
+Isso vale até trocar de dono do repositório, também — foi o que aconteceu em novembro/2026: o repositório saiu de emilstade/adami-wealth e foi transferido pra AdamiRafa/adami-wealth. A sessão que estava em andamento na hora da troca perdeu a permissão de escrita no meio da conversa (ela nasceu amarrada ao endereço antigo) e não teve como recuperar — nem reconectando o repositório na sessão (o ambiente organiza a pasta pelo nome do repositório, e os dois se chamam adami-wealth, então não dá pra ter os dois ligados ao mesmo tempo), nem trocando a URL remota à mão (bloqueado de propósito pela proteção do próprio Claude Code, como contorno de permissão). A sessão antiga continuou lendo o repositório (ele é público, e por um tempo o GitHub redireciona sozinho do endereço antigo pro novo), mas não conseguiu mais publicar nada. Se isso acontecer de novo — trocar o dono do repositório com uma sessão em andamento — a saída é sempre abrir uma conversa nova em claude.ai/code já apontando pro endereço novo.
 
-## 10. Publicação
+Sem o app instalado ou sem a sessão poder publicar, o caminho é o assistente entregar os arquivos e o Emil subir em Add file → Upload files na raiz do repositório, com os mesmos nomes.
 
-A Vercel republica sozinha a cada commit na `main`. O commit é feito pelo assistente.
+Nunca usar raw.githubusercontent.com para conferir se um commit subiu. O CDN serve conteúdo velho e já causou duas reversões silenciosas de trabalho publicado. Conferir sempre pela API, decodificando o campo content.
 
-**Para o assistente conseguir commitar**, duas condições:
+11. Armadilhas já encontradas
+Padding no lugar de margem de página. Ver seção 8.
+create or replace function não muda o tipo de retorno. Quando uma função ganha coluna, é preciso drop antes. O adami_completo.sql já derruba todas as versões dos nomes afetados, inclusive assinaturas antigas que sobrariam como overload e deixariam a chamada RPC ambígua.
+PostgREST devolve corpo vazio em 201. Chamar res.json() direto estoura com "Unexpected end of JSON input", e a gravação parece ter falhado quando na verdade funcionou. Ler com res.text() e só então tentar JSON.parse.
+Variável usada sem declaração passa na checagem de sintaxe e só quebra em execução. Rodar análise de escopo (acorn + eslint-scope) antes de publicar, e não publicar quando ela acusa.
+Bug de DOM não aparece em checagem estática. Renomear uma classe sem atualizar quem a lê deixa o formulário lendo o vazio, e nenhum analisador percebe. Testar com jsdom, e para impressão gerar o PDF de verdade e medir.
+Handlers inline em HTML gerado por string são avaliados no escopo global. Índices de laço precisam ser interpolados ('+i+'), não referenciados por nome.
+CORS pode bloquear a API de PTAX do Banco Central. O campo é sempre editável à mão e mostra mensagem de falha em vez de travar.
+Cache do navegador engana com frequência. Sempre pedir Cmd+Shift+R e conferir o selo de versão antes de investigar qualquer coisa.
+O wi-fi do escritório bloqueia .vercel.app por DNS, o que aparece como DNS_PROBE_FINISHED_NXDOMAIN. Pelo 4G funciona. A solução definitiva é apontar o domínio próprio.
+12. Histórico de versões
+12/08 tentativa em React + Vite; sucessão de falhas de build. 13/08 reescrita em HTML estático; Supabase; relatório com capa, carta, cinco seções e disclaimer; login com sessão persistente. 14/08 logo, numeração real de páginas, backup diário; hub de sistemas; adição do Diagnóstico Patrimonial e do Relatório Imobiliário. 16/08 renomeações e adoção da numeração 1.9. 18/08 1.9.x correções de gravação, offshore com PTAX, indicadores compartilhados, benchmarks · 2.0 acesso por assessor com RLS · 2.1 a 2.3 seções habilitáveis e sumário. 19/08 2.4 a 2.7 conferência de consistência, capa clara, auditoria geral · 2.8 nome padronizado dos arquivos baixados. Setembro correção da escalada de privilégio em perfis; nível master e tela de Equipe; Mesa RV com exportação nativa em .xlsx; renomeação para Adami Captal; Gerador de Planos Patrimoniais com aba imobiliária e liquidez; Ferramenta Wealth Planning reescrita com motor de linha do tempo, objetivos recorrentes, grade de sensibilidade e planejamento sucessório; integração do CRM com login único; consolidação de cinco scripts SQL num só · 2.51 código do assessor e correção da impressão do Wealth Planning. Outubro Política de Alocação; cores por etapa e contraste do Painel no CRM; modal de detalhe do CRM em duas colunas; edição/exclusão na timeline do CRM · 2.80 "Importar de PDF" na lista de ativos das Carteiras — lê o Relatório de Performance (BTG/Necton) e o Extrato de cliente (Sinosserra) direto do PDF, sem precisar digitar nem montar planilha · 2.81 tira as janelas de 3 e 6 meses da lista de ativos (planilha, PDF e relatório impresso) — nenhuma fonte de dado usada na importação informa essas duas janelas por ativo, só mês/ano/12 meses/desde o início · 2.82 conserta "Esqueci minha senha": o link do e-mail de recuperação não tinha nenhuma tela esperando por ele, então clicar não levava a lugar nenhum — existe a tela de "defina sua nova senha" agora · 2.83 Fluxo e Captação (fluxo.html), fatia 1: importa a Movimentação geral do BTG, calcula NNM/aplicações/resgates/renda passiva/caixa, tela de auditoria — ver seção 15.
 
-1. O Claude GitHub App precisa estar instalado em `emilstade/adami-wealth`
-   (`github.com/apps/claude`).
-2. A sessão precisa ter nascido com esse repositório selecionado, em `claude.ai/code`.
+13. Conferência de consistência
+O botão Conferir dados, na aba Relatório, varre todo o histórico do cliente e aponta, agrupado por mês: saldo de abertura negativo ou zerado, percentual fora de escala, divergência entre resultado em reais e percentual informado, campo faltando de um lado só, abertura que não fecha com o fechamento do mês anterior, conta nova sem aplicação, conta que sumiu sem resgate, e resultado fora do padrão histórico da própria conta.
 
-A autorização é por sessão e vale a partir do nascimento dela. Uma sessão que começou sem
-o repositório não ganha acesso depois, nem com token: as credenciais ficam fora do
-ambiente e um proxy autentica por fora, então **chave de API colada na conversa não
-funciona** e não deve ser pedida nem enviada.
+São regras determinísticas, não modelo de linguagem. A decisão foi consciente: num relatório que vai para cliente, um alerta que mostra a conta ("R$ 9.000 sobre abertura de R$ 91.000 dá 9,89%, mas foi informado 0,50%") vale mais que um texto que às vezes inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da API.
 
-Sem isso, o caminho é o assistente entregar os arquivos e o Emil subir em
-**Add file → Upload files** na raiz do repositório, com os mesmos nomes.
+14. Pendências
+SMTP próprio no Supabase, e cadastrar a URL do portal em Redirect URLs. Sem o SMTP, o e-mail de recuperação de senha não entrega (limite de 2/hora do serviço embutido). Sem a Redirect URL cadastrada, o redirect_to do link é ignorado e ele pode voltar pro lugar errado. A tela que recebe o link (clique no link → defina a senha nova) já existe desde a 2.82 — falta só isso pra funcionar ponta a ponta.
+Domínio portal.adamicaptal.com.br apontado para a Vercel, para contornar o bloqueio do wi-fi do escritório.
+Decidir se a importação passa a criar clientes novos já vinculados ao assessor pelo código. Hoje ela apenas lista.
+Importador de extrato BTG no Gerador de Planos Patrimoniais nunca foi calibrado contra um arquivo real. Sem ele não há enquadramento por produto.
+IPCA contra IMA-B nos meses históricos. Os rótulos mudaram, os valores antigos não.
+A suíte de testes usada nas auditorias não está versionada no repositório.
+Migrar a hospedagem dos HTML para infraestrutura própria, eliminando a Vercel e mantendo apenas o Supabase.
+Segurança: tokens do GitHub e chaves do Supabase já foram expostos em conversa mais de uma vez e precisam de revogação confirmada. Não pedir nem aceitar credencial por chat: ela não funciona no ambiente de execução e fica registrada no histórico.
+15. Fluxo e Captação (fluxo.html)
+BI de captação construído a partir dos exports de movimentação do BTG, pra alimentar o comitê de política de alocação. Acesso restrito a master (eh_super()), porque mostra captação da casa inteira, de todos os assessores — não só a carteira de quem está logado. Entra no hub com restritoMaster:true, que esconde o card de quem não é master (a segurança de verdade é a RLS de fluxo_snapshots/fluxo_lancamentos, o esconder no hub é só pra não mostrar um link morto).
 
-**Nunca usar `raw.githubusercontent.com` para conferir se um commit subiu.** O CDN serve
-conteúdo velho e já causou duas reversões silenciosas de trabalho publicado. Conferir
-sempre pela API, decodificando o campo `content`.
+Entregue até agora (fatia 1): importa a Movimentação geral (aba "Export" do BTG, identificada pelo conjunto de colunas, nunca pelo nome do arquivo), normaliza a conta pra 9 dígitos com zero-fill, calcula fluxo financeiro externo (com neutralização de pares intra-escritório, editável na tela de Auditoria), transferência de custódia, portabilidade de previdência, aplicações e resgates por classe, renda passiva distribuída, caixa acumulado e um mapa geral de movimentações por Mercado/Submercado/Lançamento. Salva em public.fluxo_lancamentos, um snapshot por mês/ano, substituível (reimportar apaga e grava de novo, com registro em auditoria).
 
----
+Validado contra o PPTX real de outubro/2026 (que o Emil mandou como referência): aplicações de renda fixa, fundos e renda variável bateram exatas; resgates totais, renda passiva (até o centavo, incluindo quem reinvestiu e quem não) e caixa acumulado também bateram. A transferência de custódia bateu com a leitura de "líquido" usada na fórmula do NNM (não com o destaque de "só as duas contas novas" do slide, que é uma subfatia editorial, não o total).
 
-## 11. Armadilhas já encontradas
+Fluxo financeiro externo não reconcilia sozinho com o PPTX (regra escrita dá -R$ 9,97 milhões em outubro, o PPTX mostra -R$ 6,0 milhões), e isso é proposital, não uma pendência. Testei filtrar automaticamente contraparte com nome de empresa (LTDA/S.A./INSTITUTO) e o filtro pegava junto o M.H.Linden — R$ 8,35 milhões que o próprio PPTX quer CONTADOS, é a história do mês (slide "Os Dois Eventos do Mês"). Não dá pra distinguir "tesouraria de empresa" de "resgate real de cliente pessoa jurídica" só pelo nome da contraparte. Por isso a tela não tenta adivinhar: a seção "Maiores movimentações de conta corrente (não pareadas)" na Auditoria lista as entradas/saídas não casadas por valor, e cada uma tem botão de excluir/recolocar — quem conhece o cliente decide, transação por transação, igual já funcionava para os pares. Testei excluindo as 5 transações da TFL DO BRASIL (identificada como provável tesouraria, bastante entrada e saída na mesma conta no mês): o líquido muda exatamente R$ 506.352,76 (o líquido delas) e volta ao valor original ao recolocar — mecanismo correto, decisão de negócio em aberto com o Emil.
 
-- **Padding no lugar de margem de página.** Ver seção 8.
-- **`create or replace function` não muda o tipo de retorno.** Quando uma função ganha
-  coluna, é preciso `drop` antes. O `adami_completo.sql` já derruba todas as versões dos
-  nomes afetados, inclusive assinaturas antigas que sobrariam como overload e deixariam
-  a chamada RPC ambígua.
-- **PostgREST devolve corpo vazio em 201.** Chamar `res.json()` direto estoura com
-  "Unexpected end of JSON input", e a gravação parece ter falhado quando na verdade
-  funcionou. Ler com `res.text()` e só então tentar `JSON.parse`.
-- **Variável usada sem declaração** passa na checagem de sintaxe e só quebra em execução.
-  Rodar análise de escopo (acorn + eslint-scope) antes de publicar, e **não publicar
-  quando ela acusa**.
-- **Bug de DOM não aparece em checagem estática.** Renomear uma classe sem atualizar quem
-  a lê deixa o formulário lendo o vazio, e nenhum analisador percebe. Testar com jsdom,
-  e para impressão gerar o PDF de verdade e medir.
-- **Handlers inline em HTML gerado por string** são avaliados no escopo global. Índices
-  de laço precisam ser interpolados (`'+i+'`), não referenciados por nome.
-- **CORS pode bloquear a API de PTAX do Banco Central.** O campo é sempre editável à mão
-  e mostra mensagem de falha em vez de travar.
-- **Cache do navegador** engana com frequência. Sempre pedir Cmd+Shift+R e conferir o
-  selo de versão antes de investigar qualquer coisa.
-- **O wi-fi do escritório bloqueia `.vercel.app`** por DNS, o que aparece como
-  `DNS_PROBE_FINISHED_NXDOMAIN`. Pelo 4G funciona. A solução definitiva é apontar o
-  domínio próprio.
+Detector de reciclagem de previdência só pega o que resgata e porta no mesmo mês importado. O caso real que inspirou a regra (Maristela: portou em julho, resgatou em outubro, portou de volta em outubro) só é pego depois que os meses anteriores também estiverem salvos no banco — é inerente ao desenho (precisa de histórico), não uma falha da fatia 1.
+"Aplicações totais" do card de resumo não soma exatamente igual ao número do PPTX (26,8 mi contra 27,6 mi) — as 3 classes individuais (RF/Fundos/RV) batem exatas, a diferença está em algo não quebrado na tabela de métricas do Emil (possivelmente COE ou criptoativo, que não têm regra de "aplicação" escrita).
+Navegação mês a mês (entregue): seletor no topo da tela lista os meses já salvos em fluxo_snapshots (mais recente primeiro, com a contagem de lançamentos). Escolher um mês busca fluxo_lancamentos paginado (o PostgREST do Supabase devolve no máximo 1000 linhas por vez — a tela busca em lotes de 1000 até não vir mais nada) e reconstrói exatamente o mesmo objeto que o upload de arquivo monta, rodando o motor de cálculo de novo em cima do dado salvo. Testado ponta a ponta: importar o arquivo real de outubro/2026 (7.812 linhas), salvar, zerar a tela, recarregar pelo seletor — todos os indicadores (NNM, fluxo financeiro, custódia, previdência, aplicações/resgates, renda passiva, canal de fundos) saem idênticos ao do import original. Os botões de desmarcar par/excluir transação da Auditoria não persistem no banco (ficam só na sessão) — ao recarregar um mês salvo, eles voltam ao estado padrão (nada desmarcado), igual a toda vez que um arquivo é importado de novo.
 
----
+Coluna nova em fluxo_lancamentos: movimentacao. O texto cru da coluna "Movimentação" do export do BTG não estava sendo salvo — sem ele, recarregar um mês do banco não conseguia reclassificar fluxo financeiro externo nem canal de fundos (as duas seções que leem o texto da movimentação, não só Mercado/Sub Mercado/Lançamento). Se esse SQL já foi colado antes sem essa coluna, colar de novo não quebra nada: é só um alter table add column if not exists, idempotente.
 
-## 12. Histórico de versões
+Comparativo de período (entregue): segundo seletor no topo, habilitado quando tem um mês carregado — mês anterior, mesmo mês do ano anterior, média dos últimos 3 ou 6 meses. Aba nova "Comparativo" mostra uma tabela com cada indicador (NNM, fluxo financeiro, custódia, portabilidade, aplicações e resgates por classe, renda passiva, caixa), valor do mês atual, valor/média do período comparado, variação em R$ e em %. Busca os meses de comparação direto do banco (com cache em memória pra não repetir a mesma consulta) e nunca trava se faltar algum: numa média de 3 meses com só 2 salvos, calcula com os 2 e avisa "só achei 2 de 3"; se nenhum mês necessário estiver salvo, avisa e some pede pra importar/salvar esses meses — nunca mostra comparação incompleta sem dizer. Validado com meses sintéticos (matemática de deslocar mês, inclusive virada de ano, e de média com mês faltando) — ainda não dá pra validar contra o PPTX porque só outubro/2026 está salvo no banco; assim que o Emil salvar mais meses o comparativo começa a valer de verdade.
 
-**12/08** tentativa em React + Vite; sucessão de falhas de build.
-**13/08** reescrita em HTML estático; Supabase; relatório com capa, carta, cinco seções
-e disclaimer; login com sessão persistente.
-**14/08** logo, numeração real de páginas, backup diário; hub de sistemas; adição do
-Diagnóstico Patrimonial e do Relatório Imobiliário.
-**16/08** renomeações e adoção da numeração 1.9.
-**18/08** 1.9.x correções de gravação, offshore com PTAX, indicadores compartilhados,
-benchmarks · **2.0 acesso por assessor com RLS** · 2.1 a 2.3 seções habilitáveis e sumário.
-**19/08** 2.4 a 2.7 conferência de consistência, capa clara, auditoria geral ·
-**2.8 nome padronizado dos arquivos baixados**.
-**Setembro** correção da escalada de privilégio em `perfis`; nível master e tela de
-Equipe; Mesa RV com exportação nativa em `.xlsx`; renomeação para Adami Captal;
-Gerador de Planos Patrimoniais com aba imobiliária e liquidez; Ferramenta Wealth Planning
-reescrita com motor de linha do tempo, objetivos recorrentes, grade de sensibilidade e
-planejamento sucessório; integração do CRM com login único; consolidação de cinco
-scripts SQL num só · **2.51 código do assessor e correção da impressão do Wealth Planning**.
-**Outubro** Política de Alocação; cores por etapa e contraste do Painel no CRM; modal de
-detalhe do CRM em duas colunas; edição/exclusão na timeline do CRM · **2.80 "Importar de
-PDF" na lista de ativos das Carteiras — lê o Relatório de Performance (BTG/Necton) e o
-Extrato de cliente (Sinosserra) direto do PDF, sem precisar digitar nem montar planilha** ·
-**2.81 tira as janelas de 3 e 6 meses da lista de ativos (planilha, PDF e relatório
-impresso) — nenhuma fonte de dado usada na importação informa essas duas janelas por
-ativo, só mês/ano/12 meses/desde o início** · **2.82 conserta "Esqueci minha senha": o
-link do e-mail de recuperação não tinha nenhuma tela esperando por ele, então clicar não
-levava a lugar nenhum — existe a tela de "defina sua nova senha" agora** ·
-**2.83 Fluxo e Captação (`fluxo.html`), fatia 1: importa a Movimentação geral do BTG,
-calcula NNM/aplicações/resgates/renda passiva/caixa, tela de auditoria — ver seção 15**.
+Gráficos (entregue): SVG à mão, sem lib nova, mesmo padrão do chartEvolucao do index.html. Dois gráficos na Visão Geral: série histórica de Net New Money (barra por mês, verde quando positivo e vermelho quando negativo, eixo em zero — usa todos os meses já salvos mais o mês em tela mesmo que ainda não esteja salvo) e destino das aplicações do mês (barra por classe — renda fixa, fundos, renda variável, previdência). Paleta categórica das 4 classes validada pela skill de dataviz (azul/laranja/água/amarelo, ordem fixa, ΔE ≥ 8 contra daltonismo e ≥ 15 visão normal) — não reaproveita verde/vermelho de positivo/negativo pra não confundir com o sinal dos cards. Testado com meses sintéticos (inclusive NNM negativo, pra confirmar a cor e a barra pra baixo do zero) e com screenshot real via Playwright, sem sobreposição de rótulo.
 
----
+Ofertas públicas e secundário (entregue, fatia 5 adiantada): nova aba "Ofertas e Secundário". Reconhece mais 3 tipos de arquivo pelas colunas, no mesmo input de upload de sempre: ordens no secundário (intermediação de cotas de fundos — compra/venda entre clientes/contrapartes), dashboard de ofertas públicas (histórico) e book de reservas. Diferença importante desses 3 em relação à Movimentação geral: cada arquivo cobre vários meses de histórico, não um mês só (o de ordens, por exemplo, tinha 36 meses diferentes, de setembro/2023 a novembro/2026). Por isso a tela agrupa por mês a partir da data de solicitação e mostra uma tabela com todos os meses encontrados de uma vez; salvar dispara uma chamada no banco por mês (função nova fluxo_substituir_distribuicao, mesmo padrão de fluxo_substituir_mes, mas gravando em fluxo_distribuicao).
 
-## 13. Conferência de consistência
+No secundário, só conta como "comprado/vendido" a ordem com status EXECUTADA — as outras (CANCELADA, REJEITADA, AGUARDANDO_*, PARCIAL) aparecem na contagem total mas não entram na soma, porque não é volume de verdade. O campo "Ordem direta" do export do BTG é salvo como veio, sem a tela tentar adivinhar se isso quer dizer CETIP direto ou outra coisa — não dava pra confirmar o significado exato só pelo nome da coluna, e já levou engano no passado tentar inferir regra de negócio de nome de coluna ambíguo (ver "Fluxo financeiro externo" acima). Pendente: perguntar pro Emil o que "Ordem direta" significa de verdade pra decidir se vira um indicador próprio.
 
-O botão **Conferir dados**, na aba Relatório, varre todo o histórico do cliente e aponta,
-agrupado por mês: saldo de abertura negativo ou zerado, percentual fora de escala,
-divergência entre resultado em reais e percentual informado, campo faltando de um lado
-só, abertura que não fecha com o fechamento do mês anterior, conta nova sem aplicação,
-conta que sumiu sem resgate, e resultado fora do padrão histórico da própria conta.
+Dashboard e book de ofertas são tratados como duas tabelas separadas, nunca somadas: cobrem o mesmo processo de reserva de oferta pública por ângulos diferentes (dashboard é o histórico completo, book parece ser um corte mais recente/operacional) e muito provavelmente se sobrepõem. A tela avisa isso na tela em vez de arriscar contar a mesma reserva duas vezes.
 
-São regras **determinísticas**, não modelo de linguagem. A decisão foi consciente: num
-relatório que vai para cliente, um alerta que mostra a conta ("R$ 9.000 sobre abertura
-de R$ 91.000 dá 9,89%, mas foi informado 0,50%") vale mais que um texto que às vezes
-inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da API.
+Datas desses 3 arquivos vêm em formatos diferentes mesmo dentro do mesmo arquivo (ISO com "T", ISO com espaço, ou DD/MM/AAAA) e nenhuma vem como data de verdade do Excel, só texto — por isso o parser (parseDataFlexivel) aceita os três formatos em vez de confiar no cellDates do SheetJS.
 
----
-
-## 14. Pendências
-
-- **SMTP próprio no Supabase, e cadastrar a URL do portal em Redirect URLs.** Sem o
-  SMTP, o e-mail de recuperação de senha não entrega (limite de 2/hora do serviço
-  embutido). Sem a Redirect URL cadastrada, o `redirect_to` do link é ignorado e ele
-  pode voltar pro lugar errado. A tela que recebe o link (clique no link → defina a
-  senha nova) já existe desde a 2.82 — falta só isso pra funcionar ponta a ponta.
-- **Domínio `portal.adamicaptal.com.br`** apontado para a Vercel, para contornar o
-  bloqueio do wi-fi do escritório.
-- **Decidir se a importação passa a criar clientes novos** já vinculados ao assessor pelo
-  código. Hoje ela apenas lista.
-- **Importador de extrato BTG** no Gerador de Planos Patrimoniais nunca foi calibrado
-  contra um arquivo real. Sem ele não há enquadramento por produto.
-- **IPCA contra IMA-B nos meses históricos.** Os rótulos mudaram, os valores antigos não.
-- A suíte de testes usada nas auditorias não está versionada no repositório.
-- Migrar a hospedagem dos HTML para infraestrutura própria, eliminando a Vercel e
-  mantendo apenas o Supabase.
-- **Segurança:** tokens do GitHub e chaves do Supabase já foram expostos em conversa mais
-  de uma vez e precisam de revogação confirmada. Não pedir nem aceitar credencial por
-  chat: ela não funciona no ambiente de execução e fica registrada no histórico.
-
----
-
-## 15. Fluxo e Captação (`fluxo.html`)
-
-BI de captação construído a partir dos exports de movimentação do BTG, pra alimentar o
-comitê de política de alocação. Acesso restrito a master (`eh_super()`), porque mostra
-captação da casa inteira, de todos os assessores — não só a carteira de quem está
-logado. Entra no hub com `restritoMaster:true`, que esconde o card de quem não é master
-(a segurança de verdade é a RLS de `fluxo_snapshots`/`fluxo_lancamentos`, o esconder no
-hub é só pra não mostrar um link morto).
-
-**Entregue até agora (fatia 1):** importa a Movimentação geral (aba "Export" do BTG,
-identificada pelo conjunto de colunas, nunca pelo nome do arquivo), normaliza a conta
-pra 9 dígitos com zero-fill, calcula fluxo financeiro externo (com neutralização de
-pares intra-escritório, editável na tela de Auditoria), transferência de custódia,
-portabilidade de previdência, aplicações e resgates por classe, renda passiva
-distribuída, caixa acumulado e um mapa geral de movimentações por
-Mercado/Submercado/Lançamento. Salva em `public.fluxo_lancamentos`, um snapshot por
-mês/ano, substituível (reimportar apaga e grava de novo, com registro em `auditoria`).
-
-**Validado contra o PPTX real de outubro/2026** (que o Emil mandou como referência):
-aplicações de renda fixa, fundos e renda variável bateram exatas; resgates totais,
-renda passiva (até o centavo, incluindo quem reinvestiu e quem não) e caixa acumulado
-também bateram. A transferência de custódia bateu com a leitura de "líquido" usada na
-fórmula do NNM (não com o destaque de "só as duas contas novas" do slide, que é uma
-subfatia editorial, não o total).
-
-**Fluxo financeiro externo não reconcilia sozinho com o PPTX** (regra escrita dá
--R$ 9,97 milhões em outubro, o PPTX mostra -R$ 6,0 milhões), **e isso é proposital, não
-uma pendência.** Testei filtrar automaticamente contraparte com nome de empresa
-(LTDA/S.A./INSTITUTO) e o filtro pegava junto o M.H.Linden — R$ 8,35 milhões que o
-próprio PPTX quer CONTADOS, é a história do mês (slide "Os Dois Eventos do Mês"). Não dá
-pra distinguir "tesouraria de empresa" de "resgate real de cliente pessoa jurídica" só
-pelo nome da contraparte. Por isso a tela não tenta adivinhar: a seção "Maiores
-movimentações de conta corrente (não pareadas)" na Auditoria lista as entradas/saídas
-não casadas por valor, e cada uma tem botão de excluir/recolocar — quem conhece o
-cliente decide, transação por transação, igual já funcionava para os pares. Testei
-excluindo as 5 transações da TFL DO BRASIL (identificada como provável tesouraria, bastante
-entrada e saída na mesma conta no mês): o líquido muda exatamente R$ 506.352,76 (o líquido
-delas) e volta ao valor original ao recolocar — mecanismo correto, decisão de negócio
-em aberto com o Emil.
-- **Detector de reciclagem de previdência só pega o que resgata e porta no mesmo mês
-  importado.** O caso real que inspirou a regra (Maristela: portou em julho, resgatou
-  em outubro, portou de volta em outubro) só é pego depois que os meses anteriores
-  também estiverem salvos no banco — é inerente ao desenho (precisa de histórico), não
-  uma falha da fatia 1.
-- **"Aplicações totais" do card de resumo não soma exatamente igual ao número do PPTX**
-  (26,8 mi contra 27,6 mi) — as 3 classes individuais (RF/Fundos/RV) batem exatas, a
-  diferença está em algo não quebrado na tabela de métricas do Emil (possivelmente
-  COE ou criptoativo, que não têm regra de "aplicação" escrita).
-
-**Navegação mês a mês (entregue):** seletor no topo da tela lista os meses já salvos em
-`fluxo_snapshots` (mais recente primeiro, com a contagem de lançamentos). Escolher um mês
-busca `fluxo_lancamentos` paginado (o PostgREST do Supabase devolve no máximo 1000 linhas
-por vez — a tela busca em lotes de 1000 até não vir mais nada) e reconstrói exatamente o
-mesmo objeto que o upload de arquivo monta, rodando o motor de cálculo de novo em cima do
-dado salvo. Testado ponta a ponta: importar o arquivo real de outubro/2026 (7.812 linhas),
-salvar, zerar a tela, recarregar pelo seletor — todos os indicadores (NNM, fluxo
-financeiro, custódia, previdência, aplicações/resgates, renda passiva, canal de fundos)
-saem idênticos ao do import original. Os botões de desmarcar par/excluir transação da
-Auditoria não persistem no banco (ficam só na sessão) — ao recarregar um mês salvo, eles
-voltam ao estado padrão (nada desmarcado), igual a toda vez que um arquivo é importado de
-novo.
-
-**Coluna nova em `fluxo_lancamentos`: `movimentacao`.** O texto cru da coluna
-"Movimentação" do export do BTG não estava sendo salvo — sem ele, recarregar um mês do
-banco não conseguia reclassificar fluxo financeiro externo nem canal de fundos (as duas
-seções que leem o texto da movimentação, não só Mercado/Sub Mercado/Lançamento). Se esse
-SQL já foi colado antes sem essa coluna, colar de novo não quebra nada: é só um `alter
-table add column if not exists`, idempotente.
-
-**Comparativo de período (entregue):** segundo seletor no topo, habilitado quando tem um
-mês carregado — mês anterior, mesmo mês do ano anterior, média dos últimos 3 ou 6 meses.
-Aba nova "Comparativo" mostra uma tabela com cada indicador (NNM, fluxo financeiro,
-custódia, portabilidade, aplicações e resgates por classe, renda passiva, caixa),
-valor do mês atual, valor/média do período comparado, variação em R$ e em %. Busca os
-meses de comparação direto do banco (com cache em memória pra não repetir a mesma
-consulta) e nunca trava se faltar algum: numa média de 3 meses com só 2 salvos, calcula
-com os 2 e avisa "só achei 2 de 3"; se nenhum mês necessário estiver salvo, avisa e some
-pede pra importar/salvar esses meses — nunca mostra comparação incompleta sem dizer.
-Validado com meses sintéticos (matemática de deslocar mês, inclusive virada de ano, e de
-média com mês faltando) — ainda não dá pra validar contra o PPTX porque só outubro/2026
-está salvo no banco; assim que o Emil salvar mais meses o comparativo começa a valer de
-verdade.
-
-**Gráficos (entregue):** SVG à mão, sem lib nova, mesmo padrão do `chartEvolucao` do
-`index.html`. Dois gráficos na Visão Geral: série histórica de Net New Money (barra por
-mês, verde quando positivo e vermelho quando negativo, eixo em zero — usa todos os meses
-já salvos mais o mês em tela mesmo que ainda não esteja salvo) e destino das aplicações
-do mês (barra por classe — renda fixa, fundos, renda variável, previdência). Paleta
-categórica das 4 classes validada pela skill de dataviz (azul/laranja/água/amarelo, ordem
-fixa, ΔE ≥ 8 contra daltonismo e ≥ 15 visão normal) — não reaproveita verde/vermelho de
-positivo/negativo pra não confundir com o sinal dos cards. Testado com meses sintéticos
-(inclusive NNM negativo, pra confirmar a cor e a barra pra baixo do zero) e com
-screenshot real via Playwright, sem sobreposição de rótulo.
-
-**Ofertas públicas e secundário (entregue, fatia 5 adiantada):** nova aba "Ofertas e
-Secundário". Reconhece mais 3 tipos de arquivo pelas colunas, no mesmo input de upload
-de sempre: ordens no secundário (intermediação de cotas de fundos — compra/venda entre
-clientes/contrapartes), dashboard de ofertas públicas (histórico) e book de reservas.
-Diferença importante desses 3 em relação à Movimentação geral: **cada arquivo cobre
-vários meses de histórico, não um mês só** (o de ordens, por exemplo, tinha 36 meses
-diferentes, de setembro/2023 a novembro/2026). Por isso a tela agrupa por mês a partir da
-data de solicitação e mostra uma tabela com todos os meses encontrados de uma vez; salvar
-dispara uma chamada no banco por mês (função nova `fluxo_substituir_distribuicao`, mesmo
-padrão de `fluxo_substituir_mes`, mas gravando em `fluxo_distribuicao`).
-
-No secundário, só conta como "comprado/vendido" a ordem com status `EXECUTADA` — as
-outras (`CANCELADA`, `REJEITADA`, `AGUARDANDO_*`, `PARCIAL`) aparecem na contagem total
-mas não entram na soma, porque não é volume de verdade. O campo "Ordem direta" do export
-do BTG é salvo como veio, sem a tela tentar adivinhar se isso quer dizer CETIP direto ou
-outra coisa — não dava pra confirmar o significado exato só pelo nome da coluna, e já
-levou engano no passado tentar inferir regra de negócio de nome de coluna ambíguo (ver
-"Fluxo financeiro externo" acima). Pendente: perguntar pro Emil o que "Ordem direta"
-significa de verdade pra decidir se vira um indicador próprio.
-
-Dashboard e book de ofertas são tratados como **duas tabelas separadas, nunca somadas**:
-cobrem o mesmo processo de reserva de oferta pública por ângulos diferentes (dashboard é
-o histórico completo, book parece ser um corte mais recente/operacional) e muito
-provavelmente se sobrepõem. A tela avisa isso na tela em vez de arriscar contar a mesma
-reserva duas vezes.
-
-Datas desses 3 arquivos vêm em formatos diferentes mesmo dentro do mesmo arquivo (ISO com
-"T", ISO com espaço, ou `DD/MM/AAAA`) e nenhuma vem como data de verdade do Excel, só
-texto — por isso o parser (`parseDataFlexivel`) aceita os três formatos em vez de confiar
-no `cellDates` do SheetJS.
-
-Schema (`adami_completo.sql`, seção 8.5): `fluxo_distribuicao` ganhou duas colunas,
-`tipo_operacao` e `ordem_direta` (só usadas pelo secundário — criei colunas novas em vez
-de reaproveitar `modalidade`/`motivo_status` com significado trocado, pra não virar
-armadilha depois). **Se o SQL já foi colado antes, precisa colar de novo** — são `alter
-table add column if not exists`, não quebra nada do que já tem.
-
-**Checklist de upload (entregue):** a área de importação virou 5 caixas de
-arrastar-e-soltar, uma por tipo de arquivo (Movimentação geral, ordens no secundário,
-dashboard de ofertas, book de reservas, NNM do escritório), pra o Emil sempre saber quais
-planilhas levantar no mês. Cada caixa aceita qualquer um dos 5 tipos — a identificação
-continua sendo só pelas colunas, então não tem problema soltar no quadrado errado. Fica
-verde e mostra "mês/ano — N lançamentos" assim que reconhece alguma coisa (só nesta
-sessão, não é algo salvo no banco).
-
-**NNM do escritório (reconhecido, ainda não processado):** novo arquivo detectado pelas
-colunas (Conta, Nome, Mercado, Descrição, Ativo, Quantidade, Captação, Data, Tipo,
-Assessor, Escritório, ID). A coluna "Data" vem como número de série do Excel cru, não
-como texto nem data de verdade — mesma armadilha de "Data Cotização" na Movimentação
-geral, resolvida com `dataDeSerialExcel()` (conferido batendo exatamente com
-`XLSX.SSF.format`). **De propósito, a tela só guarda o arquivo na sessão e mostra na
-caixa — não calcula nada, não compara com o NNM que a Movimentação geral calcula, não
-salva no banco.** O Emil pediu pra avisar quando for a hora de "imputar" esse dado; até
-lá fica só reconhecido. Primeira conferência rápida feita à mão (não publicada na tela):
-outubro/2026 soma R$ 32.461.433,91 de captação bruta nesse arquivo contra
-R$ 31.939.268,86 do NNM calculado pela Movimentação geral — diferença de ~1,6%, esperado
-dado que são metodologias diferentes, mas é o número a cruzar quando o Emil pedir pra
-processar.
-
-**Drill-down clicável em "pra onde foi"/"de onde veio" (entregue):** o Emil mandou um PDF
-de referência ("Leitura de Movimentações", comitê de julho/2026) com o nível de insight
-que ele quer — tabelas de concentração por produto/gestor, maiores aportes/saques,
-narrativa explicando por que cada número importa. Pediu explicitamente pra navegar
-clicando, não só ler números estáticos. Primeira fatia disso: as barras de "Aplicações e
-resgates" agora são clicáveis — clicar numa classe (Renda fixa/Fundos/Renda
-variável/Previdência) abre uma tabela agrupada pelo produto de dentro dela (Produto pra
-renda fixa, Ativo pra fundos/RV/previdência — são os campos realmente preenchidos pra
-cada Mercado, conferido linha a linha no arquivo real), com aplicado/resgatado/net/qtd de
-contas por grupo. Clicar numa linha do grupo abre o segundo nível: os lançamentos
-individuais (conta, nome, data, valor). Validado que a soma dos grupos bate exatamente
-com o total já auditado da classe, e a soma dos lançamentos individuais bate com o grupo.
-
-Também: coluna **Net** (aplicado − resgatado) e linha de Total na tabela de
-aplicações/resgates, com aviso de que Net mistura dinheiro novo (NNM) com realocação
-interna entre produtos — não é a mesma coisa. **Separar de verdade NNM de realocação
-ainda não foi construído** — exigiria casar resgate↔aplicação por conta dentro do mesmo
-mês (mesma ideia da neutralização de pares do fluxo externo, só que por cliente entre
-classes de ativo, não entre contas). Fica como próximo passo claro.
-
-**Ajustes de uso real (entregue, feedback direto do Emil depois de usar a versão
-anterior):**
-- **Drill-down de renda fixa virou por título, não por cliente.** O primeiro nível
-  (clicar "Renda fixa") continua agrupando por Produto (CDB/LCA/LCI/...). O segundo nível
-  mudou: em vez de listar os lançamentos de cada cliente, agrupa por título de verdade —
-  Emissor + Indexador + Taxa (campo `Taxa Emissão`, com fallback pra `Taxa Compra`) — e
-  mostra Emissor/Taxa/Vencimento/Captado/Contas/Títulos. Vencimento varia dia a dia dentro
-  do mesmo título (emissão contínua do BTG), por isso virou faixa (mín–máx) em vez de uma
-  data só. Fundos/RV/Previdência continuam com o segundo nível por cliente, porque ali o
-  primeiro nível (Ativo = fundo/ticker) já é o produto mais específico que existe — não
-  tem mais nada abaixo pra agrupar.
-- **"Outras fontes do mês" aparece na Visão Geral.** Antes, importar secundário/ofertas só
-  mudava a aba separada "Ofertas e Secundário" — dava a impressão de que nada mudava na
-  tela principal. Agora, se o mês em tela tiver dado reconhecido nessas fontes, aparece um
-  card na Visão Geral (líquido do secundário, valor obtido nas ofertas); se não tiver,
-  mostra aviso explicando que precisa arrastar o arquivo certo.
-- **Navegação por mês**: botões ← → do lado do seletor pra andar sequencialmente pelos
-  meses salvos (desabilitam sozinhos na ponta da lista), e as barras do gráfico de série
-  histórica de NNM ficam clicáveis — clicar numa barra salva pula direto pra aquele mês.
-- **Ajuste visual**: números de tabela e dos cards pararam de usar fonte monoespaçada
-  (ficava com cara de planilha/terminal) — viraram números normais, alinhados, em negrito
-  nos cards. Títulos de seção ganharam uma linha dourada embaixo. Cards com sombra leve em
-  vez de borda só, pra parecer menos "gerado por IA" e mais editorial, mais perto do
-  PDF de referência que o Emil mandou.
-
-**NNM confirmado (não mudou):** Emil achou que "fluxo financeiro é o verdadeiro NNM", mas
-depois esclareceu: "NNM é o quanto teve de NET no mês = entradas − saídas". Isso bate
-exatamente com a fórmula que já estava em produção (fluxo financeiro + custódia +
-portabilidade — cada um já é, por si, um líquido de entradas−saídas do próprio canal).
-Não mudei nada na fórmula, só o texto do card (agora diz "entradas − saídas" explícito)
-pra não gerar a mesma dúvida de novo.
-
-**Indicador novo: Total aplicado no mês.** Emil pediu explicitamente: "eu preciso saber
-no comitê o quanto movimentamos no mês, total, todas aplicações, essa informação é uma
-das mais importantes". Virou card novo na Visão Geral (soma de RF+Fundos+RV+Previdência)
-e entrou em `indicadoresDe()`, então já aparece no comparativo de período também.
-
-**Drill-down em renda passiva, secundário e ofertas públicas (entregue, "isso pra tudo"
-— pedido do Emil de repetir o padrão de clicar-e-navegar em toda seção):**
-- **Renda passiva**: clicar na seção mostra de onde veio (RF juros/amortização, RV
-  rendimento/juros s.capital/dividendos/restituição, COE juros/amortização), e clicar
-  numa origem mostra os lançamentos (conta, nome, ativo/emissor, data, valor).
-- **Secundário**: clicar num mês mostra compra vs. venda e intermediação direta vs. não
-  direta (campo "Ordem direta" do export, salvo como veio — Emil confirmou que
-  secundário = cetipado), mais um ranking por fundo; clicar num fundo mostra as ordens
-  individuais (conta, nome, tipo, direta, data, valor).
-- **Ofertas públicas (dashboard)**: clicar num mês mostra ranking por oferta (nome,
-  ativo, reservado, obtido, contas) e por assessor (campo ASSESSOR do próprio dashboard —
-  é a única das 3 fontes de secundário/ofertas que tem essa coluna); clicar numa oferta
-  mostra quem participou (conta, nome, assessor, reservado, obtido). Book de reservas
-  ainda não ganhou esse nível de clique — fica pra próxima rodada, prioridade menor
-  porque é um corte complementar ao dashboard, não independente.
-- Ranking por assessor no **secundário** segue pendente: o arquivo de ordens não tem
-  coluna de assessor (só conta/titular), igual a limitação que o próprio PDF do Emil
-  documenta pra Movimentação geral. Precisa de um de-para conta→assessor pra destravar.
-
-**Pendente (nessa ordem, conforme o PDF de referência do Emil):** mais seções no mesmo
-estilo "tabela + leitura" do PDF — composição do dinheiro novo (de onde veio, por
-prefixo), saídas e reciclagem com faixas de prazo, concentração de clientes (maiores
-entradas/saídas líquidas por CLIENTE, não só por transação), caixa parado com custo de
-oportunidade anualizado, teste de FGC por cliente/emissor (mesma limitação documentada no
-PDF: só pega compras do mês importado), drill-down no book de reservas, de-para
-conta→assessor pro secundário. Pendente de dado: câmbio (arquivo ainda não enviado),
-aderência à política de alocação (precisa de uma política salva pra comparar contra).
-Também pendente: decidir com o Emil como e quando usar o NNM do escritório (comparação de
-referência? substitui o cálculo próprio? os dois lado a lado?).
-
-SQL em `adami_completo.sql`, seção 8.5: tabelas `fluxo_snapshots`, `fluxo_lancamentos`,
-`fluxo_distribuicao` (schema pronto pra fatia 5, ainda sem tela) e a função
-`fluxo_substituir_mes`. Precisa ser colado no SQL Editor do Supabase antes do módulo
-funcionar de ponta a ponta (sem isso, a tela calcula e mostra tudo, só não salva).
-
----
-
-## 16. Política de Alocação (`alocacao.html`)
-
-Ferramenta do comitê mensal: formulário à esquerda, prévia do relatório pronta pra
-imprimir à direita, uma `.folha` (A4) por página.
-
-**Histórico mensal no Supabase (entregue).** Até a versão 1.4, o estado inteiro (`EST`)
-só existia no `localStorage` do navegador, sob a chave `aw_alocacao` — sem backup, sem
-histórico, e o botão "Novo mês" **apagava os números do mês anterior pra sempre** (só os
-textos de Objetivo/Governança/Diretrizes sobreviviam). Era por isso que o Emil perguntou
-"preciso salvar o que eu tenho feito aqui? se eu imprimir funciona?" — a resposta era
-"só imprimindo mesmo, não tinha outro jeito". Agora tem: tabela
-`politica_alocacao_snapshots` (uma linha por mês/ano, `dados jsonb` com o `EST` inteiro)
-e a função `politica_alocacao_salvar` (security definer, grava com `on conflict (mes,ano)
-do update`). Botão "Salvar esta política" no topo + seletor de mês/ano pra navegar entre
-os meses já salvos, mesmo padrão visual do seletor de `fluxo.html`. Aberto a qualquer
-usuário logado — igual já era no localStorage, não é dado sensível de cliente.
-
-O campo "Mês" da Capa, que era texto livre, virou `<select>` com os 12 meses — precisa
-de um valor numérico confiável pra indexar a tabela, e texto livre podia vir com
-abreviação, erro de digitação, etc. `numeroDoMes()` converte o nome pro número (1-12).
-`localStorage` continua existindo como rascunho do navegador atual (não foi removido),
-mas deixou de ser a única cópia.
-
-**Nova página final: Ativos e Emissores Sugeridos (entregue).** Pedido direto do Emil —
-uma lista de ativos/emissores de crédito privado já avaliados pelo comitê, "alocando
-aqui, sem complicação esperada, high grade, triple A". Mesmo padrão de formulário e
-página que "Trade Ideas do Mês" (lista de título + texto, adicionar/remover item).
-
-**Armadilha encontrada e corrigida: `.folha` corta conteúdo sem avisar.** Cada página
-impressa é uma `div.folha` com `overflow:hidden` e, dentro de `@media print`,
-`height:297mm` fixo — texto que passa da altura de uma folha A4 **some silenciosamente**,
-sem erro, sem scroll visível (CLAUDE.md já avisava sobre isso em geral; aqui apareceu na
-prática). Testado com Playwright, forçando `media:'print'` de verdade (sem isso a
-medição dá falso negativo, porque na tela o `.folha` só tem `min-height`, cresce livre e
-nunca corta nada — só mediu certo depois de `page.emulateMedia({media:'print'})`): 8
-itens de texto realista cabem numa página, 15 itens parecidos já cortam ~2 itens do
-final, sem aviso nenhum. Como não dá pra medir isso ao vivo no navegador sem forçar o
-layout de impressão (e isso é caro de fazer a cada tecla digitada), a solução foi um
-orçamento de caracteres calibrado contra o teste real: acima de 1.600 caracteres
-(títulos + textos somados) aparece um aviso visível no formulário — "texto longo demais
-pra uma página só, confira o PDF antes de mandar pro comitê". Isso não é uma correção
-perfeita (é estimativa por caractere, não medida exata do layout), mas transforma um
-corte silencioso em aviso visível antes de imprimir. "Trade Ideas do Mês" tem exatamente
-o mesmo risco estrutural e não ganhou o mesmo aviso ainda — fica pendente.
-
-**Pendente:** o mesmo aviso de limite de caracteres pra "Trade Ideas do Mês" (risco
-idêntico, ainda sem aviso); paginação de verdade (deixar o conteúdo fluir pra uma segunda
-folha em vez de cortar) seria a correção definitiva, mas é uma mudança de arquitetura
-maior — não entrou nesta rodada.
-
-**"Alterações no Mês" automática (entregue).** Antes era um campo de texto livre, só o
-que o Emil escrevesse à mão — normalmente ficava "Sem alterações no mês" por preguiça de
-redigitar. Agora tem um botão, "Comparar com mês anterior e preencher", que busca no
-Supabase a última política salva antes do mês em edição (acha o mês anterior mesmo com
-buraco no histórico — se agosto não foi salvo, compara com julho) e escreve sozinho o que
-mudou: ativo adicionado/removido/com % alterado em cada uma das três carteiras (Brasil,
-Internacional, Previdência), trade idea adicionada/removida/com texto atualizado, ativo
-sugerido adicionado/removido. A comparação casa por nome do ativo ou título da ideia, não
-por posição na lista, pra não se confundir quando um item é inserido no meio. O texto cai
-pronto no mesmo campo que já existia e continua 100% editável — dá pra completar, cortar
-ou reescrever à mão antes de salvar ou imprimir, exatamente como pedido ("deixa um espaço
-pra eu poder editar"). Se já tiver texto digitado ali (diferente do placeholder padrão),
-pede confirmação antes de sobrescrever, pra não apagar uma observação manual sem querer.
-Ganhou o mesmo aviso de limite de caracteres da página de Ativos Sugeridos (pode ficar
-grande numa comparação com muita coisa nova), reaproveitando a mesma função de aviso
-(`avisoCorteDePagina`) ao invés de duplicar a lógica. Testado com jsdom simulando dois
-meses com carteira, trade ideas e ativos sugeridos diferentes, e com Playwright pro visual
-do botão/aviso/texto gerado.
-
-**Bug corrigido: sessão expirava e o "Salvar" travava com "JWT expired" (entregue).**
-O token de acesso do Supabase dura cerca de 1 hora. Nem `fluxo.html` nem `alocacao.html`
-tinham lógica pra renovar esse token sozinho — `index.html` já tinha (`renovar()`), os
-outros dois não. Depois de 1h de uso contínuo, qualquer tentativa de salvar (snapshot do
-fluxo, política de alocação) voltava erro `PGRST303 JWT expired` e travava o botão em
-"Salvando...", sem perder o que já estava digitado (continuava no `EST`/rascunho local),
-mas sem conseguir gravar no banco. Corrigido portando o mesmo padrão do `index.html` pros
-dois arquivos: ao levar 401, tenta renovar o token com o `refresh_token` guardado e refaz
-a chamada original uma vez, de forma transparente (sem o usuário perceber nada). Só
-mostra alerta e manda pra tela de login se o `refresh_token` também já tiver expirado
-(sessão realmente morta, caso raro — isso dura semanas, não horas). Testado com jsdom
-simulando os dois cenários (token velho renova e reenvia sozinho; refresh também inválido
-avisa e redireciona) antes de publicar.
-
----
-
-## 17. Mesa RV (`rv.html`)
-
-**Tipo "Posição" (entregue).** Até a versão 2.78 só existia "Compra / Venda" (aba
-`ordem`) para operações diretas, com alvo e stop — pensado pra uma chamada tática, não
-pra só registrar que o cliente comprou ou vendeu um ativo. Pedido do Emil: um tipo mais
-simples, pra quem só quer comprar/vender mesmo, sem a análise de alvo/stop. Novo tipo
-"Posição" (aba entre "Compra/Venda" e "Swing Trade"): Operação (compra/venda), Preço e
-Observação — o card mostra Operação, Quantidade e Preço lado a lado, e abaixo o Valor
-Total (quantidade × preço) em destaque. Entra no histórico e nas estatísticas da Mesa RV
-como qualquer outro tipo.
-
-**Campo "Quantidade" ao lado de "Ativo" (entregue).** Antes não existia campo de
-quantidade em nenhum tipo de operação — só preço e percentuais. Agora tem um campo
-"Quantidade" na mesma linha do "Ativo" (topo do formulário, compartilhado por todos os
-tipos, como pedido — "isso pra tds"). Formata em milhar enquanto digita, igual o campo de
-valor alocado no Histórico. Nos tipos que já existiam (Compra/Venda, Swing Trade, Stock or
-Coupon, estruturadas), a quantidade aparece como complemento na linha abaixo do ticker
-(ex.: "Bradesco PN · qtd. 2.000") quando preenchida — não aparecia antes, não teve nenhum
-redesenho de card pra caber. Em "Posição" ela é uma das três colunas principais, por ser
-o dado central desse tipo. Fica salva em `rv_operacoes.params.quantidade` pra todo tipo de
-operação, registrada e some do resumo quando o campo fica em branco (não força zero em
-operação que não usa quantidade, como as estruturadas por notional).
-
-Validado com `node --check` por bloco, acorn + eslint-scope (sem variável usada sem
-declarar), Playwright (card de Posição e card de Swing Trade com a quantidade visível) e
-jsdom direto no fluxo de `registrar()` (quantidade e valor total corretos no payload
-salvo, pro tipo novo e pra um já existente).
+Carregando arquivo
