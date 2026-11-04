@@ -197,11 +197,22 @@ input.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--m
 
 <script>
 /* Acesso restrito: exige sessao iniciada no portal, igual aos outros modulos. */
-(function(){
-  var ok=false;
-  try{ var s=JSON.parse(localStorage.getItem("aw_sessao")||"null"); ok=!!(s&&s.access_token); }catch(e){}
-  if(!ok){ location.replace("index.html"); }
-})();
+var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
+var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
+var SESSAO=null;
+try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
+if(!SESSAO||!SESSAO.access_token){ location.replace("index.html"); }
+function api(path,opts){
+  opts=opts||{};
+  var tk=(SESSAO&&SESSAO.access_token)||SB_KEY;
+  var h={"apikey":SB_KEY,"Authorization":"Bearer "+tk,"Content-Type":"application/json"};
+  if(opts.prefer) h["Prefer"]=opts.prefer;
+  return fetch(SB_URL+"/rest/v1/"+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined})
+    .then(function(res){
+      if(!res.ok) return res.text().then(function(t){ throw new Error(t||("HTTP "+res.status)); });
+      return res.status===204?null:res.json();
+    });
+}
 </script>
 
 <div class="topo">
@@ -211,6 +222,10 @@ input.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--m
   </div>
   <div class="topo-acoes">
     <span class="selo" id="selo"></span>
+    <select class="btn" id="seletorPolitica" onchange="carregarPoliticaDoBanco(this.value)" style="font-weight:600">
+      <option value="">Mês em edição (não salvo)</option>
+    </select>
+    <button class="btn" id="btnSalvarPolitica" onclick="salvarPolitica()">Salvar esta política</button>
     <button class="btn claro" onclick="novoMes()">Novo mês</button>
     <button class="btn ouro" onclick="window.print()">Imprimir / gerar PDF</button>
   </div>
@@ -225,7 +240,7 @@ input.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--m
 <div id="msg"></div>
 
 <script>
-var VERSAO_ALOC="versão 1.4";
+var VERSAO_ALOC="versão 1.5";
 document.getElementById("selo").textContent=VERSAO_ALOC;
 
 var CHAVE="aw_alocacao";
@@ -380,6 +395,8 @@ function carteiraPrevidenciaPadrao(){
 }
 function linhaAtivoNova(){ return {nome:"", c:"", cRoa:"", m:"", mRoa:"", s:"", sRoa:""}; }
 function tradeIdeaNova(){ return {titulo:"", texto:""}; }
+function ativoSugeridoNovo(){ return {titulo:"", texto:""}; }
+function ativosSugeridosPadrao(){ return [ativoSugeridoNovo()]; }
 function tradeIdeasPadrao(){
   return [
     {titulo:"BTDI11 - Fundo Cetipado", texto:"Oferta pública de fundo cetipado, objetivo de retorno em CDI+1,5%, prazo esperado de 3,5 anos (podendo prorrogar por +2). ROA de 2,5%"},
@@ -408,6 +425,7 @@ function estadoPadrao(){
     },
     diretrizes: diretrizesPadrao(),
     tradeIdeas: tradeIdeasPadrao(),
+    ativosSugeridos: ativosSugeridosPadrao(),
     alteracoesTitulo:"Produtos (Conta Brasil)",
     alteracoesTexto:"Sem alterações no mês",
     carteiraNotaBrasil: "* Fundo não aberto",
@@ -442,12 +460,14 @@ function salvar(){
   try{ localStorage.setItem(CHAVE, JSON.stringify(EST)); }catch(e){}
 }
 function novoMes(){
-  if(!confirm("Isto limpa os números do mês (macro, desempenho, carteiras, trade ideas) e mantém os textos de política (Objetivo, Governança, Diretrizes). Confirma?")) return;
+  var avisoSalvo=ESTADO_SALVO_ATUAL?"Esse mês já está salvo no banco, continua lá.":"Esse mês AINDA NÃO FOI SALVO -- os números digitados vão se perder.";
+  if(!confirm("Isto limpa os números (macro, desempenho, carteiras, trade ideas, ativos sugeridos) pra começar o mês seguinte, e mantém os textos de política (Objetivo, Governança, Diretrizes). "+avisoSalvo+" Confirma?")) return;
   var manterGovernanca=EST.governanca, manterDiretrizes=EST.diretrizes;
   EST=estadoPadrao();
   EST.governanca=manterGovernanca;
   EST.diretrizes=manterDiretrizes;
-  salvar(); montarForm(); montarPreview();
+  ESTADO_SALVO_ATUAL=null;
+  salvar(); montarForm(); montarPreview(); renderSeletorPolitica();
   aviso("Mês novo. Textos de política mantidos.");
 }
 function aviso(txt){
@@ -455,6 +475,63 @@ function aviso(txt){
   m.textContent=txt; m.className="on";
   clearTimeout(aviso._t);
   aviso._t=setTimeout(function(){ m.className=""; },2200);
+}
+
+/* ------------------------------------------------------------- histórico
+   O localStorage (carregar/salvar acima) é só o rascunho do navegador
+   atual -- sem backup, sem histórico. Isto aqui salva de verdade no
+   banco, um snapshot por mês/ano, com botão explícito e dropdown pra
+   navegar entre os meses já salvos. */
+var SNAPSHOTS_POLITICA=[];
+var ESTADO_SALVO_ATUAL=null; // id do snapshot que corresponde ao EST em tela, ou null se ainda não foi salvo
+function carregarSnapshotsPolitica(){
+  return api("politica_alocacao_snapshots?select=id,mes,ano,atualizado_em&order=ano.desc,mes.desc").then(function(r){
+    SNAPSHOTS_POLITICA=r||[];
+    renderSeletorPolitica();
+  }).catch(function(){ /* dropdown fica só com "mês em edição" -- tela ainda funciona normalmente */ });
+}
+function renderSeletorPolitica(){
+  var sel=document.getElementById("seletorPolitica");
+  if(!sel) return;
+  var opcoes='<option value="">Mês em edição (não salvo)</option>';
+  SNAPSHOTS_POLITICA.forEach(function(s){
+    opcoes+='<option value="'+s.id+'"'+(s.id===ESTADO_SALVO_ATUAL?" selected":"")+'>'+MESES_ALOC[s.mes-1]+"/"+s.ano+'</option>';
+  });
+  sel.innerHTML=opcoes;
+}
+function salvarPolitica(){
+  var mes=numeroDoMes(EST.mes), ano=n(EST.ano)||new Date().getFullYear();
+  if(!confirm("Salvar a política de "+EST.mes+"/"+EST.ano+"? Isso substitui o que já estiver salvo pra esse mês.")) return;
+  var b=document.getElementById("btnSalvarPolitica"); b.disabled=true; b.textContent="Salvando…";
+  api("rpc/politica_alocacao_salvar",{method:"POST",body:{p_mes:mes,p_ano:ano,p_dados:EST}})
+    .then(function(id){
+      ESTADO_SALVO_ATUAL=id;
+      aviso("Política salva.");
+      b.textContent="Salvo ✓";
+      return carregarSnapshotsPolitica();
+    })
+    .catch(function(e){ alert("Não consegui salvar.\n\n"+e.message); })
+    .then(function(){ b.disabled=false; if(b.textContent==="Salvando…") b.textContent="Salvar esta política"; });
+}
+function carregarPoliticaDoBanco(id){
+  if(!id){
+    ESTADO_SALVO_ATUAL=null;
+    renderSeletorPolitica();
+    return;
+  }
+  var sel=document.getElementById("seletorPolitica"); sel.disabled=true;
+  api("politica_alocacao_snapshots?id=eq."+id+"&select=dados").then(function(r){
+    if(!r||!r.length){ alert("Não achei essa política salva."); return; }
+    var base=estadoPadrao();
+    var dados=r[0].dados;
+    Object.keys(base).forEach(function(k){ if(dados[k]===undefined) dados[k]=base[k]; });
+    EST=dados;
+    ESTADO_SALVO_ATUAL=id;
+    salvar(); montarForm(); montarPreview();
+    aviso("Política de "+EST.mes+"/"+EST.ano+" carregada.");
+  })
+    .catch(function(e){ alert("Não consegui carregar essa política.\n\n"+e.message); })
+    .then(function(){ sel.disabled=false; renderSeletorPolitica(); });
 }
 
 /* ------------------------------------------------------------- calculo
@@ -498,6 +575,7 @@ function montarForm(){
   h+=blocoCarteira('brasil','Carteira Recomendada — Brasil');
   h+=blocoCarteira('internacional','Carteira Recomendada — Conta Internacional');
   h+=blocoCarteira('previdencia','Carteira Recomendada — Previdência');
+  h+=blocoAtivosSugeridos();
 
   document.getElementById('painelForm').innerHTML=h;
 }
@@ -513,10 +591,16 @@ function montarFormPreservandoAbertos(){
   for(var i=0;i<novos.length && i<abertos.length;i++){ novos[i].open=abertos[i]; }
 }
 
+var MESES_ALOC=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+function numeroDoMes(nome){ var i=MESES_ALOC.indexOf(nome); return i===-1?1:i+1; }
+function campoMes(){
+  var opcoes=MESES_ALOC.map(function(m){ return '<option value="'+m+'"'+(m===EST.mes?" selected":"")+'>'+m+'</option>'; }).join("");
+  return '<div class="campo"><label>Mês</label><select onchange="EST.mes=this.value;montarTudo()">'+opcoes+'</select></div>';
+}
 function blocoCapa(){
   return '<details class="bloco-form" open><summary>Capa '+setaSvg()+'</summary><div class="corpo">'+
     '<div class="linha2">'+
-      campo('Mês', 'input', 'EST.mes', EST.mes, "montarTudo()") +
+      campoMes() +
       campo('Ano', 'input', 'EST.ano', EST.ano, "montarTudo()") +
     '</div>'+
   '</div></details>';
@@ -597,6 +681,34 @@ function blocoTradeIdeas(){
 }
 function addTradeIdea(){ EST.tradeIdeas.push(tradeIdeaNova()); montarFormPreservandoAbertos(); montarTudo(); }
 function removerTradeIdea(i){ EST.tradeIdeas.splice(i,1); montarFormPreservandoAbertos(); montarTudo(); }
+
+/* A página impressa é uma folha de tamanho fixo com o conteúdo que
+   transbordar simplesmente cortado (sem aviso nenhum na hora de
+   imprimir) -- testei com Playwright: 8 itens de texto normal cabem,
+   15 itens parecidos já cortam ~2 itens no fim, sem erro, sem overflow
+   visível na tela. Como não dá pra medir isso ao vivo sem forçar o
+   layout de impressão, aviso por caracteres: por volta de 1.600
+   caracteres (título+texto somados) é o ponto seguro, calibrado contra
+   o teste real -- 1.120 coube, 2.700 cortou. */
+var LIMITE_CARACTERES_ATIVOS_SUGERIDOS=1600;
+function blocoAtivosSugeridos(){
+  var h='<details class="bloco-form"><summary>Ativos e Emissores Sugeridos '+setaSvg()+'</summary><div class="corpo">'+
+    '<p class="ajuda">Página final do relatório: ativos e emissores de crédito privado já avaliados pelo comitê — a leitura é "alocando aqui, sem complicação esperada". Um título curto (ativo/emissor + rating, ex.: "Banco XYZ — CDB, AAA") e a justificativa.</p>'+
+    '<div id="avisoAtivosSugeridos"></div>';
+  EST.ativosSugeridos.forEach(function(t,i){
+    h+='<div class="item-add"><div class="topo-item"><b>Item '+(i+1)+'</b>'+
+      (EST.ativosSugeridos.length>1?'<button class="bt-x-item" onclick="removerAtivoSugerido('+i+')" title="Remover">&times;</button>':'')+
+      '</div>'+
+      '<div class="campo" style="margin-bottom:8px"><input placeholder="Título (ex.: Banco XYZ — CDB, AAA)" value="'+esc(t.titulo)+'" oninput="EST.ativosSugeridos['+i+'].titulo=this.value;montarTudo()"></div>'+
+      '<div class="campo"><textarea placeholder="Por que está validado" oninput="EST.ativosSugeridos['+i+'].texto=this.value;montarTudo()">'+esc(t.texto)+'</textarea></div>'+
+    '</div>';
+  });
+  h+='<button class="btn claro sm" onclick="addAtivoSugerido()">+ Adicionar item</button>'+
+  '</div></details>';
+  return h;
+}
+function addAtivoSugerido(){ EST.ativosSugeridos.push(ativoSugeridoNovo()); montarFormPreservandoAbertos(); montarTudo(); }
+function removerAtivoSugerido(i){ EST.ativosSugeridos.splice(i,1); montarFormPreservandoAbertos(); montarTudo(); }
 
 function blocoAlteracoes(){
   return '<details class="bloco-form"><summary>Alterações no Mês '+setaSvg()+'</summary><div class="corpo">'+
@@ -708,7 +820,17 @@ function montarPreview(){
   h+=paginaCarteira('brasil','Carteira Recomendada', null);
   h+=paginaCarteira('internacional','Carteira Recomendada','Conta Internacional');
   h+=paginaCarteira('previdencia','Carteira Recomendada','Previdência');
+  h+=paginaAtivosSugeridos();
   document.getElementById('painelPreview').innerHTML=h;
+  atualizarAvisoAtivosSugeridos();
+}
+function atualizarAvisoAtivosSugeridos(){
+  var div=document.getElementById('avisoAtivosSugeridos');
+  if(!div) return;
+  var totalCaracteres=EST.ativosSugeridos.reduce(function(a,t){ return a+t.titulo.length+t.texto.length; },0);
+  div.innerHTML = totalCaracteres>LIMITE_CARACTERES_ATIVOS_SUGERIDOS
+    ? '<p style="background:var(--gold-tint);border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;color:#3a2e0f">Texto longo demais pra uma página só — ao imprimir, o que passar do limite da folha é cortado sem aviso. Reduza o número de itens ou encurte o texto, e confira no "Imprimir / gerar PDF" antes de mandar pro comitê.</p>'
+    : '';
 }
 
 function rodape(numero){
@@ -727,6 +849,7 @@ function paginaIndice(){
     'Projeções Macroeconômicas','Desempenho das Classes de Ativos Locais','Objetivo e Governança',
     'Diretrizes e Risco','Trade Ideas do Mês','Alterações no Mês','Carteira Recomendada',
     'Carteira Recomendada / Conta Internacional','Carteira Recomendada / Previdência',
+    'Ativos e Emissores Sugeridos',
   ];
   var h='<div class="folha indice"><div class="corpo-indice"><h2>Índice</h2><ol>';
   itens.forEach(function(t,i){ h+='<li><b>0'+(i+3<10?('0'+(i+3)).slice(-2):(i+3))+'</b>'+esc(t)+'</li>'; });
@@ -867,11 +990,22 @@ function paginaCarteira(chave, tituloBase, subtitulo){
     (chave==='brasil' && EST.carteiraNotaBrasil.trim() ? '<div class="obs-rodape">'+esc(EST.carteiraNotaBrasil)+'</div>' : '')+
     '</div>'+rodape(pagNum)+'</div>';
 }
+function paginaAtivosSugeridos(){
+  var h='<div class="folha"><div class="faixa-titulo serif"><h2>Ativos e Emissores Sugeridos</h2></div><div class="corpo-pag">'+
+    '<p style="font-size:12.5px;margin-bottom:12px">Seleção validada pelo comitê — ativos e emissores de crédito privado avaliados, grau de investimento, sem complicações esperadas de crédito.</p>';
+  EST.ativosSugeridos.forEach(function(t){
+    if(!t.titulo.trim() && !t.texto.trim()) return;
+    h+='<div class="trade-item"><div class="marcador"><b>'+esc(t.titulo)+'</b></div><p>'+nl2br(t.texto)+'</p></div>';
+  });
+  h+='</div>'+rodape(12)+'</div>';
+  return h;
+}
 
 /* ------------------------------------------------------------ inicio */
 carregar();
 montarForm();
 montarPreview();
+carregarSnapshotsPolitica();
 </script>
 </body>
 </html>

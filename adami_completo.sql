@@ -1341,6 +1341,53 @@ create policy fluxo_distribuicao_master on public.fluxo_distribuicao for all to 
   using (public.eh_super()) with check (public.eh_super());
 
 -- ============================================================
+--  8.6. POLÍTICA DE ALOCAÇÃO — histórico mensal
+--     Antes só ficava no localStorage do navegador: sem backup, sem
+--     histórico, e "Novo mês" apagava os números do mês anterior pra
+--     sempre (só os textos de política/diretrizes sobreviviam). Agora
+--     cada mês vira uma linha, com RPC pra salvar e dropdown pra navegar
+--     entre os meses já salvos -- usado por alocacao.html.
+--     Aberto a qualquer usuário logado, igual já era no localStorage:
+--     não é dado sensível de cliente, é o material do comitê mensal.
+-- ============================================================
+create table if not exists public.politica_alocacao_snapshots (
+  id            uuid primary key default gen_random_uuid(),
+  mes           smallint not null check (mes between 1 and 12),
+  ano           smallint not null check (ano between 2020 and 2100),
+  dados         jsonb not null,       -- o objeto EST inteiro do alocacao.html
+  salvo_por     uuid references auth.users(id) on delete set null,
+  criado_em     timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  unique (mes, ano)
+);
+create index if not exists politica_aloc_mes_ano_idx on public.politica_alocacao_snapshots(ano, mes);
+
+create or replace function public.politica_alocacao_salvar(p_mes int, p_ano int, p_dados jsonb)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare
+  v_id uuid;
+  v_email text := auth.jwt() ->> 'email';
+begin
+  insert into public.politica_alocacao_snapshots (mes, ano, dados, salvo_por)
+  values (p_mes, p_ano, p_dados, auth.uid())
+  on conflict (mes, ano) do update set dados = excluded.dados, atualizado_em = now()
+  returning id into v_id;
+
+  insert into public.auditoria (usuario, acao, alvo, detalhe)
+  values (v_email, 'salvou política de alocação', p_mes||'/'||p_ano, '');
+
+  return v_id;
+end;
+$$;
+revoke all on function public.politica_alocacao_salvar(int,int,jsonb) from public;
+grant execute on function public.politica_alocacao_salvar(int,int,jsonb) to authenticated;
+
+alter table public.politica_alocacao_snapshots enable row level security;
+drop policy if exists politica_aloc_leitura on public.politica_alocacao_snapshots;
+create policy politica_aloc_leitura on public.politica_alocacao_snapshots for select to authenticated using (true);
+-- escrita só pela RPC acima (security definer) -- sem policy de insert/update/delete.
+
+-- ============================================================
 --  9. CONFERÊNCIA — é esta tabela que importa
 --     Os três masters saem com master, administrador e admin no CRM.
 --     A coluna "codigo" é a que vai para a planilha de clientes; se

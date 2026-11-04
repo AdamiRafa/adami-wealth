@@ -701,3 +701,55 @@ SQL em `adami_completo.sql`, seção 8.5: tabelas `fluxo_snapshots`, `fluxo_lanc
 `fluxo_distribuicao` (schema pronto pra fatia 5, ainda sem tela) e a função
 `fluxo_substituir_mes`. Precisa ser colado no SQL Editor do Supabase antes do módulo
 funcionar de ponta a ponta (sem isso, a tela calcula e mostra tudo, só não salva).
+
+---
+
+## 16. Política de Alocação (`alocacao.html`)
+
+Ferramenta do comitê mensal: formulário à esquerda, prévia do relatório pronta pra
+imprimir à direita, uma `.folha` (A4) por página.
+
+**Histórico mensal no Supabase (entregue).** Até a versão 1.4, o estado inteiro (`EST`)
+só existia no `localStorage` do navegador, sob a chave `aw_alocacao` — sem backup, sem
+histórico, e o botão "Novo mês" **apagava os números do mês anterior pra sempre** (só os
+textos de Objetivo/Governança/Diretrizes sobreviviam). Era por isso que o Emil perguntou
+"preciso salvar o que eu tenho feito aqui? se eu imprimir funciona?" — a resposta era
+"só imprimindo mesmo, não tinha outro jeito". Agora tem: tabela
+`politica_alocacao_snapshots` (uma linha por mês/ano, `dados jsonb` com o `EST` inteiro)
+e a função `politica_alocacao_salvar` (security definer, grava com `on conflict (mes,ano)
+do update`). Botão "Salvar esta política" no topo + seletor de mês/ano pra navegar entre
+os meses já salvos, mesmo padrão visual do seletor de `fluxo.html`. Aberto a qualquer
+usuário logado — igual já era no localStorage, não é dado sensível de cliente.
+
+O campo "Mês" da Capa, que era texto livre, virou `<select>` com os 12 meses — precisa
+de um valor numérico confiável pra indexar a tabela, e texto livre podia vir com
+abreviação, erro de digitação, etc. `numeroDoMes()` converte o nome pro número (1-12).
+`localStorage` continua existindo como rascunho do navegador atual (não foi removido),
+mas deixou de ser a única cópia.
+
+**Nova página final: Ativos e Emissores Sugeridos (entregue).** Pedido direto do Emil —
+uma lista de ativos/emissores de crédito privado já avaliados pelo comitê, "alocando
+aqui, sem complicação esperada, high grade, triple A". Mesmo padrão de formulário e
+página que "Trade Ideas do Mês" (lista de título + texto, adicionar/remover item).
+
+**Armadilha encontrada e corrigida: `.folha` corta conteúdo sem avisar.** Cada página
+impressa é uma `div.folha` com `overflow:hidden` e, dentro de `@media print`,
+`height:297mm` fixo — texto que passa da altura de uma folha A4 **some silenciosamente**,
+sem erro, sem scroll visível (CLAUDE.md já avisava sobre isso em geral; aqui apareceu na
+prática). Testado com Playwright, forçando `media:'print'` de verdade (sem isso a
+medição dá falso negativo, porque na tela o `.folha` só tem `min-height`, cresce livre e
+nunca corta nada — só mediu certo depois de `page.emulateMedia({media:'print'})`): 8
+itens de texto realista cabem numa página, 15 itens parecidos já cortam ~2 itens do
+final, sem aviso nenhum. Como não dá pra medir isso ao vivo no navegador sem forçar o
+layout de impressão (e isso é caro de fazer a cada tecla digitada), a solução foi um
+orçamento de caracteres calibrado contra o teste real: acima de 1.600 caracteres
+(títulos + textos somados) aparece um aviso visível no formulário — "texto longo demais
+pra uma página só, confira o PDF antes de mandar pro comitê". Isso não é uma correção
+perfeita (é estimativa por caractere, não medida exata do layout), mas transforma um
+corte silencioso em aviso visível antes de imprimir. "Trade Ideas do Mês" tem exatamente
+o mesmo risco estrutural e não ganhou o mesmo aviso ainda — fica pendente.
+
+**Pendente:** o mesmo aviso de limite de caracteres pra "Trade Ideas do Mês" (risco
+idêntico, ainda sem aviso); paginação de verdade (deixar o conteúdo fluir pra uma segunda
+folha em vez de cortar) seria a correção definitiva, mas é uma mudança de arquitetura
+maior — não entrou nesta rodada.
