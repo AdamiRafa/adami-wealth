@@ -43,6 +43,17 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Aria
 .upload-area label{display:inline-block;padding:10px 18px;background:var(--navy);color:#fff;border-radius:8px;
   font-size:13px;font-weight:600;cursor:pointer}
 .upload-area .ajuda{font-size:12px;color:var(--ink-faint);margin-top:10px}
+.grade-upload{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.caixa-upload{border:1.5px dashed var(--border-strong);border-radius:12px;padding:18px 14px;text-align:center;
+  background:var(--surface);cursor:pointer;transition:border-color .12s,background .12s}
+.caixa-upload:hover{border-color:var(--navy-2)}
+.caixa-upload.arrastando{border-color:var(--gold);background:var(--gold-tint)}
+.caixa-upload.pronta{border-color:var(--success);background:var(--success-tint)}
+.caixa-upload input[type=file]{display:none}
+.caixa-upload .caixa-titulo{font-size:12.5px;font-weight:600;color:var(--navy)}
+.caixa-upload .caixa-desc{font-size:10.5px;color:var(--ink-faint);margin-top:4px;line-height:1.4}
+.caixa-upload .caixa-status{font-size:10.5px;margin-top:10px;font-weight:600;color:var(--ink-faint)}
+.caixa-upload.pronta .caixa-status{color:var(--success)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
 .card .rotulo{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-muted);font-weight:600}
@@ -128,11 +139,8 @@ function api(path,opts){
 </div>
 
 <div class="wrap">
-  <div id="areaUpload" class="upload-area">
-    <label for="arqMovimentacao">Importar arquivo do BTG (.xlsx)</label>
-    <input type="file" id="arqMovimentacao" accept=".xlsx,.xls" onchange="importarArquivo(this)">
-    <div class="ajuda">Reconhece pelas colunas, não pelo nome do arquivo: Movimentação geral, ordens no secundário (intermediação de cotas), dashboard de ofertas públicas ou book de reservas.</div>
-  </div>
+  <div class="ajuda" style="margin-bottom:10px">Arraste cada planilha pra caixa dela, ou clique pra escolher o arquivo. Identifica pelas colunas, não pelo nome do arquivo — então não tem problema soltar no quadrado errado.</div>
+  <div id="areaUpload" class="grade-upload"></div>
 
   <div id="resultado" style="display:none">
     <div class="tabs">
@@ -153,18 +161,19 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 1.5";
+var VERSAO_FLUXO="versão 1.6";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
 var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,
   cacheMeses:{}, comparacao:null, comparacaoResultados:null, comparacaoAlvos:null,
-  distribuicao:{ ordens_secundario:null, oferta_dashboard:null, oferta_book:null } };
+  distribuicao:{ ordens_secundario:null, oferta_dashboard:null, oferta_book:null }, nnmEscritorio:null };
 
 /* ---------------- gate de master ---------------- */
 api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super,admin").then(function(r){
   var sou = r && r[0] && r[0].super;
   if(!sou){ document.getElementById("telaBloqueada").style.display="block"; return; }
   document.getElementById("app").style.display="block";
+  renderCaixasUpload();
   carregarSnapshotsDisponiveis();
 }).catch(function(){
   document.getElementById("telaBloqueada").style.display="block";
@@ -186,13 +195,23 @@ var COLUNAS_MOVIMENTACAO_GERAL=["Conta","Mercado","Sub Mercado","Movimentação"
 var COLUNAS_ORDENS_SECUNDARIO=["Número da conta","Nome do titular","Nome do fundos","Status","Data da solicitação","Tipo de operação","Quantidade","Preço Unitário","Valor"];
 var COLUNAS_OFERTA_DASHBOARD=["CONTA","TITULAR","ASSESSOR","DATA SOLICITAÇÃO","NOME DA OFERTA","ATIVO","VALOR DE RESERVA","VALOR OBTIDO"];
 var COLUNAS_OFERTA_BOOK=["Número da Conta","Nome do Titular","Nome da Oferta","Data Solicitação","Valor Desejado","Valor Obtido","Status da Reserva"];
+var COLUNAS_NNM_ESCRITORIO=["Conta","Nome","Mercado","Descrição","Ativo","Quantidade","Captação","Data","Tipo","Assessor","Escritório","ID"];
 function temTodasColunas(colunas, exigidas){ return exigidas.every(function(c){ return colunas.indexOf(c)!==-1; }); }
 function identificarFonte(colunas){
   if(temTodasColunas(colunas,COLUNAS_MOVIMENTACAO_GERAL)) return "movimentacao_geral";
   if(temTodasColunas(colunas,COLUNAS_ORDENS_SECUNDARIO)) return "ordens_secundario";
   if(temTodasColunas(colunas,COLUNAS_OFERTA_DASHBOARD)) return "oferta_dashboard";
   if(temTodasColunas(colunas,COLUNAS_OFERTA_BOOK)) return "oferta_book";
+  if(temTodasColunas(colunas,COLUNAS_NNM_ESCRITORIO)) return "nnm_escritorio";
   return null;
+}
+/* "Data" desse export vem como número de série do Excel (dias desde
+   1899-12-30), não como texto nem Date -- célula não está formatada como
+   data na planilha de origem, só formatada como número. Mesma família de
+   armadilha que "Data Cotização" na Movimentação geral (ver CLAUDE.md). */
+function dataDeSerialExcel(n){
+  if(n==null||n===""||isNaN(n)) return null;
+  return new Date(Date.UTC(1899,11,30) + Number(n)*86400000);
 }
 /* Datas desses dois exports vêm em formatos diferentes (ISO com T, ISO com
    espaço, ou DD/MM/AAAA) -- nenhuma delas vem como Date de verdade do XLSX,
@@ -472,6 +491,16 @@ function atualizarGraficoHistorico(){
 
 function importarArquivo(input){
   var f=input.files[0]; if(!f) return;
+  processarArquivoSelecionado(f);
+  input.value="";
+}
+function receberArquivoArrastado(e){
+  e.preventDefault();
+  e.currentTarget.classList.remove("arrastando");
+  var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+  if(f) processarArquivoSelecionado(f);
+}
+function processarArquivoSelecionado(f){
   if(typeof XLSX==="undefined"){ alert("A biblioteca de planilha ainda não carregou. Recarregue a página e tente de novo."); return; }
   var fr=new FileReader();
   fr.onload=function(){
@@ -484,8 +513,9 @@ function importarArquivo(input){
     if(!linhas.length){ alert("Essa planilha não tem linhas."); return; }
     var colunas=Object.keys(linhas[0]);
     var fonte=identificarFonte(colunas);
-    if(!fonte){ alert("Não reconheci esse arquivo pelas colunas. Leio: Movimentação geral, ordens no secundário, dashboard de ofertas públicas e book de reservas."); return; }
+    if(!fonte){ alert("Não reconheci esse arquivo pelas colunas. Leio: Movimentação geral, ordens no secundário, dashboard de ofertas públicas, book de reservas e NNM do escritório."); return; }
     if(fonte==="movimentacao_geral"){ processarImportMovimentacaoGeral(linhas); return; }
+    if(fonte==="nnm_escritorio"){ processarImportNNMEscritorio(linhas); return; }
     var campoData = fonte==="ordens_secundario" ? "Data da solicitação" : (fonte==="oferta_dashboard" ? "DATA SOLICITAÇÃO" : "Data Solicitação");
     processarImportDistribuicao(linhas, fonte, campoData);
   };
@@ -513,6 +543,7 @@ function processarImportMovimentacaoGeral(linhas){
   document.getElementById("btnSalvar").disabled=false;
   document.getElementById("seletorComparacao").disabled=false;
   renderTudo();
+  atualizarStatusCaixas();
 }
 function processarImportDistribuicao(linhas, fonte, campoData){
   var grupos=agruparPorMes(linhas, campoData);
@@ -521,6 +552,61 @@ function processarImportDistribuicao(linhas, fonte, campoData){
   document.getElementById("resultado").style.display="block";
   renderDistribuicao();
   mudarAba("distribuicao");
+  atualizarStatusCaixas();
+}
+function processarImportNNMEscritorio(linhas){
+  linhas=linhas.filter(function(l){ return l["Conta"]!==""; });
+  if(!linhas.length){ alert("Não encontrei nenhuma linha com conta preenchida."); return; }
+  var porMes={};
+  linhas.forEach(function(l){ var d=dataDeSerialExcel(l["Data"]); if(ehData(d)){ var k=d.getUTCFullYear()+"-"+(d.getUTCMonth()+1); porMes[k]=(porMes[k]||0)+1; } });
+  var melhor=Object.entries(porMes).sort(function(a,b){ return b[1]-a[1]; })[0];
+  if(!melhor){ alert("Não encontrei nenhuma data válida em \"Data\"."); return; }
+  var partes=melhor[0].split("-");
+  ESTADO.nnmEscritorio={ linhas:linhas, mes:parseInt(partes[1],10), ano:parseInt(partes[0],10) };
+  atualizarStatusCaixas();
+  alert("NNM do escritório de "+NOMES_MES[ESTADO.nnmEscritorio.mes]+"/"+ESTADO.nnmEscritorio.ano+" recebido ("+linhas.length+" lançamentos).\n\nSó guardei o arquivo por enquanto -- ainda não processei nem salvei nada com esse dado.");
+}
+
+/* ---------------- checklist de upload (caixas de arrastar) ---------------- */
+var TIPOS_ARQUIVO=[
+  {fonte:"movimentacao_geral", titulo:"Movimentação geral", desc:"Export do BTG, aba Export — captação, aplicações, resgates"},
+  {fonte:"ordens_secundario", titulo:"Ordens no secundário", desc:"Intermediação de cotas de fundos"},
+  {fonte:"oferta_dashboard", titulo:"Dashboard de ofertas públicas", desc:"Histórico de reservas"},
+  {fonte:"oferta_book", titulo:"Book de reservas", desc:"Detalhe recente das reservas"},
+  {fonte:"nnm_escritorio", titulo:"NNM do escritório", desc:"Captação oficial calculada pelo BTG, pra conferência"},
+];
+function renderCaixasUpload(){
+  var el=document.getElementById("areaUpload");
+  if(!el) return;
+  el.innerHTML=TIPOS_ARQUIVO.map(function(t){
+    return '<div class="caixa-upload" id="caixa_'+t.fonte+'" '+
+      'ondragover="event.preventDefault();this.classList.add(\'arrastando\')" '+
+      'ondragleave="this.classList.remove(\'arrastando\')" '+
+      'ondrop="receberArquivoArrastado(event)" '+
+      'onclick="document.getElementById(\'arq_'+t.fonte+'\').click()">'+
+      '<div class="caixa-titulo">'+esc(t.titulo)+'</div>'+
+      '<div class="caixa-desc">'+esc(t.desc)+'</div>'+
+      '<div class="caixa-status" id="status_'+t.fonte+'">Ainda não importado nesta sessão</div>'+
+      '<input type="file" id="arq_'+t.fonte+'" accept=".xlsx,.xls" onchange="importarArquivo(this)">'+
+      '</div>';
+  }).join("");
+  atualizarStatusCaixas();
+}
+function atualizarStatusCaixas(){
+  function marca(fonte, pronto, texto){
+    var caixa=document.getElementById("caixa_"+fonte), status=document.getElementById("status_"+fonte);
+    if(!caixa||!status) return;
+    caixa.classList.toggle("pronta",!!pronto);
+    status.textContent=texto;
+  }
+  marca("movimentacao_geral", !!ESTADO.resultado,
+    ESTADO.resultado ? (NOMES_MES[ESTADO.mes]+"/"+ESTADO.ano+" — "+ESTADO.resultado.linhas.length+" lançamentos") : "Ainda não importado nesta sessão");
+  ["ordens_secundario","oferta_dashboard","oferta_book"].forEach(function(fonte){
+    var info=ESTADO.distribuicao[fonte];
+    marca(fonte, !!info, info ? (Object.keys(info.grupos).length+" mês(es) encontrado(s)"+(info.salvo?" — salvo":"")) : "Ainda não importado nesta sessão");
+  });
+  marca("nnm_escritorio", !!ESTADO.nnmEscritorio,
+    ESTADO.nnmEscritorio ? (NOMES_MES[ESTADO.nnmEscritorio.mes]+"/"+ESTADO.nnmEscritorio.ano+" — "+ESTADO.nnmEscritorio.linhas.length+" lançamentos (ainda não processado)") : "Ainda não importado nesta sessão");
 }
 
 function mudarAba(a){
@@ -757,6 +843,7 @@ function salvarDistribuicao(fonte){
     info.salvo=(falhas.length===0);
     alert("Salvo "+ok+" de "+chaves.length+" mês(es)."+(falhas.length?"\n\nFalhas:\n"+falhas.join("\n"):""));
     renderDistribuicao();
+    atualizarStatusCaixas();
     return carregarSnapshotsDisponiveis();
   }).then(function(){ atualizarGraficoHistorico(); });
 }
@@ -833,6 +920,7 @@ function carregarMesDoBanco(snapshotId){
     document.getElementById("btnSalvar").disabled=true;
     document.getElementById("seletorComparacao").disabled=true;
     resetarComparacao();
+    atualizarStatusCaixas();
     return;
   }
   var snap=ESTADO.snapshots.find(function(s){ return s.id===snapshotId; });
@@ -851,6 +939,7 @@ function carregarMesDoBanco(snapshotId){
       document.getElementById("btnSalvar").disabled=true;
       document.getElementById("seletorComparacao").disabled=false;
       renderTudo();
+      atualizarStatusCaixas();
     })
     .catch(function(e){ alert("Não consegui carregar esse mês.\n\n"+e.message); })
     .then(function(){ sel.disabled=false; renderSeletorMes(); });

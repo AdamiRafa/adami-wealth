@@ -588,8 +588,32 @@ de reaproveitar `modalidade`/`motivo_status` com significado trocado, pra não v
 armadilha depois). **Se o SQL já foi colado antes, precisa colar de novo** — são `alter
 table add column if not exists`, não quebra nada do que já tem.
 
+**Checklist de upload (entregue):** a área de importação virou 5 caixas de
+arrastar-e-soltar, uma por tipo de arquivo (Movimentação geral, ordens no secundário,
+dashboard de ofertas, book de reservas, NNM do escritório), pra o Emil sempre saber quais
+planilhas levantar no mês. Cada caixa aceita qualquer um dos 5 tipos — a identificação
+continua sendo só pelas colunas, então não tem problema soltar no quadrado errado. Fica
+verde e mostra "mês/ano — N lançamentos" assim que reconhece alguma coisa (só nesta
+sessão, não é algo salvo no banco).
+
+**NNM do escritório (reconhecido, ainda não processado):** novo arquivo detectado pelas
+colunas (Conta, Nome, Mercado, Descrição, Ativo, Quantidade, Captação, Data, Tipo,
+Assessor, Escritório, ID). A coluna "Data" vem como número de série do Excel cru, não
+como texto nem data de verdade — mesma armadilha de "Data Cotização" na Movimentação
+geral, resolvida com `dataDeSerialExcel()` (conferido batendo exatamente com
+`XLSX.SSF.format`). **De propósito, a tela só guarda o arquivo na sessão e mostra na
+caixa — não calcula nada, não compara com o NNM que a Movimentação geral calcula, não
+salva no banco.** O Emil pediu pra avisar quando for a hora de "imputar" esse dado; até
+lá fica só reconhecido. Primeira conferência rápida feita à mão (não publicada na tela):
+outubro/2026 soma R$ 32.461.433,91 de captação bruta nesse arquivo contra
+R$ 31.939.268,86 do NNM calculado pela Movimentação geral — diferença de ~1,6%, esperado
+dado que são metodologias diferentes, mas é o número a cruzar quando o Emil pedir pra
+processar.
+
 **Pendente (fatias 3, 4 e 6, nessa ordem):** telas de renda fixa, fundos e renda
-variável; clientes; câmbio; FGC, alertas e exportação Excel.
+variável; clientes; câmbio; FGC, alertas e exportação Excel. Também pendente: decidir com
+o Emil como e quando usar o NNM do escritório (comparação de referência? substitui o
+cálculo próprio? os dois lado a lado?).
 
 SQL em `adami_completo.sql`, seção 8.5: tabelas `fluxo_snapshots`, `fluxo_lancamentos`,
 `fluxo_distribuicao` (schema pronto pra fatia 5, ainda sem tela) e a função
