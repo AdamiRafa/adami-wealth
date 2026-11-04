@@ -49,6 +49,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Aria
 .caixa-upload:hover{border-color:var(--navy-2)}
 .caixa-upload.arrastando{border-color:var(--gold);background:var(--gold-tint)}
 .caixa-upload.pronta{border-color:var(--success);background:var(--success-tint)}
+.caixa-upload.parcial{border-color:var(--gold);background:var(--gold-tint)}
+.caixa-upload.parcial .caixa-status{color:var(--navy)}
 .caixa-upload input[type=file]{display:none}
 .caixa-upload .caixa-titulo{font-size:12.5px;font-weight:600;color:var(--navy)}
 .caixa-upload .caixa-desc{font-size:10.5px;color:var(--ink-faint);margin-top:4px;line-height:1.4}
@@ -166,7 +168,7 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 2.1";
+var VERSAO_FLUXO="versão 2.2";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
 var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,
@@ -791,21 +793,39 @@ function renderCaixasUpload(){
   }).join("");
   atualizarStatusCaixas();
 }
+/* Três estados pra cada caixa, bem diferentes visualmente -- antes a caixa
+   só tinha "importado nesta sessão" ou não, e dava pra confundir "importei"
+   com "salvei de verdade no banco". Verde = salvo no banco, sobrevive a
+   fechar a aba. Âmbar = só na sessão, some se recarregar a página. */
 function atualizarStatusCaixas(){
-  function marca(fonte, pronto, texto){
+  function marca(fonte, estado, texto){
     var caixa=document.getElementById("caixa_"+fonte), status=document.getElementById("status_"+fonte);
     if(!caixa||!status) return;
-    caixa.classList.toggle("pronta",!!pronto);
+    caixa.classList.toggle("pronta", estado==="salvo");
+    caixa.classList.toggle("parcial", estado==="parcial");
     status.textContent=texto;
   }
-  marca("movimentacao_geral", !!ESTADO.resultado,
-    ESTADO.resultado ? (NOMES_MES[ESTADO.mes]+"/"+ESTADO.ano+" — "+ESTADO.resultado.linhas.length+" lançamentos") : "Ainda não importado nesta sessão");
+  if(ESTADO.resultado){
+    var salvoMov=!!ESTADO.snapshotAtualId;
+    marca("movimentacao_geral", salvoMov?"salvo":"parcial",
+      NOMES_MES[ESTADO.mes]+"/"+ESTADO.ano+" — "+ESTADO.resultado.linhas.length+" lançamentos"+(salvoMov?" — salvo no banco":" — só nesta sessão, clique \"Salvar este mês\""));
+  } else {
+    marca("movimentacao_geral", null, "Ainda não importado nesta sessão");
+  }
   ["ordens_secundario","oferta_dashboard","oferta_book"].forEach(function(fonte){
     var info=ESTADO.distribuicao[fonte];
-    marca(fonte, !!info, info ? (Object.keys(info.grupos).length+" mês(es) encontrado(s)"+(info.salvo?" — salvo":"")) : "Ainda não importado nesta sessão");
+    if(info){
+      marca(fonte, info.salvo?"salvo":"parcial",
+        Object.keys(info.grupos).length+" mês(es) encontrado(s)"+(info.salvo?" — salvo no banco":" — só nesta sessão, veja a aba Ofertas e Secundário"));
+    } else {
+      marca(fonte, null, "Ainda não importado nesta sessão");
+    }
   });
-  marca("nnm_escritorio", !!ESTADO.nnmEscritorio,
-    ESTADO.nnmEscritorio ? (NOMES_MES[ESTADO.nnmEscritorio.mes]+"/"+ESTADO.nnmEscritorio.ano+" — "+ESTADO.nnmEscritorio.linhas.length+" lançamentos (ainda não processado)") : "Ainda não importado nesta sessão");
+  if(ESTADO.nnmEscritorio){
+    marca("nnm_escritorio", "parcial", NOMES_MES[ESTADO.nnmEscritorio.mes]+"/"+ESTADO.nnmEscritorio.ano+" — "+ESTADO.nnmEscritorio.linhas.length+" lançamentos (só nesta sessão, ainda não processado nem salvo)");
+  } else {
+    marca("nnm_escritorio", null, "Ainda não importado nesta sessão");
+  }
 }
 
 function mudarAba(a){
@@ -1231,7 +1251,7 @@ function salvarSnapshot(){
     };
   });
   api("rpc/fluxo_substituir_mes",{method:"POST",body:{p_mes:ESTADO.mes,p_ano:ESTADO.ano,p_fonte:"movimentacao_geral",p_lancamentos:payload}})
-    .then(function(id){ ESTADO.snapshotAtualId=id; alert("Salvo."); b.textContent="Salvo ✓"; return carregarSnapshotsDisponiveis(); })
+    .then(function(id){ ESTADO.snapshotAtualId=id; alert("Salvo."); b.textContent="Salvo ✓"; atualizarStatusCaixas(); return carregarSnapshotsDisponiveis(); })
     .then(function(){ atualizarGraficoHistorico(); })
     .catch(function(e){ alert("Não consegui salvar.\n\n"+e.message); b.disabled=false; b.textContent="Salvar este mês"; });
 }
