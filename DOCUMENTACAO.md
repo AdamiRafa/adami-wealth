@@ -630,6 +630,31 @@ ainda não foi construído** — exigiria casar resgate↔aplicação por conta 
 mês (mesma ideia da neutralização de pares do fluxo externo, só que por cliente entre
 classes de ativo, não entre contas). Fica como próximo passo claro.
 
+**Ajustes de uso real (entregue, feedback direto do Emil depois de usar a versão
+anterior):**
+- **Drill-down de renda fixa virou por título, não por cliente.** O primeiro nível
+  (clicar "Renda fixa") continua agrupando por Produto (CDB/LCA/LCI/...). O segundo nível
+  mudou: em vez de listar os lançamentos de cada cliente, agrupa por título de verdade —
+  Emissor + Indexador + Taxa (campo `Taxa Emissão`, com fallback pra `Taxa Compra`) — e
+  mostra Emissor/Taxa/Vencimento/Captado/Contas/Títulos. Vencimento varia dia a dia dentro
+  do mesmo título (emissão contínua do BTG), por isso virou faixa (mín–máx) em vez de uma
+  data só. Fundos/RV/Previdência continuam com o segundo nível por cliente, porque ali o
+  primeiro nível (Ativo = fundo/ticker) já é o produto mais específico que existe — não
+  tem mais nada abaixo pra agrupar.
+- **"Outras fontes do mês" aparece na Visão Geral.** Antes, importar secundário/ofertas só
+  mudava a aba separada "Ofertas e Secundário" — dava a impressão de que nada mudava na
+  tela principal. Agora, se o mês em tela tiver dado reconhecido nessas fontes, aparece um
+  card na Visão Geral (líquido do secundário, valor obtido nas ofertas); se não tiver,
+  mostra aviso explicando que precisa arrastar o arquivo certo.
+- **Navegação por mês**: botões ← → do lado do seletor pra andar sequencialmente pelos
+  meses salvos (desabilitam sozinhos na ponta da lista), e as barras do gráfico de série
+  histórica de NNM ficam clicáveis — clicar numa barra salva pula direto pra aquele mês.
+- **Ajuste visual**: números de tabela e dos cards pararam de usar fonte monoespaçada
+  (ficava com cara de planilha/terminal) — viraram números normais, alinhados, em negrito
+  nos cards. Títulos de seção ganharam uma linha dourada embaixo. Cards com sombra leve em
+  vez de borda só, pra parecer menos "gerado por IA" e mais editorial, mais perto do
+  PDF de referência que o Emil mandou.
+
 **Pendente (nessa ordem, conforme o PDF de referência do Emil):** mais seções no mesmo
 estilo "tabela + leitura" do PDF — composição do dinheiro novo (de onde veio, por
 prefixo), saídas e reciclagem com faixas de prazo, concentração de clientes (maiores

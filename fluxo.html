@@ -57,18 +57,21 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Aria
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
 .card .rotulo{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-muted);font-weight:600}
-.card .valor{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--navy);margin-top:6px}
+.card .valor{font-variant-numeric:tabular-nums;font-size:23px;font-weight:700;color:var(--navy);margin-top:6px}
 .card .valor.pos{color:var(--success)}
 .card .valor.neg{color:var(--danger)}
 .card .nota{font-size:11px;color:var(--ink-faint);margin-top:4px}
-.secao{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:18px}
-.secao h2{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--navy);margin-bottom:4px}
-.secao .desc{font-size:12px;color:var(--ink-faint);margin-bottom:14px}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-th{text-align:left;padding:8px 10px;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;
-  color:var(--ink-muted);border-bottom:1px solid var(--border);font-weight:600}
-td{padding:8px 10px;border-bottom:1px solid #EEF1F5}
-td.num{text-align:right;font-family:var(--mono);white-space:nowrap}
+.secao{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:18px;
+  box-shadow:0 1px 2px rgba(5,19,42,.04),0 4px 14px rgba(5,19,42,.045)}
+.secao h2{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--navy);margin-bottom:4px;
+  padding-bottom:10px;border-bottom:2px solid var(--gold-tint)}
+.secao .desc{font-size:12px;color:var(--ink-faint);margin-bottom:14px;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 10px;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--ink-muted);border-bottom:1.5px solid var(--border-strong);font-weight:600}
+td{padding:9px 10px;border-bottom:1px solid #EEF1F5}
+tbody tr:hover td{background:#F9FAFC}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
 tr.desmarcado{opacity:.4;text-decoration:line-through}
 .chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600}
 .chip.ok{background:var(--success-tint);color:var(--success)}
@@ -124,9 +127,11 @@ function api(path,opts){
   </div>
   <div class="topo-acoes">
     <span class="selo" id="selo"></span>
+    <button class="btn" id="btnMesAnterior" onclick="irParaMesAdjacente(-1)" title="Mês anterior (mais antigo)" style="padding:9px 12px">&#8592;</button>
     <select class="btn" id="seletorMes" onchange="carregarMesDoBanco(this.value)" style="font-weight:600">
       <option value="">Novo mês (importar arquivo)</option>
     </select>
+    <button class="btn" id="btnMesSeguinte" onclick="irParaMesAdjacente(1)" title="Mês seguinte (mais recente)" style="padding:9px 12px">&#8594;</button>
     <select class="btn" id="seletorComparacao" onchange="aplicarComparacao(this.value)" style="font-weight:600" disabled>
       <option value="">Sem comparação</option>
       <option value="anterior">Vs. mês anterior</option>
@@ -161,7 +166,7 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 1.8";
+var VERSAO_FLUXO="versão 1.9";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
 var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,
@@ -392,6 +397,41 @@ function linhasDoGrupo(linhas, classe, grupo){
     .map(function(l){ return {conta:l._conta,nome:l["Nome"],data:dataISO(l["Data Compra"]),valor:Math.abs(Number(l["Valor Líquido"])||0),tipo:"resgate"}; });
   return aplic.concat(resg).sort(function(a,b){ return b.valor-a.valor; });
 }
+/* Pra renda fixa o que importa é "qual papel", não "qual cliente" -- o
+   produto (CDB/LCA/...) sozinho não diz a taxa nem o vencimento, então o
+   segundo nível agrupa por emissor+indexador+taxa (o título de verdade),
+   não por lançamento individual. Vencimento varia dia a dia dentro do
+   mesmo título (emissão contínua), por isso vira faixa (mín–máx), não
+   uma data só. */
+function rotuloTaxaRF(l){
+  var idx=String(l["Indexador"]||"").toUpperCase();
+  var taxa=Number(l["Taxa Emissão"])||Number(l["Taxa Compra"])||0;
+  if(idx.indexOf("CDI")!==-1) return (taxa?taxa+"% CDI":"CDI");
+  if(idx.indexOf("IPCA")!==-1) return "IPCA+"+taxa+"%";
+  if(idx.indexOf("SELIC")!==-1) return "Selic"+(taxa?"+"+taxa+"%":"");
+  if(idx==="PRE"||idx==="PREF") return taxa+"% a.a.";
+  return (taxa?taxa+"% ":"")+(idx||"—");
+}
+function dataBR(d){ return ehData(d) ? String(d.getUTCDate()).padStart(2,"0")+"/"+String(d.getUTCMonth()+1).padStart(2,"0")+"/"+d.getUTCFullYear() : null; }
+function titulosRFDoGrupo(linhas, produto){
+  var doProduto=linhas.filter(filtroAplicacaoClasse("rendaFixa")).filter(function(l){ return (l["Produto"]||"(sem produto)")===produto; });
+  var porTitulo={};
+  doProduto.forEach(function(l){
+    var taxa=Number(l["Taxa Emissão"])||Number(l["Taxa Compra"])||0;
+    var chave=(l["Emissor"]||"(sem emissor)")+"|"+(l["Indexador"]||"")+"|"+taxa;
+    if(!porTitulo[chave]) porTitulo[chave]={emissor:l["Emissor"]||"(sem emissor)", taxa:rotuloTaxaRF(l), captado:0, contas:{}, qtdTitulos:0, vencMin:null, vencMax:null};
+    var g=porTitulo[chave];
+    g.captado+=Math.abs(Number(l["Valor Líquido"])||0);
+    g.contas[l._conta]=true;
+    g.qtdTitulos++;
+    var v=l["Vencimento"];
+    if(ehData(v)){ if(!g.vencMin||v<g.vencMin) g.vencMin=v; if(!g.vencMax||v>g.vencMax) g.vencMax=v; }
+  });
+  return Object.values(porTitulo).map(function(g){
+    var venc = g.vencMin ? (dataISO(g.vencMin)===dataISO(g.vencMax) ? dataBR(g.vencMin) : dataBR(g.vencMin)+" a "+dataBR(g.vencMax)) : "—";
+    return { emissor:g.emissor, taxa:g.taxa, vencimento:venc, captado:g.captado, qtdContas:Object.keys(g.contas).length, qtdTitulos:g.qtdTitulos };
+  }).sort(function(a,b){ return b.captado-a.captado; });
+}
 function focarClasseAplicacao(classe){
   ESTADO.drillClasse=(ESTADO.drillClasse===classe)?null:classe;
   ESTADO.drillGrupo=null;
@@ -411,7 +451,13 @@ function renderDrillAplicacoes(r){
   grupos.slice(0,20).forEach(function(g){
     var aberto=ESTADO.drillGrupo===g.grupo;
     h+='<tr class="linkmini" style="cursor:pointer" onclick="focarGrupoAplicacao(\''+g.grupo.replace(/'/g,"\\'")+'\')"><td>'+(aberto?"▾ ":"▸ ")+esc(g.grupo)+'</td><td class="num">'+brl(g.aplicado)+'</td><td class="num">'+brl(g.resgatado)+'</td><td class="num '+sinalClasse(g.net)+'">'+brl(g.net)+'</td><td class="num">'+g.qtdContas+'</td></tr>';
-    if(aberto){
+    if(aberto && classe==="rendaFixa"){
+      var titulos=titulosRFDoGrupo(r.linhas, g.grupo);
+      h+='<tr><td colspan="5" style="padding:4px 10px 10px;background:#F9FAFC">'+
+        '<table><thead><tr><th>Emissor</th><th>Taxa</th><th>Vencimento</th><th class="num">Captado</th><th class="num">Contas</th><th class="num">Títulos</th></tr></thead><tbody>'+
+        titulos.map(function(t){ return '<tr><td>'+esc(t.emissor)+'</td><td>'+esc(t.taxa)+'</td><td>'+esc(t.vencimento)+'</td><td class="num">'+brl(t.captado)+'</td><td class="num">'+t.qtdContas+'</td><td class="num">'+t.qtdTitulos+'</td></tr>'; }).join("")+
+        '</tbody></table></td></tr>';
+    } else if(aberto){
       var detalhes=linhasDoGrupo(r.linhas, classe, g.grupo);
       h+='<tr><td colspan="5" style="padding:4px 10px 10px;background:#F9FAFC">'+
         '<table><thead><tr><th>Conta</th><th>Nome</th><th>Data</th><th>Tipo</th><th class="num">Valor</th></tr></thead><tbody>'+
@@ -536,7 +582,7 @@ function graficoBarrasCategorico(dados){
     var grupoAbre=clicavel?'<g style="cursor:pointer" onclick="focarClasseAplicacao(\''+d.chave+'\')">':'<g>';
     out+=grupoAbre+
       '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" rx="4" fill="'+d.cor+'"'+contorno+'/>'+
-      '<text x="'+(x+bw/2)+'" y="'+(y-7)+'" text-anchor="middle" font-size="11" fill="#0C1626" font-family="IBM Plex Mono,Consolas,monospace" font-weight="500">'+brlCurto(d.valor)+'</text>'+
+      '<text x="'+(x+bw/2)+'" y="'+(y-7)+'" text-anchor="middle" font-size="11" fill="#0C1626" font-family="Inter,-apple-system,sans-serif" font-weight="700">'+brlCurto(d.valor)+'</text>'+
       '<text x="'+(x+bw/2)+'" y="'+(H-pb+17)+'" text-anchor="middle" font-size="10.5" fill="'+(d.ativo?"var(--navy)":"#5C6B7F")+'" font-weight="'+(d.ativo?"700":"400")+'">'+esc(d.rotulo)+(clicavel?" ▾":"")+'</text>'+
       '</g>';
   });
@@ -560,9 +606,13 @@ function graficoSerieNNM(serie){
     var cor=s.nnm>=0?"#2F7A56":"#B3403A";
     var yTxt=s.nnm>=0?(y-7):(y+hh+13);
     var rotuloMes=curto?NOMES_MES[s.mes].slice(0,3):NOMES_MES[s.mes];
-    out+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" rx="3" fill="'+cor+'"/>'+
-      '<text x="'+(x+bw/2)+'" y="'+yTxt+'" text-anchor="middle" font-size="10" fill="#0C1626" font-family="IBM Plex Mono,Consolas,monospace">'+brlCurto(s.nnm)+'</text>'+
-      '<text x="'+(x+bw/2)+'" y="'+(H-10)+'" text-anchor="middle" font-size="9.5" fill="#7A8698">'+rotuloMes+"/"+String(s.ano).slice(2)+'</text>';
+    var clicavel=!!s.snapshotId;
+    var grupoAbre=clicavel?'<g style="cursor:pointer" onclick="carregarMesDoBanco(\''+s.snapshotId+'\')">':'<g>';
+    out+=grupoAbre+
+      '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" rx="3" fill="'+cor+'"'+(s.atual?' stroke="var(--navy)" stroke-width="2"':"")+'/>'+
+      '<text x="'+(x+bw/2)+'" y="'+yTxt+'" text-anchor="middle" font-size="10" fill="#0C1626" font-family="Inter,-apple-system,sans-serif" font-weight="600">'+brlCurto(s.nnm)+'</text>'+
+      '<text x="'+(x+bw/2)+'" y="'+(H-10)+'" text-anchor="middle" font-size="9.5" fill="#7A8698">'+rotuloMes+"/"+String(s.ano).slice(2)+'</text>'+
+      '</g>';
   });
   return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto">'+out+'</svg></div>';
 }
@@ -571,13 +621,14 @@ function atualizarGraficoHistorico(){
   var div=document.getElementById("graficoHistoricoNNM");
   if(!div||!ESTADO.resultado) return;
   var mapa={};
-  ESTADO.snapshots.forEach(function(s){ mapa[s.mes+"-"+s.ano]={mes:s.mes,ano:s.ano}; });
-  mapa[ESTADO.mes+"-"+ESTADO.ano]={mes:ESTADO.mes,ano:ESTADO.ano};
+  ESTADO.snapshots.forEach(function(s){ mapa[s.mes+"-"+s.ano]={mes:s.mes,ano:s.ano,snapshotId:s.id}; });
+  mapa[ESTADO.mes+"-"+ESTADO.ano]={mes:ESTADO.mes,ano:ESTADO.ano,snapshotId:(mapa[ESTADO.mes+"-"+ESTADO.ano]||{}).snapshotId};
   var meses=Object.values(mapa).sort(function(a,b){ return (a.ano*12+a.mes)-(b.ano*12+b.mes); });
   if(meses.length<2){ div.innerHTML='<div class="desc">Importe e salve pelo menos dois meses pra ver a série histórica de NNM.</div>'; return; }
   Promise.all(meses.map(function(s){
-    if(s.mes===ESTADO.mes&&s.ano===ESTADO.ano) return Promise.resolve({mes:s.mes,ano:s.ano,nnm:ESTADO.resultado.nnm});
-    return obterResultadoMes(s.mes,s.ano).then(function(r){ return r?{mes:s.mes,ano:s.ano,nnm:r.nnm}:null; });
+    var atual=s.mes===ESTADO.mes&&s.ano===ESTADO.ano;
+    if(atual) return Promise.resolve({mes:s.mes,ano:s.ano,nnm:ESTADO.resultado.nnm,snapshotId:s.snapshotId,atual:true});
+    return obterResultadoMes(s.mes,s.ano).then(function(r){ return r?{mes:s.mes,ano:s.ano,nnm:r.nnm,snapshotId:s.snapshotId}:null; });
   })).then(function(serie){
     serie=serie.filter(Boolean);
     div.innerHTML=serie.length>=2?graficoSerieNNM(serie):'<div class="desc">Importe e salve pelo menos dois meses pra ver a série histórica de NNM.</div>';
@@ -647,6 +698,7 @@ function processarImportDistribuicao(linhas, fonte, campoData){
   ESTADO.distribuicao[fonte]={ grupos:grupos, campoData:campoData, salvo:false };
   document.getElementById("resultado").style.display="block";
   renderDistribuicao();
+  if(ESTADO.resultado) renderVisaoGeral();
   mudarAba("distribuicao");
   atualizarStatusCaixas();
 }
@@ -731,8 +783,9 @@ function renderVisaoGeral(){
       cardHtml("Transferência de custódia", r.custodia.liquido, "entra no NNM, não no fluxo financeiro")+
       cardHtml("Portabilidade nova (previdência)", r.prev.portabilidadeNova, "exclui provável reciclagem")+
     '</div></div>'+
+    renderResumoOutrasFontes()+
     '<div class="secao"><h2>Série histórica de Net New Money</h2>'+
-    '<div class="desc">NNM mês a mês, com todos os meses já salvos no banco (mais o mês em tela, se ainda não salvo)</div>'+
+    '<div class="desc">NNM mês a mês, com todos os meses já salvos no banco (mais o mês em tela, se ainda não salvo) — clique numa barra salva pra pular pra ela</div>'+
     '<div id="graficoHistoricoNNM"><div class="desc">Carregando…</div></div></div>'+
     '<div class="secao"><h2>Aplicações e resgates</h2><div class="desc">Por classe de ativo. Net = aplicado menos resgatado — não é dinheiro novo, mistura NNM com dinheiro que só trocou de produto dentro da casa.</div>'+
     '<table><thead><tr><th>Classe</th><th class="num">Aplicado</th><th class="num">Resgatado</th><th class="num">Net</th></tr></thead><tbody>'+
@@ -841,6 +894,33 @@ function calcularOfertasBookMes(linhas){
 }
 function chavesMesOrdenadas(grupos){ return Object.keys(grupos).sort().reverse(); }
 function mesAnoDaChave(k){ var p=k.split("-"); return { ano:parseInt(p[0],10), mes:parseInt(p[1],10) }; }
+/* Mostra na Visão Geral o que as outras planilhas (secundário/ofertas)
+   já têm pro mês em tela -- pra subir o arquivo visivelmente mudar
+   alguma coisa na tela principal, não só numa aba separada. */
+function renderResumoOutrasFontes(){
+  var chave=ESTADO.ano+"-"+ESTADO.mes;
+  var cartoes=[];
+  var sec=ESTADO.distribuicao.ordens_secundario;
+  if(sec && sec.grupos[chave]){
+    var rs=calcularSecundarioMes(sec.grupos[chave]);
+    cartoes.push(cardHtml("Secundário (líquido)", rs.liquido, rs.qtdExecutadas+" ordens executadas de "+rs.qtdTotal));
+  }
+  var dash=ESTADO.distribuicao.oferta_dashboard;
+  if(dash && dash.grupos[chave]){
+    var rd=calcularOfertasDashboardMes(dash.grupos[chave]);
+    cartoes.push(cardHtml("Ofertas públicas obtido", rd.valorObtido, rd.qtd+" solicitações (dashboard)"));
+  }
+  var book=ESTADO.distribuicao.oferta_book;
+  if(book && book.grupos[chave]){
+    var rb=calcularOfertasBookMes(book.grupos[chave]);
+    cartoes.push(cardHtml("Book de reservas obtido", rb.valorObtido, rb.qtd+" reservas"));
+  }
+  if(!cartoes.length){
+    return '<div class="secao"><h2>Outras fontes do mês</h2><div class="desc">Nenhum arquivo de secundário ou ofertas públicas reconhecido ainda pra '+NOMES_MES[ESTADO.mes]+'/'+ESTADO.ano+'. Arraste nas caixas lá em cima — assim que reconhecer, aparece aqui.</div></div>';
+  }
+  return '<div class="secao"><h2>Outras fontes do mês</h2><div class="desc">Do que já foi reconhecido nas caixas de upload — <a href="javascript:mudarAba(\'distribuicao\')" style="color:var(--navy-2)">ver detalhe completo na aba Ofertas e Secundário</a></div>'+
+    '<div class="cards">'+cartoes.join("")+'</div></div>';
+}
 function renderDistribuicao(){
   var painel=document.getElementById("painelDistribuicao");
   if(!painel) return;
@@ -998,6 +1078,28 @@ function renderSeletorMes(){
     opcoes+='<option value="'+s.id+'"'+(s.id===ESTADO.snapshotAtualId?" selected":"")+'>'+NOMES_MES[s.mes]+"/"+s.ano+(mov&&mov.linhas?" ("+mov.linhas+" lanç.)":" (sem Movimentação geral)")+'</option>';
   });
   sel.innerHTML=opcoes;
+  atualizarBotoesMes();
+}
+/* ESTADO.snapshots vem ordenado do mais recente pro mais antigo (mesma
+   ordem da API: ano.desc,mes.desc) -- por isso "seguinte" (mais recente)
+   anda pro índice menor, e "anterior" (mais antigo) pro índice maior. */
+function atualizarBotoesMes(){
+  var btnAnt=document.getElementById("btnMesAnterior"), btnSeg=document.getElementById("btnMesSeguinte");
+  if(!btnAnt||!btnSeg) return;
+  var snaps=ESTADO.snapshots;
+  if(!snaps.length){ btnAnt.disabled=true; btnSeg.disabled=true; return; }
+  var idx=snaps.findIndex(function(s){ return s.id===ESTADO.snapshotAtualId; });
+  if(idx===-1){ btnAnt.disabled=false; btnSeg.disabled=true; return; } // mes atual nao esta salvo (import fresco): só dá pra ir pro mais recente salvo
+  btnAnt.disabled=idx>=snaps.length-1;
+  btnSeg.disabled=idx<=0;
+}
+function irParaMesAdjacente(passo){
+  var snaps=ESTADO.snapshots;
+  if(!snaps.length) return;
+  var idx=snaps.findIndex(function(s){ return s.id===ESTADO.snapshotAtualId; });
+  var novoIdx = idx===-1 ? 0 : idx-passo;
+  if(novoIdx<0||novoIdx>=snaps.length) return;
+  carregarMesDoBanco(snaps[novoIdx].id);
 }
 function linhaDoBanco(r){
   return {
