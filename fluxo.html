@@ -166,14 +166,15 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 1.9";
+var VERSAO_FLUXO="versão 2.0";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
 var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,
   cacheMeses:{}, comparacao:null, comparacaoResultados:null, comparacaoAlvos:null,
   distribuicao:{ ordens_secundario:null, oferta_dashboard:null, oferta_book:null }, nnmEscritorio:null,
-  drillClasse:null, drillGrupo:null };
-function resetarDrill(){ ESTADO.drillClasse=null; ESTADO.drillGrupo=null; }
+  drillClasse:null, drillGrupo:null, drillPassivaOrigem:null,
+  drillDistFonte:null, drillDistMes:null, drillDistGrupo:null };
+function resetarDrill(){ ESTADO.drillClasse=null; ESTADO.drillGrupo=null; ESTADO.drillPassivaOrigem=null; }
 
 /* ---------------- gate de master ---------------- */
 api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super,admin").then(function(r){
@@ -488,6 +489,55 @@ function calcularRendaPassiva(linhas){
   return { total:somaAbs(todas), qtd:todas.length, rf:somaAbs(rf), rv:somaAbs(rv), coe:somaAbs(coe),
     reinvestiram:contas.filter(function(c){return c.reinvestiu;}), naoAplicaram:contas.filter(function(c){return !c.reinvestiu;}) };
 }
+/* ---------------- drill-down: de onde veio a renda passiva ---------------- */
+function filtroRendaPassiva(l){
+  return (l["Mercado"]==="RENDA FIXA"&&(l["Lançamento"]==="JUROS"||l["Lançamento"]==="AMORTIZAÇÃO"))
+    || (l["Mercado"]==="RENDA VARIÁVEL"&&["RENDIMENTO","JUROS S/CAPITAL","RECEBIMENTO DIVIDENDOS","RESTITUIÇÃO DE CAPITAL"].indexOf(l["Lançamento"])!==-1)
+    || (l["Mercado"]==="COE"&&(l["Lançamento"]==="JUROS"||l["Lançamento"]==="AMORTIZAÇÃO"));
+}
+function origemRendaPassiva(l){ return l["Mercado"]+" — "+l["Lançamento"]; }
+function drillOrigensRendaPassiva(linhas){
+  var todas=linhas.filter(filtroRendaPassiva);
+  var porOrigem={};
+  todas.forEach(function(l){
+    var o=origemRendaPassiva(l);
+    porOrigem[o]=porOrigem[o]||{origem:o, total:0, contas:{}, qtd:0};
+    porOrigem[o].total+=Math.abs(Number(l["Valor Líquido"])||0);
+    porOrigem[o].contas[l._conta]=true;
+    porOrigem[o].qtd++;
+  });
+  return Object.values(porOrigem).map(function(g){ return {origem:g.origem, total:g.total, qtdContas:Object.keys(g.contas).length, qtd:g.qtd}; })
+    .sort(function(a,b){ return b.total-a.total; });
+}
+function linhasOrigemRendaPassiva(linhas, origem){
+  return linhas.filter(filtroRendaPassiva).filter(function(l){ return origemRendaPassiva(l)===origem; })
+    .map(function(l){ return {conta:l._conta, nome:l["Nome"], ativo:l["Ativo"]||l["Emissor"]||"", data:dataISO(l["Data Compra"]), valor:Math.abs(Number(l["Valor Líquido"])||0)}; })
+    .sort(function(a,b){ return b.valor-a.valor; });
+}
+function focarOrigemPassiva(origem){
+  ESTADO.drillPassivaOrigem=(ESTADO.drillPassivaOrigem===origem)?null:origem;
+  renderVisaoGeral();
+}
+function renderDrillPassiva(r){
+  var origens=drillOrigensRendaPassiva(r.linhas);
+  if(!origens.length) return '<div class="desc" style="margin-top:14px">Sem renda passiva nesse mês.</div>';
+  var h='<div style="margin-top:14px"><div class="desc">De onde veio — clique numa linha pra ver os lançamentos</div>'+
+    '<table><thead><tr><th>Origem</th><th class="num">Total</th><th class="num">Lançamentos</th><th class="num">Contas</th></tr></thead><tbody>';
+  origens.forEach(function(g){
+    var aberto=ESTADO.drillPassivaOrigem===g.origem;
+    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarOrigemPassiva(\''+g.origem.replace(/'/g,"\\'")+'\')"><td>'+(aberto?"▾ ":"▸ ")+esc(g.origem)+'</td><td class="num">'+brl(g.total)+'</td><td class="num">'+g.qtd+'</td><td class="num">'+g.qtdContas+'</td></tr>';
+    if(aberto){
+      var detalhes=linhasOrigemRendaPassiva(r.linhas, g.origem);
+      h+='<tr><td colspan="4" style="padding:4px 10px 10px;background:#F9FAFC">'+
+        '<table><thead><tr><th>Conta</th><th>Nome</th><th>Ativo/Emissor</th><th>Data</th><th class="num">Valor</th></tr></thead><tbody>'+
+        detalhes.slice(0,30).map(function(d){ return '<tr><td>'+d.conta+'</td><td>'+esc(d.nome)+'</td><td>'+esc(d.ativo)+'</td><td>'+d.data+'</td><td class="num">'+brl(d.valor)+'</td></tr>'; }).join("")+
+        (detalhes.length>30?'<tr><td colspan="5" style="color:var(--ink-faint);font-size:11px">+'+(detalhes.length-30)+' lançamento(s) a mais, não listados</td></tr>':"")+
+        '</tbody></table></td></tr>';
+    }
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
 
 /* ---------------- seção 8: caixa acumulado ---------------- */
 function calcularCaixa(linhasCC, limite){
@@ -696,6 +746,7 @@ function processarImportDistribuicao(linhas, fonte, campoData){
   var grupos=agruparPorMes(linhas, campoData);
   if(!Object.keys(grupos).length){ alert("Não encontrei nenhuma data válida em \""+campoData+"\"."); return; }
   ESTADO.distribuicao[fonte]={ grupos:grupos, campoData:campoData, salvo:false };
+  ESTADO.drillDistFonte=null; ESTADO.drillDistMes=null; ESTADO.drillDistGrupo=null;
   document.getElementById("resultado").style.display="block";
   renderDistribuicao();
   if(ESTADO.resultado) renderVisaoGeral();
@@ -778,7 +829,8 @@ function renderVisaoGeral(){
     '<div class="secao"><h2>'+NOMES_MES[ESTADO.mes]+' de '+ESTADO.ano+'</h2>'+
     '<div class="desc">'+r.linhas.length+' lançamentos · '+r.contasComMovimento+' contas com movimento</div>'+
     '<div class="cards">'+
-      cardHtml("Net New Money", r.nnm, "custódia + portabilidade nova + fluxo financeiro")+
+      cardHtml("Net New Money", r.nnm, "entradas − saídas: fluxo financeiro + custódia + portabilidade")+
+      cardHtml("Total aplicado no mês", r.aplic.rendaFixa.total+r.aplic.fundos.total+r.aplic.rendaVariavel.total+r.aplic.previdencia.total, "todas as classes — quanto movimentamos, bruto")+
       cardHtml("Fluxo financeiro líquido", r.fluxo.liquido, "TED e PIX, líquido de pares intra-escritório")+
       cardHtml("Transferência de custódia", r.custodia.liquido, "entra no NNM, não no fluxo financeiro")+
       cardHtml("Portabilidade nova (previdência)", r.prev.portabilidadeNova, "exclui provável reciclagem")+
@@ -807,7 +859,7 @@ function renderVisaoGeral(){
       cardHtml("Total no mês", r.passiva.total, r.passiva.qtd+" lançamentos")+
       cardHtml("Reinvestiram", r.passiva.reinvestiram.reduce(function(a,c){return a+c.total;},0), r.passiva.reinvestiram.length+" contas")+
       cardHtml("Não aplicaram nada", r.passiva.naoAplicaram.reduce(function(a,c){return a+c.total;},0), r.passiva.naoAplicaram.length+" contas — lista de ação")+
-    '</div></div>'+
+    '</div>'+renderDrillPassiva(r)+'</div>'+
     '<div class="secao"><h2>Caixa acumulado em conta corrente</h2><div class="desc">Contas com variação de caixa acima de R$ 20 mil no mês (não é o saldo, é a variação)</div>'+
     '<table><thead><tr><th>Conta</th><th>Nome</th><th class="num">Variação</th></tr></thead><tbody>'+
       r.caixa.acima.map(function(c){ return '<tr><td>'+c.conta+'</td><td>'+esc(c.nome)+'</td><td class="num">'+brl(c.variacao)+'</td></tr>'; }).join("")+
@@ -921,19 +973,151 @@ function renderResumoOutrasFontes(){
   return '<div class="secao"><h2>Outras fontes do mês</h2><div class="desc">Do que já foi reconhecido nas caixas de upload — <a href="javascript:mudarAba(\'distribuicao\')" style="color:var(--navy-2)">ver detalhe completo na aba Ofertas e Secundário</a></div>'+
     '<div class="cards">'+cartoes.join("")+'</div></div>';
 }
+/* ---------------- drill-down de secundário: compra/venda, direta/não, por fundo ---------------- */
+function focarMesDistribuicao(fonte, chave){
+  if(ESTADO.drillDistFonte===fonte && ESTADO.drillDistMes===chave){ ESTADO.drillDistFonte=null; ESTADO.drillDistMes=null; }
+  else { ESTADO.drillDistFonte=fonte; ESTADO.drillDistMes=chave; }
+  ESTADO.drillDistGrupo=null;
+  renderDistribuicao();
+}
+function focarGrupoDistribuicao(grupo){
+  ESTADO.drillDistGrupo=(ESTADO.drillDistGrupo===grupo)?null:grupo;
+  renderDistribuicao();
+}
+function detalharSecundarioMes(linhas){
+  var executadas=linhas.filter(function(l){ return l["Status"]==="EXECUTADA"; });
+  var compras=executadas.filter(function(l){ return l["Tipo de operação"]==="COMPRA"; });
+  var vendas=executadas.filter(function(l){ return l["Tipo de operação"]==="VENDA"; });
+  var diretas=executadas.filter(function(l){ return l["Ordem direta"]==="true"; });
+  var naoDiretas=executadas.filter(function(l){ return l["Ordem direta"]==="false"; });
+  function soma(l){ return l.reduce(function(a,x){ return a+(Number(x["Valor"])||0); },0); }
+  return {
+    compra:{valor:soma(compras), qtd:compras.length}, venda:{valor:soma(vendas), qtd:vendas.length},
+    direta:{valor:soma(diretas), qtd:diretas.length}, naoDireta:{valor:soma(naoDiretas), qtd:naoDiretas.length},
+  };
+}
+function secundarioPorFundo(linhas){
+  var executadas=linhas.filter(function(l){ return l["Status"]==="EXECUTADA"; });
+  var porFundo={};
+  executadas.forEach(function(l){
+    var f=l["Nome do fundos"]||"(sem fundo)";
+    porFundo[f]=porFundo[f]||{fundo:f, compra:0, venda:0, contas:{}};
+    if(l["Tipo de operação"]==="COMPRA") porFundo[f].compra+=Number(l["Valor"])||0;
+    else if(l["Tipo de operação"]==="VENDA") porFundo[f].venda+=Number(l["Valor"])||0;
+    porFundo[f].contas[l["Número da conta"]]=true;
+  });
+  return Object.values(porFundo).map(function(g){ return {fundo:g.fundo, compra:g.compra, venda:g.venda, liquido:g.compra-g.venda, qtdContas:Object.keys(g.contas).length}; })
+    .sort(function(a,b){ return (b.compra+b.venda)-(a.compra+a.venda); });
+}
+function ordensDoFundo(linhas, fundo){
+  return linhas.filter(function(l){ return l["Status"]==="EXECUTADA" && (l["Nome do fundos"]||"(sem fundo)")===fundo; })
+    .map(function(l){ return {conta:l["Número da conta"], nome:l["Nome do titular"], tipo:l["Tipo de operação"], direta:l["Ordem direta"]==="true", data:dataISOFlexivel(l["Data da solicitação"]), valor:Number(l["Valor"])||0}; })
+    .sort(function(a,b){ return b.valor-a.valor; });
+}
+function renderSecaoSecundario(info){
+  var chaves=chavesMesOrdenadas(info.grupos);
+  var h='<table style="margin-top:12px"><thead><tr><th>Mês</th><th class="num">Ordens</th><th class="num">Executadas</th><th class="num">Comprado</th><th class="num">Vendido</th><th class="num">Líquido</th></tr></thead><tbody>';
+  chaves.forEach(function(k){
+    var ma=mesAnoDaChave(k), r=calcularSecundarioMes(info.grupos[k]);
+    var aberto=ESTADO.drillDistFonte==="ordens_secundario"&&ESTADO.drillDistMes===k;
+    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarMesDistribuicao(\'ordens_secundario\',\''+k+'\')"><td>'+(aberto?"▾ ":"▸ ")+NOMES_MES[ma.mes]+'/'+ma.ano+'</td><td class="num">'+r.qtdTotal+'</td><td class="num">'+r.qtdExecutadas+'</td><td class="num">'+brl(r.valorComprado)+'</td><td class="num">'+brl(r.valorVendido)+'</td><td class="num '+sinalClasse(r.liquido)+'">'+brl(r.liquido)+'</td></tr>';
+    if(aberto) h+='<tr><td colspan="6" style="padding:4px 10px 14px;background:#F9FAFC">'+renderDrillSecundarioMes(info.grupos[k])+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  return h;
+}
+function renderDrillSecundarioMes(linhas){
+  var d=detalharSecundarioMes(linhas);
+  var h='<div class="cards" style="margin:8px 0">'+
+    cardHtml("Compra", d.compra.valor, d.compra.qtd+" ordens executadas")+
+    cardHtml("Venda", d.venda.valor, d.venda.qtd+" ordens executadas")+
+    cardHtml("Intermediação direta", d.direta.valor, d.direta.qtd+" ordens")+
+    cardHtml("Não direta", d.naoDireta.valor, d.naoDireta.qtd+" ordens")+
+  '</div><div class="desc">Por fundo — clique pra ver as ordens</div>'+
+  '<table><thead><tr><th>Fundo</th><th class="num">Compra</th><th class="num">Venda</th><th class="num">Líquido</th><th class="num">Contas</th></tr></thead><tbody>';
+  secundarioPorFundo(linhas).slice(0,20).forEach(function(g){
+    var abertoFundo=ESTADO.drillDistGrupo===g.fundo;
+    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarGrupoDistribuicao(\''+g.fundo.replace(/'/g,"\\'")+'\')"><td>'+(abertoFundo?"▾ ":"▸ ")+esc(g.fundo)+'</td><td class="num">'+brl(g.compra)+'</td><td class="num">'+brl(g.venda)+'</td><td class="num '+sinalClasse(g.liquido)+'">'+brl(g.liquido)+'</td><td class="num">'+g.qtdContas+'</td></tr>';
+    if(abertoFundo){
+      h+='<tr><td colspan="5" style="padding:4px 10px 10px">'+
+        '<table><thead><tr><th>Conta</th><th>Nome</th><th>Tipo</th><th>Direta</th><th>Data</th><th class="num">Valor</th></tr></thead><tbody>'+
+        ordensDoFundo(linhas,g.fundo).slice(0,30).map(function(o){ return '<tr><td>'+o.conta+'</td><td>'+esc(o.nome)+'</td><td>'+o.tipo+'</td><td>'+(o.direta?"sim":"não")+'</td><td>'+(o.data||"—")+'</td><td class="num">'+brl(o.valor)+'</td></tr>'; }).join("")+
+        '</tbody></table></td></tr>';
+    }
+  });
+  h+='</tbody></table>';
+  return h;
+}
+/* ---------------- drill-down de ofertas: por oferta e por assessor ---------------- */
+function ofertasPorNome(linhas){
+  var porOferta={};
+  linhas.forEach(function(l){
+    var o=l["NOME DA OFERTA"]||"(sem nome)";
+    porOferta[o]=porOferta[o]||{oferta:o, ativo:l["ATIVO"], reservado:0, obtido:0, contas:{}};
+    porOferta[o].reservado+=Number(l["VALOR DE RESERVA"])||0;
+    porOferta[o].obtido+=Number(l["VALOR OBTIDO"])||0;
+    porOferta[o].contas[l["CONTA"]]=true;
+  });
+  return Object.values(porOferta).map(function(g){ return {oferta:g.oferta, ativo:g.ativo, reservado:g.reservado, obtido:g.obtido, qtdContas:Object.keys(g.contas).length}; })
+    .sort(function(a,b){ return b.obtido-a.obtido; });
+}
+function contasDaOferta(linhas, oferta){
+  return linhas.filter(function(l){ return (l["NOME DA OFERTA"]||"(sem nome)")===oferta; })
+    .map(function(l){ return {conta:l["CONTA"], nome:l["TITULAR"], assessor:l["ASSESSOR"], reservado:Number(l["VALOR DE RESERVA"])||0, obtido:Number(l["VALOR OBTIDO"])||0}; })
+    .sort(function(a,b){ return b.obtido-a.obtido; });
+}
+function assessoresDashboard(linhas){
+  var porAssessor={};
+  linhas.forEach(function(l){
+    var a=l["ASSESSOR"]||"(sem assessor)";
+    porAssessor[a]=porAssessor[a]||{assessor:a, obtido:0, solicitacoes:0};
+    porAssessor[a].obtido+=Number(l["VALOR OBTIDO"])||0;
+    porAssessor[a].solicitacoes++;
+  });
+  return Object.values(porAssessor).sort(function(a,b){ return b.obtido-a.obtido; });
+}
+function renderSecaoOfertaDashboard(info){
+  var chaves=chavesMesOrdenadas(info.grupos);
+  var h='<table style="margin-top:10px"><thead><tr><th>Mês</th><th class="num">Solicitações</th><th class="num">Valor reservado</th><th class="num">Valor obtido</th></tr></thead><tbody>';
+  chaves.forEach(function(k){
+    var ma=mesAnoDaChave(k), r=calcularOfertasDashboardMes(info.grupos[k]);
+    var aberto=ESTADO.drillDistFonte==="oferta_dashboard"&&ESTADO.drillDistMes===k;
+    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarMesDistribuicao(\'oferta_dashboard\',\''+k+'\')"><td>'+(aberto?"▾ ":"▸ ")+NOMES_MES[ma.mes]+'/'+ma.ano+'</td><td class="num">'+r.qtd+'</td><td class="num">'+brl(r.valorReserva)+'</td><td class="num">'+brl(r.valorObtido)+'</td></tr>';
+    if(aberto) h+='<tr><td colspan="4" style="padding:4px 10px 14px;background:#F9FAFC">'+renderDrillOfertaDashboardMes(info.grupos[k])+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  return h;
+}
+function renderDrillOfertaDashboardMes(linhas){
+  var h='<div class="desc">Por oferta — clique pra ver quem participou</div>'+
+    '<table><thead><tr><th>Oferta</th><th>Ativo</th><th class="num">Reservado</th><th class="num">Obtido</th><th class="num">Contas</th></tr></thead><tbody>';
+  ofertasPorNome(linhas).forEach(function(g){
+    var aberto=ESTADO.drillDistGrupo===g.oferta;
+    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarGrupoDistribuicao(\''+g.oferta.replace(/'/g,"\\'")+'\')"><td>'+(aberto?"▾ ":"▸ ")+esc(g.oferta)+'</td><td>'+esc(g.ativo||"")+'</td><td class="num">'+brl(g.reservado)+'</td><td class="num">'+brl(g.obtido)+'</td><td class="num">'+g.qtdContas+'</td></tr>';
+    if(aberto){
+      h+='<tr><td colspan="5" style="padding:4px 10px 10px">'+
+        '<table><thead><tr><th>Conta</th><th>Nome</th><th>Assessor</th><th class="num">Reservado</th><th class="num">Obtido</th></tr></thead><tbody>'+
+        contasDaOferta(linhas,g.oferta).map(function(c){ return '<tr><td>'+c.conta+'</td><td>'+esc(c.nome)+'</td><td>'+esc(c.assessor||"")+'</td><td class="num">'+brl(c.reservado)+'</td><td class="num">'+brl(c.obtido)+'</td></tr>'; }).join("")+
+        '</tbody></table></td></tr>';
+    }
+  });
+  h+='</tbody></table>'+
+    '<div class="desc" style="margin-top:14px">Por assessor</div>'+
+    '<table><thead><tr><th>Assessor</th><th class="num">Obtido</th><th class="num">Solicitações</th></tr></thead><tbody>'+
+    assessoresDashboard(linhas).map(function(a){ return '<tr><td>'+esc(a.assessor)+'</td><td class="num">'+brl(a.obtido)+'</td><td class="num">'+a.solicitacoes+'</td></tr>'; }).join("")+
+    '</tbody></table>';
+  return h;
+}
 function renderDistribuicao(){
   var painel=document.getElementById("painelDistribuicao");
   if(!painel) return;
   var d=ESTADO.distribuicao, h="";
   h+='<div class="secao"><h2>Ordens no secundário</h2>'+
-    '<div class="desc">Intermediação de cotas de fundos — compra e venda entre clientes/contrapartes. "Status" e "Ordem direta" vêm do próprio export do BTG, sem reinterpretação. Só contam no comprado/vendido as ordens com status EXECUTADA.</div>';
+    '<div class="desc">Intermediação de cotas de fundos — compra e venda entre clientes/contrapartes. "Status" e "Ordem direta" vêm do próprio export do BTG, sem reinterpretação. Só contam no comprado/vendido as ordens com status EXECUTADA. Clique num mês pra ver compra/venda, direta/não direta e por fundo.</div>';
   if(d.ordens_secundario){
     var chaves=chavesMesOrdenadas(d.ordens_secundario.grupos);
     h+=(d.ordens_secundario.salvo?'<div class="desc">Salvo.</div>':'<button class="btn ouro" onclick="salvarDistribuicao(\'ordens_secundario\')">Salvar '+chaves.length+' mês(es) deste arquivo</button>')+
-      '<table style="margin-top:12px"><thead><tr><th>Mês</th><th class="num">Ordens</th><th class="num">Executadas</th><th class="num">Comprado</th><th class="num">Vendido</th><th class="num">Líquido</th></tr></thead><tbody>'+
-      chaves.map(function(k){ var ma=mesAnoDaChave(k), r=calcularSecundarioMes(d.ordens_secundario.grupos[k]);
-        return '<tr><td>'+NOMES_MES[ma.mes]+'/'+ma.ano+'</td><td class="num">'+r.qtdTotal+'</td><td class="num">'+r.qtdExecutadas+'</td><td class="num">'+brl(r.valorComprado)+'</td><td class="num">'+brl(r.valorVendido)+'</td><td class="num '+sinalClasse(r.liquido)+'">'+brl(r.liquido)+'</td></tr>'; }).join("")+
-      '</tbody></table>';
+      renderSecaoSecundario(d.ordens_secundario);
   } else {
     h+='<div class="desc">Importe o arquivo de ordens pra ver aqui.</div>';
   }
@@ -943,11 +1127,9 @@ function renderDistribuicao(){
   if(d.oferta_dashboard){
     var chavesDa=chavesMesOrdenadas(d.oferta_dashboard.grupos);
     h+='<h3 style="font-size:13px;margin:4px 0 6px;color:var(--navy)">Histórico (dashboard)</h3>'+
+      '<div class="desc">Clique num mês pra ver qual oferta, quem participou (conta e assessor) e o ranking por assessor.</div>'+
       (d.oferta_dashboard.salvo?'<div class="desc">Salvo.</div>':'<button class="btn ouro" onclick="salvarDistribuicao(\'oferta_dashboard\')">Salvar '+chavesDa.length+' mês(es) deste arquivo</button>')+
-      '<table style="margin-top:10px"><thead><tr><th>Mês</th><th class="num">Solicitações</th><th class="num">Valor reservado</th><th class="num">Valor obtido</th></tr></thead><tbody>'+
-      chavesDa.map(function(k){ var ma=mesAnoDaChave(k), r=calcularOfertasDashboardMes(d.oferta_dashboard.grupos[k]);
-        return '<tr><td>'+NOMES_MES[ma.mes]+'/'+ma.ano+'</td><td class="num">'+r.qtd+'</td><td class="num">'+brl(r.valorReserva)+'</td><td class="num">'+brl(r.valorObtido)+'</td></tr>'; }).join("")+
-      '</tbody></table>';
+      renderSecaoOfertaDashboard(d.oferta_dashboard);
   } else {
     h+='<div class="desc">Importe o histórico de ofertas (dashboard) pra ver aqui.</div>';
   }
@@ -1161,6 +1343,7 @@ function deslocarMes(mes, ano, passos){
 function indicadoresDe(r){
   return [
     {rotulo:"Net New Money", valor:r.nnm},
+    {rotulo:"Total aplicado no mês", valor:r.aplic.rendaFixa.total+r.aplic.fundos.total+r.aplic.rendaVariavel.total+r.aplic.previdencia.total},
     {rotulo:"Fluxo financeiro líquido", valor:r.fluxo.liquido},
     {rotulo:"Transferência de custódia", valor:r.custodia.liquido},
     {rotulo:"Portabilidade nova (previdência)", valor:r.prev.portabilidadeNova},

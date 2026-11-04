@@ -655,17 +655,47 @@ anterior):**
   vez de borda só, pra parecer menos "gerado por IA" e mais editorial, mais perto do
   PDF de referência que o Emil mandou.
 
+**NNM confirmado (não mudou):** Emil achou que "fluxo financeiro é o verdadeiro NNM", mas
+depois esclareceu: "NNM é o quanto teve de NET no mês = entradas − saídas". Isso bate
+exatamente com a fórmula que já estava em produção (fluxo financeiro + custódia +
+portabilidade — cada um já é, por si, um líquido de entradas−saídas do próprio canal).
+Não mudei nada na fórmula, só o texto do card (agora diz "entradas − saídas" explícito)
+pra não gerar a mesma dúvida de novo.
+
+**Indicador novo: Total aplicado no mês.** Emil pediu explicitamente: "eu preciso saber
+no comitê o quanto movimentamos no mês, total, todas aplicações, essa informação é uma
+das mais importantes". Virou card novo na Visão Geral (soma de RF+Fundos+RV+Previdência)
+e entrou em `indicadoresDe()`, então já aparece no comparativo de período também.
+
+**Drill-down em renda passiva, secundário e ofertas públicas (entregue, "isso pra tudo"
+— pedido do Emil de repetir o padrão de clicar-e-navegar em toda seção):**
+- **Renda passiva**: clicar na seção mostra de onde veio (RF juros/amortização, RV
+  rendimento/juros s.capital/dividendos/restituição, COE juros/amortização), e clicar
+  numa origem mostra os lançamentos (conta, nome, ativo/emissor, data, valor).
+- **Secundário**: clicar num mês mostra compra vs. venda e intermediação direta vs. não
+  direta (campo "Ordem direta" do export, salvo como veio — Emil confirmou que
+  secundário = cetipado), mais um ranking por fundo; clicar num fundo mostra as ordens
+  individuais (conta, nome, tipo, direta, data, valor).
+- **Ofertas públicas (dashboard)**: clicar num mês mostra ranking por oferta (nome,
+  ativo, reservado, obtido, contas) e por assessor (campo ASSESSOR do próprio dashboard —
+  é a única das 3 fontes de secundário/ofertas que tem essa coluna); clicar numa oferta
+  mostra quem participou (conta, nome, assessor, reservado, obtido). Book de reservas
+  ainda não ganhou esse nível de clique — fica pra próxima rodada, prioridade menor
+  porque é um corte complementar ao dashboard, não independente.
+- Ranking por assessor no **secundário** segue pendente: o arquivo de ordens não tem
+  coluna de assessor (só conta/titular), igual a limitação que o próprio PDF do Emil
+  documenta pra Movimentação geral. Precisa de um de-para conta→assessor pra destravar.
+
 **Pendente (nessa ordem, conforme o PDF de referência do Emil):** mais seções no mesmo
 estilo "tabela + leitura" do PDF — composição do dinheiro novo (de onde veio, por
 prefixo), saídas e reciclagem com faixas de prazo, concentração de clientes (maiores
 entradas/saídas líquidas por CLIENTE, não só por transação), caixa parado com custo de
 oportunidade anualizado, teste de FGC por cliente/emissor (mesma limitação documentada no
-PDF: só pega compras do mês importado). Pendente de dado: câmbio (arquivo ainda não
-enviado), aderência à política de alocação (precisa de uma política salva pra comparar
-contra), corte por assessor (só vem no dashboard de ofertas, 25 de 394 contas — mesma
-limitação que o próprio PDF do Emil documenta). Também pendente: decidir com o Emil como
-e quando usar o NNM do escritório (comparação de referência? substitui o cálculo próprio?
-os dois lado a lado?).
+PDF: só pega compras do mês importado), drill-down no book de reservas, de-para
+conta→assessor pro secundário. Pendente de dado: câmbio (arquivo ainda não enviado),
+aderência à política de alocação (precisa de uma política salva pra comparar contra).
+Também pendente: decidir com o Emil como e quando usar o NNM do escritório (comparação de
+referência? substitui o cálculo próprio? os dois lado a lado?).
 
 SQL em `adami_completo.sql`, seção 8.5: tabelas `fluxo_snapshots`, `fluxo_lancamentos`,
 `fluxo_distribuicao` (schema pronto pra fatia 5, ainda sem tela) e a função
