@@ -166,7 +166,7 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 2.0";
+var VERSAO_FLUXO="versão 2.1";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
 var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,
@@ -769,7 +769,7 @@ function processarImportNNMEscritorio(linhas){
 /* ---------------- checklist de upload (caixas de arrastar) ---------------- */
 var TIPOS_ARQUIVO=[
   {fonte:"movimentacao_geral", titulo:"Movimentação geral", desc:"Export do BTG, aba Export — captação, aplicações, resgates"},
-  {fonte:"ordens_secundario", titulo:"Ordens no secundário", desc:"Intermediação de cotas de fundos"},
+  {fonte:"ordens_secundario", titulo:"Secundário de fundos cetipados", desc:"Intermediação de cotas de fundos"},
   {fonte:"oferta_dashboard", titulo:"Dashboard de ofertas públicas", desc:"Histórico de reservas"},
   {fonte:"oferta_book", titulo:"Book de reservas", desc:"Detalhe recente das reservas"},
   {fonte:"nnm_escritorio", titulo:"NNM do escritório", desc:"Captação oficial calculada pelo BTG, pra conferência"},
@@ -829,10 +829,8 @@ function renderVisaoGeral(){
     '<div class="secao"><h2>'+NOMES_MES[ESTADO.mes]+' de '+ESTADO.ano+'</h2>'+
     '<div class="desc">'+r.linhas.length+' lançamentos · '+r.contasComMovimento+' contas com movimento</div>'+
     '<div class="cards">'+
-      cardHtml("Net New Money", r.nnm, "entradas − saídas: fluxo financeiro + custódia + portabilidade")+
       cardHtml("Total aplicado no mês", r.aplic.rendaFixa.total+r.aplic.fundos.total+r.aplic.rendaVariavel.total+r.aplic.previdencia.total, "todas as classes — quanto movimentamos, bruto")+
-      cardHtml("Fluxo financeiro líquido", r.fluxo.liquido, "TED e PIX, líquido de pares intra-escritório")+
-      cardHtml("Transferência de custódia", r.custodia.liquido, "entra no NNM, não no fluxo financeiro")+
+      cardHtml("Transferência de custódia", r.custodia.liquido, "entrada líquida de ativos por custódia")+
       cardHtml("Portabilidade nova (previdência)", r.prev.portabilidadeNova, "exclui provável reciclagem")+
     '</div></div>'+
     renderResumoOutrasFontes()+
@@ -962,11 +960,6 @@ function renderResumoOutrasFontes(){
     var rd=calcularOfertasDashboardMes(dash.grupos[chave]);
     cartoes.push(cardHtml("Ofertas públicas obtido", rd.valorObtido, rd.qtd+" solicitações (dashboard)"));
   }
-  var book=ESTADO.distribuicao.oferta_book;
-  if(book && book.grupos[chave]){
-    var rb=calcularOfertasBookMes(book.grupos[chave]);
-    cartoes.push(cardHtml("Book de reservas obtido", rb.valorObtido, rb.qtd+" reservas"));
-  }
   if(!cartoes.length){
     return '<div class="secao"><h2>Outras fontes do mês</h2><div class="desc">Nenhum arquivo de secundário ou ofertas públicas reconhecido ainda pra '+NOMES_MES[ESTADO.mes]+'/'+ESTADO.ano+'. Arraste nas caixas lá em cima — assim que reconhecer, aparece aqui.</div></div>';
   }
@@ -974,10 +967,21 @@ function renderResumoOutrasFontes(){
     '<div class="cards">'+cartoes.join("")+'</div></div>';
 }
 /* ---------------- drill-down de secundário: compra/venda, direta/não, por fundo ---------------- */
+/* Clicar no mês já abre o próximo nível também (o fundo/oferta de maior
+   valor), em vez de precisar de um segundo clique -- pedido direto do
+   Emil ("quando eu clico ali expande os menus também"). */
 function focarMesDistribuicao(fonte, chave){
-  if(ESTADO.drillDistFonte===fonte && ESTADO.drillDistMes===chave){ ESTADO.drillDistFonte=null; ESTADO.drillDistMes=null; }
-  else { ESTADO.drillDistFonte=fonte; ESTADO.drillDistMes=chave; }
-  ESTADO.drillDistGrupo=null;
+  if(ESTADO.drillDistFonte===fonte && ESTADO.drillDistMes===chave){
+    ESTADO.drillDistFonte=null; ESTADO.drillDistMes=null; ESTADO.drillDistGrupo=null;
+    renderDistribuicao();
+    return;
+  }
+  ESTADO.drillDistFonte=fonte; ESTADO.drillDistMes=chave;
+  var linhas=ESTADO.distribuicao[fonte].grupos[chave];
+  var topo=null;
+  if(fonte==="ordens_secundario"){ var porFundo=secundarioPorFundo(linhas); topo=porFundo[0]&&porFundo[0].fundo; }
+  else if(fonte==="oferta_dashboard"){ var porOferta=ofertasPorNome(linhas); topo=porOferta[0]&&porOferta[0].oferta; }
+  ESTADO.drillDistGrupo=topo||null;
   renderDistribuicao();
 }
 function focarGrupoDistribuicao(grupo){
@@ -1112,7 +1116,7 @@ function renderDistribuicao(){
   var painel=document.getElementById("painelDistribuicao");
   if(!painel) return;
   var d=ESTADO.distribuicao, h="";
-  h+='<div class="secao"><h2>Ordens no secundário</h2>'+
+  h+='<div class="secao"><h2>Secundário de fundos cetipados</h2>'+
     '<div class="desc">Intermediação de cotas de fundos — compra e venda entre clientes/contrapartes. "Status" e "Ordem direta" vêm do próprio export do BTG, sem reinterpretação. Só contam no comprado/vendido as ordens com status EXECUTADA. Clique num mês pra ver compra/venda, direta/não direta e por fundo.</div>';
   if(d.ordens_secundario){
     var chaves=chavesMesOrdenadas(d.ordens_secundario.grupos);
@@ -1342,9 +1346,7 @@ function deslocarMes(mes, ano, passos){
 }
 function indicadoresDe(r){
   return [
-    {rotulo:"Net New Money", valor:r.nnm},
     {rotulo:"Total aplicado no mês", valor:r.aplic.rendaFixa.total+r.aplic.fundos.total+r.aplic.rendaVariavel.total+r.aplic.previdencia.total},
-    {rotulo:"Fluxo financeiro líquido", valor:r.fluxo.liquido},
     {rotulo:"Transferência de custódia", valor:r.custodia.liquido},
     {rotulo:"Portabilidade nova (previdência)", valor:r.prev.portabilidadeNova},
     {rotulo:"Aplicações — renda fixa", valor:r.aplic.rendaFixa.total},
