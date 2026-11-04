@@ -202,13 +202,36 @@ var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
 var SESSAO=null;
 try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
 if(!SESSAO||!SESSAO.access_token){ location.replace("index.html"); }
-function api(path,opts){
+/* Token de acesso expira (1h, padrão do Supabase). Sem isso, qualquer
+   sessão aberta por mais tempo que isso esbarra em "JWT expired" no meio
+   do trabalho -- já aconteceu de verdade com o Emil preenchendo a
+   política. index.html já resolve isso com renovar()+retry; replicado
+   aqui no mesmo formato, pra essa tela não travar depois de uma hora. */
+function guardarSessao(d){
+  SESSAO={access_token:d.access_token, refresh_token:d.refresh_token||(SESSAO&&SESSAO.refresh_token), email:SESSAO&&SESSAO.email, id:SESSAO&&SESSAO.id};
+  try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){}
+}
+function renovar(){
+  if(!SESSAO||!SESSAO.refresh_token) return Promise.reject(new Error("sem sessão"));
+  return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{
+    method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({refresh_token:SESSAO.refresh_token})
+  }).then(function(res){
+    if(!res.ok) throw new Error("sessão expirada");
+    return res.json().then(guardarSessao);
+  });
+}
+function api(path,opts,jaTentou){
   opts=opts||{};
   var tk=(SESSAO&&SESSAO.access_token)||SB_KEY;
   var h={"apikey":SB_KEY,"Authorization":"Bearer "+tk,"Content-Type":"application/json"};
   if(opts.prefer) h["Prefer"]=opts.prefer;
   return fetch(SB_URL+"/rest/v1/"+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined})
     .then(function(res){
+      if(res.status===401&&SESSAO&&!jaTentou){
+        return renovar().then(function(){ return api(path,opts,true); })
+          .catch(function(){ alert("Sua sessão expirou. Vamos te levar pra tela de login de novo -- o que já estava preenchido continua no rascunho local, dá pra salvar depois de entrar."); location.replace("index.html"); throw new Error("sessão expirada"); });
+      }
       if(!res.ok) return res.text().then(function(t){ throw new Error(t||("HTTP "+res.status)); });
       return res.status===204?null:res.json();
     });
@@ -240,7 +263,7 @@ function api(path,opts){
 <div id="msg"></div>
 
 <script>
-var VERSAO_ALOC="versão 1.5";
+var VERSAO_ALOC="versão 1.6";
 document.getElementById("selo").textContent=VERSAO_ALOC;
 
 var CHAVE="aw_alocacao";

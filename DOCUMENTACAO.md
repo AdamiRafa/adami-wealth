@@ -753,3 +753,17 @@ o mesmo risco estrutural e não ganhou o mesmo aviso ainda — fica pendente.
 idêntico, ainda sem aviso); paginação de verdade (deixar o conteúdo fluir pra uma segunda
 folha em vez de cortar) seria a correção definitiva, mas é uma mudança de arquitetura
 maior — não entrou nesta rodada.
+
+**Bug corrigido: sessão expirava e o "Salvar" travava com "JWT expired" (entregue).**
+O token de acesso do Supabase dura cerca de 1 hora. Nem `fluxo.html` nem `alocacao.html`
+tinham lógica pra renovar esse token sozinho — `index.html` já tinha (`renovar()`), os
+outros dois não. Depois de 1h de uso contínuo, qualquer tentativa de salvar (snapshot do
+fluxo, política de alocação) voltava erro `PGRST303 JWT expired` e travava o botão em
+"Salvando...", sem perder o que já estava digitado (continuava no `EST`/rascunho local),
+mas sem conseguir gravar no banco. Corrigido portando o mesmo padrão do `index.html` pros
+dois arquivos: ao levar 401, tenta renovar o token com o `refresh_token` guardado e refaz
+a chamada original uma vez, de forma transparente (sem o usuário perceber nada). Só
+mostra alerta e manda pra tela de login se o `refresh_token` também já tiver expirado
+(sessão realmente morta, caso raro — isso dura semanas, não horas). Testado com jsdom
+simulando os dois cenários (token velho renova e reenvia sozinho; refresh também inválido
+avisa e redireciona) antes de publicar.
