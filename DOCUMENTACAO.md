@@ -62,9 +62,12 @@ mais um card no hub apontando para ele por caminho relativo. Módulos que precis
 dados usam o mesmo Supabase e as mesmas tabelas de identidade, para não criar uma
 segunda noção de usuário dentro da mesma casa.
 
-**Hospedagem:** Vercel, publicação automática a cada commit na branch `main` do GitHub
-`AdamiRafa/adami-wealth` (transferido de `emilstade/adami-wealth` em novembro/2026 —
-ver pendência de conferir a conexão Vercel↔GitHub depois da troca, seção 14).
+**Hospedagem:** em migração da Vercel para a HostGator (novembro/2026), no endereço
+`adamicaptal.com.br/hub`. O código é o mesmo: os módulos se chamam por caminho relativo e
+funcionam dentro da pasta `/hub` sem alteração. A publicação é automática a cada commit
+na branch `main` do GitHub `AdamiRafa/adami-wealth` (transferido de
+`emilstade/adami-wealth` em novembro/2026). Detalhes e estado da migração na seção 10.
+Enquanto a HostGator não estiver confirmada no ar, a Vercel continua como está.
 
 **Backend:** Supabase (PostgreSQL + PostgREST + Auth + Row Level Security).
 Projeto ativo: `ghxjqmjtmbqzvogwzylo.supabase.co`. A chave *publishable* vive no código
@@ -338,7 +341,34 @@ ficou branca na tela e azul no PDF por isso.
 
 ## 10. Publicação
 
-A Vercel republica sozinha a cada commit na `main`. O commit é feito pelo assistente.
+O commit é feito pelo assistente, direto na `main`. A cada commit na `main`, o GitHub
+Actions (`.github/workflows/publicar-hostgator.yml`) roda `.github/publicar-hostgator.sh`,
+que copia o portal por FTPS para a pasta `/hub` do `adamicaptal.com.br` na HostGator
+(Plano M). Leva um ou dois minutos. Se falhar, o erro aparece na aba **Actions** do
+repositório.
+
+- **O que vai ao ar** é uma lista positiva: `*.html`, `vendor/` e `.htaccess`. SQL,
+  documentação e qualquer arquivo novo de outro tipo ficam de fora. Módulo novo em HTML
+  entra sozinho; pasta nova (imagens, por exemplo) precisa ser incluída no script.
+- **A publicação apaga do servidor** o que saiu do repositório. Por isso há uma trava: se
+  a pasta remota tiver conteúdo e não tiver o arquivo `.portal-adami-captal`, nada é
+  enviado nem apagado. Protege o site da empresa caso a conta FTP aponte para o lugar
+  errado. A conta FTP deve enxergar só a pasta do portal.
+- **Acesso:** segredos `FTP_SERVIDOR`, `FTP_USUARIO` e `FTP_SENHA` em GitHub → Settings →
+  Secrets and variables → Actions. Cadastrados pelo Emil direto no GitHub, nunca por
+  conversa. Sem eles o workflow só avisa e não publica. `FTP_SERVIDOR` deve ser o nome do
+  servidor da HostGator que o certificado cobre; o script exige criptografia e confere o
+  certificado, e não deve ser afrouxado.
+- **Cache:** o `.htaccess` manda `Cache-Control: no-store`, como o `vercel.json` fazia, e
+  força https.
+- **Supabase:** em Authentication → URL Configuration, o Site URL e as Redirect URLs
+  precisam do endereço novo (`https://adamicaptal.com.br/hub/**`), senão o link de
+  recuperação de senha volta para o lugar errado.
+- **Estado (04/11/2026):** script e workflow publicados e testados contra um servidor
+  FTPS local (pasta nova, republicação, trava contra pasta errada, senha errada,
+  certificado inválido). Faltam: conta FTP na HostGator, segredos no GitHub, ajuste no
+  Supabase e o primeiro teste real. Depois de confirmado, desligar o projeto na Vercel e
+  apagar o `vercel.json`.
 
 **Para o assistente conseguir commitar**, duas condições:
 
@@ -397,8 +427,8 @@ sempre pela API, decodificando o campo `content`.
 - **Cache do navegador** engana com frequência. Sempre pedir Cmd+Shift+R e conferir o
   selo de versão antes de investigar qualquer coisa.
 - **O wi-fi do escritório bloqueia `.vercel.app`** por DNS, o que aparece como
-  `DNS_PROBE_FINISHED_NXDOMAIN`. Pelo 4G funciona. A solução definitiva é apontar o
-  domínio próprio.
+  `DNS_PROBE_FINISHED_NXDOMAIN`. Pelo 4G funciona. Some com a mudança para
+  `adamicaptal.com.br/hub` na HostGator.
 
 ---
 
@@ -456,16 +486,14 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
   embutido). Sem a Redirect URL cadastrada, o `redirect_to` do link é ignorado e ele
   pode voltar pro lugar errado. A tela que recebe o link (clique no link → defina a
   senha nova) já existe desde a 2.82 — falta só isso pra funcionar ponta a ponta.
-- **Domínio `portal.adamicaptal.com.br`** apontado para a Vercel, para contornar o
-  bloqueio do wi-fi do escritório.
+- **Concluir a mudança para `adamicaptal.com.br/hub` na HostGator** e desligar a Vercel.
+  Passo a passo e estado na seção 10.
 - **Decidir se a importação passa a criar clientes novos** já vinculados ao assessor pelo
   código. Hoje ela apenas lista.
 - **Importador de extrato BTG** no Gerador de Planos Patrimoniais nunca foi calibrado
   contra um arquivo real. Sem ele não há enquadramento por produto.
 - **IPCA contra IMA-B nos meses históricos.** Os rótulos mudaram, os valores antigos não.
 - A suíte de testes usada nas auditorias não está versionada no repositório.
-- Migrar a hospedagem dos HTML para infraestrutura própria, eliminando a Vercel e
-  mantendo apenas o Supabase.
 - **Segurança:** tokens do GitHub e chaves do Supabase já foram expostos em conversa mais
   de uma vez e precisam de revogação confirmada. Não pedir nem aceitar credencial por
   chat: ela não funciona no ambiente de execução e fica registrada no histórico.

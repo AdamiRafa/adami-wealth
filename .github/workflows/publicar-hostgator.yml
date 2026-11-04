@@ -1,0 +1,50 @@
+# Publica o portal na HostGator a cada commit na main.
+# Enquanto os segredos FTP_SERVIDOR, FTP_USUARIO e FTP_SENHA não estiverem cadastrados
+# (GitHub > Settings > Secrets and variables > Actions), só avisa e não faz nada.
+name: Publicar na HostGator
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publicar-hostgator
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Conferir se o acesso à HostGator foi cadastrado
+        id: acesso
+        env:
+          FTP_SERVIDOR: ${{ secrets.FTP_SERVIDOR }}
+          FTP_USUARIO: ${{ secrets.FTP_USUARIO }}
+          FTP_SENHA: ${{ secrets.FTP_SENHA }}
+        run: |
+          if [ -n "$FTP_SERVIDOR" ] && [ -n "$FTP_USUARIO" ] && [ -n "$FTP_SENHA" ]; then
+            echo "pronto=sim" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Acesso FTP da HostGator ainda não cadastrado. Nada foi publicado."
+            echo "pronto=nao" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.acesso.outputs.pronto == 'sim'
+
+      - name: Instalar lftp
+        if: steps.acesso.outputs.pronto == 'sim'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Publicar
+        if: steps.acesso.outputs.pronto == 'sim'
+        env:
+          FTP_SERVIDOR: ${{ secrets.FTP_SERVIDOR }}
+          FTP_USUARIO: ${{ secrets.FTP_USUARIO }}
+          FTP_SENHA: ${{ secrets.FTP_SENHA }}
+        run: bash .github/publicar-hostgator.sh

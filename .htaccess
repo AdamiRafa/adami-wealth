@@ -1,0 +1,20 @@
+# Portal Adami Captal, servido pela HostGator.
+# Publicado automaticamente pelo GitHub (.github/publicar-hostgator.sh).
+
+# Nunca servir versão velha do cache. É o mesmo que o vercel.json fazia: sem isso, o
+# selo de versão do rodapé deixa de ser confiável.
+<IfModule mod_headers.c>
+  Header set Cache-Control "no-store, max-age=0, must-revalidate"
+  Header unset Expires
+</IfModule>
+<IfModule mod_expires.c>
+  ExpiresActive Off
+</IfModule>
+
+# Sempre por https: o login e a sessão do Supabase não podem trafegar sem cadeado.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
