@@ -786,3 +786,33 @@ mostra alerta e manda pra tela de login se o `refresh_token` também já tiver e
 (sessão realmente morta, caso raro — isso dura semanas, não horas). Testado com jsdom
 simulando os dois cenários (token velho renova e reenvia sozinho; refresh também inválido
 avisa e redireciona) antes de publicar.
+
+---
+
+## 17. Mesa RV (`rv.html`)
+
+**Tipo "Posição" (entregue).** Até a versão 2.78 só existia "Compra / Venda" (aba
+`ordem`) para operações diretas, com alvo e stop — pensado pra uma chamada tática, não
+pra só registrar que o cliente comprou ou vendeu um ativo. Pedido do Emil: um tipo mais
+simples, pra quem só quer comprar/vender mesmo, sem a análise de alvo/stop. Novo tipo
+"Posição" (aba entre "Compra/Venda" e "Swing Trade"): Operação (compra/venda), Preço e
+Observação — o card mostra Operação, Quantidade e Preço lado a lado, e abaixo o Valor
+Total (quantidade × preço) em destaque. Entra no histórico e nas estatísticas da Mesa RV
+como qualquer outro tipo.
+
+**Campo "Quantidade" ao lado de "Ativo" (entregue).** Antes não existia campo de
+quantidade em nenhum tipo de operação — só preço e percentuais. Agora tem um campo
+"Quantidade" na mesma linha do "Ativo" (topo do formulário, compartilhado por todos os
+tipos, como pedido — "isso pra tds"). Formata em milhar enquanto digita, igual o campo de
+valor alocado no Histórico. Nos tipos que já existiam (Compra/Venda, Swing Trade, Stock or
+Coupon, estruturadas), a quantidade aparece como complemento na linha abaixo do ticker
+(ex.: "Bradesco PN · qtd. 2.000") quando preenchida — não aparecia antes, não teve nenhum
+redesenho de card pra caber. Em "Posição" ela é uma das três colunas principais, por ser
+o dado central desse tipo. Fica salva em `rv_operacoes.params.quantidade` pra todo tipo de
+operação, registrada e some do resumo quando o campo fica em branco (não força zero em
+operação que não usa quantidade, como as estruturadas por notional).
+
+Validado com `node --check` por bloco, acorn + eslint-scope (sem variável usada sem
+declarar), Playwright (card de Posição e card de Swing Trade com a quantidade visível) e
+jsdom direto no fluxo de `registrar()` (quantidade e valor total corretos no payload
+salvo, pro tipo novo e pra um já existente).

@@ -39,6 +39,8 @@
   input:focus,select:focus{outline:2px solid var(--gold);outline-offset:-1px;border-color:var(--gold)}
   .field{margin-bottom:12px}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3-topo{display:grid;grid-template-columns:1.1fr .8fr 1.5fr;gap:10px}
+  @media(max-width:480px){.row3-topo{grid-template-columns:1fr}}
   .row3{display:grid;grid-template-columns:1.4fr 1fr auto;gap:8px;align-items:end}
 
   fieldset{border:1px solid #E3E7EE;border-radius:10px;padding:14px;margin:0 0 12px}
@@ -131,9 +133,11 @@
   <div class="pane">
     <div class="tabs" id="tabs"></div>
 
-    <div class="row2">
+    <div class="row3-topo">
       <div class="field"><label for="ticker">Ativo</label>
         <input id="ticker" value="BBDC4" oninput="desenhar()"></div>
+      <div class="field"><label for="quant">Quantidade</label>
+        <input id="quant" value="1.000" inputmode="decimal" oninput="onValor(this);desenhar()"></div>
       <div class="field"><label for="empresa">Nome da empresa</label>
         <input id="empresa" value="Bradesco PN" oninput="desenhar()"></div>
     </div>
@@ -161,6 +165,25 @@
       <div class="field"><label for="oObs">Observação</label>
         <input id="oObs" value="Ordem a mercado" oninput="desenhar()"></div>
       <div class="derived" id="derOrdem"></div>
+    </div>
+
+    <!-- Posição: pra quem só quer registrar uma compra/venda direta, sem
+         alvo nem stop -- a "ordem" acima já cobre a análise tática, essa
+         aqui é só a execução: direção, preço, quantidade (campo
+         compartilhado lá em cima) e o valor total resultante. -->
+    <div id="b_posicao" style="display:none">
+      <div class="row2">
+        <div class="field"><label for="pDirecao">Operação</label>
+          <select id="pDirecao" onchange="desenhar()">
+            <option value="compra">Compra</option>
+            <option value="venda">Venda</option>
+          </select></div>
+        <div class="field"><label for="pPreco">Preço (R$)</label>
+          <input id="pPreco" value="15,89" oninput="desenhar()"></div>
+      </div>
+      <div class="field"><label for="pObs">Observação</label>
+        <input id="pObs" value="Execução a mercado" oninput="desenhar()"></div>
+      <div class="derived" id="derPosicao"></div>
     </div>
 
     <div id="b_swing">
@@ -273,7 +296,7 @@ LOGO_IMG.onload=function(){ LOGO_OK=true; try{ desenhar(); }catch(e){} };
 LOGO_IMG.onerror=function(){ LOGO_OK=false; };
 LOGO_IMG.src=LOGO_BRANCO;
 
-var VERSAO_RV="versão 2.78";
+var VERSAO_RV="versão 2.79";
 try{ document.getElementById("selVersao").textContent=VERSAO_RV; }catch(e){}
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
@@ -369,6 +392,7 @@ function acharOp(id){ for(var i=0;i<OPS.length;i++) if(OPS[i].id===id) return OP
 /* ===================== TIPOS ===================== */
 var TIPOS=[
   {id:'ordem',   rotulo:'Compra / Venda',  eyebrow:'ORDEM',           render:'ordem'},
+  {id:'posicao', rotulo:'Posição',         eyebrow:'POSIÇÃO',         render:'posicao'},
   {id:'swing',   rotulo:'Swing Trade',     eyebrow:'SWING TRADE',     render:'swing'},
   {id:'coupon',  rotulo:'Stock or Coupon', eyebrow:'STOCK OR COUPON', render:'coupon'},
   {id:'hedge',   rotulo:'Smart Hedge',     eyebrow:'SMART HEDGE',     render:'generica'},
@@ -395,6 +419,7 @@ function setTipo(id){
   tipo=id; montarTabs();
   var r=tipoAtual().render;
   document.getElementById('b_ordem').style.display   = r==='ordem'?'':'none';
+  document.getElementById('b_posicao').style.display = r==='posicao'?'':'none';
   document.getElementById('b_swing').style.display   = r==='swing'?'':'none';
   document.getElementById('b_coupon').style.display  = r==='coupon'?'':'none';
   document.getElementById('b_generica').style.display= r==='generica'?'':'none';
@@ -495,6 +520,18 @@ function calcOrdem(){
   return {dir:dir,sinal:sinal,p:p,al:al,st:st,temAlvo:temA,temStop:temS,
           pAlvo:pAlvo,pStop:pStop,rr:rr};
 }
+function calcPosicao(){
+  var dir=document.getElementById('pDirecao').value;
+  var preco=n('pPreco'), qtd=n('quant');
+  return {dir:dir,sinal:dir==='compra'?1:-1,preco:preco,qtd:qtd,valor:preco*qtd};
+}
+/* Quantidade e compartilhada por todos os tipos (fica do lado do Ativo),
+   mas nem toda operacao exibe a mesma coisa na linha de baixo do ticker
+   -- isso so completa a linha existente quando o campo estiver preenchido. */
+function subQtd(){
+  var q=n('quant');
+  return q>0 ? '   ·   qtd. '+num(q,0) : '';
+}
 function calcSwing(){
   var a=n('atual'),al=n('alvo'),st=n('stop');
   var pAlvo=a>0?(al/a-1)*100:0,pStop=a>0?(st/a-1)*100:0;
@@ -567,7 +604,7 @@ function desenhar(){
 
   if(T.render==='ordem'){
     var o=calcOrdem();
-    txt(M,332,s('empresa'),'22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
+    txt(M,332,s('empresa')+subQtd(),'22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
     linha(M,392,W-M,'rgba(255,255,255,.13)',1);
     var rots=['OPERAÇÃO','PREÇO',''], vals=[o.dir==='compra'?'COMPRA':'VENDA',moeda(o.p),''],
         cores=[o.dir==='compra'?C.green:C.red,C.white,C.white];
@@ -593,9 +630,22 @@ function desenhar(){
     }
     if(s('oObs')) txt(M,834,s('oObs'),'italic 21px Georgia,serif',C.mutedLight);
 
+  } else if(T.render==='posicao'){
+    var ps=calcPosicao();
+    txt(M,332,s('empresa'),'22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
+    linha(M,392,W-M,'rgba(255,255,255,.13)',1);
+    colunas(['OPERAÇÃO','QUANTIDADE','PREÇO'],
+      [ps.dir==='compra'?'COMPRA':'VENDA',num(ps.qtd,0),moeda(ps.preco)],
+      ['','',''],
+      [ps.dir==='compra'?C.green:C.red,C.white,C.white]);
+    linha(M,630,W-M,'rgba(255,255,255,.13)',1);
+    txt(M,694,'VALOR TOTAL','15px -apple-system,Helvetica,Arial,sans-serif',C.muted,'left',2.5);
+    txt(M,750,moeda(ps.valor),'bold 44px Georgia,serif',C.gold);
+    if(s('pObs')) txt(M,834,s('pObs'),'italic 21px Georgia,serif',C.mutedLight);
+
   } else if(T.render==='swing'){
     var d=calcSwing();
-    txt(M,332,s('empresa'),'22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
+    txt(M,332,s('empresa')+subQtd(),'22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
     linha(M,392,W-M,'rgba(255,255,255,.13)',1);
     colunas(['PREÇO ATUAL','ALVO','STOP'],[moeda(d.a),moeda(d.al),moeda(d.st)],['','',''],
             [C.white,C.white,C.white]);
@@ -610,7 +660,7 @@ function desenhar(){
     if(s('obs')) txt(M,816,s('obs'),'italic 21px Georgia,serif',C.mutedLight);
   } else if(T.render==='coupon'){
     var c=calcCoupon();
-    txt(M,332,'Vencimento '+c.data.toLocaleDateString('pt-BR')+'  ·  '+c.dias+' dias',
+    txt(M,332,'Vencimento '+c.data.toLocaleDateString('pt-BR')+'  ·  '+c.dias+' dias'+subQtd(),
         '22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
     linha(M,392,W-M,'rgba(255,255,255,.13)',1);
     colunas(['BARREIRA DE BAIXA','PRÊMIO NO PERÍODO','EQUIVALE A'],
@@ -626,7 +676,7 @@ function desenhar(){
       '19px -apple-system,Helvetica,Arial,sans-serif',C.muted);
   } else {
     var dg=diasAte('gVenc');
-    txt(M,332,'Vencimento '+dg.data.toLocaleDateString('pt-BR')+'  ·  '+dg.dias+' dias',
+    txt(M,332,'Vencimento '+dg.data.toLocaleDateString('pt-BR')+'  ·  '+dg.dias+' dias'+subQtd(),
         '22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
     linha(M,392,W-M,'rgba(255,255,255,.13)',1);
     colunas([s('gR1').toUpperCase(),s('gR2').toUpperCase(),s('gR3').toUpperCase()],
@@ -715,6 +765,15 @@ function painel(){
     av.textContent = !o.temStop
       ? 'Ordem sem stop: a perda não tem limite definido. Confirme se é intencional.'
       : (o.rr!==null&&o.rr<1.5?'Risco/retorno abaixo de 1,5:1 — ganho pequeno frente ao risco.':'');
+  } else if(T.render==='posicao'){
+    var ps=calcPosicao();
+    document.getElementById('derPosicao').innerHTML=
+      '<div><span class="k">Direção</span><span class="v">'+(ps.dir==='compra'?'Compra':'Venda')+'</span></div>'+
+      '<div><span class="k">Quantidade</span><span class="v">'+num(ps.qtd,0)+'</span></div>'+
+      '<div><span class="k">Preço</span><span class="v">'+moeda(ps.preco)+'</span></div>'+
+      '<span class="sep"></span>'+
+      '<div><span class="k">Valor total</span><span class="v pos">'+moeda(ps.valor)+'</span></div>';
+    av.textContent = ps.qtd<=0 ? 'Informe a quantidade pra calcular o valor total.' : '';
   } else if(T.render==='swing'){
     var d=calcSwing(),fraco=d.rr>0&&d.rr<1.5;
     document.getElementById('derSwing').innerHTML=
@@ -759,6 +818,11 @@ function registrar(){
       (o.temAlvo&&o.pAlvo!==null?' · alvo '+pct(o.pAlvo):'')+
       (o.temStop&&o.pStop!==null?' · stop '+pct(o.pStop):' · sem stop')+
       (o.rr!==null?' · R/R '+num(o.rr)+':1':'');
+  } else if(T.render==='posicao'){
+    var ps=calcPosicao();
+    reg.params={direcao:ps.dir,preco:ps.preco,quantidade:ps.qtd,valor:ps.valor,obs:s('pObs')};
+    reg.resumo=(ps.dir==='compra'?'Compra':'Venda')+' de '+num(ps.qtd,0)+' a '+moeda(ps.preco)+
+              ' · total '+moeda(ps.valor);
   } else if(T.render==='swing'){
     var d=calcSwing();
     reg.params={entrada:d.a,alvo:d.al,stop:d.st,pAlvo:d.pAlvo,pStop:d.pStop,rr:d.rr,obs:s('obs')};
@@ -775,12 +839,15 @@ function registrar(){
                r3:s('gR3'),v3:s('gV3'),payoff:s('gPayoff')};
     reg.resumo=s('gR1')+' '+s('gV1')+' · '+s('gR2')+' '+s('gV2')+' · '+s('gR3')+' '+s('gV3');
   }
-  /* Fee fica de fora do if/else: os dois campos sao os mesmos pra
-     qualquer tipo de operacao agora. */
+  /* Fee e quantidade ficam fora do if/else: os campos sao os mesmos pra
+     qualquer tipo de operacao agora. Em "Posição" a quantidade já entra
+     no resumo lá em cima, não repete aqui. */
   reg.params.feeEstruturacao=f.estrut.fee;
   reg.params.feeCompraVenda=f.cv.fee;
   reg.params.feeEscritorio=f.escritorio;
   reg.params.feeAssessor=f.assessor;
+  reg.params.quantidade=n('quant');
+  if(T.render!=='posicao' && n('quant')>0) reg.resumo+=' · qtd. '+num(n('quant'),0);
   if(f.assessor>0) reg.resumo+=' · fee assessor '+pctS(f.assessor);
   var btn=document.getElementById('btnReg'); if(btn) btn.disabled=true;
   api("rv_operacoes",{method:"POST",body:reg,prefer:"return=representation"})
