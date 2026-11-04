@@ -161,12 +161,14 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 1.7";
+var VERSAO_FLUXO="versão 1.8";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
 var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,
   cacheMeses:{}, comparacao:null, comparacaoResultados:null, comparacaoAlvos:null,
-  distribuicao:{ ordens_secundario:null, oferta_dashboard:null, oferta_book:null }, nnmEscritorio:null };
+  distribuicao:{ ordens_secundario:null, oferta_dashboard:null, oferta_book:null }, nnmEscritorio:null,
+  drillClasse:null, drillGrupo:null };
+function resetarDrill(){ ESTADO.drillClasse=null; ESTADO.drillGrupo=null; }
 
 /* ---------------- gate de master ---------------- */
 api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super,admin").then(function(r){
@@ -326,18 +328,100 @@ function calcularPrevidencia(linhas){
 
 /* ---------------- seções 5/6: aplicações e resgates por classe ---------------- */
 function somaAbs(l){ return l.reduce(function(a,x){ return a+Math.abs(Number(x["Valor Líquido"])||0); },0); }
+/* Mesmas regras usadas em calcularAplicacoes/calcularResgates e no drill-down
+   de "pra onde foi" -- centralizadas aqui pra não divergir entre os dois. */
+function filtroAplicacaoClasse(classe){
+  return function(l){
+    if(classe==="rendaFixa") return l["Mercado"]==="RENDA FIXA"&&(l["Lançamento"]==="COMPRA"||l["Lançamento"]==="COMPRA DEFINITIVA");
+    if(classe==="fundos") return l["Mercado"]==="FUNDOS"&&Number(l["Valor Líquido"])>0;
+    if(classe==="rendaVariavel") return l["Mercado"]==="RENDA VARIÁVEL"&&l["Lançamento"]==="COMPRA";
+    if(classe==="previdencia") return l["Mercado"]==="PREVIDÊNCIA"&&(l["Lançamento"]==="APORTE"||l["Lançamento"]==="CONTRIBUIÇÃO");
+    return false;
+  };
+}
+function filtroResgateClasse(classe){
+  return function(l){
+    if(classe==="fundos") return l["Mercado"]==="FUNDOS"&&Number(l["Valor Líquido"])<0;
+    if(classe==="rendaFixa"){ var lanc=l["Lançamento"]; return l["Mercado"]==="RENDA FIXA"&&(lanc==="VENCIMENTO DE TÍTULO"||lanc==="VENDA DEFINITIVA"||lanc==="AMORTIZAÇÃO"||lanc==="RETIRADA DE CUSTÓDIA"); }
+    if(classe==="rendaVariavel") return l["Mercado"]==="RENDA VARIÁVEL"&&l["Lançamento"]==="VENDA";
+    return false;
+  };
+}
 function calcularAplicacoes(linhas){
-  var rf=linhas.filter(function(l){ return l["Mercado"]==="RENDA FIXA"&&(l["Lançamento"]==="COMPRA"||l["Lançamento"]==="COMPRA DEFINITIVA"); });
-  var fundos=linhas.filter(function(l){ return l["Mercado"]==="FUNDOS"&&Number(l["Valor Líquido"])>0; });
-  var rv=linhas.filter(function(l){ return l["Mercado"]==="RENDA VARIÁVEL"&&l["Lançamento"]==="COMPRA"; });
-  var prev=linhas.filter(function(l){ return l["Mercado"]==="PREVIDÊNCIA"&&(l["Lançamento"]==="APORTE"||l["Lançamento"]==="CONTRIBUIÇÃO"); });
+  var rf=linhas.filter(filtroAplicacaoClasse("rendaFixa"));
+  var fundos=linhas.filter(filtroAplicacaoClasse("fundos"));
+  var rv=linhas.filter(filtroAplicacaoClasse("rendaVariavel"));
+  var prev=linhas.filter(filtroAplicacaoClasse("previdencia"));
   return { rendaFixa:{total:somaAbs(rf),qtd:rf.length}, fundos:{total:somaAbs(fundos),qtd:fundos.length}, rendaVariavel:{total:somaAbs(rv),qtd:rv.length}, previdencia:{total:somaAbs(prev),qtd:prev.length} };
 }
 function calcularResgates(linhas){
-  var fundos=linhas.filter(function(l){ return l["Mercado"]==="FUNDOS"&&Number(l["Valor Líquido"])<0; });
-  var rf=linhas.filter(function(l){ var lanc=l["Lançamento"]; return l["Mercado"]==="RENDA FIXA"&&(lanc==="VENCIMENTO DE TÍTULO"||lanc==="VENDA DEFINITIVA"||lanc==="AMORTIZAÇÃO"||lanc==="RETIRADA DE CUSTÓDIA"); });
-  var rv=linhas.filter(function(l){ return l["Mercado"]==="RENDA VARIÁVEL"&&l["Lançamento"]==="VENDA"; });
+  var fundos=linhas.filter(filtroResgateClasse("fundos"));
+  var rf=linhas.filter(filtroResgateClasse("rendaFixa"));
+  var rv=linhas.filter(filtroResgateClasse("rendaVariavel"));
   return { fundos:{total:somaAbs(fundos),qtd:fundos.length}, rendaFixa:{total:somaAbs(rf),qtd:rf.length}, rendaVariavel:{total:somaAbs(rv),qtd:rv.length} };
+}
+
+/* ---------------- drill-down: "pra onde foi" cada classe ---------------- */
+var CAMPO_AGRUPAMENTO_CLASSE={ rendaFixa:"Produto", fundos:"Ativo", rendaVariavel:"Ativo", previdencia:"Ativo" };
+var ROTULO_CLASSE={ rendaFixa:"Renda fixa", fundos:"Fundos", rendaVariavel:"Renda variável", previdencia:"Previdência" };
+function drillGruposDaClasse(linhas, classe){
+  var campo=CAMPO_AGRUPAMENTO_CLASSE[classe];
+  if(!campo) return [];
+  var aplic=linhas.filter(filtroAplicacaoClasse(classe));
+  var resg=classe==="previdencia"?[]:linhas.filter(filtroResgateClasse(classe));
+  var porGrupo={};
+  function add(lista, chave){
+    lista.forEach(function(l){
+      var g=l[campo]||("(sem "+campo.toLowerCase()+")");
+      porGrupo[g]=porGrupo[g]||{grupo:g, aplicado:0, resgatado:0, contas:{}};
+      porGrupo[g][chave]+=Math.abs(Number(l["Valor Líquido"])||0);
+      porGrupo[g].contas[l._conta]=true;
+    });
+  }
+  add(aplic,"aplicado"); add(resg,"resgatado");
+  return Object.values(porGrupo).map(function(g){
+    return { grupo:g.grupo, aplicado:g.aplicado, resgatado:g.resgatado, net:g.aplicado-g.resgatado, qtdContas:Object.keys(g.contas).length };
+  }).sort(function(a,b){ return b.aplicado-a.aplicado; });
+}
+function linhasDoGrupo(linhas, classe, grupo){
+  var campo=CAMPO_AGRUPAMENTO_CLASSE[classe];
+  function pertence(l){ return (l[campo]||("(sem "+campo.toLowerCase()+")"))===grupo; }
+  var aplic=linhas.filter(filtroAplicacaoClasse(classe)).filter(pertence)
+    .map(function(l){ return {conta:l._conta,nome:l["Nome"],data:dataISO(l["Data Compra"]),valor:Math.abs(Number(l["Valor Líquido"])||0),tipo:"aplicação"}; });
+  var resg=(classe==="previdencia"?[]:linhas.filter(filtroResgateClasse(classe))).filter(pertence)
+    .map(function(l){ return {conta:l._conta,nome:l["Nome"],data:dataISO(l["Data Compra"]),valor:Math.abs(Number(l["Valor Líquido"])||0),tipo:"resgate"}; });
+  return aplic.concat(resg).sort(function(a,b){ return b.valor-a.valor; });
+}
+function focarClasseAplicacao(classe){
+  ESTADO.drillClasse=(ESTADO.drillClasse===classe)?null:classe;
+  ESTADO.drillGrupo=null;
+  renderVisaoGeral();
+}
+function focarGrupoAplicacao(grupo){
+  ESTADO.drillGrupo=(ESTADO.drillGrupo===grupo)?null:grupo;
+  renderVisaoGeral();
+}
+function renderDrillAplicacoes(r){
+  if(!ESTADO.drillClasse) return '<div class="desc" style="margin-top:14px">Clique numa barra acima pra ver pra onde foi o dinheiro dentro daquela classe — e numa linha da tabela pra ver os lançamentos.</div>';
+  var classe=ESTADO.drillClasse, campo=CAMPO_AGRUPAMENTO_CLASSE[classe];
+  var grupos=drillGruposDaClasse(r.linhas, classe);
+  if(!grupos.length) return '<div class="desc" style="margin-top:14px">Sem lançamentos de '+esc(ROTULO_CLASSE[classe])+' nesse mês.</div>';
+  var h='<div style="margin-top:14px"><div class="desc">'+esc(ROTULO_CLASSE[classe])+' agrupado por '+esc(campo)+'</div>'+
+    '<table><thead><tr><th>'+esc(campo)+'</th><th class="num">Aplicado</th><th class="num">Resgatado</th><th class="num">Net</th><th class="num">Contas</th></tr></thead><tbody>';
+  grupos.slice(0,20).forEach(function(g){
+    var aberto=ESTADO.drillGrupo===g.grupo;
+    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarGrupoAplicacao(\''+g.grupo.replace(/'/g,"\\'")+'\')"><td>'+(aberto?"▾ ":"▸ ")+esc(g.grupo)+'</td><td class="num">'+brl(g.aplicado)+'</td><td class="num">'+brl(g.resgatado)+'</td><td class="num '+sinalClasse(g.net)+'">'+brl(g.net)+'</td><td class="num">'+g.qtdContas+'</td></tr>';
+    if(aberto){
+      var detalhes=linhasDoGrupo(r.linhas, classe, g.grupo);
+      h+='<tr><td colspan="5" style="padding:4px 10px 10px;background:#F9FAFC">'+
+        '<table><thead><tr><th>Conta</th><th>Nome</th><th>Data</th><th>Tipo</th><th class="num">Valor</th></tr></thead><tbody>'+
+        detalhes.slice(0,30).map(function(d){ return '<tr><td>'+d.conta+'</td><td>'+esc(d.nome)+'</td><td>'+d.data+'</td><td>'+d.tipo+'</td><td class="num">'+brl(d.valor)+'</td></tr>'; }).join("")+
+        (detalhes.length>30?'<tr><td colspan="5" style="color:var(--ink-faint);font-size:11px">+'+(detalhes.length-30)+' lançamento(s) a mais, não listados</td></tr>':"")+
+        '</tbody></table></td></tr>';
+    }
+  });
+  h+='</tbody></table></div>';
+  return h;
 }
 
 /* ---------------- seção 7: renda passiva ---------------- */
@@ -447,9 +531,14 @@ function graficoBarrasCategorico(dados){
   dados.forEach(function(d,i){
     var hh=Math.max(2,(d.valor/topo)*alturaUtil);
     var x=16+i*slot+(slot-bw)/2, y=H-pb-hh;
-    out+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" rx="4" fill="'+d.cor+'"/>'+
+    var clicavel=!!d.chave;
+    var contorno=d.ativo?' stroke="var(--navy)" stroke-width="2"':"";
+    var grupoAbre=clicavel?'<g style="cursor:pointer" onclick="focarClasseAplicacao(\''+d.chave+'\')">':'<g>';
+    out+=grupoAbre+
+      '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" rx="4" fill="'+d.cor+'"'+contorno+'/>'+
       '<text x="'+(x+bw/2)+'" y="'+(y-7)+'" text-anchor="middle" font-size="11" fill="#0C1626" font-family="IBM Plex Mono,Consolas,monospace" font-weight="500">'+brlCurto(d.valor)+'</text>'+
-      '<text x="'+(x+bw/2)+'" y="'+(H-pb+17)+'" text-anchor="middle" font-size="10.5" fill="#5C6B7F">'+esc(d.rotulo)+'</text>';
+      '<text x="'+(x+bw/2)+'" y="'+(H-pb+17)+'" text-anchor="middle" font-size="10.5" fill="'+(d.ativo?"var(--navy)":"#5C6B7F")+'" font-weight="'+(d.ativo?"700":"400")+'">'+esc(d.rotulo)+(clicavel?" ▾":"")+'</text>'+
+      '</g>';
   });
   return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto">'+out+'</svg></div>';
 }
@@ -544,6 +633,7 @@ function processarImportMovimentacaoGeral(linhas){
   ESTADO.snapshotAtualId=null;
   document.getElementById("seletorMes").value="";
   resetarComparacao();
+  resetarDrill();
   ESTADO.resultado=processarLinhas(linhas);
   document.getElementById("resultado").style.display="block";
   document.getElementById("btnSalvar").disabled=false;
@@ -654,11 +744,11 @@ function renderVisaoGeral(){
         r.resg.rendaFixa.total+r.resg.fundos.total+r.resg.rendaVariavel.total).replace("<tr>","<tr style=\"font-weight:600;border-top:2px solid var(--border-strong)\">")+
     '</tbody></table>'+
     '<div style="margin-top:14px">'+graficoBarrasCategorico([
-      {rotulo:"Renda fixa", valor:r.aplic.rendaFixa.total, cor:CORES_CLASSE_APLICACAO[0]},
-      {rotulo:"Fundos", valor:r.aplic.fundos.total, cor:CORES_CLASSE_APLICACAO[1]},
-      {rotulo:"Renda variável", valor:r.aplic.rendaVariavel.total, cor:CORES_CLASSE_APLICACAO[2]},
-      {rotulo:"Previdência", valor:r.aplic.previdencia.total, cor:CORES_CLASSE_APLICACAO[3]},
-    ])+'</div></div>'+
+      {rotulo:"Renda fixa", valor:r.aplic.rendaFixa.total, cor:CORES_CLASSE_APLICACAO[0], chave:"rendaFixa", ativo:ESTADO.drillClasse==="rendaFixa"},
+      {rotulo:"Fundos", valor:r.aplic.fundos.total, cor:CORES_CLASSE_APLICACAO[1], chave:"fundos", ativo:ESTADO.drillClasse==="fundos"},
+      {rotulo:"Renda variável", valor:r.aplic.rendaVariavel.total, cor:CORES_CLASSE_APLICACAO[2], chave:"rendaVariavel", ativo:ESTADO.drillClasse==="rendaVariavel"},
+      {rotulo:"Previdência", valor:r.aplic.previdencia.total, cor:CORES_CLASSE_APLICACAO[3], chave:"previdencia", ativo:ESTADO.drillClasse==="previdencia"},
+    ])+'</div>'+renderDrillAplicacoes(r)+'</div>'+
     '<div class="secao"><h2>Renda passiva distribuída</h2>'+
     '<div class="cards">'+
       cardHtml("Total no mês", r.passiva.total, r.passiva.qtd+" lançamentos")+
@@ -930,6 +1020,7 @@ function carregarMesDoBanco(snapshotId){
     document.getElementById("btnSalvar").disabled=true;
     document.getElementById("seletorComparacao").disabled=true;
     resetarComparacao();
+  resetarDrill();
     atualizarStatusCaixas();
     return;
   }
@@ -943,6 +1034,7 @@ function carregarMesDoBanco(snapshotId){
       ESTADO.lancamentos=rows.map(linhaDoBanco);
       ESTADO.paresDesmarcados={}; ESTADO.transacoesExcluidas={};
       resetarComparacao();
+  resetarDrill();
       ESTADO.resultado=processarLinhas(ESTADO.lancamentos);
       ESTADO.cacheMeses[snap.mes+"-"+snap.ano]=ESTADO.resultado;
       document.getElementById("resultado").style.display="block";

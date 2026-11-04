@@ -610,10 +610,37 @@ R$ 31.939.268,86 do NNM calculado pela Movimentação geral — diferença de ~1
 dado que são metodologias diferentes, mas é o número a cruzar quando o Emil pedir pra
 processar.
 
-**Pendente (fatias 3, 4 e 6, nessa ordem):** telas de renda fixa, fundos e renda
-variável; clientes; câmbio; FGC, alertas e exportação Excel. Também pendente: decidir com
-o Emil como e quando usar o NNM do escritório (comparação de referência? substitui o
-cálculo próprio? os dois lado a lado?).
+**Drill-down clicável em "pra onde foi"/"de onde veio" (entregue):** o Emil mandou um PDF
+de referência ("Leitura de Movimentações", comitê de julho/2026) com o nível de insight
+que ele quer — tabelas de concentração por produto/gestor, maiores aportes/saques,
+narrativa explicando por que cada número importa. Pediu explicitamente pra navegar
+clicando, não só ler números estáticos. Primeira fatia disso: as barras de "Aplicações e
+resgates" agora são clicáveis — clicar numa classe (Renda fixa/Fundos/Renda
+variável/Previdência) abre uma tabela agrupada pelo produto de dentro dela (Produto pra
+renda fixa, Ativo pra fundos/RV/previdência — são os campos realmente preenchidos pra
+cada Mercado, conferido linha a linha no arquivo real), com aplicado/resgatado/net/qtd de
+contas por grupo. Clicar numa linha do grupo abre o segundo nível: os lançamentos
+individuais (conta, nome, data, valor). Validado que a soma dos grupos bate exatamente
+com o total já auditado da classe, e a soma dos lançamentos individuais bate com o grupo.
+
+Também: coluna **Net** (aplicado − resgatado) e linha de Total na tabela de
+aplicações/resgates, com aviso de que Net mistura dinheiro novo (NNM) com realocação
+interna entre produtos — não é a mesma coisa. **Separar de verdade NNM de realocação
+ainda não foi construído** — exigiria casar resgate↔aplicação por conta dentro do mesmo
+mês (mesma ideia da neutralização de pares do fluxo externo, só que por cliente entre
+classes de ativo, não entre contas). Fica como próximo passo claro.
+
+**Pendente (nessa ordem, conforme o PDF de referência do Emil):** mais seções no mesmo
+estilo "tabela + leitura" do PDF — composição do dinheiro novo (de onde veio, por
+prefixo), saídas e reciclagem com faixas de prazo, concentração de clientes (maiores
+entradas/saídas líquidas por CLIENTE, não só por transação), caixa parado com custo de
+oportunidade anualizado, teste de FGC por cliente/emissor (mesma limitação documentada no
+PDF: só pega compras do mês importado). Pendente de dado: câmbio (arquivo ainda não
+enviado), aderência à política de alocação (precisa de uma política salva pra comparar
+contra), corte por assessor (só vem no dashboard de ofertas, 25 de 394 contas — mesma
+limitação que o próprio PDF do Emil documenta). Também pendente: decidir com o Emil como
+e quando usar o NNM do escritório (comparação de referência? substitui o cálculo próprio?
+os dois lado a lado?).
 
 SQL em `adami_completo.sql`, seção 8.5: tabelas `fluxo_snapshots`, `fluxo_lancamentos`,
 `fluxo_distribuicao` (schema pronto pra fatia 5, ainda sem tela) e a função
