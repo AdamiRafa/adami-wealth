@@ -161,7 +161,7 @@ function api(path,opts){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 1.6";
+var VERSAO_FLUXO="versão 1.7";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
 var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,
@@ -411,11 +411,17 @@ function processarLinhas(linhas, paresDesmarcados, transacoesExcluidas){
   var contasComMovimento={};
   linhas.forEach(function(l){ contasComMovimento[l._conta]=true; });
   var nnm=fluxo.liquido + custodia.liquido + prev.portabilidadeNova;
+  /* Se tem conta corrente mas nenhuma linha tem texto de "Movimentação",
+     o fluxo externo e o canal de fundos saem zerados silenciosamente --
+     normalmente sinal de mês salvo no banco antes da coluna movimentacao
+     existir (ver DOCUMENTACAO.md seção 15). Avisa em vez de deixar o
+     número errado passar batido. */
+  var movimentacaoAusente = cc.length>0 && !cc.some(function(l){ return l["Movimentação"]; });
   return {
     linhas:linhas, cc:cc, fluxo:fluxo, custodia:custodia, prev:prev, aplic:aplic, resg:resg,
     passiva:passiva, caixa:caixa, mapa:mapa, canalFundos:canalFundos,
     contasComMovimento:Object.keys(contasComMovimento).length,
-    nnm:nnm,
+    nnm:nnm, movimentacaoAusente:movimentacaoAusente,
   };
 }
 
@@ -626,7 +632,8 @@ function renderTudo(){ renderVisaoGeral(); renderComparativo(); renderAuditoria(
 
 function renderVisaoGeral(){
   var r=ESTADO.resultado;
-  var h='<div class="secao"><h2>'+NOMES_MES[ESTADO.mes]+' de '+ESTADO.ano+'</h2>'+
+  var h=(r.movimentacaoAusente ? '<div class="aviso erro">Esse mês foi salvo no banco antes da coluna de texto da movimentação existir — fluxo financeiro e canal de fundos saem como R$ 0,00 por falta desse texto, não porque não teve movimento. <b>Reimporte o arquivo original de Movimentação geral e clique em "Salvar este mês" de novo</b> pra corrigir.</div>' : '')+
+    '<div class="secao"><h2>'+NOMES_MES[ESTADO.mes]+' de '+ESTADO.ano+'</h2>'+
     '<div class="desc">'+r.linhas.length+' lançamentos · '+r.contasComMovimento+' contas com movimento</div>'+
     '<div class="cards">'+
       cardHtml("Net New Money", r.nnm, "custódia + portabilidade nova + fluxo financeiro")+
@@ -637,12 +644,14 @@ function renderVisaoGeral(){
     '<div class="secao"><h2>Série histórica de Net New Money</h2>'+
     '<div class="desc">NNM mês a mês, com todos os meses já salvos no banco (mais o mês em tela, se ainda não salvo)</div>'+
     '<div id="graficoHistoricoNNM"><div class="desc">Carregando…</div></div></div>'+
-    '<div class="secao"><h2>Aplicações e resgates</h2><div class="desc">Por classe de ativo</div>'+
-    '<table><thead><tr><th>Classe</th><th class="num">Aplicado</th><th class="num">Resgatado</th></tr></thead><tbody>'+
+    '<div class="secao"><h2>Aplicações e resgates</h2><div class="desc">Por classe de ativo. Net = aplicado menos resgatado — não é dinheiro novo, mistura NNM com dinheiro que só trocou de produto dentro da casa.</div>'+
+    '<table><thead><tr><th>Classe</th><th class="num">Aplicado</th><th class="num">Resgatado</th><th class="num">Net</th></tr></thead><tbody>'+
       linhaApRe("Renda fixa", r.aplic.rendaFixa.total, r.resg.rendaFixa.total)+
       linhaApRe("Fundos", r.aplic.fundos.total, r.resg.fundos.total)+
       linhaApRe("Renda variável", r.aplic.rendaVariavel.total, r.resg.rendaVariavel.total)+
       linhaApRe("Previdência", r.aplic.previdencia.total, 0)+
+      linhaApRe("Total", r.aplic.rendaFixa.total+r.aplic.fundos.total+r.aplic.rendaVariavel.total+r.aplic.previdencia.total,
+        r.resg.rendaFixa.total+r.resg.fundos.total+r.resg.rendaVariavel.total).replace("<tr>","<tr style=\"font-weight:600;border-top:2px solid var(--border-strong)\">")+
     '</tbody></table>'+
     '<div style="margin-top:14px">'+graficoBarrasCategorico([
       {rotulo:"Renda fixa", valor:r.aplic.rendaFixa.total, cor:CORES_CLASSE_APLICACAO[0]},
@@ -666,7 +675,8 @@ function cardHtml(rotulo,valor,nota){
   return '<div class="card"><div class="rotulo">'+rotulo+'</div><div class="valor '+sinalClasse(valor)+'">'+brl(valor)+'</div><div class="nota">'+nota+'</div></div>';
 }
 function linhaApRe(nome,ap,re){
-  return '<tr><td>'+nome+'</td><td class="num">'+brl(ap)+'</td><td class="num">'+brl(re)+'</td></tr>';
+  var net=ap-re;
+  return '<tr><td>'+nome+'</td><td class="num">'+brl(ap)+'</td><td class="num">'+brl(re)+'</td><td class="num '+sinalClasse(net)+'">'+brl(net)+'</td></tr>';
 }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
 
