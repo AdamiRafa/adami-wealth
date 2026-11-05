@@ -237,6 +237,15 @@ pros dois lados (envio e `redirect_to`), depois de configurar SMTP próprio (ver
 pendência na seção 14). A URL do portal já está nas Redirect URLs desde 05/11/2026
 (`https://adamicaptal.com.br/hub/**`, e Site URL `https://adamicaptal.com.br/hub/`).
 
+**Modelos de e-mail (marca "Hub Adami"):** ficam em `emails/`, gerados por
+`emails/_base.py` a partir de um layout único (`python3 emails/_base.py`). São colados à
+mão no Supabase, em Authentication → Emails → Templates; o repositório é a fonte, o painel
+é cópia. Usam as variáveis do Supabase `{{ .ConfirmationURL }}` e `{{ .Email }}`. O logo e
+os ícones vêm de `img/`, publicada junto com o portal em `adamicaptal.com.br/hub/img/`:
+cliente de e-mail não mostra imagem embutida em base64, então ela precisa estar num
+endereço público. Apagar ou renomear arquivo de `img/` quebra a imagem dos e-mails já
+enviados e dos próximos. `emails/` não vai para o ar.
+
 ### Login único entre portal e CRM
 
 O portal guarda a sessão em `localStorage` sob a chave `aw_sessao`. O `crm.html` lê essa
@@ -350,7 +359,7 @@ que copia o portal por FTPS para a pasta `/hub` do `adamicaptal.com.br` na HostG
 (Plano M). Leva um ou dois minutos. Se falhar, o erro aparece na aba **Actions** do
 repositório.
 
-- **O que vai ao ar** é uma lista positiva: `*.html`, `vendor/` e `.htaccess`. SQL,
+- **O que vai ao ar** é uma lista positiva: `*.html`, `vendor/`, `img/` e `.htaccess`. SQL,
   documentação e qualquer arquivo novo de outro tipo ficam de fora. Módulo novo em HTML
   entra sozinho; pasta nova (imagens, por exemplo) precisa ser incluída no script.
 - **A publicação apaga do servidor** o que saiu do repositório. Por isso há uma trava: se
