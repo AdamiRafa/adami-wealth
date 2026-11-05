@@ -62,12 +62,12 @@ mais um card no hub apontando para ele por caminho relativo. Módulos que precis
 dados usam o mesmo Supabase e as mesmas tabelas de identidade, para não criar uma
 segunda noção de usuário dentro da mesma casa.
 
-**Hospedagem:** em migração da Vercel para a HostGator (novembro/2026), no endereço
-`adamicaptal.com.br/hub`. O código é o mesmo: os módulos se chamam por caminho relativo e
-funcionam dentro da pasta `/hub` sem alteração. A publicação é automática a cada commit
-na branch `main` do GitHub `AdamiRafa/adami-wealth` (transferido de
-`emilstade/adami-wealth` em novembro/2026). Detalhes e estado da migração na seção 10.
-Enquanto a HostGator não estiver confirmada no ar, a Vercel continua como está.
+**Hospedagem:** HostGator (Plano M), no endereço **`adamicaptal.com.br/hub`**, desde
+novembro/2026. Antes era a Vercel, que foi desligada: o wi-fi do escritório bloqueava o
+endereço `.vercel.app`. O código não mudou na troca: os módulos se chamam por caminho
+relativo e funcionam dentro da pasta `/hub`. A publicação é automática a cada commit na
+branch `main` do GitHub `AdamiRafa/adami-wealth` (transferido de `emilstade/adami-wealth`
+em novembro/2026). Detalhes na seção 10.
 
 **Backend:** Supabase (PostgreSQL + PostgREST + Auth + Row Level Security).
 Projeto ativo: `ghxjqmjtmbqzvogwzylo.supabase.co`, na conta do Rafael (organização
@@ -362,8 +362,8 @@ repositório.
   conversa. Sem eles o workflow só avisa e não publica. `FTP_SERVIDOR` deve ser o nome do
   servidor da HostGator que o certificado cobre; o script exige criptografia e confere o
   certificado, e não deve ser afrouxado.
-- **Cache:** o `.htaccess` manda `Cache-Control: no-store`, como o `vercel.json` fazia, e
-  força https.
+- **Cache:** o `.htaccess` manda `Cache-Control: no-store` (o navegador nunca guarda
+  versão velha, senão o selo de versão deixa de ser confiável) e força https.
 - **Supabase:** em Authentication → URL Configuration, o Site URL e as Redirect URLs
   precisam do endereço novo (`https://adamicaptal.com.br/hub/**`), senão o link de
   recuperação de senha volta para o lugar errado.
@@ -371,9 +371,9 @@ repositório.
   (servidor `br542.hostgator.com.br`, diretório `adamicaptal.com.br/hub`), segredos
   cadastrados no GitHub, primeiro envio real concluído com sucesso (todos os HTML e
   `vendor/`, por FTPS com certificado conferido). Site URL e Redirect URLs do Supabase
-  ajustados. Falta: o Emil confirmar o portal abrindo e o login em
-  `adamicaptal.com.br/hub`, inclusive no wi-fi do escritório. Depois de alguns dias sem
-  problema, desligar o projeto na Vercel e apagar o `vercel.json`.
+  ajustados. Emil confirmou o portal abrindo e o login funcionando em
+  `adamicaptal.com.br/hub`. O `vercel.json` foi apagado do repositório e o projeto na
+  Vercel está sendo desligado pelo Emil.
 - Existe outra conta FTP no mesmo domínio, `intranet@adamicaptal.com.br`, apontando para
   uma pasta `intranet`. Não é do portal e não foi mexida.
 
@@ -433,9 +433,10 @@ sempre pela API, decodificando o campo `content`.
   e mostra mensagem de falha em vez de travar.
 - **Cache do navegador** engana com frequência. Sempre pedir Cmd+Shift+R e conferir o
   selo de versão antes de investigar qualquer coisa.
-- **O wi-fi do escritório bloqueia `.vercel.app`** por DNS, o que aparece como
-  `DNS_PROBE_FINISHED_NXDOMAIN`. Pelo 4G funciona. Some com a mudança para
-  `adamicaptal.com.br/hub` na HostGator.
+- **O wi-fi do escritório bloqueava `.vercel.app`** por DNS
+  (`DNS_PROBE_FINISHED_NXDOMAIN`). Foi o motivo da mudança para a HostGator. Se alguém
+  ainda tiver o link antigo salvo, ele não abre mais: o endereço é
+  `adamicaptal.com.br/hub`.
 
 ---
 
@@ -492,8 +493,6 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
   (limite de 2/hora do serviço embutido). A Redirect URL já está cadastrada (05/11/2026)
   e a tela que recebe o link existe desde a 2.82: falta só o SMTP para funcionar ponta a
   ponta.
-- **Concluir a mudança para `adamicaptal.com.br/hub` na HostGator** e desligar a Vercel.
-  Passo a passo e estado na seção 10.
 - **Decidir se a importação passa a criar clientes novos** já vinculados ao assessor pelo
   código. Hoje ela apenas lista.
 - **Importador de extrato BTG** no Gerador de Planos Patrimoniais nunca foi calibrado

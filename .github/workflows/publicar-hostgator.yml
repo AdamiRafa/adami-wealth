@@ -34,7 +34,7 @@ jobs:
             echo "pronto=nao" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: steps.acesso.outputs.pronto == 'sim'
 
       - name: Instalar lftp

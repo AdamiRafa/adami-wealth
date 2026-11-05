@@ -84,9 +84,10 @@ quando está vendo cache em vez do arquivo novo.
 
 ## Publicação
 
-A cada commit na `main`, o GitHub Actions publica o portal na HostGator, em
-`adamicaptal.com.br/hub` (migração da Vercel em andamento; ver `DOCUMENTACAO.md` seção
-10). Commite direto na `main`; não abra PR, a menos que ele peça.
+O portal fica em **`adamicaptal.com.br/hub`**, na HostGator. A cada commit na `main`, o
+GitHub Actions publica sozinho em menos de um minuto (ver `DOCUMENTACAO.md` seção 10).
+Se a publicação falhar, o erro aparece na aba Actions do repositório. A Vercel foi
+desligada em novembro/2026. Commite direto na `main`; não abra PR, a menos que ele peça.
 
 Nunca confira um commit por `raw.githubusercontent.com`. O CDN serve conteúdo velho e já
 causou **duas reversões silenciosas** de trabalho publicado. Confira pela API do GitHub,
@@ -138,13 +139,10 @@ execução e fica registrado no histórico.
   precisa ser interpolado.
 - **Cache do navegador engana.** Peça Cmd+Shift+R e confira o selo de versão antes de
   investigar qualquer coisa.
-- **O wi-fi do escritório bloqueia `.vercel.app`** por DNS. Pelo 4G funciona. Some
-  com a mudança para a HostGator.
 
 ---
 
 ## Pendências
 
-Ver `DOCUMENTACAO.md` seção 14. As mais quentes: SMTP próprio no Supabase, concluir a
-mudança para `adamicaptal.com.br/hub` na HostGator, e decidir se a importação passa a
-criar clientes novos já vinculados ao assessor pelo código.
+Ver `DOCUMENTACAO.md` seção 14. As mais quentes: SMTP próprio no Supabase, e decidir se a
+importação passa a criar clientes novos já vinculados ao assessor pelo código.

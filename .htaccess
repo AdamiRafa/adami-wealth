@@ -1,8 +1,8 @@
 # Portal Adami Captal, servido pela HostGator.
 # Publicado automaticamente pelo GitHub (.github/publicar-hostgator.sh).
 
-# Nunca servir versão velha do cache. É o mesmo que o vercel.json fazia: sem isso, o
-# selo de versão do rodapé deixa de ser confiável.
+# Nunca servir versão velha do cache: sem isso, o selo de versão do rodapé deixa de ser
+# confiável.
 <IfModule mod_headers.c>
   Header set Cache-Control "no-store, max-age=0, must-revalidate"
   Header unset Expires
