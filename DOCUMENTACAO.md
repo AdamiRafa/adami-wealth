@@ -244,6 +244,17 @@ clicou, e essa função só devolve convite pendente para master. A função nã
 banco). Se o envio falhar, o convite continua valendo e a tela diz o motivo; na lista de
 convites pendentes há "reenviar e-mail".
 
+- **E-mail do domínio é Microsoft 365, não HostGator (06/11/2026).** O MX do
+  `adamicaptal.com.br` é `adamicaptal-com-br.mail.protection.outlook.com`, o DMARC é
+  `p=quarantine` e o SPF (`include:_spf.localservices.com.br include:spf.protection.outlook.com
+  include:spf-0057a601.pphosted.com -all`) não autorizava a HostGator. Mensagem com remetente
+  `@adamicaptal.com.br` saindo pelo `br542.hostgator.com.br` (108.179.252.185) falhava no SPF,
+  e o Microsoft 365 mandava para quarentena: por isso o boas-vindas chegava num Gmail e o
+  reset, que vai para o e-mail da empresa, "não chegava". Os acessos de "Windows NT" nos
+  links eram o Safe Links do Microsoft Defender abrindo para conferir. Correção: acrescentar
+  `a:br542.hostgator.com.br` ao SPF, no Editor de zona DNS do cPanel (o DNS do domínio é da
+  HostGator: `ns542/ns543.hostgator.com.br`), sem tirar nada do que já está lá. Se a
+  HostGator trocar o servidor da conta, o SPF precisa acompanhar.
 - **nodemailer não funciona ali.** No runtime Deno das Edge Functions ele não conclui o
   TLS da porta 465 ("Greeting never received"). Por isso o SMTP é escrito à mão, com
   `Deno.connectTls`. Testado contra servidor SMTP e PostgREST falsos: envio, master/não
