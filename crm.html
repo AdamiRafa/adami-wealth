@@ -10471,7 +10471,7 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.05.4';
+const CRM_VERSAO = 'versão do CRM 2026.11.05.5';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -11272,6 +11272,11 @@ function App(){
     periodo:'mes', de:'', ate:'', assessor:'all', produtos:[], especialista:'all',
     temperatura:[],
   });
+  /* Simular um assessor leva os KPIs junto: o recorte por assessor dos
+     indicadores passa a ser o da simulação (e volta à casa ao sair dela). */
+  useEffect(() => {
+    setKpiFiltros(f => f.assessor === vendorFilter ? f : { ...f, assessor: vendorFilter });
+  }, [vendorFilter]);
   const grupos = useMemo(() => gruposExistentes(leads), [leads]);
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [modoBoard, setModoBoard] = useState('quadro');   // quadro | lista
@@ -11752,7 +11757,13 @@ function App(){
       || (funil === 'especialista' && l.origemLeadId && leads.some(o => o.id === l.origemLeadId && o.responsavelId === currentUser.id))
     );
     if(vendorFilter === 'all') return vivos;
-    return vivos.filter(l => l.responsavelId === vendorFilter);
+    /* Simular um assessor é ver o que ELE vê ao entrar: no funil de Negócios,
+       os negócios que ele indicou (o especialista é o responsável, ele é a
+       origem). Antes a simulação só olhava o responsável, e um assessor que
+       fechou 8 negócios aparecia com zero (relato do Emil, 05/11/2026). */
+    const porId = new Map(leads.map(o => [o.id, o]));
+    return vivos.filter(l => l.responsavelId === vendorFilter
+      || (funil === 'especialista' && l.origemLeadId && porId.has(l.origemLeadId) && porId.get(l.origemLeadId).responsavelId === vendorFilter));
   }, [leads, currentUser, isAdmin, vendorFilter, funil, produtoFiltro]);
 
   /* No funil de Negócios o assessor apenas acompanha: os cards chegam por

@@ -1042,6 +1042,16 @@ aqui.
   (mês → negócios). A evolução da carteira só mostra a dica (sem clique). As roscas do
   Dashboard e do panorama também respondem ao mouse e ao clique.
 
+**Correção (05/11/2026, `2026.11.05.5`): simulação de assessor no funil de Negócios.**
+Ao simular a Angela, o admin via "nenhuma venda fechada", e ela tinha fechado 8. Causa: no
+funil de Negócios o responsável do negócio é o especialista; o assessor é a ORIGEM
+(`origemLeadId`). O login do próprio assessor já mostrava os negócios que ele indicou, mas a
+simulação (`vendorFilter` em `scopedLeads`) só olhava o responsável. Agora a simulação usa a
+mesma regra do login. Também: simular um assessor leva os KPIs junto (o `kpiFiltros.assessor`
+acompanha o `vendorFilter`); antes os KPIs continuavam mostrando a casa inteira durante a
+simulação. Testado com 8 negócios indicados por uma assessora: login dela 8, simulação
+antes 0, simulação agora 8.
+
 - Atenção à diferença de números entre telas: o Dashboard mostra o patrimônio onshore e o
   offshore separados; o "Total da carteira" dos KPIs e do Relacionamento continua como era,
   somando o offshore pela cotação.
