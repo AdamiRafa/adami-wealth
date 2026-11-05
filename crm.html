@@ -2510,6 +2510,188 @@
   box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
   #awVoltar:hover{background:#132B47;opacity:1}
   @media print{#awVoltar{display:none!important}}
+
+  /* ================= Painel (aba Dashboard) =================
+     Inspirado na tela de carteira que o Emil montou para outra operação:
+     herói azul-marinho com o número grande em serifa, pílulas, abas
+     segmentadas, rosca com lista que se abre. Tudo com prefixo pn- para não
+     encostar no cockpit e nos indicadores, que continuam iguais. */
+  .pn{max-width:1180px;margin:0 auto;}
+  .pn-heroi{
+    background:linear-gradient(180deg,#0B1E3F 0%,var(--navy) 100%);color:#fff;
+    border-radius:18px;padding:22px 32px 74px;position:relative;
+  }
+  .pn-heroi-topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .pn-visao{display:flex;align-items:center;gap:8px;}
+  .pn-visao-seta{
+    width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:transparent;
+    color:#fff;font-size:20px;line-height:1;cursor:pointer;
+  }
+  .pn-visao-seta:hover{background:rgba(255,255,255,.08);}
+  .pn-visao-caixa,.pn-visao-fixa{
+    display:flex;flex-direction:column;gap:2px;background:rgba(255,255,255,.07);border-radius:10px;
+    padding:7px 14px;min-width:240px;
+  }
+  .pn-visao-caixa span,.pn-visao-fixa span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);}
+  .pn-visao-caixa select{
+    background:transparent;border:0;color:#fff;font:600 15px/1.3 'Inter',-apple-system,sans-serif;padding:0;outline:none;cursor:pointer;
+    max-width:260px;text-overflow:ellipsis;
+  }
+  .pn-visao-caixa select option{color:var(--ink);}
+  .pn-visao-fixa strong{font-size:15px;}
+  .pn-ola{font-family:'Fraunces',Georgia,serif;font-size:24px;font-weight:500;margin-bottom:16px;}
+  .pn-heroi-numeros{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 48px;}
+  .pn-rotulo{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:6px;}
+  .pn-grande{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:clamp(34px,4.6vw,50px);line-height:1.05;letter-spacing:-.01em;}
+  .pn-grande small,.pn-medio small{font-size:.42em;color:rgba(255,255,255,.7);margin-right:8px;font-weight:500;}
+  .pn-heroi-off{padding-left:28px;border-left:1px solid rgba(255,255,255,.16);}
+  .pn-medio{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:clamp(22px,2.6vw,30px);line-height:1.1;}
+  .pn-heroi-nota{font-size:11.5px;color:rgba(255,255,255,.5);margin-top:4px;}
+  .pn-pilulas{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 12px;}
+  .pn-pilula{
+    font-size:13px;font-weight:600;padding:6px 13px;border-radius:999px;
+    background:rgba(255,255,255,.09);color:rgba(255,255,255,.92);
+  }
+  .pn-pilula.boa{background:#E3F3EA;color:#1F6B47;}
+  .pn-pilula.ruim{background:#FBE7E5;color:#9B342E;}
+  .pn-pilula.alerta{background:rgba(176,138,46,.22);color:#F4DDA2;}
+  .pn-meta{font-size:13px;color:rgba(255,255,255,.62);}
+
+  .pn-abas{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--surface);
+    border-radius:14px;padding:6px;margin:-36px 18px 26px;position:relative;
+    box-shadow:0 6px 24px rgba(5,19,42,.10);
+  }
+  .pn-abas button{
+    border:0;background:transparent;border-radius:10px;height:44px;font:500 14.5px 'Inter',-apple-system,sans-serif;
+    color:var(--ink-muted);cursor:pointer;
+  }
+  .pn-abas button:hover{color:var(--ink);background:var(--bg);}
+  .pn-abas button.ativa{background:var(--navy);color:#fff;font-weight:600;}
+
+  .pn-conteudo{padding:0 18px;}
+  .pn-grupo{margin-bottom:26px;}
+  .pn-grupo-titulo{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;}
+  .pn-grupo-titulo span{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-muted);font-weight:600;}
+  .pn-grupo-titulo em{font-style:normal;font-size:12px;color:var(--ink-faint);}
+  .pn-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
+  .pn-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px 15px;
+    position:relative;transition:border-color .15s, box-shadow .15s;
+  }
+  .pn-card.clicavel{cursor:pointer;}
+  .pn-card.clicavel:hover{border-color:var(--border-strong);box-shadow:0 4px 16px rgba(5,19,42,.06);}
+  .pn-card.aberto{border-color:var(--navy);box-shadow:0 0 0 1px var(--navy);}
+  .pn-card-label{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ink-muted);font-weight:500;}
+  .pn-card-seta{color:var(--ink-faint);transform:rotate(0deg);transition:transform .15s;display:inline-flex;}
+  .pn-card.aberto .pn-card-seta{transform:rotate(180deg);}
+  .pn-card-num{font-family:'Fraunces',Georgia,serif;font-size:28px;font-weight:600;color:var(--navy);margin:6px 0 4px;letter-spacing:-.01em;}
+  .pn-card-sub{font-size:12.5px;color:var(--ink-faint);line-height:1.4;}
+  .pn-card.boa{border-left:3px solid var(--success);}
+  .pn-card.boa .pn-card-num{color:var(--success);}
+  .pn-card.ruim{border-left:3px solid var(--danger);}
+  .pn-card.atencao{border-left:3px solid var(--gold);}
+  .pn-card.ouro .pn-card-num{color:var(--gold);}
+  .pn-card.desligado{background:transparent;border-style:dashed;}
+  .pn-card.desligado .pn-card-num{color:var(--ink-faint);}
+
+  .pn-lista{
+    margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+  }
+  .pn-lista-vazio{padding:16px 18px;color:var(--ink-faint);font-size:13.5px;}
+  .pn-linha{display:flex;align-items:center;gap:12px;padding:11px 18px;border-top:1px solid var(--border);font-size:13.5px;}
+  .pn-linha:first-child{border-top:0;}
+  .pn-linha-nome{
+    flex:1;min-width:0;text-align:left;border:0;background:none;padding:0;cursor:pointer;
+    font:600 13.5px 'Inter',-apple-system,sans-serif;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .pn-linha-nome:hover{color:var(--primary);}
+  .pn-linha-quem{font-weight:400;color:var(--ink-faint);}
+  .pn-linha-meta{font-family:'IBM Plex Mono',Consolas,monospace;font-size:12.5px;color:var(--ink-muted);white-space:nowrap;}
+  .pn-linha-meta.atrasado{color:var(--danger);}
+  .pn-linha-acao{
+    border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:5px 10px;font-size:12px;
+    cursor:pointer;color:var(--ink-muted);
+  }
+  .pn-linha-acao:hover{border-color:var(--success);color:var(--success);}
+
+  .pn-carteira-topo{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .pn-rotulo-escuro{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-muted);font-weight:600;}
+  .pn-alternar{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px;}
+  .pn-alternar button{border:0;background:transparent;border-radius:999px;padding:7px 16px;font:500 13.5px 'Inter',sans-serif;color:var(--ink-muted);cursor:pointer;}
+  .pn-alternar button.ativo{background:var(--navy);color:#fff;font-weight:600;}
+  .pn-carteira{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start;}
+  .pn-carteira-rosca{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;}
+  .pn-rosca{position:relative;width:200px;height:200px;margin:0 auto 18px;}
+  .pn-rosca svg{width:100%;height:100%;display:block;}
+  .pn-rosca-centro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .pn-rosca-centro span{font-size:11.5px;color:var(--ink-faint);}
+  .pn-rosca-centro strong{font-size:19px;color:var(--navy);}
+  .pn-legenda-item{display:flex;align-items:center;gap:9px;font-size:13px;padding:5px 0;color:var(--ink);}
+  .pn-legenda-item i,.pn-bloco-cab i{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .pn-legenda-item span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pn-legenda-item b{font-family:'IBM Plex Mono',Consolas,monospace;font-size:12px;font-weight:500;}
+  .pn-carteira-lista{display:flex;flex-direction:column;gap:10px;}
+  .pn-bloco{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+  .pn-bloco-cab{
+    width:100%;display:flex;align-items:center;gap:14px;border:0;background:none;padding:16px 18px;cursor:pointer;text-align:left;
+    font-family:'Inter',-apple-system,sans-serif;color:var(--ink);
+  }
+  .pn-bloco-cab:hover{background:#FAFBFC;}
+  .pn-bloco-nome,.pn-cliente-nome{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .pn-bloco-nome strong{font-size:15px;}
+  .pn-bloco-nome small,.pn-bloco-valor small,.pn-cliente-nome small,.pn-cliente-valor small{font-size:12px;color:var(--ink-faint);}
+  .pn-bloco-valor,.pn-cliente-valor{display:flex;flex-direction:column;align-items:flex-end;gap:3px;white-space:nowrap;}
+  .pn-bloco-valor strong{font-size:15px;}
+  .pn-bloco-seta{color:var(--ink-faint);display:inline-flex;transition:transform .15s;}
+  .pn-bloco.aberto .pn-bloco-seta{transform:rotate(180deg);}
+  .pn-bloco-corpo{border-top:1px solid var(--border);background:#F8F9FB;}
+  .pn-bloco-ir{
+    display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--border);background:var(--primary-tint);
+    color:var(--primary);font:600 13px 'Inter',sans-serif;padding:10px 18px 10px 41px;cursor:pointer;
+  }
+  .pn-cliente{
+    width:100%;display:flex;align-items:center;gap:14px;border:0;border-top:1px solid var(--border);background:none;
+    padding:12px 18px 12px 41px;cursor:pointer;text-align:left;font-family:'Inter',-apple-system,sans-serif;color:var(--ink);
+  }
+  .pn-cliente:first-child{border-top:0;}
+  .pn-cliente:hover{background:#EFF3F8;}
+  .pn-cliente-nome strong,.pn-cliente-valor strong{font-size:13.5px;font-weight:600;}
+  .pn-cliente-nome strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pn-cliente-seta{color:var(--ink-faint);font-size:18px;}
+  .pn-vazio{background:var(--surface);border:1px dashed var(--border-strong);border-radius:14px;padding:28px;text-align:center;color:var(--ink-faint);}
+  .pn-rodape-nota{font-size:12.5px;color:var(--ink-faint);margin-top:14px;}
+
+  .pn-tabela-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow-x:auto;}
+  .pn-tabela{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .pn-tabela th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-muted);font-weight:600;text-align:left;padding:13px 16px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .pn-tabela td{padding:13px 16px;border-top:1px solid var(--border);}
+  .pn-tabela tbody tr{cursor:pointer;}
+  .pn-tabela tbody tr:hover{background:#F6F8FB;}
+  .pn-tabela .n{text-align:right;font-family:'IBM Plex Mono',Consolas,monospace;font-size:12.5px;white-space:nowrap;}
+  .pn-tabela .boa{color:var(--success);}
+  .pn-tabela .ruim{color:var(--danger);}
+  .pn-tabela .seta{color:var(--ink-faint);text-align:right;width:20px;}
+  .pn-versao{text-align:center;font-size:11px;color:var(--ink-faint);margin-top:30px;letter-spacing:.04em;}
+
+  @media (max-width:900px){
+    .pn-carteira{grid-template-columns:1fr;}
+  }
+  @media (max-width:640px){
+    .pn-heroi{padding:18px 18px 66px;border-radius:14px;}
+    .pn-visao-caixa{min-width:0;flex:1;}
+    .pn-visao{width:100%;}
+    .pn-heroi-off{padding-left:0;border-left:0;}
+    .pn-abas{margin:-34px 8px 20px;}
+    .pn-abas button{font-size:13px;height:40px;}
+    .pn-conteudo{padding:0;}
+    .pn-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+    .pn-card{padding:13px 13px 12px;}
+    .pn-card-num{font-size:22px;}
+    .pn-bloco-cab{padding:14px;gap:10px;}
+    .pn-cliente{padding:11px 14px 11px 33px;}
+    .pn-linha{padding:10px 14px;flex-wrap:wrap;}
+  }
 </style>
 </head>
 <body>
@@ -10003,6 +10185,336 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
   );
 }
 
+/* ================= Painel (aba Dashboard) =================
+   O cockpit da carteira: a casa inteira para o admin, a própria carteira para
+   o assessor. Cada número abre o que o compõe — casa, assessor, cliente — e o
+   cliente abre a ficha. Os números vêm dos MESMOS cálculos do cockpit e dos
+   indicadores (computeCockpitStats, computeAssessoriaStats): o painel não tem
+   conta própria, então não diverge do resto do CRM.
+
+   Onshore e offshore nunca somam aqui: o patrimônio em reais e o em dólares
+   aparecem lado a lado, e a rosca da carteira é só onshore. O NNM segue a
+   mesma regra do card "NNM no mês" do cockpit (offshore pela cotação), para os
+   dois mostrarem o mesmo número.
+
+   O que só chega com a API do BTG (dinheiro parado, posição por ativo, PJ1)
+   aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
+   marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
+   (decisão de 05/11/2026). */
+const CRM_VERSAO = 'versão do CRM 2026.11.05';
+const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
+const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
+
+function pnStats(leads, users, assessorId, cotacao){
+  const vivos = ativos(leads);
+  const jornadaTodos = vivos.filter(l => (l.funil || 'assessor') !== 'especialista');
+  const nomeDe = (id) => ((users.find(u => u.id === id) || {}).nome) || 'Sem assessor';
+  const ids = assessorId ? [assessorId]
+    : Array.from(new Set(jornadaTodos.map(l => l.responsavelId || null)));
+  const partes = ids.map(id => ({ id, nome: nomeDe(id), s: computeCockpitStats(leads, users, id, cotacao) }));
+  const junta = (pegar) => partes.reduce((acc, p) =>
+    acc.concat(pegar(p.s).map(x => ({ ...x, assessor: p.nome, assessorId: p.id }))), []);
+  const jornada = assessorId ? jornadaTodos.filter(l => l.responsavelId === assessorId) : jornadaTodos;
+  const geral = computeAssessoriaStats(jornada, users, PN_FILTRO_MES, cotacao);
+
+  const porDias = (a, b) => (b.diasAtraso === null ? -999 : b.diasAtraso) - (a.diasAtraso === null ? -999 : a.diasAtraso);
+  const vencimentos = junta(s => s.vencimentos).sort(porDias);
+  const contatosAtrasados = junta(s => s.contatosAtrasados).sort((a, b) => b.diasAtraso - a.diasAtraso);
+  const regua = junta(s => s.regua).sort((a, b) => b.diasAtraso - a.diasAtraso);
+  const aportes = junta(s => s.aportes).sort((a, b) => b.data.localeCompare(a.data));
+  const resgates = junta(s => s.resgates).sort((a, b) => b.data.localeCompare(a.data));
+  const semAtivar = junta(s => s.contas.semAtivar);
+  const pj2 = junta(s => s.receitaPJ2.negocios);
+
+  /* Carteira: quem já é cliente, com o onshore e o offshore de cada um. */
+  const carteira = jornada.filter(l => !l.perdido && naCarteira(l)).map(l => ({
+    lead: l, id: l.id, nome: (l.cliente || '').trim() || nomeCliente(l),
+    onshore: valorEmCarteira(l), offshore: valorEmCarteiraOffshore(l),
+    segmento: l.segmento || '', assessorId: l.responsavelId || null, assessor: nomeDe(l.responsavelId || null),
+    conta: l.conta || ''
+  }));
+  const sobGestao = carteira.filter(c => c.onshore > 0 || c.offshore > 0);
+
+  return {
+    partes, vencimentos, contatosAtrasados, regua, aportes, resgates, semAtivar, pj2,
+    receitaPJ2: pj2.reduce((s, n) => s + (n.valor || 0), 0),
+    abertas: partes.reduce((s, p) => s + p.s.contas.abertas, 0),
+    ativadas: partes.reduce((s, p) => s + p.s.contas.ativadas, 0),
+    nnm: geral.fluxo, emCaptacao: geral.emCaptacao,
+    totalOnshore: carteira.reduce((s, c) => s + c.onshore, 0),
+    totalOffshoreUsd: carteira.reduce((s, c) => s + c.offshore, 0),
+    carteira, clientes: sobGestao.length,
+    comOffshore: sobGestao.filter(c => c.offshore >= OFFSHORE_PISO_USD).length,
+    assessores: assessorId ? 1 : partes.filter(p => p.id).length
+  };
+}
+
+/* Agrupa a carteira para a rosca e a lista que se abre. Só onshore no peso. */
+function pnGrupos(carteira, por){
+  const chaveDe = por === 'assessor' ? (c => c.assessorId || '—') : (c => c.segmento || '—');
+  const nomeDe = por === 'assessor' ? (c => c.assessor) : (c => c.segmento || 'Sem segmento');
+  const mapa = new Map();
+  carteira.forEach(c => {
+    if(!(c.onshore > 0 || c.offshore > 0)) return;
+    const k = chaveDe(c);
+    if(!mapa.has(k)) mapa.set(k, { key: k, nome: nomeDe(c), clientes: [], onshore: 0, offshore: 0 });
+    const g = mapa.get(k);
+    g.clientes.push(c); g.onshore += c.onshore; g.offshore += c.offshore;
+  });
+  let grupos = Array.from(mapa.values());
+  if(por === 'segmento'){
+    const ordem = SEGMENTOS.map(s => s.key);
+    grupos.sort((a, b) => (ordem.indexOf(a.key) < 0 ? 99 : ordem.indexOf(a.key)) - (ordem.indexOf(b.key) < 0 ? 99 : ordem.indexOf(b.key)));
+  } else {
+    grupos.sort((a, b) => b.onshore - a.onshore);
+  }
+  grupos.forEach((g, i) => { g.cor = PN_CORES[i % PN_CORES.length]; g.clientes.sort((a, b) => b.onshore - a.onshore || b.offshore - a.offshore); });
+  return grupos;
+}
+
+const pnPct = (v, total) => total > 0 ? (v / total * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%' : '—';
+const pnSinal = (v) => (v >= 0 ? '+' : '−') + fmtBRLCompact(Math.abs(v));
+const pnData = (iso) => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+
+function PainelRosca({ grupos, total, rotulo }){
+  const R = 70, C = 2 * Math.PI * R;
+  let acumulado = 0;
+  const fatias = grupos.filter(g => g.onshore > 0).map(g => {
+    const frac = total > 0 ? g.onshore / total : 0;
+    const el = h('circle', { key: g.key, cx: 90, cy: 90, r: R, fill: 'none', stroke: g.cor, strokeWidth: 22,
+      strokeDasharray: Math.max(0, frac * C - 2) + ' ' + C, strokeDashoffset: -acumulado * C,
+      transform: 'rotate(-90 90 90)' });
+    acumulado += frac;
+    return el;
+  });
+  return h('div', { className: 'pn-rosca' },
+    h('svg', { viewBox: '0 0 180 180', role: 'img', 'aria-label': 'Distribuição da carteira onshore' },
+      h('circle', { cx: 90, cy: 90, r: R, fill: 'none', stroke: 'var(--border)', strokeWidth: 22 }),
+      fatias),
+    h('div', { className: 'pn-rosca-centro' },
+      h('span', null, rotulo),
+      h('strong', null, fmtBRLCompact(total)))
+  );
+}
+
+function PainelCard({ label, valor, sub, tom, aberto, onClick, disabled }){
+  const clicavel = !!onClick && !disabled;
+  return h('div', {
+    className: 'pn-card' + (tom ? ' ' + tom : '') + (aberto ? ' aberto' : '') + (disabled ? ' desligado' : '') + (clicavel ? ' clicavel' : ''),
+    onClick: clicavel ? onClick : undefined, role: clicavel ? 'button' : undefined, tabIndex: clicavel ? 0 : undefined,
+    'aria-expanded': clicavel ? !!aberto : undefined,
+    onKeyDown: clicavel ? (e) => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); onClick(); } } : undefined
+  },
+    h('div', { className: 'pn-card-label' }, label, clicavel ? h('span', { className: 'pn-card-seta' }, h(IconChevron, { size: 13 })) : null),
+    h('div', { className: 'pn-card-num' }, valor),
+    sub ? h('div', { className: 'pn-card-sub' }, sub) : null
+  );
+}
+
+function PainelLista({ itens, vazio, linha }){
+  return h('div', { className: 'pn-lista' },
+    itens.length ? itens.map(linha) : h('div', { className: 'pn-lista-vazio' }, vazio));
+}
+
+function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFilter, onOpen, onResolverAlerta, onAddActivity }){
+  const cotacao = useCotacao();
+  const [aba, setAba] = useState('resumo');
+  const [aberto, setAberto] = useState(null);
+  const [agrupar, setAgrupar] = useState(null);
+  const [grupoAberto, setGrupoAberto] = useState(null);
+
+  const assessorId = isAdmin ? (vendorFilter === 'all' ? null : vendorFilter) : (currentUser && currentUser.id);
+  const casa = !assessorId;
+  const st = useMemo(() => pnStats(leads, users, assessorId, cotacao), [leads, users, assessorId, cotacao]);
+  const por = agrupar || (casa ? 'assessor' : 'segmento');
+  const grupos = useMemo(() => pnGrupos(st.carteira, por), [st, por]);
+
+  /* Navegação de visão: só o admin troca. As setas percorrem casa e assessores. */
+  const assessoresDaCasa = users.filter(u => u.role !== 'especialista');
+  const visoes = isAdmin ? ['all'].concat(assessoresDaCasa.map(u => u.id)) : [];
+  const idxVisao = visoes.indexOf(vendorFilter);
+  const irPara = (delta) => {
+    if(!visoes.length) return;
+    const i = (idxVisao + delta + visoes.length) % visoes.length;
+    setVendorFilter(visoes[i]); setAberto(null); setGrupoAberto(null);
+  };
+  const nomeVisao = casa ? 'Toda a casa' : ((users.find(u => u.id === assessorId) || {}).nome || currentUser.nome);
+  const primeiroNome = String(currentUser.nome || '').trim().split(/\s+/)[0] || '';
+  const abrirLead = (id) => { const l = leads.find(x => x.id === id); if(l) onOpen(l); };
+  const toggle = (k) => setAberto(prev => prev === k ? null : k);
+
+  const quem = (x) => casa && x.assessor ? h('span', { className: 'pn-linha-quem' }, ' · ' + x.assessor) : null;
+  const linhaCliente = (x, meta, key) => h('div', { className: 'pn-linha', key: key || x.leadId },
+    h('button', { className: 'pn-linha-nome', onClick: () => abrirLead(x.leadId) }, x.cliente, quem(x)),
+    h('span', { className: 'pn-linha-meta' }, meta));
+  const atraso = (d) => d === null || d === undefined ? '—' : d > 0 ? d + 'd atrasado' : d === 0 ? 'hoje' : 'em ' + (-d) + 'd';
+
+  const nnm = st.nnm;
+  const movimentos = st.aportes.map(m => ({ ...m, sinal: 1 })).concat(st.resgates.map(m => ({ ...m, sinal: -1 })))
+    .sort((a, b) => b.data.localeCompare(a.data));
+
+  /* ---------- herói ---------- */
+  const heroi = h('section', { className: 'pn-heroi' },
+    h('div', { className: 'pn-heroi-topo' },
+      isAdmin ? h('div', { className: 'pn-visao' },
+        h('button', { className: 'pn-visao-seta', onClick: () => irPara(-1), 'aria-label': 'Visão anterior' }, '‹'),
+        h('label', { className: 'pn-visao-caixa' },
+          h('span', null, 'Visão de'),
+          h('select', { value: vendorFilter, onChange: e => { setVendorFilter(e.target.value); setAberto(null); setGrupoAberto(null); } },
+            h('option', { value: 'all' }, 'Toda a casa'),
+            assessoresDaCasa.map(u => h('option', { key: u.id, value: u.id }, u.nome)))),
+        h('button', { className: 'pn-visao-seta', onClick: () => irPara(1), 'aria-label': 'Próxima visão' }, '›')
+      ) : h('div', { className: 'pn-visao-fixa' }, h('span', null, 'Sua carteira'), h('strong', null, nomeVisao))
+    ),
+    h('div', { className: 'pn-ola' }, primeiroNome ? 'Olá, ' + primeiroNome : 'Olá'),
+    h('div', { className: 'pn-heroi-numeros' },
+      h('div', null,
+        h('div', { className: 'pn-rotulo' }, 'Patrimônio sob gestão · onshore'),
+        h('div', { className: 'pn-grande' }, h('small', null, 'R$'), st.totalOnshore.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))),
+      h('div', { className: 'pn-heroi-off' },
+        h('div', { className: 'pn-rotulo' }, 'Offshore'),
+        h('div', { className: 'pn-medio' }, h('small', null, 'US$'), st.totalOffshoreUsd.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })),
+        h('div', { className: 'pn-heroi-nota' }, 'em dólar, não soma com o onshore'))
+    ),
+    h('div', { className: 'pn-pilulas' },
+      h('span', { className: 'pn-pilula ' + (nnm.liquido >= 0 ? 'boa' : 'ruim') }, (nnm.liquido >= 0 ? '▲ ' : '▼ ') + pnSinal(nnm.liquido) + ' de NNM no mês'),
+      h('span', { className: 'pn-pilula' }, fmtBRLCompact(st.emCaptacao) + ' em captação'),
+      st.vencimentos.length ? h('span', { className: 'pn-pilula alerta' }, st.vencimentos.length + (st.vencimentos.length === 1 ? ' vencimento aberto' : ' vencimentos abertos')) : null
+    ),
+    h('div', { className: 'pn-meta' },
+      nomeVisao + ' · ' + st.clientes + (st.clientes === 1 ? ' cliente' : ' clientes') + ' sob gestão' +
+      (casa ? ' · ' + st.assessores + (st.assessores === 1 ? ' assessor' : ' assessores') : '') +
+      (st.comOffshore ? ' · ' + st.comOffshore + ' com offshore' : '') + ' · dados do CRM de ' + new Date().toLocaleDateString('pt-BR'))
+  );
+
+  const abas = h('div', { className: 'pn-abas', role: 'tablist' },
+    [['resumo', 'Resumo'], ['carteira', 'Carteira'], ['rotina', casa ? 'Assessores' : 'Rotina do dia']].map(([k, t]) =>
+      h('button', { key: k, role: 'tab', 'aria-selected': aba === k, className: aba === k ? 'ativa' : '', onClick: () => setAba(k) }, t)));
+
+  /* ---------- Resumo ---------- */
+  const grupo = (titulo, desc, cards, listas) => h('div', { className: 'pn-grupo' },
+    h('div', { className: 'pn-grupo-titulo' }, h('span', null, titulo), desc ? h('em', null, desc) : null),
+    h('div', { className: 'pn-grade' }, cards), listas);
+
+  const resumo = h('div', null,
+    grupo('Captação', 'mês corrente', [
+      h(PainelCard, { key: 'nnm', tom: nnm.liquido >= 0 ? 'boa' : 'ruim', label: 'NNM no mês', valor: pnSinal(nnm.liquido),
+        sub: fmtBRLCompact(nnm.entrou) + ' entrou · ' + fmtBRLCompact(nnm.retiradas) + ' saiu',
+        aberto: aberto === 'nnm', onClick: () => toggle('nnm') }),
+      h(PainelCard, { key: 'bruta', label: 'Captação bruta', valor: fmtBRLCompact(nnm.entrou),
+        sub: fmtBRLCompact(nnm.entradas) + ' de clientes novos · ' + fmtBRLCompact(nnm.aportes) + ' em aportes',
+        aberto: aberto === 'aportes', onClick: () => toggle('aportes') }),
+      h(PainelCard, { key: 'saidas', tom: nnm.retiradas > 0 ? 'ruim' : '', label: 'Saídas no mês', valor: fmtBRLCompact(nnm.retiradas),
+        sub: nnm.comRetirada + (nnm.comRetirada === 1 ? ' cliente resgatou' : ' clientes resgataram'),
+        aberto: aberto === 'saidas', onClick: () => toggle('saidas') }),
+      h(PainelCard, { key: 'pipe', label: 'Em captação', valor: fmtBRLCompact(st.emCaptacao), sub: 'pipe da jornada, em reais' })
+    ], [
+      aberto === 'nnm' ? h(PainelLista, { key: 'l', itens: movimentos, vazio: 'Nenhuma movimentação lançada este mês.',
+        linha: (m, i) => linhaCliente(m, (m.sinal > 0 ? '+' : '−') + (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'mv' + i) }) : null,
+      aberto === 'aportes' ? h(PainelLista, { key: 'l', itens: st.aportes, vazio: 'Nenhum aporte lançado este mês.',
+        linha: (m, i) => linhaCliente(m, (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'ap' + i) }) : null,
+      aberto === 'saidas' ? h(PainelLista, { key: 'l', itens: st.resgates, vazio: 'Nenhum resgate lançado este mês.',
+        linha: (m, i) => linhaCliente(m, (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'rs' + i) }) : null
+    ]),
+    grupo('Carteira', 'agora', [
+      h(PainelCard, { key: 'contas', tom: st.semAtivar.length ? 'atencao' : '', label: 'Contas abertas vs. ativadas', valor: st.abertas + ' / ' + st.ativadas,
+        sub: st.semAtivar.length + (st.semAtivar.length === 1 ? ' ainda sem ativar' : ' ainda sem ativar'),
+        aberto: aberto === 'contas', onClick: () => toggle('contas') }),
+      h(PainelCard, { key: 'venc', tom: st.vencimentos.length ? 'ruim' : '', label: 'Vencimentos', valor: st.vencimentos.length,
+        sub: 'lançados como alerta no cliente', aberto: aberto === 'venc', onClick: () => toggle('venc') }),
+      h(PainelCard, { key: 'parado', label: 'Dinheiro parado em conta', valor: '—', disabled: true,
+        sub: 'chega com a API do BTG · vai avisar qualquer valor' }),
+      h(PainelCard, { key: 'pj2', tom: 'ouro', label: 'Receita PJ2', valor: fmtBRLCompact(st.receitaPJ2),
+        sub: st.pj2.length + (st.pj2.length === 1 ? ' negócio de consórcio ou seguro' : ' negócios de consórcio e seguro'),
+        aberto: aberto === 'pj2', onClick: () => toggle('pj2') })
+    ], [
+      aberto === 'contas' ? h(PainelLista, { key: 'l', itens: st.semAtivar, vazio: 'Todas as contas abertas já estão ativadas.',
+        linha: (c) => linhaCliente(c, c.diasNaCarteira === null ? '—' : 'há ' + c.diasNaCarteira + 'd na carteira') }) : null,
+      aberto === 'venc' ? h(PainelLista, { key: 'l', itens: st.vencimentos, vazio: 'Nenhum vencimento em aberto.',
+        linha: (v) => h('div', { className: 'pn-linha', key: v.alertaId },
+          h('button', { className: 'pn-linha-nome', onClick: () => abrirLead(v.leadId) }, v.cliente, quem(v),
+            v.texto ? h('span', { className: 'pn-linha-quem' }, ' · ' + v.texto) : null),
+          h('span', { className: 'pn-linha-meta' + (v.diasAtraso > 0 ? ' atrasado' : '') }, atraso(v.diasAtraso)),
+          h('button', { className: 'pn-linha-acao', onClick: () => onResolverAlerta(v.leadId, v.alertaId) }, 'Concluído')) }) : null,
+      aberto === 'pj2' ? h(PainelLista, { key: 'l', itens: st.pj2, vazio: 'Nenhum negócio fechado este mês.',
+        linha: (n) => linhaCliente(n, (n.produto || '') + ' · ' + fmtBRLCompact(n.valor || 0)) }) : null
+    ]),
+    grupo('Relacionamento', 'hoje', [
+      h(PainelCard, { key: 'contato', tom: st.contatosAtrasados.length ? 'ruim' : '', label: 'Contato atrasado', valor: st.contatosAtrasados.length,
+        sub: 'próximo contato já passou', aberto: aberto === 'contato', onClick: () => toggle('contato') }),
+      h(PainelCard, { key: 'regua', tom: st.regua.length ? 'atencao' : '', label: 'Régua de relacionamento', valor: st.regua.length,
+        sub: 'contatos da régua vencidos', aberto: aberto === 'regua', onClick: () => toggle('regua') })
+    ], [
+      aberto === 'contato' ? h(PainelLista, { key: 'l', itens: st.contatosAtrasados, vazio: 'Nenhum contato atrasado.',
+        linha: (c) => linhaCliente(c, c.diasAtraso + 'd atrasado') }) : null,
+      aberto === 'regua' ? h(PainelLista, { key: 'l', itens: st.regua, vazio: 'Nenhuma régua atrasada.',
+        linha: (r, i) => linhaCliente(r, r.label + ' · ' + r.diasAtraso + 'd', r.leadId + ':' + r.tipo) }) : null
+    ])
+  );
+
+  /* ---------- Carteira ---------- */
+  const totalGrupos = grupos.reduce((s, g) => s + g.onshore, 0);
+  const carteiraTela = h('div', null,
+    h('div', { className: 'pn-carteira-topo' },
+      h('span', { className: 'pn-rotulo-escuro' }, casa ? 'Carteira da casa' : 'Carteira de ' + nomeVisao),
+      h('div', { className: 'pn-alternar', role: 'group' },
+        casa ? h('button', { className: por === 'assessor' ? 'ativo' : '', onClick: () => { setAgrupar('assessor'); setGrupoAberto(null); } }, 'Por assessor') : null,
+        h('button', { className: por === 'segmento' ? 'ativo' : '', onClick: () => { setAgrupar('segmento'); setGrupoAberto(null); } }, 'Por segmento'))),
+    grupos.length ? h('div', { className: 'pn-carteira' },
+      h('div', { className: 'pn-carteira-rosca' },
+        h(PainelRosca, { grupos, total: totalGrupos, rotulo: grupos.length + (grupos.length === 1 ? ' grupo' : ' grupos') }),
+        h('div', { className: 'pn-legenda' }, grupos.map(g => h('div', { key: g.key, className: 'pn-legenda-item' },
+          h('i', { style: { background: g.cor } }), h('span', null, g.nome), h('b', null, pnPct(g.onshore, totalGrupos)))))),
+      h('div', { className: 'pn-carteira-lista' }, grupos.map(g => {
+        const abertoG = grupoAberto === g.key;
+        return h('div', { key: g.key, className: 'pn-bloco' + (abertoG ? ' aberto' : '') },
+          h('button', { className: 'pn-bloco-cab', 'aria-expanded': abertoG, onClick: () => setGrupoAberto(abertoG ? null : g.key) },
+            h('i', { style: { background: g.cor } }),
+            h('span', { className: 'pn-bloco-nome' }, h('strong', null, g.nome),
+              h('small', null, g.clientes.length + (g.clientes.length === 1 ? ' cliente' : ' clientes') + (g.offshore >= OFFSHORE_PISO_USD ? ' · offshore ' + fmtUSDCompact(g.offshore) : ''))),
+            h('span', { className: 'pn-bloco-valor' }, h('strong', null, fmtBRL(Math.round(g.onshore))), h('small', null, pnPct(g.onshore, totalGrupos) + ' da carteira')),
+            h('span', { className: 'pn-bloco-seta' }, h(IconChevron, { size: 15 }))),
+          abertoG ? h('div', { className: 'pn-bloco-corpo' },
+            por === 'assessor' && g.key !== '—' && isAdmin ? h('button', { className: 'pn-bloco-ir', onClick: () => { setVendorFilter(g.key); setGrupoAberto(null); setAberto(null); } },
+              'Abrir o painel de ' + g.nome + ' ›') : null,
+            g.clientes.map(c => h('button', { key: c.id, className: 'pn-cliente', onClick: () => onOpen(c.lead) },
+              h('span', { className: 'pn-cliente-nome' }, h('strong', null, c.nome),
+                h('small', null, [c.segmento || 'sem segmento', c.conta ? 'conta ' + c.conta : null, casa && por !== 'assessor' ? c.assessor : null].filter(Boolean).join(' · '))),
+              h('span', { className: 'pn-cliente-valor' }, h('strong', null, fmtBRL(Math.round(c.onshore))),
+                h('small', null, pnPct(c.onshore, totalGrupos) + (c.offshore >= OFFSHORE_PISO_USD ? ' · ' + fmtUSDCompact(c.offshore) : ''))),
+              h('span', { className: 'pn-cliente-seta' }, '›')))
+          ) : null);
+      }))
+    ) : h('div', { className: 'pn-vazio' }, 'Nenhum cliente com patrimônio sob gestão nesta visão.'),
+    h('div', { className: 'pn-rodape-nota' }, 'A posição por ativo de cada conta chega com a API do BTG. Por enquanto, o cliente abre a ficha do CRM.')
+  );
+
+  /* ---------- Rotina / Assessores ---------- */
+  const rotina = casa
+    ? h(Fragment, null, h('div', { className: 'pn-tabela-wrap' },
+        h('table', { className: 'pn-tabela' },
+          h('thead', null, h('tr', null, h('th', null, 'Assessor'), h('th', { className: 'n' }, 'Onshore'), h('th', { className: 'n' }, 'NNM no mês'),
+            h('th', { className: 'n' }, 'Contato atrasado'), h('th', { className: 'n' }, 'Vencimentos'), h('th', { className: 'n' }, 'Régua'), h('th', null, ''))),
+          h('tbody', null, st.partes.filter(p => p.id).map(p => {
+            const doAssessor = st.carteira.filter(c => c.assessorId === p.id).reduce((s, c) => s + c.onshore, 0);
+            return h('tr', { key: p.id, onClick: () => { setVendorFilter(p.id); setAba('rotina'); setAberto(null); } },
+              h('td', null, h('strong', null, p.nome)),
+              h('td', { className: 'n' }, fmtBRLCompact(doAssessor)),
+              h('td', { className: 'n ' + (p.s.nnm.liquido >= 0 ? 'boa' : 'ruim') }, pnSinal(p.s.nnm.liquido)),
+              h('td', { className: 'n' + (p.s.contatosAtrasados.length ? ' ruim' : '') }, p.s.contatosAtrasados.length),
+              h('td', { className: 'n' + (p.s.vencimentos.length ? ' ruim' : '') }, p.s.vencimentos.length),
+              h('td', { className: 'n' }, p.s.regua.length),
+              h('td', { className: 'seta' }, '›'));
+          })))),
+        h('div', { className: 'pn-rodape-nota' }, 'Clique num assessor para abrir o painel e a rotina do dia dele.'))
+    : h(Cockpit, { leads, users, currentUser, isAdmin, vendorFilter: assessorId, onOpen, onResolverAlerta, onAddActivity });
+
+  return h('div', { className: 'pn' },
+    heroi, abas,
+    h('div', { className: 'pn-conteudo' }, aba === 'resumo' ? resumo : aba === 'carteira' ? carteiraTela : rotina),
+    h('div', { className: 'pn-versao' }, CRM_VERSAO));
+}
+
 /* ================= App ================= */
 function App(){
   const [motivoBloqueio, setMotivoBloqueio] = useState('');
@@ -11306,7 +11818,7 @@ function App(){
         h('button',{className:'btn btn-ghost', onClick:handleLogout, title:'Sair'}, h(IconLogout,{size:14}))
       )
     ),
-    view==='hoje' ? h(Cockpit,{ leads, users, currentUser, isAdmin, vendorFilter,
+    view==='hoje' ? h(Painel,{ leads, users, currentUser, isAdmin, vendorFilter, setVendorFilter,
       onOpen:setOpenLead, onResolverAlerta:resolverAlerta, onAddActivity:addActivity }) :
     view==='kanban' ? h('div',{className: (overviewOpen && filtered.length > 0) ? '' : 'overview-fechada'},
       /* Em notebook a visão geral come altura do funil — dá para recolher. */

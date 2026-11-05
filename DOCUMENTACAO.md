@@ -562,8 +562,12 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
   Emil confirmar o reset de ponta a ponta. Se os e-mails caírem em spam, conferir SPF e
   DKIM do `adamicaptal.com.br` no Editor de zona DNS (o cPanel desse plano não mostra
   "Email Deliverability").
-- **Decidir se a importação passa a criar clientes novos** já vinculados ao assessor pelo
-  código. Hoje ela apenas lista.
+- **Integração com a API do BTG (decidido em 05/11/2026, aguardando acesso):** grava
+  saldo, posição e movimentação direto, 8h e 18h nos dias úteis e no botão "Atualizar do
+  BTG"; conta nova vira cliente ligado ao assessor pelo código do BTG; conta que some vira
+  encerrada, nunca apagada; troca de assessor só pelo código; trava se uma atualização
+  mexer em mais de 5% do patrimônio da casa. Falta o BTG liberar a API de parceiros.
+- **Cabeçalho do CRM no celular** passa da borda e a página rola para o lado (seção 18).
 - **Importador de extrato BTG** no Gerador de Planos Patrimoniais nunca foi calibrado
   contra um arquivo real. Sem ele não há enquadramento por produto.
 - **IPCA contra IMA-B nos meses históricos.** Os rótulos mudaram, os valores antigos não.
@@ -933,3 +937,43 @@ Validado com `node --check` por bloco, acorn + eslint-scope (sem variável usada
 declarar), Playwright (card de Posição e card de Swing Trade com a quantidade visível) e
 jsdom direto no fluxo de `registrar()` (quantidade e valor total corretos no payload
 salvo, pro tipo novo e pra um já existente).
+
+---
+
+## 18. Painel da carteira (CRM, aba Dashboard)
+
+Desde 05/11/2026 a aba **Dashboard** do CRM abre o painel da carteira, no lugar do cockpit
+puro. O levantamento que define o que entra e o que fica de fora está no documento
+"Painel da Carteira: levantamento" (Claude Docs), com as decisões do Emil marcadas.
+
+**Níveis.** Casa (só admin) → assessor → cliente → conta e ativo. O admin troca de visão
+pelo seletor no topo do painel ou pelas setas, que percorrem casa e assessores; é o mesmo
+`vendorFilter` do cabeçalho, então escolher um assessor liga a faixa "Simulando a visão
+de". O assessor abre direto na própria carteira. O nível conta e ativo depende da API do
+BTG; até lá, o cliente abre a ficha do CRM.
+
+**Abas.** Resumo (cartões que se abrem em lista: NNM, captação bruta, saídas, em
+captação, contas abertas vs. ativadas, vencimentos, dinheiro parado, PJ2, contato
+atrasado, régua) · Carteira (rosca + lista que se abre, por assessor ou por segmento) ·
+Assessores (na casa: tabela por assessor, clique abre o painel dele) ou Rotina do dia (no
+assessor: o cockpit de antes, com as ações de concluir e marcar feito).
+
+**Nenhuma conta própria.** O painel (`pnStats`) só junta o que `computeCockpitStats` e
+`computeAssessoriaStats` já calculam. Conferido com a base de demonstração: patrimônio
+onshore e offshore iguais aos indicadores, NNM da casa igual à soma dos assessores, NNM e
+vencimentos de cada assessor iguais ao cockpit dele.
+
+**Onshore e offshore não somam no painel.** O herói mostra os dois lado a lado e a rosca
+pesa só o onshore. O NNM segue o card "NNM no mês" do cockpit, que converte o offshore
+pela cotação: os dois mostram o mesmo número.
+
+**Dinheiro parado** aparece desligado, dizendo que chega com a API do BTG. Decisão de
+05/11/2026: quando chegar, avisa **qualquer valor** parado em conta, sem piso de valor nem
+de prazo.
+
+**Selo de versão do CRM:** `CRM_VERSAO`, no rodapé do painel. O CRM não tinha selo até
+aqui.
+
+**Pendência encontrada no teste:** no celular (390 px) o cabeçalho do CRM (abas, seletor
+de equipe, botão Equipe, nome) passa da borda e a página rola para o lado (753 px). Já era
+assim antes do painel; o painel em si cabe na tela.

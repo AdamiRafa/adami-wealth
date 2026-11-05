@@ -124,6 +124,9 @@ execução e fica registrado no histórico.
   política.
 - **A importação do BTG não cria, não exclui e não transfere carteira pelo nome.** Só o
   código do assessor autoriza transferência. Ver `DOCUMENTACAO.md` seções 6 e 7.
+  A integração pela API (decidida em 05/11/2026, aguardando o BTG) grava direto e cria
+  conta nova, mas só pelo código do assessor do BTG; nunca apaga e nunca transfere por
+  nome. Ver `DOCUMENTACAO.md` seção 14.
 
 ---
 
@@ -146,5 +149,5 @@ execução e fica registrado no histórico.
 
 ## Pendências
 
-Ver `DOCUMENTACAO.md` seção 14. As mais quentes: SMTP próprio no Supabase, e decidir se a
-importação passa a criar clientes novos já vinculados ao assessor pelo código.
+Ver `DOCUMENTACAO.md` seção 14. As mais quentes: acesso à API de parceiros do BTG (as
+regras da integração já estão decididas) e o cabeçalho do CRM no celular.
