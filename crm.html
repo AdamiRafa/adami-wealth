@@ -1902,6 +1902,8 @@
   }
   .card-captacao-valor{font-weight:500;}
   .card-captacao.vazio{opacity:.55;}
+  .valor-linha.vazia .lead-card-value{color:var(--ink-faint);}
+  .tag-gestao.tag-patrimonio{background:var(--bg);color:var(--ink-muted);}
   .hero-offshore{
     display:flex;align-items:center;gap:6px;margin-top:6px;
     font-family:'IBM Plex Mono',Consolas,Menlo,'Courier New',monospace;font-size:11.5px;color:#9FB2CE;
@@ -2774,6 +2776,56 @@
     .kn-periodos .kn-mais{margin-left:0;}
     .kn-card-titulo{font-size:16px;}
   }
+
+  /* ================= Panorama dos KPIs e listas em níveis ================= */
+  .kp{display:flex;flex-direction:column;gap:14px;margin-top:6px;}
+  .kp-duplo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start;}
+  .kp-caixa{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 18px 10px;min-width:0;}
+  .kp-caixa .pn-rosca{width:170px;height:170px;margin:0 auto 14px;}
+  .arv-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;}
+  .arv-titulo{font-family:'Fraunces',Georgia,serif;font-size:18px;font-weight:600;color:var(--navy);}
+  .arv-desc{font-size:12px;color:var(--ink-faint);margin-top:2px;}
+  .arv-excel{
+    display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);
+    border-radius:8px;padding:6px 10px;font:500 12.5px 'Inter',sans-serif;color:var(--success);cursor:pointer;white-space:nowrap;
+  }
+  .arv-excel:hover{border-color:var(--success);background:var(--success-tint);}
+  .arv-excel:disabled{opacity:.5;cursor:default;}
+  .arv-cab,.arv-linha{display:flex;align-items:center;gap:10px;}
+  .arv-cab{padding:6px 16px;border-bottom:1px solid var(--border);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;}
+  .arv-linha{
+    width:100%;border:0;border-bottom:1px solid var(--border);background:none;padding:10px 16px;cursor:pointer;text-align:left;
+    font-family:'Inter',-apple-system,sans-serif;color:var(--ink);
+  }
+  .arv-linha:hover{background:#F6F8FB;}
+  .arv-grupo.nivel-0{background:var(--surface);}
+  .arv-grupo.nivel-1{background:#FAFBFC;}
+  .arv-folha{background:#F4F7FA;}
+  .arv-nome{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .arv-nome strong{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .arv-folha .arv-nome strong{font-weight:500;}
+  .arv-nome small{font-size:11.5px;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .arv-num{width:92px;flex-shrink:0;text-align:right;font-family:'IBM Plex Mono',Consolas,monospace;font-size:12.5px;color:var(--ink-muted);white-space:nowrap;}
+  .arv-cab .arv-num{font-family:'Inter',sans-serif;font-size:10.5px;}
+  .arv-num.forte{color:var(--ink);font-weight:500;}
+  .arv-seta-grupo{color:var(--ink-faint);display:inline-flex;transform:rotate(-90deg);transition:transform .15s;flex-shrink:0;}
+  .arv-grupo.aberto .arv-seta-grupo{transform:none;}
+  .arv-seta{color:var(--ink-faint);width:14px;flex-shrink:0;}
+  .arv-cor{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .arv-barra{width:70px;height:6px;border-radius:3px;background:var(--bg);overflow:hidden;flex-shrink:0;}
+  .arv-barra b{display:block;height:100%;border-radius:3px;}
+  .arv-vazio{padding:14px 16px;color:var(--ink-faint);font-size:13px;}
+  .arv .arv-linha:last-child{border-bottom:0;}
+  .kp-duplo .arv-barra{display:none;}
+  .kp-duplo .arv-num{width:80px;}
+  /* O panorama é para navegar na tela; o PDF segue com as seções completas, como antes. */
+  @media print{ .arv-excel, .kp{display:none !important;} }
+  @media (max-width:900px){ .kp-duplo{grid-template-columns:1fr;} }
+  @media (max-width:640px){
+    .arv-num{width:66px;font-size:11.5px;}
+    .arv-barra{display:none;}
+    .arv-num.m2, .arv-num.m3, .arv-num.m4{display:none;}
+  }
 </style>
 </head>
 <body>
@@ -3364,8 +3416,10 @@ const moedaCaptacao = (lead) => custodiaCaptacao(lead) === 'offshore' ? fmtUSD :
 function valorCaptacaoNaMoeda(lead){
   if(!lead || (lead.funil || 'assessor') === 'especialista') return 0;
   if(lead.perdido) return 0;
-  if((lead.esteira || 'novo') === 'base') return parseValor(lead.valorEmCaptacao) || 0;
-  if(lead.ganho) return 0;
+  /* Quem já é carteira (da base ou captado) negocia dinheiro A MAIS; desde
+     05/11/2026 o captado também pode ter pipe (pedido do Emil: pipe em todo
+     card). */
+  if((lead.esteira || 'novo') === 'base' || lead.ganho) return parseValor(lead.valorEmCaptacao) || 0;
   return parseValor(lead.valorPotencial) || 0;
 }
 
@@ -3375,7 +3429,7 @@ function valorCaptacaoNaMoeda(lead){
    que um total que se assume incompleto. */
 function valorEmCaptacao(lead, cotacao){
   const v = valorCaptacaoNaMoeda(lead);
-  if(!v || !clienteDaBase(lead) || custodiaCaptacao(lead) === 'onshore') return v;
+  if(!v || !captaNova(lead) || custodiaCaptacao(lead) === 'onshore') return v;
   const brl = emReais(v, cotacao);
   return brl === null ? 0 : brl;
 }
@@ -3386,7 +3440,7 @@ function valorEmCaptacao(lead, cotacao){
    maior que o negociado zera; menor abate, e o resto segue em negociação.
    Só na mesma custódia: dólar não abate real, nem real abate dólar. */
 function abaterCaptacao(lead, mov){
-  if(!clienteDaBase(lead) || !mov || mov.tipo !== 'aporte' || custodiaDe(mov) !== custodiaCaptacao(lead)) return lead;
+  if(!captaNova(lead) || !mov || mov.tipo !== 'aporte' || custodiaDe(mov) !== custodiaCaptacao(lead)) return lead;
   const aberto = parseValor(lead.valorEmCaptacao);
   if(!aberto) return lead;
   const resto = Math.max(0, aberto - (parseValor(mov.valor) || 0));
@@ -3410,7 +3464,7 @@ const entradaHistorico = (lead, resumo, autor, quando) =>
    que o admin quer poder ler depois. */
 function iniciarCaptacao(lead, { valor, temperatura, custodia, autor, quando } = {}){
   const v = parseValor(valor);
-  if(!clienteDaBase(lead) || !v || v <= 0) return lead;
+  if(!captaNova(lead) || !v || v <= 0) return lead;
   const c = custodia === 'offshore' ? 'offshore' : 'onshore';
   const fmt = c === 'offshore' ? fmtUSD : fmtBRL;
   const rotulo = c === 'offshore' ? 'Captação offshore' : 'Captação';
@@ -3430,7 +3484,7 @@ function iniciarCaptacao(lead, { valor, temperatura, custodia, autor, quando } =
 function confirmarCaptacao(lead, { valor, data, autor, quando } = {}){
   const v = parseValor(valor);
   const negociado = parseValor(lead.valorEmCaptacao) || 0;
-  if(!clienteDaBase(lead) || !negociado || !v || v <= 0 || !data) return lead;
+  if(!captaNova(lead) || !negociado || !v || v <= 0 || !data) return lead;
   const agora = quando || Date.now();
   /* O aporte nasce na custódia da negociação: captação offshore soma no sob
      gestão offshore, em dólar. */
@@ -3448,7 +3502,7 @@ function confirmarCaptacao(lead, { valor, data, autor, quando } = {}){
 /* Não aconteceu: fecha sem mexer na carteira. */
 function encerrarCaptacao(lead, { motivo, autor, quando } = {}){
   const negociado = parseValor(lead.valorEmCaptacao) || 0;
-  if(!clienteDaBase(lead) || !negociado) return lead;
+  if(!captaNova(lead) || !negociado) return lead;
   const resumo = (custodiaCaptacao(lead) === 'offshore' ? 'Captação offshore encerrada sem entrada · ' : 'Captação encerrada sem entrada · ')
     + moedaCaptacao(lead)(negociado) + ((motivo || '').trim() ? ' · ' + motivo.trim() : '');
   return { ...lead, valorEmCaptacao: '', captacaoCustodia: '', temperatura: '',
@@ -3657,10 +3711,15 @@ const temperaturaInfo = (k) => TEMPERATURAS.find(t => t.key === k) || null;
    cliente volta a ser prospect com a última leitura que alguém fez dele. */
 const clienteDaBase = (lead) => !!lead
   && (lead.funil || 'assessor') !== 'especialista' && (lead.esteira || 'novo') === 'base';
+/* Pode ter captação nova: quem JÁ é carteira, venha da base ou tenha sido
+   captado. É a regra do pipe e da captação (iniciar, confirmar, encerrar,
+   temperatura). clienteDaBase continua sendo a regra de origem (importação). */
+const captaNova = (lead) => !!lead
+  && (lead.funil || 'assessor') !== 'especialista' && ((lead.esteira || 'novo') === 'base' || !!lead.ganho);
 
 /* Leitura de relacionamento, vale pra todo mundo que não fechou ainda —
    prospect ou cliente da base, com ou sem captação nova em jogo. */
-const temperaturaDe = (lead) => (lead && lead.ganho) ? null
+const temperaturaDe = (lead) => (lead && lead.ganho && !(parseValor(lead.valorEmCaptacao) > 0)) ? null
   : temperaturaInfo(lead && lead.temperatura);
 
 /* Só quando há uma captação nova de fato em jogo o texto fala de captação —
@@ -3674,7 +3733,7 @@ const TEMPERATURA_BASE_DESC = {
 function descTemperatura(k, lead){
   const t = temperaturaInfo(k);
   if(!t) return null;
-  return (clienteDaBase(lead) && valorCaptacaoNaMoeda(lead) > 0) ? TEMPERATURA_BASE_DESC[k] : t.desc;
+  return (captaNova(lead) && valorCaptacaoNaMoeda(lead) > 0) ? TEMPERATURA_BASE_DESC[k] : t.desc;
 }
 
 /* O que o especialista precisa saber antes do primeiro contato. Os interesses
@@ -5252,7 +5311,7 @@ function LeadCard({ lead, onOpen, onDragStart, onDragEnd, dragging, ownerName, s
     '🎂 ' + (lead.tipoPessoa === 'PJ' ? 'Aniversário de ' + aniversarianteDe(lead) : 'Aniversário hoje')
     + (idadeEm(lead, hojeCard) ? ' · ' + idadeEm(lead, hojeCard) + ' anos' : '')));
   if(temp) chips.push(h('span',{className:'card-chip card-temp', key:'temp',
-      title: (clienteDaBase(lead) && valorCaptacaoNaMoeda(lead) > 0) ? 'Pipe da captação em negociação' : 'Pipe de relacionamento'},
+      title: (captaNova(lead) && valorCaptacaoNaMoeda(lead) > 0) ? 'Pipe da captação em negociação' : 'Pipe de relacionamento'},
     h('span',{className:'temp-dot', style:{background:temp.cor}}), temp.label));
   if(lead.grupoFamiliar) chips.push(h('span',{className:'card-chip card-grupo', key:'grupo'}, lead.grupoFamiliar));
   if(lead.briefing && lead.briefing.urgencia === 'Imediata') chips.push(
@@ -5319,10 +5378,15 @@ function LeadCard({ lead, onOpen, onDragStart, onDragEnd, dragging, ownerName, s
         : (lead.oportunidade ? h('p',{className:'lead-card-deal'}, lead.oportunidade) : null),
       /* Depois da captação, o card mostra o que está sob gestão — já com
          aportes e retiradas — em vez do patrimônio estimado da prospecção. */
-      valor !== null ? h('div',{className:'valor-linha'},
-        h('span',{className:'lead-card-value' + (sobGestao ? ' gerido' : '')}, fmtBRL(valor)),
-        sobGestao ? h('span',{className:'tag-gestao'},'Sob gestão') : null
-      ) : null,
+      /* Linha fixa em todo card (padronização de 05/11/2026): o valor e o que
+         ele é. Sem valor, traço — a linha não some, para todos os cards
+         terem o mesmo desenho. */
+      h('div',{className:'valor-linha' + (valor === null || valor === 0 && !sobGestao ? ' vazia' : '')},
+        h('span',{className:'lead-card-value' + (sobGestao ? ' gerido' : '')}, valor === null ? '—' : fmtBRL(valor)),
+        h('span',{className:'tag-gestao' + (sobGestao || naCarteira(lead) ? '' : ' tag-patrimonio')},
+          (lead.funil || 'assessor') === 'especialista' ? 'Negócio'
+            : (sobGestao || naCarteira(lead)) ? 'Sob gestão' : 'Patrimônio')
+      ),
       /* Quando não há cotação, o valor em dólar aparece do mesmo jeito — é o
          que existe. O que a tela não faz é fingir que ele já está somado. */
       offshoreUsd >= OFFSHORE_PISO_USD ? h('div',{className:'card-offshore',
@@ -5338,10 +5402,10 @@ function LeadCard({ lead, onOpen, onDragStart, onDragEnd, dragging, ownerName, s
          linha existir igual em todos e a ausência ficar visível. */
       (() => {
         const esp = (lead.funil || 'assessor') === 'especialista';
-        const off = !esp && clienteDaBase(lead) && custodiaCaptacao(lead) === 'offshore';
+        const off = !esp && captaNova(lead) && custodiaCaptacao(lead) === 'offshore';
         const v = esp ? ((lead.ganho || lead.perdido) ? 0 : (parseValor(lead.valorPotencial) || 0)) : valorCaptacaoNaMoeda(lead);
         return h('div',{className:'card-captacao' + (v > 0 ? '' : ' vazio'),
-          title: v > 0 ? (clienteDaBase(lead) ? 'Captação nova em negociação com este cliente da base' : 'Valor em jogo com este cliente')
+          title: v > 0 ? (captaNova(lead) ? 'Captação nova em negociação com este cliente da base' : 'Valor em jogo com este cliente')
             : 'Nada em negociação com este cliente agora'},
           h('span',{className:'card-captacao-rotulo'}, off ? 'Pipe · off' : 'Pipe'),
           h('span',{className:'card-captacao-valor'}, v > 0 ? (off ? fmtUSDCompact : fmtBRLCompact)(v) : '—'));
@@ -5865,7 +5929,7 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
         h('span',{className:'ficha-etapa', style:{background:info.color}}, etapaLonga(lead.etapa, lead.funil)),
         (!pipeEditavel && temperaturaDe(lead)) ? h('span',{className:'ficha-tag'},
           h('span',{className:'temp-dot', style:{background:temperaturaDe(lead).cor}}),
-          temperaturaDe(lead).label + ((clienteDaBase(lead) && valorCaptacaoNaMoeda(lead) > 0) ? ' · captação' : '')) : null,
+          temperaturaDe(lead).label + ((captaNova(lead) && valorCaptacaoNaMoeda(lead) > 0) ? ' · captação' : '')) : null,
         h('span',{className:'ficha-tag'}, lead.tipoPessoa === 'PJ' ? 'Pessoa jurídica' : 'Pessoa física'),
         jornada ? h('span',{className:'ficha-tag'}, lead.segmento) : null,
         jornada ? h('span',{className:'ficha-tag'},
@@ -6098,7 +6162,8 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
   /* O onboarding não bloqueia a jornada: são trâmites administrativos que
      correm em paralelo às reuniões. */
   const jornadaLead = (draft.funil || 'assessor') !== 'especialista';
-  const daBase = jornadaLead && (draft.esteira || 'novo') === 'base';
+  /* Toda a carteira (base e captados) pode abrir pipe na ficha. */
+  const daBase = jornadaLead && captaNova(draft);
   const captacaoAberta = daBase && valorCaptacaoNaMoeda(draft) > 0;
   const offshoreAberto = custodiaAba === 'offshore';
   const moeda = offshoreAberto ? fmtUSD : fmtBRL;
@@ -7562,7 +7627,7 @@ function computeAssessoriaStats(scopedLeads, users, filtros, cotacao){
 function computeCaptacaoTemperatura(scopedLeads, users, cotacao){
   const emJogo = scopedLeads.filter(l => !l.excluido && !l.perdido
     && (l.funil || 'assessor') !== 'especialista'
-    && (clienteDaBase(l) ? valorCaptacaoNaMoeda(l) > 0 : !l.ganho));
+    && (captaNova(l) ? valorCaptacaoNaMoeda(l) > 0 : !l.ganho));
   const chaveDe = (l) => temperaturaInfo(l.temperatura) ? l.temperatura : 'sem';
   /* Soma em reais: a captação offshore entra pela cotação, e sem ela fica
      fora — contada, listada em dólar, mas não somada. */
@@ -7572,7 +7637,7 @@ function computeCaptacaoTemperatura(scopedLeads, users, cotacao){
     const t = temperaturaInfo(k);
     const grupo = emJogo.filter(l => chaveDe(l) === k);
     return { key:k, label: t ? t.label : 'Sem classificação', cor: t ? t.cor : '#C9D1DC',
-             count: grupo.length, novos: grupo.filter(l => !clienteDaBase(l)).length,
+             count: grupo.length, novos: grupo.filter(l => !captaNova(l)).length,
              base: grupo.filter(clienteDaBase).length, valor: somar(grupo) };
   });
 
@@ -7590,12 +7655,12 @@ function computeCaptacaoTemperatura(scopedLeads, users, cotacao){
   const ordem = { quente:0, morno:1, frio:2, sem:3 };
   const captacoes = emJogo
     .map(l => ({ id:l.id, lead:l, cliente: nomeCliente(l), responsavelId: l.responsavelId,
-                 tipo: clienteDaBase(l) ? 'base' : 'novo',
-                 custodia: clienteDaBase(l) ? custodiaCaptacao(l) : 'onshore',
+                 tipo: captaNova(l) ? 'base' : 'novo',
+                 custodia: captaNova(l) ? custodiaCaptacao(l) : 'onshore',
                  temperatura: chaveDe(l), valor: valorEmCaptacao(l, cotacao), valorMoeda: valorCaptacaoNaMoeda(l) }))
     .sort((a, b) => ordem[a.temperatura] - ordem[b.temperatura] || b.valor - a.valor);
 
-  const offshore = emJogo.filter(l => clienteDaBase(l) && custodiaCaptacao(l) === 'offshore');
+  const offshore = emJogo.filter(l => captaNova(l) && custodiaCaptacao(l) === 'offshore');
   return { total: emJogo.length, valor: somar(emJogo),
            classificados: emJogo.filter(l => chaveDe(l) !== 'sem').length,
            porTemperatura, porAssessor, captacoes,
@@ -8455,7 +8520,7 @@ function KpiFiltros({ filtros, onChange, funil, users, leads, consolidado, colun
   );
 }
 
-function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, leads }){
+function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, leads, onOpen }){
   const cotacao = useCotacao();
   const carteira = useMemo(() => computeAssessoriaStats(jornada, users, filtros, cotacao), [jornada, users, filtros, cotacao]);
   /* Mesmo cálculo da aba Offshore: a gestão tem de ver o mesmo número nas duas
@@ -8496,6 +8561,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
     ),
 
     h(Navegavel,{ modo:'marcador', juntar:{ Assessoria:'Carteira' },
+      rodape: h(KpiPanorama,{ jornada, users, admin:true, onOpen: onOpen || (() => {}) }),
       numeros:{
         Pipe: { valor: fmtBRLCompact(carteira.emCaptacao), tom:'ouro',
           sub: 'em jogo · ' + captacaoTemp.total + (captacaoTemp.total === 1 ? ' captação' : ' captações') },
@@ -9301,7 +9367,7 @@ function CotacaoBox({ isAdmin, onSalvar }){
   );
 }
 
-function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo }){
+function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo, onOpen }){
   const cotacao = useCotacao();
   const s = computeAssessoriaStats(scopedLeads, users, periodo, cotacao);
   /* O assessor não tem aba Offshore: a carteira dele é uma só, e separá-la em
@@ -9317,7 +9383,7 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
   const maxEtapa = Math.max(1, ...s.porEtapa.map(x => x.count));
   const maxOrigem = Math.max(1, ...s.porOrigem.map(x => x.valor));
 
-  return h(Navegavel, { modo: 'blocos' },
+  return h(Navegavel, { modo: 'blocos', rodape: h(KpiPanorama,{ jornada: scopedLeads, users, admin:false, onOpen: onOpen || (() => {}) }) },
     h('div',{className:'print-header'},
       h('h1',null,'Indicadores da assessoria'),
       h('div',{className:'print-meta'}, 'Escopo: ', escopo, ' · ', periodoLabel(periodo),
@@ -10281,7 +10347,7 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.05.2';
+const CRM_VERSAO = 'versão do CRM 2026.11.05.3';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -10314,9 +10380,15 @@ function pnStats(leads, users, assessorId, cotacao){
     conta: l.conta || ''
   }));
   const sobGestao = carteira.filter(c => c.onshore > 0 || c.offshore > 0);
+  /* Quem está em captação, para o card "Em captação" abrir a lista: o mesmo
+     cálculo do Pipe por temperatura dos KPIs. */
+  const capt = computeCaptacaoTemperatura(jornada, users, cotacao);
+  const captacoes = capt.captacoes.filter(c => c.valorMoeda > 0).map(c => ({
+    leadId: c.id, cliente: c.cliente, assessor: nomeDe(c.responsavelId || null), assessorId: c.responsavelId || null,
+    temperatura: c.temperatura, valor: c.valor, valorMoeda: c.valorMoeda, custodia: c.custodia, tipo: c.tipo }));
 
   return {
-    partes, vencimentos, contatosAtrasados, regua, aportes, resgates, semAtivar, pj2,
+    partes, vencimentos, contatosAtrasados, regua, aportes, resgates, semAtivar, pj2, captacoes,
     receitaPJ2: pj2.reduce((s, n) => s + (n.valor || 0), 0),
     abertas: partes.reduce((s, p) => s + p.s.contas.abertas, 0),
     ativadas: partes.reduce((s, p) => s + p.s.contas.ativadas, 0),
@@ -10487,12 +10559,18 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
       h(PainelCard, { key: 'saidas', tom: nnm.retiradas > 0 ? 'ruim' : '', label: 'Saídas no mês', valor: fmtBRLCompact(nnm.retiradas),
         sub: nnm.comRetirada + (nnm.comRetirada === 1 ? ' cliente resgatou' : ' clientes resgataram'),
         aberto: aberto === 'saidas', onClick: () => toggle('saidas') }),
-      h(PainelCard, { key: 'pipe', label: 'Em captação', valor: fmtBRLCompact(st.emCaptacao), sub: 'pipe da jornada, em reais' })
+      h(PainelCard, { key: 'pipe', tom: 'ouro', label: 'Em captação', valor: fmtBRLCompact(st.emCaptacao),
+        sub: st.captacoes.length + (st.captacoes.length === 1 ? ' cliente em captação' : ' clientes em captação'),
+        aberto: aberto === 'pipe', onClick: () => toggle('pipe') })
     ], [
       aberto === 'nnm' ? h(PainelLista, { key: 'l', itens: movimentos, vazio: 'Nenhuma movimentação lançada este mês.',
         linha: (m, i) => linhaCliente(m, (m.sinal > 0 ? '+' : '−') + (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'mv' + i) }) : null,
       aberto === 'aportes' ? h(PainelLista, { key: 'l', itens: st.aportes, vazio: 'Nenhum aporte lançado este mês.',
         linha: (m, i) => linhaCliente(m, (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'ap' + i) }) : null,
+      aberto === 'pipe' ? h(PainelLista, { key: 'l', itens: st.captacoes, vazio: 'Ninguém em captação nesta visão.',
+        linha: (c) => linhaCliente(c, (temperaturaInfo(c.temperatura) ? temperaturaInfo(c.temperatura).label : 'sem temperatura')
+          + ' · ' + (c.tipo === 'novo' ? 'novo' : 'carteira') + ' · '
+          + (c.custodia === 'offshore' ? fmtUSDCompact : fmtBRLCompact)(c.valorMoeda)) }) : null,
       aberto === 'saidas' ? h(PainelLista, { key: 'l', itens: st.resgates, vazio: 'Nenhum resgate lançado este mês.',
         linha: (m, i) => linhaCliente(m, (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'rs' + i) }) : null
     ]),
@@ -10637,13 +10715,13 @@ function knAchar(el, teste, max){
 }
 const knClasse = (el) => (el && el.props && typeof el.props.className === 'string') ? el.props.className : '';
 
-function Navegavel({ modo, juntar, numeros, children }){
+function Navegavel({ modo, juntar, numeros, rodape, children }){
   const [aberto, setAberto] = useState(null);
   const itens = React.Children.toArray(children);
   const fixos = [], grupos = [];
   itens.forEach((el, i) => {
     const c = knClasse(el);
-    if(c.indexOf('print-header') !== -1 || c.indexOf('kpi-grid') !== -1){ fixos.push(el); return; }
+    if(c.indexOf('print-header') !== -1 || c.indexOf('kpi-grid') !== -1 || c.indexOf('kn-fixo') !== -1){ fixos.push(el); return; }
     if(modo === 'marcador'){
       if(c.indexOf('painel-secao') !== -1){
         const spans = React.Children.toArray(el.props.children);
@@ -10704,7 +10782,8 @@ function Navegavel({ modo, juntar, numeros, children }){
             g.desc ? h('div', { className: 'pn-card-sub' }, g.desc) : null)
     )) : null,
     grupos.map(g => h('div', { key: g.key + 'c', className: 'kn-corpo' + (aberto === g.key ? ' aberto' : '') },
-      g.cabeca, g.corpo))
+      g.cabeca, g.corpo)),
+    rodape || null
   );
 }
 
@@ -10730,6 +10809,171 @@ function KpiTopo({ escopo, filtros, onFiltros, detalhe, children }){
         h('input', { type: 'date', value: filtros.ate || '', 'aria-label': 'Data final', onChange: e => onFiltros({ ...filtros, ate: e.target.value }) })) : null,
       detalhe ? h('div', { className: 'pn-meta' }, detalhe) : null),
     mais ? h('div', { className: 'kn-filtros' }, children) : null
+  );
+}
+
+/* ================= Listas que se abrem em níveis, com Excel =================
+   Pedido do Emil (05/11/2026): "clico em quente e baixa a lista primeiro dos
+   assessores e depois por cliente", e poder baixar cada lista em Excel.
+   A Arvore recebe as linhas (clientes ou negócios) e os níveis de
+   agrupamento; cada nível soma as métricas do que está embaixo, e o último
+   nível são os próprios clientes, que abrem a ficha. O Excel sai com TODAS
+   as linhas da lista, uma por cliente, com as colunas de cada nível. */
+let xlsxCarregando = null;
+function carregarXlsx(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  if(!xlsxCarregando){
+    xlsxCarregando = new Promise((ok, falha) => {
+      const s = document.createElement('script');
+      s.src = 'vendor/xlsx-0.18.5.full.min.js';
+      s.onload = () => window.XLSX ? ok(window.XLSX) : falha(new Error('Biblioteca do Excel não carregou.'));
+      s.onerror = () => { xlsxCarregando = null; falha(new Error('Biblioteca do Excel não carregou.')); };
+      document.head.appendChild(s);
+    });
+  }
+  return xlsxCarregando;
+}
+function baixarExcel(nomeArquivo, colunas, linhas){
+  return carregarXlsx().then(X => {
+    const dados = linhas.map(l => { const o = {}; colunas.forEach(c => { o[c.titulo] = c.valor(l); }); return o; });
+    const ws = X.utils.json_to_sheet(dados, { header: colunas.map(c => c.titulo) });
+    ws['!cols'] = colunas.map(c => ({ wch: Math.max(12, Math.min(40, c.titulo.length + 4)) }));
+    const wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, ws, 'Lista');
+    X.writeFile(wb, nomeArquivo.replace(/[\\/:*?"<>|]/g, '-') + ' ' + todayISO() + '.xlsx');
+  });
+}
+
+function BotaoExcel({ nome, colunas, linhas }){
+  const [estado, setEstado] = useState('');
+  return h('button', { type: 'button', className: 'arv-excel', disabled: !linhas.length || estado === 'gerando',
+    title: 'Baixa esta lista em Excel, um cliente por linha',
+    onClick: (e) => { e.stopPropagation(); setEstado('gerando');
+      baixarExcel(nome, colunas, linhas).then(() => setEstado(''), (err) => { console.error(err); setEstado('erro'); }); } },
+    h(IconDownload, { size: 13 }), estado === 'gerando' ? 'Gerando…' : estado === 'erro' ? 'Falhou, tente de novo' : 'Baixar Excel');
+}
+
+/* niveis: [{ chave(l), nome(chave, l), cor?(chave, i), ordem?: 'valor'|'nome'|[chaves] }]
+   metricas: [{ titulo, soma(lista) -> número, formatar(n) }] — a primeira é a principal.
+   folha: { nome(l), meta(l), abrir(l) } */
+function Arvore({ titulo, desc, linhas, niveis, metricas, folha, colunasExcel, nomeExcel, vazio, abertoInicial, extra }){
+  const [abertos, setAbertos] = useState(() => new Set(abertoInicial ? [abertoInicial] : []));
+  const alternar = (k) => setAbertos(prev => { const n = new Set(prev); if(n.has(k)) n.delete(k); else n.add(k); return n; });
+  const principal = metricas[0];
+  const totalGeral = principal.soma(linhas);
+
+  const agrupar = (lista, i) => {
+    const nv = niveis[i];
+    const mapa = new Map();
+    lista.forEach(l => { const k = nv.chave(l); if(!mapa.has(k)) mapa.set(k, []); mapa.get(k).push(l); });
+    let grupos = Array.from(mapa.entries()).map(([k, itens]) => ({ k, itens, nome: nv.nome(k, itens[0]), v: principal.soma(itens) }));
+    if(Array.isArray(nv.ordem)) grupos.sort((a, b) => (nv.ordem.indexOf(a.k) < 0 ? 99 : nv.ordem.indexOf(a.k)) - (nv.ordem.indexOf(b.k) < 0 ? 99 : nv.ordem.indexOf(b.k)));
+    else if(nv.ordem === 'nome') grupos.sort((a, b) => String(a.nome).localeCompare(String(b.nome)));
+    else grupos.sort((a, b) => b.v - a.v);
+    return grupos;
+  };
+  const celulas = (itens) => metricas.map((m, j) => h('span', { key: j, className: 'arv-num m' + j + (j === 0 ? ' forte' : '') }, m.formatar(m.soma(itens))));
+
+  const render = (lista, i, caminho, totalPai) => {
+    if(i >= niveis.length){
+      const ord = lista.slice().sort((a, b) => principal.soma([b]) - principal.soma([a]));
+      return ord.map((l, j) => h('button', { key: caminho + '#' + j, className: 'arv-linha arv-folha', style: { paddingLeft: 16 + i * 22 },
+        onClick: () => folha.abrir && folha.abrir(l) },
+        h('span', { className: 'arv-nome' }, h('strong', null, folha.nome(l)), folha.meta ? h('small', null, folha.meta(l)) : null),
+        celulas([l]), h('span', { className: 'arv-seta' }, '›')));
+    }
+    return agrupar(lista, i).map((g, gi) => {
+      const k = caminho + '/' + g.k;
+      const ab = abertos.has(k);
+      const cor = niveis[i].cor ? niveis[i].cor(g.k, gi) : null;
+      const pct = totalPai > 0 ? (g.v / totalPai) : 0;
+      return h(Fragment, { key: k },
+        h('button', { className: 'arv-linha arv-grupo nivel-' + i + (ab ? ' aberto' : ''), style: { paddingLeft: 16 + i * 22 }, 'aria-expanded': ab, onClick: () => alternar(k) },
+          h('span', { className: 'arv-seta-grupo' }, h(IconChevron, { size: 14 })),
+          cor ? h('i', { className: 'arv-cor', style: { background: cor } }) : null,
+          h('span', { className: 'arv-nome' }, h('strong', null, g.nome),
+            h('small', null, g.itens.length + (g.itens.length === 1 ? ' cliente' : ' clientes') + (totalPai > 0 ? ' · ' + pnPct(g.v, totalPai) : ''))),
+          i === 0 && totalPai > 0 ? h('span', { className: 'arv-barra' }, h('b', { style: { width: Math.max(2, pct * 100) + '%', background: cor || 'var(--primary)' } })) : null,
+          celulas(g.itens), h('span', { className: 'arv-seta' })),
+        ab ? render(g.itens, i + 1, k, g.v) : null);
+    });
+  };
+
+  return h('div', { className: 'arv' },
+    h('div', { className: 'arv-topo' },
+      h('div', null, h('div', { className: 'arv-titulo' }, titulo), desc ? h('div', { className: 'arv-desc' }, desc) : null),
+      colunasExcel ? h(BotaoExcel, { nome: nomeExcel || titulo, colunas: colunasExcel, linhas }) : null),
+    extra || null,
+    linhas.length ? h(Fragment, null,
+      h('div', { className: 'arv-cab' }, h('span', { className: 'arv-nome' }, 'Clique para abrir'), metricas.map((m, j) => h('span', { key: j, className: 'arv-num m' + j }, m.titulo)), h('span', { className: 'arv-seta' })),
+      render(linhas, 0, '', totalGeral))
+      : h('div', { className: 'arv-vazio' }, vazio || 'Nada para mostrar neste recorte.'));
+}
+
+/* Panorama fixo dos KPIs: o que fica sempre à vista, abaixo dos cartões.
+   Carteira por segmento, Pipe por temperatura e o ranking de assessores —
+   cada um abre em assessor e depois em cliente, e baixa em Excel. */
+function KpiPanorama({ jornada, users, admin, onOpen }){
+  const cotacao = useCotacao();
+  const nomeDe = (id) => ((users.find(u => u.id === id) || {}).nome) || 'Sem assessor';
+  const dados = useMemo(() => {
+    const vivos = jornada.filter(l => !l.excluido && !l.perdido && (l.funil || 'assessor') !== 'especialista');
+    const clientes = vivos.map(l => ({ lead: l, cliente: (l.cliente || '').trim() || nomeCliente(l), conta: l.conta || '',
+      segmento: l.segmento || '', assessorId: l.responsavelId || '—', assessor: nomeDe(l.responsavelId),
+      onshore: valorEmCarteira(l), offshore: valorEmCarteiraOffshore(l), pipe: valorEmCaptacao(l, cotacao),
+      pipeMoeda: valorCaptacaoNaMoeda(l), custodiaPipe: captaNova(l) ? custodiaCaptacao(l) : 'onshore',
+      temperatura: temperaturaInfo(l.temperatura) ? l.temperatura : 'sem', tipo: captaNova(l) ? 'carteira' : 'novo' }));
+    return { clientes,
+      carteira: clientes.filter(c => c.onshore > 0 || c.offshore > 0),
+      pipe: clientes.filter(c => c.pipeMoeda > 0) };
+  }, [jornada, users, cotacao]);
+
+  const soma = (campo) => (lista) => lista.reduce((s, c) => s + (c[campo] || 0), 0);
+  const nivelAssessor = { chave: c => c.assessorId, nome: (k, c) => c.assessor };
+  const nivelSegmento = { chave: c => c.segmento || '—', nome: k => k === '—' ? 'Sem segmento' : k,
+    cor: k => CORES_SEGMENTO[k] || '#95A1B0', ordem: SEGMENTOS.map(s => s.key).concat(['—']) };
+  const TEMPS = TEMPERATURAS.map(t => t.key).concat(['sem']);
+  const nivelTemp = { chave: c => c.temperatura, nome: k => temperaturaInfo(k) ? temperaturaInfo(k).label : 'Sem classificação',
+    cor: k => temperaturaInfo(k) ? temperaturaInfo(k).cor : '#C9D1DC', ordem: TEMPS };
+  const folha = { nome: c => c.cliente, abrir: c => onOpen(c.lead),
+    meta: c => [c.conta ? 'conta ' + c.conta : null, admin ? c.assessor : null, c.segmento || null].filter(Boolean).join(' · ') };
+  const colunasBase = [
+    { titulo: 'Cliente', valor: c => c.cliente }, { titulo: 'Conta', valor: c => c.conta },
+    { titulo: 'Assessor', valor: c => c.assessor }, { titulo: 'Segmento', valor: c => c.segmento },
+    { titulo: 'Sob gestão onshore (R$)', valor: c => Math.round(c.onshore * 100) / 100 },
+    { titulo: 'Sob gestão offshore (US$)', valor: c => Math.round(c.offshore * 100) / 100 },
+    { titulo: 'Pipe (moeda da negociação)', valor: c => Math.round(c.pipeMoeda * 100) / 100 },
+    { titulo: 'Moeda do pipe', valor: c => c.pipeMoeda > 0 ? (c.custodiaPipe === 'offshore' ? 'US$' : 'R$') : '' },
+    { titulo: 'Temperatura', valor: c => temperaturaInfo(c.temperatura) ? temperaturaInfo(c.temperatura).label : '' },
+    { titulo: 'Tipo', valor: c => c.tipo === 'novo' ? 'Cliente novo' : 'Carteira' }];
+  const contar = { titulo: 'Clientes', soma: l => l.length, formatar: n => String(n) };
+
+  return h('div', { className: 'kp' },
+    h('div', { className: 'kp-duplo' },
+      h('div', { className: 'kp-caixa' },
+        h(Arvore, { extra: h(PainelRosca, { grupos: (() => { const m = new Map(); dados.carteira.forEach(c => { const k = c.segmento || '—'; m.set(k, (m.get(k) || 0) + c.onshore); });
+            return SEGMENTOS.map(s => s.key).concat(['—']).filter(k => m.has(k)).map(k => ({ key: k, nome: k, onshore: m.get(k), cor: CORES_SEGMENTO[k] || '#95A1B0' })); })(),
+          total: soma('onshore')(dados.carteira), rotulo: 'onshore' }), titulo: 'Carteira por segmento', desc: 'segmento → ' + (admin ? 'assessor → ' : '') + 'cliente · onshore em reais, offshore à parte',
+          linhas: dados.carteira, niveis: admin ? [nivelSegmento, nivelAssessor] : [nivelSegmento],
+          metricas: [{ titulo: 'Onshore', soma: soma('onshore'), formatar: fmtBRLCompact },
+            { titulo: 'Offshore', soma: soma('offshore'), formatar: n => n > 0 ? fmtUSDCompact(n) : '—' }, contar],
+          folha, colunasExcel: colunasBase, nomeExcel: 'Carteira por segmento' })),
+      h('div', { className: 'kp-caixa' },
+        h(Arvore, { titulo: 'Pipe por temperatura', desc: 'temperatura → ' + (admin ? 'assessor → ' : '') + 'cliente · em reais (offshore pela cotação)',
+          linhas: dados.pipe, niveis: admin ? [nivelTemp, nivelAssessor] : [nivelTemp], abertoInicial: '/quente',
+          metricas: [{ titulo: 'Pipe', soma: soma('pipe'), formatar: fmtBRLCompact }, contar],
+          folha: { ...folha, meta: c => [c.tipo === 'novo' ? 'cliente novo' : 'carteira', admin ? c.assessor : null,
+            c.custodiaPipe === 'offshore' ? fmtUSDCompact(c.pipeMoeda) + ' offshore' : null].filter(Boolean).join(' · ') },
+          colunasExcel: colunasBase, nomeExcel: 'Pipe por temperatura', vazio: 'Nada em captação neste recorte.' }))),
+    admin ? h('div', { className: 'kp-caixa' },
+      h(Arvore, { titulo: 'Ranking de assessores', desc: 'assessor → cliente · clique para abrir a carteira de cada um',
+        linhas: dados.clientes.filter(c => c.onshore > 0 || c.offshore > 0 || c.pipeMoeda > 0), niveis: [nivelAssessor],
+        metricas: [{ titulo: 'Onshore', soma: soma('onshore'), formatar: fmtBRLCompact },
+          { titulo: 'Offshore', soma: soma('offshore'), formatar: n => n > 0 ? fmtUSDCompact(n) : '—' },
+          { titulo: 'Pipe', soma: soma('pipe'), formatar: n => n > 0 ? fmtBRLCompact(n) : '—' },
+          { titulo: 'Quente', soma: l => l.filter(c => c.temperatura === 'quente').reduce((s, c) => s + c.pipe, 0), formatar: n => n > 0 ? fmtBRLCompact(n) : '—' },
+          contar],
+        folha, colunasExcel: colunasBase, nomeExcel: 'Ranking de assessores' })) : null
   );
 }
 
@@ -12158,7 +12402,7 @@ function App(){
             h(KpiFiltros,{ filtros:kpiFiltros, onChange:setKpiFiltros, funil, users, leads, simples:true })),
           isAdmin
             ? h(AdminKpis,{ jornada: kpiRecorte.jornada, negocios: kpiRecorte.negocios,
-                users, currentUser, filtros: kpiFiltros, onFiltros: setKpiFiltros, leads })
+                users, currentUser, filtros: kpiFiltros, onFiltros: setKpiFiltros, leads, onOpen: setOpenLead })
             : (funil === 'especialista'
           /* Só o funil e o produto abertos: passar a base inteira misturava a
              jornada e os dois CRMs de produto na evolução mensal e no ranking,
@@ -12167,7 +12411,7 @@ function App(){
               scopedLeads: kpiLeads,
               allLeads: kpiLeads,
               users, vendorFilter, currentUser, periodo: kpiFiltros })
-          : h(AssessoriaKpis,{ scopedLeads: kpiLeads, users, vendorFilter, currentUser, periodo: kpiFiltros }))
+          : h(AssessoriaKpis,{ scopedLeads: kpiLeads, users, vendorFilter, currentUser, periodo: kpiFiltros, onOpen: setOpenLead }))
         )
     : null,
     creating ? h(CreateModal,{ funil, grupos, produto: produtoFiltro, onClose:()=>{ setCreating(false); setQuickAddStage(null); }, onCreate:createLead, users, currentUser, isAdmin, initialStage:quickAddStage }) : null,

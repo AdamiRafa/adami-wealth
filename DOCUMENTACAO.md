@@ -997,6 +997,26 @@ aqui.
 - **Mesmo estilo** em Offshore (topo azul, cartões), Captados e Desqualificados (total no
   topo, grupos por mês ou por assessor que se abrem, com Histórico e Reabrir dentro) e no
   topo e nos cards do quadro de Relacionamento (só visual; colunas e arrastar iguais).
+**Terceira rodada (05/11/2026, `2026.11.05.3`):**
+
+- **Pipe em toda a carteira.** Nova regra `captaNova(lead)`: pode ter captação nova quem já
+  é carteira, venha da base OU tenha sido captado. Ela substitui `clienteDaBase` em tudo que
+  é pipe e captação (iniciar, confirmar, encerrar, abater, temperatura, cards, Pipe por
+  temperatura). `clienteDaBase` continua sendo a regra de origem (importação). O captado
+  passa a ter "+ Pipe" na ficha; `valorCaptacaoNaMoeda` lê `valorEmCaptacao` para base e
+  captado; `temperaturaDe` volta a valer para captado com pipe aberto.
+- **Card padronizado:** todo card tem a linha de valor (selo "Sob gestão", "Patrimônio" para
+  prospect ou "Negócio" no funil de especialista; traço quando não há valor) e a linha de pipe.
+- **Dashboard:** "Em captação" abre a lista de quem está em captação (mesmo cálculo do Pipe
+  por temperatura).
+- **KPIs, panorama fixo (`KpiPanorama` + `Arvore`):** abaixo dos cartões, sempre à vista:
+  Carteira por segmento (rosca + segmento → assessor → cliente), Pipe por temperatura
+  (temperatura → assessor → cliente, "Quente" já aberto) e, no admin, Ranking de assessores
+  (assessor → cliente, com onshore, offshore, pipe e quente). O cliente abre a ficha. Cada
+  lista tem "Baixar Excel" (uma linha por cliente; a biblioteca `vendor/xlsx` só carrega no
+  clique). O panorama não vai para o PDF, que continua com as seções completas (5 páginas,
+  margens iguais).
+
 - Atenção à diferença de números entre telas: o Dashboard mostra o patrimônio onshore e o
   offshore separados; o "Total da carteira" dos KPIs e do Relacionamento continua como era,
   somando o offshore pela cotação.
