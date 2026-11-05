@@ -18,7 +18,8 @@ for v in FTP_SERVIDOR FTP_USUARIO FTP_SENHA; do
   if [ -z "${!v:-}" ]; then echo "::error::Falta o segredo $v."; exit 1; fi
 done
 
-# 1. Monta a pasta que vai ao ar. Lista positiva: só HTML, vendor/, img/ e .htaccess.
+# 1. Monta a pasta que vai ao ar. Lista positiva: só HTML, vendor/, img/, estilo/ e .htaccess.
+#    estilo/ guarda a camada visual comum dos módulos (visual 2026).
 #    img/ guarda o logo e os ícones que os e-mails do Supabase carregam pelo endereço.
 #    SQL, documentação e qualquer arquivo novo ficam de fora até alguém incluir aqui.
 SITE="$(mktemp -d)"
@@ -27,6 +28,7 @@ cp "$ORIGEM"/*.html "$SITE"/
 cp "$ORIGEM"/.htaccess "$SITE"/
 cp -R "$ORIGEM"/vendor "$SITE"/vendor
 cp -R "$ORIGEM"/img "$SITE"/img
+cp -R "$ORIGEM"/estilo "$SITE"/estilo
 printf 'Portal Adami Captal. Esta pasta e substituida inteira a cada publicacao pelo GitHub.\nNao guarde nada aqui.\n' > "$SITE/$MARCADOR"
 
 # 2. Conexão. Criptografia obrigatória e certificado conferido (padrão do lftp).

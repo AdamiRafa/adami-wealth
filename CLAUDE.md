@@ -55,6 +55,8 @@ sai pela Edge Function `supabase/functions/enviar-convite` (colada à mão no Su
 redefinir senha pela `enviar-senha` e o e-mail da manhã da Agenda pela `agenda-manha`. Os
 modelos são gerados por `emails/_base.py`, que grava cada um dentro da sua função.
 Agenda do CRM: tabela `tarefas` (`agenda.sql`); detalhes na seção 19 da documentação.
+Visual 2026 (seção 20): vidro, menu lateral e modo noite; camada comum dos módulos em
+`estilo/adami-2026.css`. Tudo que é visual fica em `@media screen`: a impressão não pode mudar.
 A chave *publishable* fica no código do navegador, o que é correto: a proteção está na
 RLS. A *service_role* **nunca** entra em arquivo servido ao navegador.
 
@@ -145,6 +147,9 @@ execução e fica registrado no histórico.
   JSON input" e a gravação parece ter falhado quando funcionou.
 - **Handlers inline em HTML gerado por string** rodam no escopo global. Índice de laço
   precisa ser interpolado.
+- **`@media (max-width:…)` sem `screen` vale também na impressão.** A folha A4 tem menos
+  de 900 px: uma regra de celular mudou o PDF dos KPIs de 5 para 6 páginas. Use
+  `@media screen and (max-width:…)` para regra que é só de tela.
 - **Cache do navegador engana.** Peça Cmd+Shift+R e confira o selo de versão antes de
   investigar qualquer coisa.
 
@@ -153,5 +158,5 @@ execução e fica registrado no histórico.
 ## Pendências
 
 Ver `DOCUMENTACAO.md` seção 14. As mais quentes: instalar a Agenda no Supabase
-(`agenda.sql` e as funções `enviar-senha` e `agenda-manha`), o reset de senha que ainda não
+(`agenda.sql`, `avisos.sql` e as funções `enviar-senha` e `agenda-manha`), o reset de senha que ainda não
 chega no Microsoft 365, e o acesso à API de parceiros do BTG (regras já decididas).

@@ -541,7 +541,11 @@ sucesso em verde** ·
 erro real do servidor de e-mail na tela), com volta automática ao envio antigo enquanto a
 função não estiver instalada. CRM `2026.11.05.6`: aba Agenda (seção 19), faixa "Agenda de
 hoje" no Dashboard, e-mail da manhã (função `agenda-manha`) e cabeçalho do CRM cabendo no
-celular**.
+celular** ·
+**2.87 (05/11/2026) visual 2026 em tudo (seção 20): tela inicial nova do Hub com menu
+lateral, números do dia, "Hoje" e Avisos da casa; login e Carteiras no estilo de vidro;
+camada comum `estilo/adami-2026.css` nos 11 módulos; modo noite no Hub e no CRM. CRM
+`2026.11.05.7`: abas viram menu lateral recolhível**.
 
 ---
 
@@ -576,6 +580,8 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 - **Agenda (05/11/2026), falta instalar:** rodar `agenda.sql` no SQL Editor; criar as
   funções `enviar-senha` e `agenda-manha` (Verify JWT desligado, as duas usam o
   `SMTP_SENHA` que já existe). Ver seção 19.
+- **Avisos da casa (05/11/2026), falta instalar:** rodar `avisos.sql` no SQL Editor. Sem
+  ele, o cartão de avisos do Hub diz que falta rodar o arquivo; o resto da tela funciona.
 - **Reset de senha ainda não chegava depois do SPF (05/11/2026).** SPF público conferido
   com `a:br542.hostgator.com.br`. Suspeitas abertas: quarentena do Microsoft 365
   (security.microsoft.com → Quarentena) e o "Roteamento de e-mail" do cPanel em "Local"
@@ -1137,4 +1143,59 @@ com o resultado ("enviado", "sem link: User not found", "falha no envio: ..."). 
 não existir (404) ou estiver com Verify JWT ligado (401), o portal volta ao envio antigo
 do Supabase. As duas funções novas usam a `SUPABASE_SERVICE_ROLE_KEY` que o próprio
 Supabase coloca no ambiente da função; ela nunca vai ao navegador.
+
+---
+
+## 20. Visual 2026 (Hub, CRM e módulos)
+
+Pedido do Emil em 05/11/2026 a partir de vídeos de painéis em vidro fosco; protótipo aprovado
+no mesmo dia ("pode implementar tudo"). Princípios: vidro fosco sobre um fundo com luz suave
+no azul-marinho e dourado da casa, menu lateral com seções e contadores que recolhe para os
+ícones, saudação com o que pede atenção, cartões de número com selo de variação, cartões que
+sobem ao passar o mouse, modo noite. Fontes e cores da marca não mudaram.
+
+**Regra que não pode quebrar: só tela.** Todo o visual novo vive dentro de `@media screen`
+(ou em classes que a impressão esconde). Uma regra de celular escrita como
+`@media (max-width:900px)`, sem `screen`, também vale na impressão (a folha A4 tem menos de
+900 px) e mudou o padding do conteúdo: o PDF dos KPIs passou de 5 para 6 páginas. Corrigido
+para `@media screen and (max-width:900px)` e conferido: 5 páginas, mesmas margens da versão
+anterior, página por página.
+
+**CRM (`crm.html`).** `MenuLateral` substitui as abas do topo (Dashboard, Agenda com contador
+do dia, Relacionamento, Offshore, KPIs, Captados, Desqualificados, Produtos no funil de
+Negócios, Gestão: Atualizar base e Equipe), com o seletor Jornada/Negócios, modo noite, a
+pessoa e o botão Sair. O topo vira um painel de vidro com o título e a data, e a busca e o
+seletor de equipe ficam ali. Recolher o menu fica salvo (`aw_menu_curto`). No celular, o menu
+vira uma faixa que rola para o lado (medido a 390 px em todas as telas, admin, assessora e
+especialista). O cabeçalho estático (masthead) e o botão flutuante "Início" saem da tela: o
+menu tem "Hub Adami". Modo noite: `html[data-cor="noite"]`, com as variáveis de cor
+trocadas; `--navy` continua sendo o azul dos fundos, e onde ele é cor de texto há regra
+própria. O painel dos KPIs do admin trava cores claras para a impressão; à noite, na tela, é
+liberado.
+
+**Hub (`index.html`).** `viewHub` reescrita: menu lateral com os sistemas por grupo (busca
+que filtra menu e cartões), saudação com "N coisas pedem sua atenção" (atrasadas da Agenda +
+avisos não lidos), quatro números (Agenda de hoje, Relatórios do mês = clientes com
+lançamento do mês anterior, Mesa RV abertas, Avisos novos), os sistemas em cartões, "Hoje"
+(a mesma regra da Agenda do CRM, só a própria pessoa: tarefas, próximo contato, vencimento e
+régua) e Avisos da casa. Os números chegam depois da tela (`carregarInicio`, no máximo a cada
+60 s). "Abrir a Agenda" vai para `crm.html#agenda`. A gaveta antiga (hambúrguer) saiu. Login
+e o módulo Carteiras ganharam o vidro (só tela; a régua lateral flutua só acima de 900 px).
+
+**Avisos da casa (`avisos.sql`, também na seção 8.8 do `adami_completo.sql`).** Tabelas
+`avisos` e `avisos_leitura`, função `avisos_resumo()` (avisos visíveis, autor, quantos leram,
+total de pessoas com perfil, se eu li) e `pode_publicar_aviso()` (administrador/master do
+portal ou admin do CRM). Publica quem pode; lê todo mundo; aviso com data futura é agendado
+e só quem publica vê antes. Cada um marca só a própria leitura. Testado num Postgres local:
+assessora não publica, não vê o agendado, não marca leitura por outra pessoa nem de aviso
+agendado, não apaga; head e master publicam.
+
+**Módulos.** `estilo/adami-2026.css` (publicado junto: o script de publicação agora copia
+`estilo/`) entra no `<head>` dos 11 módulos: fundo com luz, blocos de vidro nas classes de
+cartão que cada um já usa (`.cartao`, `.bloco`, `.card`, `.pane`, `.secao`...) e o botão
+"Hub Adami" em vidro. As regras usam `html body :is(...)` para vencer o estilo base sem
+`!important`, então variações mais específicas do módulo (cartão colorido) continuam
+valendo. Páginas de relatório (`.pagina`) ficam de fora. Os módulos não têm modo noite.
+Planos Patrimoniais já rolava 26 px para o lado em 1366 px antes desta mudança (conferido
+na versão anterior); não foi mexido.
 

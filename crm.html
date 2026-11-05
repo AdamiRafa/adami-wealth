@@ -3039,9 +3039,214 @@
     .ag-hora{width:40px;}
     .ag-opcoes{grid-template-columns:1fr;}
   }
+
+  /* ================= Visual 2026 (aprovado pelo Emil em 05/11/2026) =================
+     Vidro fosco sobre um fundo com luz suave no azul-marinho e dourado da casa,
+     menu lateral recolhível e modo noite. Só tela: a impressão continua igual
+     (ver @media print no fim deste bloco). O desfoque (backdrop-filter) fica só
+     nos painéis grandes; card de cliente no quadro continua opaco, porque são
+     centenas na tela e o desfoque em cada um pesa. */
+  @media screen{
+    html{background:#E9EEF4;}
+    body{background:transparent;}
+    body::before{
+      content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background:
+        radial-gradient(720px 720px at -6% -18%, rgba(25,90,180,.26), rgba(25,90,180,0) 68%),
+        radial-gradient(640px 640px at 104% 30%, rgba(192,162,101,.26), rgba(192,162,101,0) 66%),
+        radial-gradient(820px 820px at 40% 128%, rgba(11,30,63,.18), rgba(11,30,63,0) 70%),
+        #E9EEF4;
+    }
+    .masthead, #awVoltar{display:none !important;}
+    #app{max-width:1520px;padding:18px 20px 64px;}
+  }
+  :root{ --vidro:rgba(255,255,255,.62); --vidro-forte:rgba(255,255,255,.82); --vidro-borda:rgba(255,255,255,.85);
+         --vidro-sombra:0 10px 34px rgba(5,19,42,.09); --chip:rgba(12,22,38,.06); }
+  .vidro{
+    background:var(--vidro);border:1px solid var(--vidro-borda);box-shadow:var(--vidro-sombra);
+    backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border-radius:22px;
+  }
+  .casca{display:flex;gap:20px;align-items:flex-start;}
+  .casca-conteudo{flex:1;min-width:0;}
+
+  /* ---------- Menu lateral ---------- */
+  .mn{
+    width:252px;flex:0 0 auto;box-sizing:border-box;padding:14px;display:flex;flex-direction:column;gap:3px;
+    position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;transition:width .2s;
+  }
+  .mn.curto{width:74px;}
+  .mn > *{flex-shrink:0;}
+  .mn-topo{display:flex;align-items:center;gap:10px;padding:2px 2px 10px;}
+  .mn-marca{
+    width:40px;height:40px;border-radius:12px;background:#05132A;color:#C0A265;flex-shrink:0;
+    display:inline-flex;align-items:center;justify-content:center;font:600 16px 'Fraunces',Georgia,serif;
+  }
+  .mn-nome{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .mn-nome strong{font:600 17px 'Fraunces',Georgia,serif;color:var(--navy);display:flex;align-items:center;gap:7px;}
+  .mn-nome > span{font-size:11.5px;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mn-admin{font:600 9px 'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#05132A;background:#C0A265;border-radius:4px;padding:2px 5px;}
+  .mn-recolher,.mn-sair{
+    width:34px;height:34px;border-radius:50%;border:1px solid var(--vidro-borda);background:var(--vidro-forte);color:var(--ink);
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0;
+  }
+  .mn-recolher:hover,.mn-sair:hover{border-color:var(--border-strong);}
+  .mn-item{
+    display:flex;align-items:center;gap:11px;width:100%;min-height:42px;padding:0 12px;box-sizing:border-box;border:0;border-radius:12px;
+    background:transparent;color:var(--ink-muted);font:500 14px 'Inter',-apple-system,sans-serif;cursor:pointer;text-align:left;text-decoration:none;
+  }
+  .mn-item:hover{background:var(--chip);color:var(--ink);}
+  .mn-item.on{background:var(--vidro-forte);color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1px var(--vidro-borda),0 4px 14px rgba(5,19,42,.08);}
+  .mn-item svg{flex-shrink:0;}
+  .mn-hub{color:var(--ink-muted);font-size:13px;min-height:38px;margin-bottom:4px;}
+  .mn-rot{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mn-cont{
+    font:600 11px 'Inter',sans-serif;min-width:22px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:999px;
+    display:inline-flex;align-items:center;justify-content:center;background:var(--chip);color:var(--ink-muted);
+  }
+  .mn-cont.quente{background:#C2410C;color:#fff;}
+  .mn-secao{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;padding:14px 12px 6px;}
+  .mn-funil{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--chip);margin:2px 0 4px;}
+  .mn-funil button{flex:1;height:32px;border:0;border-radius:999px;background:transparent;color:var(--ink-muted);font:600 12.5px 'Inter',sans-serif;cursor:pointer;}
+  .mn-funil button.on{background:#05132A;color:#fff;}
+  .mn-rodape{margin-top:auto;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
+  .mn-noite{cursor:default;}
+  .mn-noite:hover{background:transparent;}
+  .mn-chave{width:44px;height:26px;border-radius:999px;border:0;background:var(--chip);position:relative;cursor:pointer;flex-shrink:0;padding:0;}
+  .mn-chave span{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:left .2s;}
+  .mn-chave.on{background:#195AB4;}
+  .mn-chave.on span{left:21px;}
+  .mn-pessoa{display:flex;align-items:center;gap:10px;padding:6px 4px 2px;}
+  .mn-avatar{width:36px;height:36px;font-size:13px;}
+  .mn-pessoa-txt{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .mn-pessoa-txt strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mn-pessoa-txt span{font-size:11.5px;color:var(--ink-muted);}
+  .mn.curto .mn-nome,.mn.curto .mn-rot,.mn.curto .mn-cont,.mn.curto .mn-secao,.mn.curto .mn-funil,.mn.curto .mn-pessoa-txt,.mn.curto .mn-chave{display:none;}
+  .mn.curto .mn-topo{flex-direction:column;}
+  .mn.curto .mn-item{justify-content:center;padding:0;}
+  .mn.curto .mn-pessoa{flex-direction:column;}
+  .mn.curto .mn-noite{cursor:pointer;}
+
+  /* Topo do conteúdo: título e ferramentas num painel de vidro. */
+  .topbar{
+    background:var(--vidro);border:1px solid var(--vidro-borda);box-shadow:var(--vidro-sombra);border-radius:22px;
+    backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+    padding:16px 20px;margin-bottom:20px;
+  }
+  .brand{align-items:center;}
+  .brand h1{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:26px;}
+  .brand-sub{font-size:12.5px;color:var(--ink-muted);margin-top:2px;}
+
+  /* Painéis que viram vidro. */
+  .pn-card,.pn-abas,.ag-lista,.ag-cartao,.ag-coluna,.ag-mes-dia,.ag-faixa,.ag-nav-btn,
+  .pn-lista,.drill-corpo .arv,.board-actions .btn-ghost,.view-tabs,.select-sm,.search-wrap input{
+    background:var(--vidro-forte);border-color:var(--vidro-borda);
+  }
+  .pn-card,.ag-cartao,.ag-lista,.ag-faixa{box-shadow:var(--vidro-sombra);border-radius:20px;}
+  .pn-card.clicavel{transition:transform .18s ease, box-shadow .18s ease, border-color .15s;}
+  .pn-card.clicavel:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(5,19,42,.13);}
+  .pn-abas{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
+  .column{background:rgba(237,240,246,.72);border-color:var(--vidro-borda);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+  .modal{border-radius:20px;}
+  .btn{border-radius:999px;}
+  .btn-primary{background:#05132A;}
+  .btn-primary:hover{background:#0C2246;}
+  body[data-tema="consorcio"] .btn-primary{background:var(--primary);}
+  body[data-tema="seguro"] .btn-primary{background:var(--primary);}
+
+  /* ---------- Celular: o menu vira uma faixa que rola para o lado ---------- */
+  @media screen and (max-width:900px){
+    .casca{flex-direction:column;gap:12px;align-items:stretch;}
+    .casca-conteudo{width:100%;}
+    .mn,.mn.curto{width:100%;position:static;max-height:none;flex-direction:row;align-items:center;overflow-x:auto;padding:8px;gap:4px;border-radius:18px;}
+    .mn-topo,.mn-secao,.mn-funil,.mn-pessoa-txt,.mn-recolher{display:none;}
+    .mn .mn-item{flex:0 0 auto;width:auto;min-height:40px;padding:0 12px;}
+    .mn.curto .mn-rot,.mn.curto .mn-cont{display:inline-flex;}
+    .mn-rodape{margin:0;padding:0;border:0;flex-direction:row;align-items:center;}
+    .mn-noite .mn-rot{display:none;}
+    .mn-pessoa{padding:0;}
+    #app{padding:12px 12px 56px;}
+  }
+
+  @media screen{
+  /* ---------- Modo noite ---------- */
+  html[data-cor="noite"]{background:#06101F;color-scheme:dark;}
+  html[data-cor="noite"] body::before{
+    background:
+      radial-gradient(720px 720px at -6% -18%, rgba(25,90,180,.32), rgba(25,90,180,0) 68%),
+      radial-gradient(640px 640px at 104% 30%, rgba(192,162,101,.16), rgba(192,162,101,0) 66%),
+      #06101F;
+  }
+  html[data-cor="noite"] body,
+  html[data-cor="noite"] body[data-tema]{
+    --bg:#0D1A2E; --surface:#111F35; --ink:#EEF2F8; --ink-muted:#B5C0D0; --ink-faint:#8D9AAE;
+    --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.22);
+    --primary:#7FB0F0; --primary-hover:#A3C6F5; --primary-tint:rgba(127,176,240,.14);
+    --danger:#F2A29C; --danger-tint:rgba(242,162,156,.12); --success:#7FD3A6; --success-tint:rgba(127,211,166,.12);
+    --gold:#E1C27A; --gold-tint:rgba(225,194,122,.12); --amber:#E1C27A; --amber-tint:rgba(225,194,122,.12);
+    --offshore:#6FCFC3; --offshore-tint:rgba(111,207,195,.12);
+    --vidro:rgba(255,255,255,.06); --vidro-forte:rgba(255,255,255,.09); --vidro-borda:rgba(255,255,255,.12);
+    --vidro-sombra:0 10px 40px rgba(0,0,0,.35); --chip:rgba(255,255,255,.08);
+    color:var(--ink);
+  }
+  html[data-cor="noite"] .column{background:rgba(255,255,255,.04);}
+  /* --navy continua sendo o azul-marinho dos fundos; onde ele é cor de TEXTO, a noite clareia. */
+  html[data-cor="noite"] :is(.brand h1,.board-empty h2,.produto-tab.active,.pn-card-num,.pn-rosca-centro strong,.tile-figure,
+    .kn-card-titulo,.arv-titulo,.drill-cab h2,.ag-hora,.ag-prox-dia strong,.ag-nav strong,.mn-nome strong,
+    .funil-switch button.active,.modo-switch button.active,.print-brand span){color:#EEF2F8;}
+  html[data-cor="noite"] :is(.pn-alternar button.ativo,.filtro-chip.ativo,.custodia-switch button.active,.ag-opcao.on){
+    background:#EEF2F8;border-color:#EEF2F8;color:#05132A;}
+  html[data-cor="noite"] :is(.pn-card.aberto){border-color:#7FB0F0;box-shadow:0 0 0 1px #7FB0F0;}
+  html[data-cor="noite"] .pn-visao-caixa select{background:transparent;}
+  html[data-cor="noite"] :is(.pn-visao-caixa select,.kn-visao select){color:#fff;}
+  /* O painel dos KPIs do admin trava cores claras (são as da impressão): na tela, à noite, solta. */
+  html[data-cor="noite"] .painel.kn-admin{
+    --bg:#0D1A2E; --surface:rgba(255,255,255,.06); --ink:#EEF2F8; --ink-muted:#B5C0D0; --ink-faint:#8D9AAE;
+    --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.22); --primary:#7FB0F0; --primary-tint:rgba(127,176,240,.14);
+    --success:#7FD3A6; --success-tint:rgba(127,211,166,.12); --danger:#F2A29C; --danger-tint:rgba(242,162,156,.12);
+    --gold:#E1C27A; --gold-tint:rgba(225,194,122,.12);
+  }
+  html[data-cor="noite"] .painel.kn-admin .ind-rotulo{color:#B5C0D0;}
+  html[data-cor="noite"] .painel.kn-admin .ind-valor{color:#EEF2F8;}
+  html[data-cor="noite"] .painel.kn-admin .ind-contexto{color:#8D9AAE;}
+  html[data-cor="noite"] .painel.kn-admin .ind.ouro .ind-valor{color:#E1C27A;}
+  html[data-cor="noite"] .painel.kn-admin .ind.verde .ind-valor{color:#7FD3A6;}
+  html[data-cor="noite"] .painel.kn-admin .ind.alerta .ind-valor{color:#F2A29C;}
+  html[data-cor="noite"] .painel.kn-admin .rosca-total{fill:#EEF2F8;}
+  html[data-cor="noite"] :is(.painel.kn-admin .rosca-legenda-total,.painel.kn-admin .grafico-svg .grade-num,.painel.kn-admin .grafico-svg .grafico-mes){fill:#8D9AAE;}
+  html[data-cor="noite"] .rosca-total{fill:#EEF2F8;}
+  html[data-cor="noite"] :is(.pn-bloco-cab:hover,.pn-tabela tbody tr:hover,.arv-linha:hover,.arv-grupo.nivel-1){background:rgba(255,255,255,.05);}
+  html[data-cor="noite"] .kp-caixa{background:rgba(255,255,255,.05);}
+  html[data-cor="noite"] .ag-selo{filter:brightness(1.9) saturate(.85);}
+  html[data-cor="noite"] .ag-check{background:transparent;}
+  html[data-cor="noite"] .mn-marca{background:#0E2547;}
+  html[data-cor="noite"] .lead-card,html[data-cor="noite"] .modal,html[data-cor="noite"] .overlay .modal{background:#111F35;}
+  html[data-cor="noite"] .btn-primary,html[data-cor="noite"] .mn-funil button.on{background:#EEF2F8;color:#05132A;}
+  html[data-cor="noite"] .btn-primary:hover{background:#fff;}
+  html[data-cor="noite"] .view-tab.active{color:#05132A;}
+  html[data-cor="noite"] input,html[data-cor="noite"] select,html[data-cor="noite"] textarea{color:var(--ink);background-color:rgba(255,255,255,.06);}
+  html[data-cor="noite"] select option{background:#111F35;color:#EEF2F8;}
+  html[data-cor="noite"] .pn-heroi{background:linear-gradient(180deg,#0E2547 0%,#0A1B36 100%);}
+  html[data-cor="noite"] .ag-coluna.hoje .ag-coluna-cab{background:#195AB4;}
+  html[data-cor="noite"] .ag-coluna.fds{background:rgba(255,255,255,.04);}
+  html[data-cor="noite"] .ag-chip{background:rgba(255,255,255,.06);}
+  html[data-cor="noite"] .ag-chip:hover{background:rgba(255,255,255,.12);}
+  html[data-cor="noite"] .ag-novo{background:#EEF2F8;}
+  html[data-cor="noite"] .pn-abas button.ativa{background:#EEF2F8;color:#05132A;}
+  html[data-cor="noite"] .ag-mes-dia.hoje .ag-mes-num{background:#EEF2F8;color:#05132A;}
+  html[data-cor="noite"] .ag-coluna.hoje{border-color:#7FB0F0;box-shadow:0 0 0 1px #7FB0F0;}
+
+  }
+
+  @media print{
+    .mn, body::before{display:none !important;}
+    .casca{display:block;}
+    .topbar{background:none;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;}
+    .vidro{backdrop-filter:none;-webkit-backdrop-filter:none;}
+  }
 </style>
 </head>
 <body>
+<script>try{if(localStorage.getItem("aw_cor")==="noite")document.documentElement.dataset.cor="noite";}catch(e){}</script>
 <script>
 /* acesso restrito: exige sessao iniciada no portal */
 (function(){
@@ -11288,7 +11493,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.05.6';
+const CRM_VERSAO = 'versão do CRM 2026.11.05.7';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -12049,6 +12254,92 @@ function DrillPainel({ spec, jornada, negocios, todos, users, onOpen, onClose })
 }
 
 /* ================= App ================= */
+/* ================= Menu lateral (visual 2026, aprovado pelo Emil em 05/11/2026) =================
+   As abas que ficavam no topo viraram um menu de vidro à esquerda, com seções,
+   contadores e um botão que recolhe tudo para os ícones (a escolha fica guardada
+   no navegador). No celular ele vira uma faixa que rola para o lado. O modo
+   noite vale para o Hub e o CRM juntos (localStorage "aw_cor"). */
+const MN_ICONES = {
+  hub:      'M15 18l-6-6 6-6',
+  dash:     'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z',
+  agenda:   'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
+  rel:      'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75',
+  offshore: 'M12 21a9 9 0 100-18 9 9 0 000 18zM3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18',
+  kpis:     'M18 20V10M12 20V4M6 20v-6',
+  ganhos:   'M20 6L9 17l-5-5',
+  perdidos: 'M18 6L6 18M6 6l12 12',
+  produto:  'M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8',
+  base:     'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12',
+  equipe:   'M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z',
+  noite:    'M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z',
+  sair:     'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9',
+  recolher: 'M15 18l-6-6 6-6',
+  abrir:    'M9 18l6-6-6-6',
+};
+function MenuItem({ icone, rotulo, ativo, cont, quente, onClick, title }){
+  return h('button', { type: 'button', className: 'mn-item' + (ativo ? ' on' : ''), onClick,
+      title: title || rotulo, 'aria-current': ativo ? 'page' : undefined },
+    h(Icon, { size: 18, path: icone }),
+    h('span', { className: 'mn-rot' }, rotulo),
+    cont ? h('span', { className: 'mn-cont' + (quente ? ' quente' : '') }, cont) : null);
+}
+function MenuLateral({ curto, onCurto, noite, onNoite, currentUser, isAdmin, isAdminChrome, funil, setFunil,
+  view, setView, contGanhos, contPerdidos, contAgenda, rotuloGanhos, rotuloPerdidos, rotuloKpis,
+  produtosVisiveis, negociosPorProduto, produtoFiltro, setProdutoFiltro, pendentesEquipe, onEquipe, onSair, contexto }){
+  const papel = isAdmin ? 'head comercial' : currentUser.role === 'especialista' ? 'especialista' : 'assessor';
+  const ir = (v) => setView(v);
+  return h('aside', { className: 'mn vidro' + (curto ? ' curto' : ''), 'aria-label': 'Menu do CRM' },
+    h('div', { className: 'mn-topo' },
+      h('span', { className: 'mn-marca', 'aria-hidden': 'true' }, 'C'),
+      h('span', { className: 'mn-nome' },
+        h('strong', null, 'CRM', isAdmin ? h('span', { className: 'mn-admin' }, 'Admin') : null),
+        h('span', null, contexto || 'Gestão comercial')),
+      h('button', { type: 'button', className: 'mn-recolher', onClick: onCurto,
+        'aria-label': curto ? 'Abrir o menu' : 'Recolher o menu', title: curto ? 'Abrir o menu' : 'Recolher o menu' },
+        h(Icon, { size: 16, path: curto ? MN_ICONES.abrir : MN_ICONES.recolher }))),
+    h('a', { className: 'mn-item mn-hub', href: 'index.html', title: 'Voltar ao Hub Adami' },
+      h(Icon, { size: 18, path: MN_ICONES.hub }), h('span', { className: 'mn-rot' }, 'Hub Adami')),
+    (isAdmin || currentUser.role !== 'especialista') ? h('div', { className: 'mn-funil', role: 'group', 'aria-label': 'Funil' },
+      h('button', { type: 'button', className: funil === 'assessor' ? 'on' : '', onClick: () => setFunil('assessor') }, 'Jornada'),
+      h('button', { type: 'button', className: funil === 'especialista' ? 'on' : '', onClick: () => setFunil('especialista') }, 'Negócios')) : null,
+    h('div', { className: 'mn-secao' }, funil === 'especialista' ? 'Negócios' : 'Carteira'),
+    funil !== 'especialista' ? h(MenuItem, { icone: MN_ICONES.dash, rotulo: 'Dashboard', ativo: view === 'hoje', onClick: () => ir('hoje') }) : null,
+    h(MenuItem, { icone: MN_ICONES.agenda, rotulo: 'Agenda', ativo: view === 'agenda', cont: contAgenda || '', quente: contAgenda > 0, onClick: () => ir('agenda'),
+      title: contAgenda ? 'Agenda: ' + contAgenda + ' pendente(s) hoje' : 'Agenda' }),
+    h(MenuItem, { icone: MN_ICONES.rel, rotulo: funil === 'especialista' ? 'Quadro' : 'Relacionamento', ativo: view === 'kanban', onClick: () => ir('kanban') }),
+    (isAdminChrome && funil !== 'especialista') ? h(MenuItem, { icone: MN_ICONES.offshore, rotulo: 'Offshore', ativo: view === 'offshore', onClick: () => ir('offshore') }) : null,
+    h(MenuItem, { icone: MN_ICONES.kpis, rotulo: rotuloKpis, ativo: view === 'kpis', onClick: () => ir('kpis') }),
+    h(MenuItem, { icone: MN_ICONES.ganhos, rotulo: rotuloGanhos, ativo: view === 'ganhos', cont: String(contGanhos), onClick: () => ir('ganhos') }),
+    h(MenuItem, { icone: MN_ICONES.perdidos, rotulo: rotuloPerdidos, ativo: view === 'perdidos', cont: String(contPerdidos), onClick: () => ir('perdidos') }),
+    funil === 'especialista' && produtosVisiveis.length > 1 ? h(Fragment, null,
+      h('div', { className: 'mn-secao' }, 'Produtos'),
+      produtosVisiveis.map(prod => {
+        const r = negociosPorProduto[prod] || { total: 0, atrasados: 0 };
+        return h(MenuItem, { key: prod, icone: MN_ICONES.produto, rotulo: prod, ativo: produtoFiltro === prod,
+          cont: String(r.total), quente: r.atrasados > 0,
+          title: r.atrasados ? r.atrasados + ' com contato atrasado' : r.total + ' em andamento',
+          onClick: () => setProdutoFiltro(prod) });
+      })) : null,
+    isAdminChrome ? h(Fragment, null,
+      h('div', { className: 'mn-secao' }, 'Gestão'),
+      funil !== 'especialista' ? h(MenuItem, { icone: MN_ICONES.base, rotulo: 'Atualizar base', ativo: view === 'importacao', onClick: () => ir('importacao') }) : null,
+      h(MenuItem, { icone: MN_ICONES.equipe, rotulo: 'Equipe', cont: pendentesEquipe ? String(pendentesEquipe) : '', quente: pendentesEquipe > 0,
+        onClick: onEquipe, title: pendentesEquipe ? pendentesEquipe + ' conta(s) aguardando aprovação' : 'Equipe' })) : null,
+    h('div', { className: 'mn-rodape' },
+      h('div', { className: 'mn-item mn-noite' },
+        h(Icon, { size: 18, path: MN_ICONES.noite }),
+        h('span', { className: 'mn-rot' }, 'Modo noite'),
+        h('button', { type: 'button', role: 'switch', 'aria-checked': noite ? 'true' : 'false', 'aria-label': 'Modo noite',
+          className: 'mn-chave' + (noite ? ' on' : ''), onClick: onNoite }, h('span', null))),
+      h('div', { className: 'mn-pessoa' },
+        h('span', { className: 'avatar mn-avatar' }, initials(currentUser.nome)),
+        h('span', { className: 'mn-pessoa-txt' },
+          h('strong', null, currentUser.nome),
+          h('span', null, papel)),
+        h('button', { type: 'button', className: 'mn-sair', onClick: onSair, title: 'Sair', 'aria-label': 'Sair' },
+          h(Icon, { size: 16, path: MN_ICONES.sair })))));
+}
+
 function App(){
   const [motivoBloqueio, setMotivoBloqueio] = useState('');
   const [phase, setPhase] = useState('loading'); // loading | login | app
@@ -12108,6 +12399,15 @@ function App(){
   const [tarefas, setTarefas] = useState([]);
   const [tarefasErro, setTarefasErro] = useState('');
   const [souMaster, setSouMaster] = useState(false);
+  /* Visual 2026: menu recolhido e modo noite ficam guardados no navegador.
+     "aw_cor" é a mesma chave do Hub, para os dois andarem juntos. */
+  const [menuCurto, setMenuCurto] = useState(() => { try{ return localStorage.getItem('aw_menu_curto') === '1'; }catch(e){ return false; } });
+  const [noite, setNoite] = useState(() => { try{ return localStorage.getItem('aw_cor') === 'noite'; }catch(e){ return false; } });
+  useEffect(() => { try{ localStorage.setItem('aw_menu_curto', menuCurto ? '1' : '0'); }catch(e){} }, [menuCurto]);
+  useEffect(() => {
+    if(noite) document.documentElement.dataset.cor = 'noite'; else delete document.documentElement.dataset.cor;
+    try{ localStorage.setItem('aw_cor', noite ? 'noite' : 'dia'); }catch(e){}
+  }, [noite]);
 
   /* Fila de avisos: toda mutação agora confirma o que aconteceu.
      Antes só o bloqueio de trajeto falava com o usuário. */
@@ -13264,6 +13564,15 @@ function App(){
     sincronizarJornada(atualizado);
   };
 
+  /* Contador da Agenda no menu: o que está aberto hoje mais o atrasado. */
+  const contAgenda = useMemo(() => {
+    if(!currentUser) return 0;
+    const hoje = todayISO();
+    const donos = new Set([currentUser.id]);
+    return agendaItens({ tarefas, leads, users, donos, de: hoje, ate: hoje, hoje }).filter(i => !i.feita).length
+      + agendaAtrasadas({ tarefas, leads, users, donos, hoje }).length;
+  }, [tarefas, leads, users, currentUser]);
+
   if(phase === 'loading'){
     return h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',height:'240px',color:'var(--ink-muted)',gap:8,fontSize:13.5}}, h(IconLoader,{size:16}), 'Carregando pipeline...');
   }
@@ -13346,263 +13655,189 @@ function App(){
   /* A cotacao entra aqui e nao em cada tela: o consolidado tem de ser o
      mesmo numero em todas elas. */
   return h(CotacaoContext.Provider, { value: cotacao },
+    h('div',{className:'casca'},
+      h(MenuLateral,{ curto:menuCurto, onCurto:()=>setMenuCurto(v => !v), noite, onNoite:()=>setNoite(v => !v),
+        currentUser, isAdmin, isAdminChrome, funil, setFunil, view, setView,
+        contGanhos: wonLeads.length, contPerdidos: lostLeads.length, contAgenda,
+        rotuloGanhos: rotuloDesfecho(funil, 'ganho'), rotuloPerdidos: rotuloDesfecho(funil, 'perdido'), rotuloKpis: rotuloIndicadores(isAdmin, funil),
+        produtosVisiveis, negociosPorProduto, produtoFiltro, setProdutoFiltro,
+        pendentesEquipe: pendentes.length, onEquipe:()=>setManagingTeam(true), onSair:handleLogout,
+        contexto: (TEMAS[tema] || {}).rotulo || '' }),
+      h('div',{className:'casca-conteudo'},
     saveStatus === 'error' ? h('div',{className:'save-banner'},
-      h('span',null, 'Não foi possível gravar no banco. As alterações continuam nesta tela, mas se perdem se você fechar a aba antes de salvar.'),
-      h('button',{className:'btn btn-ghost', onClick:retrySave}, 'Tentar salvar de novo')
-    ) : null,
-    simulando ? h('div',{className:'simulando-banner'},
-      h('span',null, h(IconSun,{size:13}), 'Simulando a visão de ', h('strong',null, simulandoNome)),
-      h('button',{className:'btn btn-ghost', onClick:()=>setVendorFilter('all')}, 'Sair da simulação')
-    ) : null,
-    h('div',{className:'topbar'},
-      h('div',{className:'brand'}, h('span',{className:'brand-mark'}), h('h1',null, viewTitle)),
-      /* NAVEGAÇÃO — faixa própria, ordem fixa. As abas de produto ficam por
-         último de propósito: quando aparecem, nada antes delas se move. */
-      h('div',{className:'topbar-nav'},
-        /* Especialista só enxerga o próprio funil; assessor e admin alternam. */
-        (isAdmin || currentUser.role !== 'especialista') ? h('div',{className:'funil-switch', role:'group', 'aria-label':'Funil'},
-          h('button',{className: funil==='assessor' ? 'active' : '', onClick:()=>setFunil('assessor')}, 'Jornada'),
-          h('button',{className: funil==='especialista' ? 'active' : '', onClick:()=>setFunil('especialista')}, 'Negócios')
+          h('span',null, 'Não foi possível gravar no banco. As alterações continuam nesta tela, mas se perdem se você fechar a aba antes de salvar.'),
+          h('button',{className:'btn btn-ghost', onClick:retrySave}, 'Tentar salvar de novo')
         ) : null,
-        /* Todo mundo enxerga os próprios encerrados e os próprios números.
-           O recorte por responsável já acontece no cálculo, então o acesso
-           não precisava ser restrito ao admin. */
-        h('div',{className:'view-tabs'},
-          /* Cockpit é conceito de jornada: some junto com a aba "Jornada"
-             quando o funil aberto é o de Negócios. */
-          funil !== 'especialista'
-            ? h('button',{className:'view-tab' + (view==='hoje' ? ' active':''), onClick:()=>setView('hoje')},
-                h(IconSun,{size:12}), 'Dashboard')
-            : null,
-          /* Agenda vale para todo mundo, nos dois funis: tarefa não é etapa. */
-          h('button',{className:'view-tab' + (view==='agenda' ? ' active':''), onClick:()=>setView('agenda')},
-            h(Icon,{size:12, path:'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z'}), 'Agenda'),
-          h('button',{className:'view-tab' + (view==='kanban' ? ' active':''), onClick:()=>setView('kanban')}, 'Relacionamento'),
-          /* Só na Jornada, e só para o admin: o funil de produto não tem
-             custódia, e a carteira do assessor é uma só — a leitura offshore
-             dele vive dentro de "Minha carteira", sem tela separada. */
-          (isAdminChrome && funil !== 'especialista')
-            ? h('button',{className:'view-tab' + (view==='offshore' ? ' active':''), onClick:()=>setView('offshore')}, 'Offshore')
-            : null,
-          h('button',{className:'view-tab' + (view==='kpis' ? ' active':''), onClick:()=>setView('kpis')},
-            h(IconBarChart,{size:12}), rotuloIndicadores(isAdmin, funil)),
-          h('button',{className:'view-tab' + (view==='ganhos' ? ' active':''), onClick:()=>setView('ganhos')},
-            rotuloDesfecho(funil, 'ganho'), h('span',{className:'count'}, wonLeads.length)),
-          h('button',{className:'view-tab' + (view==='perdidos' ? ' active':''), onClick:()=>setView('perdidos')},
-            rotuloDesfecho(funil, 'perdido'), h('span',{className:'count'}, lostLeads.length))
+        simulando ? h('div',{className:'simulando-banner'},
+          h('span',null, h(IconSun,{size:13}), 'Simulando a visão de ', h('strong',null, simulandoNome)),
+          h('button',{className:'btn btn-ghost', onClick:()=>setVendorFilter('all')}, 'Sair da simulação')
+        ) : null,
+        h('div',{className:'topbar'},
+          h('div',{className:'brand'}, h('span',{className:'brand-mark'}),
+            h('div',null, h('h1',null, viewTitle),
+              h('div',{className:'brand-sub'}, agDataLonga(todayISO()) + (simulando ? ' · vendo como ' + simulandoNome : '')))),
+          h('div',{className:'topbar-actions'},
+            h('div',{className:'busca-slot' + (view === 'kpis' || view === 'offshore' || view === 'hoje' || view === 'agenda' ? ' oculta' : '')},
+              h('div',{className:'search-wrap'}, h(IconSearch,{size:15}),
+                h('input',{ placeholder:'Buscar por nome, conta, telefone ou e-mail', value:query,
+                  onChange:e=>setQuery(e.target.value), tabIndex: (view === 'kpis' || view === 'offshore' || view === 'hoje' || view === 'agenda') ? -1 : 0 }))
+            ),
+            isAdmin ? h('select',{ className:'select-sm', value:vendorFilter, onChange:e=>setVendorFilter(e.target.value) },
+              h('option',{value:'all'}, 'Toda a equipe'),
+              users.map(u => h('option',{ key:u.id, value:u.id }, u.nome))
+            ) : null,
+          )
         ),
-        /* Cada produto é um CRM próprio: quadro, colunas e números separados.
-           A aba só lista o que a pessoa pode ver — especialista enxerga apenas
-           os produtos que atende. */
-        funil === 'especialista' && produtosVisiveis.length > 1
-          ? h('div',{className:'produto-tabs', role:'tablist', 'aria-label':'Produto'},
-              produtosVisiveis.map(prod => {
-                const resumo = negociosPorProduto[prod] || { total:0, atrasados:0 };
-                const ativa = produtoFiltro === prod;
-                return h('button',{
-                  key:prod, className:'produto-tab' + (ativa ? ' active' : ''),
-                  role:'tab', 'aria-selected': ativa ? 'true' : 'false',
-                  onClick:()=>setProdutoFiltro(prod),
-                  title: resumo.atrasados
-                    ? resumo.atrasados + ' com contato atrasado'
-                    : resumo.total + ' em andamento',
-                },
-                  h('span',{className:'produto-tab-nome'}, prod),
-                  h('span',{className:'produto-tab-num'}, resumo.total),
-                  resumo.atrasados > 0 ? h('span',{className:'produto-tab-alerta'}) : null
-                );
-              })
-            )
-          : null,
-        /* Especialista logado sem nenhum produto reconhecido pelo CRM (nada
-           marcado em Equipe, ou marcado só para um produto que o CRM ainda
-           não modela, como Previdência). Sem isto a tela ficava presa em
-           Consórcio, sem aba nenhuma para avisar, e o negócio nascia lá sem
-           ninguém perceber até chegar em Fechados. */
+        /* Especialista sem produto habilitado: o aviso fica no topo do conteúdo. */
         funil === 'especialista' && !isAdmin && currentUser && currentUser.role === 'especialista' && produtosVisiveis.length === 0
-          ? h('div',{className:'readonly-note'},
-              h('span',null,'Você não tem nenhum produto habilitado no CRM (Consórcio ou Seguro). Peça a um admin para marcar em ',
-                h('strong',null,'Equipe → Produtos do especialista'), '.')
+              ? h('div',{className:'readonly-note'},
+                  h('span',null,'Você não tem nenhum produto habilitado no CRM (Consórcio ou Seguro). Peça a um admin para marcar em ',
+                    h('strong',null,'Equipe → Produtos do especialista'), '.')
+                )
+              : null,
+        view==='hoje' ? h(Fragment, null,
+          /* O dia de quem está na tela: o próprio, ou o do assessor simulado. */
+          h(AgendaFaixa,{ tarefas, leads, users, donoId: simulando ? vendorFilter : currentUser.id, onAbrir:()=>setView('agenda') }),
+          h(Painel,{ leads, users, currentUser, isAdmin, vendorFilter, setVendorFilter,
+            onOpen:setOpenLead, onResolverAlerta:resolverAlerta, onAddActivity:addActivity })) :
+        view==='agenda' ? h(Agenda,{ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
+          podeEditarLead: podeEditar, onSalvarTarefa: salvarTarefa, onApagarTarefa: apagarTarefa,
+          onConcluir: concluirTarefa, onOpen: setOpenLead, onResolverAlerta: resolverVencimentoDaAgenda,
+          onRegistrar: registrarDaAgenda }) :
+        view==='kanban' ? h('div',{className: (overviewOpen && filtered.length > 0) ? '' : 'overview-fechada'},
+          /* Em notebook a visão geral come altura do funil — dá para recolher. */
+          filtered.length > 0 ? h('div',{className:'overview-toggle'},
+            h('button',{
+              className:'link-btn', 'aria-expanded': overviewOpen ? 'true' : 'false',
+              onClick:()=>setOverviewOpen(v => !v),
+            },
+              h('span',{className:'overview-chevron' + (overviewOpen ? '' : ' closed')}, h(IconChevron,{size:13})),
+              overviewOpen ? 'Recolher visão geral' : 'Mostrar visão geral'
             )
-          : null,
-        /* Atualizar base não é uma leitura da carteira, é uma operação sobre
-           ela — por isso sai das abas e vai para a ponta direita da faixa,
-           embaixo das ferramentas, com a borda direita na mesma linha do
-           botão de sair. Só do admin e só na Jornada: o arquivo do BTG é a
-           carteira inteira do escritório, e o funil de produto não tem conta
-           no banco para reconciliar. Sendo o último item, sumir no funil de
-           produto não desloca nada. */
-        (isAdminChrome && funil !== 'especialista')
-          ? h('button',{className:'btn btn-ghost nav-importacao' + (view==='importacao' ? ' active':''),
-              onClick:()=>setView('importacao')},
-              h(IconUpload,{size:14}), 'Atualizar base')
-          : null
-      ),
-      h('div',{className:'topbar-actions'},
-        /* FERRAMENTAS — sempre nas mesmas posições. A busca reserva o
-           espaço dela mesmo onde não se aplica, senão tudo à direita
-           desliza ao trocar de tela. */
-        h('div',{className:'busca-slot' + (view === 'kpis' || view === 'offshore' || view === 'hoje' || view === 'agenda' ? ' oculta' : '')},
-          h('div',{className:'search-wrap'}, h(IconSearch,{size:15}),
-            h('input',{ placeholder:'Buscar por nome, conta, telefone ou e-mail', value:query,
-              onChange:e=>setQuery(e.target.value), tabIndex: (view === 'kpis' || view === 'offshore' || view === 'hoje' || view === 'agenda') ? -1 : 0 }))
-        ),
-        isAdmin ? h('select',{ className:'select-sm', value:vendorFilter, onChange:e=>setVendorFilter(e.target.value) },
-          h('option',{value:'all'}, 'Toda a equipe'),
-          users.map(u => h('option',{ key:u.id, value:u.id }, u.nome))
-        ) : null,
-        isAdminChrome ? h('button',{className:'btn btn-ghost', onClick:()=>setManagingTeam(true)},
-          h(IconUsers,{size:14}), 'Equipe',
-          pendentes.length > 0 ? h('span',{className:'pending-dot', title:pendentes.length + ' conta(s) aguardando aprovação'}, pendentes.length) : null
-        ) : null,
-        h('div',{className:'user-chip'},
-          h('span',{className:'avatar'}, initials(currentUser.nome)),
-          h('span',{className:'name'}, currentUser.nome)
-        ),
-        h('button',{className:'btn btn-ghost', onClick:handleLogout, title:'Sair'}, h(IconLogout,{size:14}))
+          ) : null,
+          overviewOpen && filtered.length > 0 ? h(PipelineOverview,{ leads: filtered, onOpen:setOpenLead, funil }) : null,
+    
+          /* Ações do quadro coladas ao quadro: filtrar e cadastrar são operações
+             sobre os cards, não sobre a navegação do aplicativo. */
+          h('div',{className:'board-actions'},
+            h('div',{className:'board-actions-left'},
+              h('button',{
+                className:'btn btn-ghost' + (filtrosAbertos ? ' ativo' : ''),
+                onClick:()=>setFiltrosAbertos(v => !v),
+                'aria-expanded': filtrosAbertos ? 'true' : 'false',
+              }, h(IconFiltro,{size:14}), 'Filtros',
+                 contarFiltros(filtros) > 0 ? h('span',{className:'pending-dot'}, contarFiltros(filtros)) : null),
+              /* Quadro e lista respondem perguntas diferentes sobre a mesma base,
+                 então convivem como duas leituras, não como telas separadas. */
+              h('div',{className:'modo-switch', role:'group', 'aria-label':'Forma de visualização'},
+                h('button',{ className: modoBoard === 'quadro' ? 'active' : '',
+                  onClick:()=>setModoBoard('quadro'), title:'Ver como funil' },
+                  h(IconQuadro,{size:13}), 'Quadro'),
+                h('button',{ className: modoBoard === 'lista' ? 'active' : '',
+                  onClick:()=>setModoBoard('lista'), title:'Ver a base em lista' },
+                  h(IconLista,{size:13}), 'Lista')
+              ),
+              contarFiltros(filtros) > 0
+                ? h('span',{className:'board-actions-count'},
+                    filtered.length, filtered.length === 1 ? ' resultado' : ' resultados')
+                : null
+            ),
+            podeCriar
+              ? h('button',{className:'btn btn-primary', onClick:()=>{ setQuickAddStage(null); setCreating(true); }},
+                  h(IconPlus,{size:14}), termos(funil).novo)
+              : null
+          ),
+          h(FiltrosPanel,{ filtros, onChange:setFiltros, funil, aberto:filtrosAbertos, grupos }),
+    
+          modoBoard === 'lista'
+          ? h(ListaClientes,{
+              leads: filtered, onOpen:setOpenLead, users,
+              showOwner: isAdmin && vendorFilter === 'all',
+              funil, podeEditar,
+            })
+          : h(Board,{
+            leads: filtered, onOpen:setOpenLead, users,
+            showOwner:isAdmin && vendorFilter==='all',
+            onQuickAdd:(stage)=>{ setQuickAddStage(stage); setCreating(true); },
+            onLose:(lead)=>setLosingLead(lead), onWin:(lead)=>setWinningLead(lead),
+            onRequestMove:requestMove,
+            emptyAll: filtered.length === 0 && !query.trim(),
+            funil, podeEditar, podeCriar, pendentesIndicacao,
+          })
+        ) : (view==='ganhos' || view==='perdidos') ? h(Fragment, null,
+          h('div',{className:'board-actions'},
+            h('div',{className:'board-actions-left'},
+              h('button',{
+                className:'btn btn-ghost' + (filtrosAbertos ? ' ativo' : ''),
+                onClick:()=>setFiltrosAbertos(v => !v),
+                'aria-expanded': filtrosAbertos ? 'true' : 'false',
+              }, h(IconFiltro,{size:14}), 'Filtros',
+                 contarFiltros(filtros) > 0 ? h('span',{className:'pending-dot'}, contarFiltros(filtros)) : null)
+            )
+          ),
+          h(FiltrosPanel,{ filtros, onChange:setFiltros, funil, aberto:filtrosAbertos, grupos }),
+          view==='ganhos'
+            ? h(OutcomeBoard,{ leads: wonLeads, users, onReopen:reopenLead, mode:'won', funil })
+            : h(OutcomeBoard,{ leads: lostLeads, users, onReopen:reopenLead, mode:'lost', funil })
+        )
+        : (view==='offshore' && isAdmin)
+          ? h(DrillProvider, { jornada: kpiRecorte.jornada, negocios: kpiRecorte.negocios, todos: leads, users, onOpen: setOpenLead },
+              h('div',{className:'board-actions'},
+                h('div',{className:'board-actions-left'}),
+                h('button',{className:'btn btn-primary', onClick:()=>window.print()},
+                  h(IconPrinter,{size:14}), 'Imprimir / salvar PDF')
+              ),
+              h(KpiTopo,{ filtros:kpiFiltros, onFiltros:setKpiFiltros,
+                escopo: 'Carteira offshore', detalhe: descreverRecorte(kpiFiltros, users) + ' · em dólar · clique num cartão para abrir a seção' },
+                h(KpiFiltros,{ filtros:kpiFiltros, onChange:setKpiFiltros, funil, users, leads, simples:!isAdmin })),
+              h(OffshoreView,{
+                leads: kpiRecorte.jornada, users, filtros: kpiFiltros,
+                currentUser, isAdmin, onOpen:setOpenLead, onSalvarCotacao:salvarCotacao })
+            )
+        : (view==='importacao' && isAdmin)
+          ? h(ImportacaoBaseView,{ leads, users, currentUser,
+              onAplicar: aplicarImportacaoBase, onOpen: setOpenLead })
+        : view==='kpis'
+          ? h(DrillProvider, { jornada: kpiRecorte.jornada, negocios: kpiRecorte.negocios, todos: leads, users, onOpen: setOpenLead },
+              /* Impressão vive na página que ela imprime, não na barra do
+                 aplicativo: assim os controles do topo não mudam de tela para tela. */
+              h('div',{className:'board-actions'},
+                h('div',{className:'board-actions-left'}),
+                h('div',{style:{display:'flex',gap:8}},
+                  h('button',{className:'btn btn-ghost', title:'Gera o arquivo pelo jsPDF. Pode ser bloqueado dentro do preview.', onClick:()=>{
+                    try{
+                      const kpiStats = computeKpiStats(kpiLeads, kpiLeads, users);
+                      const scopeLabel = vendorFilter === 'all' ? 'Toda a equipe' : ((users.find(u=>u.id===vendorFilter)||{}).nome || 'Toda a equipe');
+                      generateKpiPdf(kpiStats, { scopeLabel: scopeLabel + ' · ' + periodoLabel(kpiFiltros), generatedAt: new Date().toLocaleString('pt-BR'), generatedBy: currentUser.nome });
+                    }catch(e){
+                      console.error(e);
+                      pushToast('O download foi bloqueado aqui. Use "Imprimir / salvar PDF".', 'error');
+                    }
+                  }}, h(IconDownload,{size:14}), 'Baixar arquivo'),
+                  h('button',{className:'btn btn-primary', onClick:()=>window.print()},
+                    h(IconPrinter,{size:14}), 'Imprimir / salvar PDF')
+                )
+              ),
+              isAdmin ? null : h(KpiTopo,{ filtros:kpiFiltros, onFiltros:setKpiFiltros,
+                escopo: vendorFilter === 'all' ? (currentUser.nome || 'Sua carteira') : ((users.find(u=>u.id===vendorFilter)||{}).nome || currentUser.nome),
+                detalhe: periodoLabel(kpiFiltros) + ' · clique num cartão para abrir a seção' },
+                h(KpiFiltros,{ filtros:kpiFiltros, onChange:setKpiFiltros, funil, users, leads, simples:true })),
+              isAdmin
+                ? h(AdminKpis,{ jornada: kpiRecorte.jornada, negocios: kpiRecorte.negocios,
+                    users, currentUser, filtros: kpiFiltros, onFiltros: setKpiFiltros, leads, onOpen: setOpenLead })
+                : (funil === 'especialista'
+              /* Só o funil e o produto abertos: passar a base inteira misturava a
+                 jornada e os dois CRMs de produto na evolução mensal e no ranking,
+                 contando duas vezes o cliente indicado para Consórcio e Seguro. */
+              ? h(KpisView,{
+                  scopedLeads: kpiLeads,
+                  allLeads: kpiLeads,
+                  users, vendorFilter, currentUser, periodo: kpiFiltros })
+              : h(AssessoriaKpis,{ scopedLeads: kpiLeads, users, vendorFilter, currentUser, periodo: kpiFiltros, onOpen: setOpenLead }))
+            )
+        : null
       )
     ),
-    view==='hoje' ? h(Fragment, null,
-      /* O dia de quem está na tela: o próprio, ou o do assessor simulado. */
-      h(AgendaFaixa,{ tarefas, leads, users, donoId: simulando ? vendorFilter : currentUser.id, onAbrir:()=>setView('agenda') }),
-      h(Painel,{ leads, users, currentUser, isAdmin, vendorFilter, setVendorFilter,
-        onOpen:setOpenLead, onResolverAlerta:resolverAlerta, onAddActivity:addActivity })) :
-    view==='agenda' ? h(Agenda,{ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
-      podeEditarLead: podeEditar, onSalvarTarefa: salvarTarefa, onApagarTarefa: apagarTarefa,
-      onConcluir: concluirTarefa, onOpen: setOpenLead, onResolverAlerta: resolverVencimentoDaAgenda,
-      onRegistrar: registrarDaAgenda }) :
-    view==='kanban' ? h('div',{className: (overviewOpen && filtered.length > 0) ? '' : 'overview-fechada'},
-      /* Em notebook a visão geral come altura do funil — dá para recolher. */
-      filtered.length > 0 ? h('div',{className:'overview-toggle'},
-        h('button',{
-          className:'link-btn', 'aria-expanded': overviewOpen ? 'true' : 'false',
-          onClick:()=>setOverviewOpen(v => !v),
-        },
-          h('span',{className:'overview-chevron' + (overviewOpen ? '' : ' closed')}, h(IconChevron,{size:13})),
-          overviewOpen ? 'Recolher visão geral' : 'Mostrar visão geral'
-        )
-      ) : null,
-      overviewOpen && filtered.length > 0 ? h(PipelineOverview,{ leads: filtered, onOpen:setOpenLead, funil }) : null,
-
-      /* Ações do quadro coladas ao quadro: filtrar e cadastrar são operações
-         sobre os cards, não sobre a navegação do aplicativo. */
-      h('div',{className:'board-actions'},
-        h('div',{className:'board-actions-left'},
-          h('button',{
-            className:'btn btn-ghost' + (filtrosAbertos ? ' ativo' : ''),
-            onClick:()=>setFiltrosAbertos(v => !v),
-            'aria-expanded': filtrosAbertos ? 'true' : 'false',
-          }, h(IconFiltro,{size:14}), 'Filtros',
-             contarFiltros(filtros) > 0 ? h('span',{className:'pending-dot'}, contarFiltros(filtros)) : null),
-          /* Quadro e lista respondem perguntas diferentes sobre a mesma base,
-             então convivem como duas leituras, não como telas separadas. */
-          h('div',{className:'modo-switch', role:'group', 'aria-label':'Forma de visualização'},
-            h('button',{ className: modoBoard === 'quadro' ? 'active' : '',
-              onClick:()=>setModoBoard('quadro'), title:'Ver como funil' },
-              h(IconQuadro,{size:13}), 'Quadro'),
-            h('button',{ className: modoBoard === 'lista' ? 'active' : '',
-              onClick:()=>setModoBoard('lista'), title:'Ver a base em lista' },
-              h(IconLista,{size:13}), 'Lista')
-          ),
-          contarFiltros(filtros) > 0
-            ? h('span',{className:'board-actions-count'},
-                filtered.length, filtered.length === 1 ? ' resultado' : ' resultados')
-            : null
-        ),
-        podeCriar
-          ? h('button',{className:'btn btn-primary', onClick:()=>{ setQuickAddStage(null); setCreating(true); }},
-              h(IconPlus,{size:14}), termos(funil).novo)
-          : null
-      ),
-      h(FiltrosPanel,{ filtros, onChange:setFiltros, funil, aberto:filtrosAbertos, grupos }),
-
-      modoBoard === 'lista'
-      ? h(ListaClientes,{
-          leads: filtered, onOpen:setOpenLead, users,
-          showOwner: isAdmin && vendorFilter === 'all',
-          funil, podeEditar,
-        })
-      : h(Board,{
-        leads: filtered, onOpen:setOpenLead, users,
-        showOwner:isAdmin && vendorFilter==='all',
-        onQuickAdd:(stage)=>{ setQuickAddStage(stage); setCreating(true); },
-        onLose:(lead)=>setLosingLead(lead), onWin:(lead)=>setWinningLead(lead),
-        onRequestMove:requestMove,
-        emptyAll: filtered.length === 0 && !query.trim(),
-        funil, podeEditar, podeCriar, pendentesIndicacao,
-      })
-    ) : (view==='ganhos' || view==='perdidos') ? h(Fragment, null,
-      h('div',{className:'board-actions'},
-        h('div',{className:'board-actions-left'},
-          h('button',{
-            className:'btn btn-ghost' + (filtrosAbertos ? ' ativo' : ''),
-            onClick:()=>setFiltrosAbertos(v => !v),
-            'aria-expanded': filtrosAbertos ? 'true' : 'false',
-          }, h(IconFiltro,{size:14}), 'Filtros',
-             contarFiltros(filtros) > 0 ? h('span',{className:'pending-dot'}, contarFiltros(filtros)) : null)
-        )
-      ),
-      h(FiltrosPanel,{ filtros, onChange:setFiltros, funil, aberto:filtrosAbertos, grupos }),
-      view==='ganhos'
-        ? h(OutcomeBoard,{ leads: wonLeads, users, onReopen:reopenLead, mode:'won', funil })
-        : h(OutcomeBoard,{ leads: lostLeads, users, onReopen:reopenLead, mode:'lost', funil })
-    )
-    : (view==='offshore' && isAdmin)
-      ? h(DrillProvider, { jornada: kpiRecorte.jornada, negocios: kpiRecorte.negocios, todos: leads, users, onOpen: setOpenLead },
-          h('div',{className:'board-actions'},
-            h('div',{className:'board-actions-left'}),
-            h('button',{className:'btn btn-primary', onClick:()=>window.print()},
-              h(IconPrinter,{size:14}), 'Imprimir / salvar PDF')
-          ),
-          h(KpiTopo,{ filtros:kpiFiltros, onFiltros:setKpiFiltros,
-            escopo: 'Carteira offshore', detalhe: descreverRecorte(kpiFiltros, users) + ' · em dólar · clique num cartão para abrir a seção' },
-            h(KpiFiltros,{ filtros:kpiFiltros, onChange:setKpiFiltros, funil, users, leads, simples:!isAdmin })),
-          h(OffshoreView,{
-            leads: kpiRecorte.jornada, users, filtros: kpiFiltros,
-            currentUser, isAdmin, onOpen:setOpenLead, onSalvarCotacao:salvarCotacao })
-        )
-    : (view==='importacao' && isAdmin)
-      ? h(ImportacaoBaseView,{ leads, users, currentUser,
-          onAplicar: aplicarImportacaoBase, onOpen: setOpenLead })
-    : view==='kpis'
-      ? h(DrillProvider, { jornada: kpiRecorte.jornada, negocios: kpiRecorte.negocios, todos: leads, users, onOpen: setOpenLead },
-          /* Impressão vive na página que ela imprime, não na barra do
-             aplicativo: assim os controles do topo não mudam de tela para tela. */
-          h('div',{className:'board-actions'},
-            h('div',{className:'board-actions-left'}),
-            h('div',{style:{display:'flex',gap:8}},
-              h('button',{className:'btn btn-ghost', title:'Gera o arquivo pelo jsPDF. Pode ser bloqueado dentro do preview.', onClick:()=>{
-                try{
-                  const kpiStats = computeKpiStats(kpiLeads, kpiLeads, users);
-                  const scopeLabel = vendorFilter === 'all' ? 'Toda a equipe' : ((users.find(u=>u.id===vendorFilter)||{}).nome || 'Toda a equipe');
-                  generateKpiPdf(kpiStats, { scopeLabel: scopeLabel + ' · ' + periodoLabel(kpiFiltros), generatedAt: new Date().toLocaleString('pt-BR'), generatedBy: currentUser.nome });
-                }catch(e){
-                  console.error(e);
-                  pushToast('O download foi bloqueado aqui. Use "Imprimir / salvar PDF".', 'error');
-                }
-              }}, h(IconDownload,{size:14}), 'Baixar arquivo'),
-              h('button',{className:'btn btn-primary', onClick:()=>window.print()},
-                h(IconPrinter,{size:14}), 'Imprimir / salvar PDF')
-            )
-          ),
-          isAdmin ? null : h(KpiTopo,{ filtros:kpiFiltros, onFiltros:setKpiFiltros,
-            escopo: vendorFilter === 'all' ? (currentUser.nome || 'Sua carteira') : ((users.find(u=>u.id===vendorFilter)||{}).nome || currentUser.nome),
-            detalhe: periodoLabel(kpiFiltros) + ' · clique num cartão para abrir a seção' },
-            h(KpiFiltros,{ filtros:kpiFiltros, onChange:setKpiFiltros, funil, users, leads, simples:true })),
-          isAdmin
-            ? h(AdminKpis,{ jornada: kpiRecorte.jornada, negocios: kpiRecorte.negocios,
-                users, currentUser, filtros: kpiFiltros, onFiltros: setKpiFiltros, leads, onOpen: setOpenLead })
-            : (funil === 'especialista'
-          /* Só o funil e o produto abertos: passar a base inteira misturava a
-             jornada e os dois CRMs de produto na evolução mensal e no ranking,
-             contando duas vezes o cliente indicado para Consórcio e Seguro. */
-          ? h(KpisView,{
-              scopedLeads: kpiLeads,
-              allLeads: kpiLeads,
-              users, vendorFilter, currentUser, periodo: kpiFiltros })
-          : h(AssessoriaKpis,{ scopedLeads: kpiLeads, users, vendorFilter, currentUser, periodo: kpiFiltros, onOpen: setOpenLead }))
-        )
-    : null,
     creating ? h(CreateModal,{ funil, grupos, produto: produtoFiltro, onClose:()=>{ setCreating(false); setQuickAddStage(null); }, onCreate:createLead, users, currentUser, isAdmin, initialStage:quickAddStage }) : null,
     openLead ? h(DetailModal,{ lead:openLead, grupos, grupo: grupoDe(leads, openLead, cotacao),
       pendenteIndicacao: pendentesIndicacao.has(openLead.id), somenteLeitura: !podeEditar(openLead), onEncaminhar:(l)=>setEncaminhando(l), onClose:()=>setOpenLead(null), onSave:saveLead, onDelete:deleteLead, users, currentUser, isAdmin, onLose:(lead)=>{ setOpenLead(null); setLosingLead(lead); }, onWin:(lead)=>{ setOpenLead(null); setWinningLead(lead); }, onMove:(lead, to)=>requestMove(lead.id, to), onAddActivity:addActivity, onEditarAtividade:editarAtividade, onRemoverAtividade:removerAtividade, onCorrectStage:correctStage, onTogglePauta:toggleOnboarding, onAddAlerta:addAlerta, onResolverAlerta:resolverAlerta, onRemoverAlerta:removerAlerta, onAddMov:addMovimentacao, onRemoverMov:removerMovimentacao,

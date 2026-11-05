@@ -1,0 +1,37 @@
+/* Visual 2026 do Hub Adami, camada comum dos módulos (aprovado pelo Emil em 05/11/2026).
+   Fundo com luz suave no azul-marinho e dourado da casa, blocos de vidro fosco e o botão
+   de voltar ao Hub no mesmo estilo. Vale só na tela: a impressão e os PDFs continuam
+   exatamente como eram, porque tudo aqui está dentro de @media screen.
+   As regras usam "html body" para vencer o estilo base de cada módulo sem !important:
+   uma variação mais específica do próprio módulo (ex.: .card.destaque) continua valendo. */
+@media screen{
+  html{
+    background:
+      radial-gradient(720px 720px at -6% -18%, rgba(25,90,180,.24), rgba(25,90,180,0) 68%),
+      radial-gradient(640px 640px at 104% 30%, rgba(192,162,101,.24), rgba(192,162,101,0) 66%),
+      radial-gradient(820px 820px at 40% 128%, rgba(11,30,63,.16), rgba(11,30,63,0) 70%),
+      #E9EEF4;
+    background-attachment:fixed;
+    min-height:100%;
+  }
+  html body{background:transparent;}
+  html body :is(.cartao,.bloco,.grafico,.painel-form,.card,.secao,.pane,.form-pane,.section-block,.stat-box,
+    .seg-card,.etapa-card,.pv-card,.card-big,.metric,.chart-container,.info-card,.trigger-card,.upload-area,
+    .caixa-upload,.stat,.op,.container){
+    background:rgba(255,255,255,.72);
+    border-color:rgba(255,255,255,.88);
+    box-shadow:0 10px 34px rgba(5,19,42,.08);
+    border-radius:18px;
+    backdrop-filter:blur(18px) saturate(140%);
+    -webkit-backdrop-filter:blur(18px) saturate(140%);
+  }
+  html body :is(.btn,.btn-secondary,.toggle-btn){border-radius:999px;}
+  html body #awVoltar{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,.78);color:#05132A;border:1px solid rgba(255,255,255,.9);
+    border-radius:999px;padding:10px 18px;font:600 13px Inter,"Segoe UI",system-ui,sans-serif;
+    box-shadow:0 10px 30px rgba(5,19,42,.16);
+    backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);opacity:1;
+  }
+  html body #awVoltar:hover{background:#fff;color:#05132A;}
+}
