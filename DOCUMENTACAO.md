@@ -1017,6 +1017,31 @@ aqui.
   clique). O panorama não vai para o PDF, que continua com as seções completas (5 páginas,
   margens iguais).
 
+**Quarta rodada (05/11/2026, `2026.11.05.4`):**
+
+- **Pipe com um lugar só na ficha:** o bloco "Pipe" fica no topo para todo cliente. Prospect
+  tem temperatura, pipe total e em negociação; quem já é carteira (`captaNova`) tem
+  temperatura e "Captação nova" com R$/US$, que grava ao sair do campo (via
+  `iniciarCaptacao`, com histórico). Apagar o valor encerra a negociação
+  (`encerrarCaptacao`). Com captação aberta aparecem "confirmar" e "encerrar", que abrem os
+  passos na seção Carteira, mais abaixo. A seção de baixo voltou a se chamar "Carteira" e
+  perdeu o "+ Pipe"; o rodapé também. `setPipe` aceita captado.
+- **Observações editáveis na ficha** ("Editar" / "+ Escrever", Salvar/Cancelar), via
+  `setObservacoes` no App.
+- **KPIs com seletor de assessor** no topo azul (setas e lista), usando `filtros.assessor`,
+  que já recortava tudo (`kpiRecorte`).
+- **Todo gráfico e tabela dos KPIs e do Offshore é interativo** (`DrillProvider`,
+  `DrillPainel`, receitas `DR.*`): o mouse mostra o valor (rosca muda o centro; barras,
+  linhas e meses têm dica), o clique abre um painel lateral com assessor → cliente (ou
+  situação → responsável → negócio), Excel e o cliente abrindo a ficha. O painel usa o mesmo
+  recorte da tela (`kpiRecorte`). Ligados: roscas (segmento, produto, onshore/offshore,
+  offshore por segmento), barras verticais (carteira e offshore por assessor), todas as
+  barras horizontais (segmento, etapa, origem, assessor, pipe por temperatura e por
+  assessor, lista de pipe, offshore, especialistas, funil, ranking, quem indicou), os
+  números de abertura (total, pipe, produção, em negociação, offshore) e o gráfico mensal
+  (mês → negócios). A evolução da carteira só mostra a dica (sem clique). As roscas do
+  Dashboard e do panorama também respondem ao mouse e ao clique.
+
 - Atenção à diferença de números entre telas: o Dashboard mostra o patrimônio onshore e o
   offshore separados; o "Total da carteira" dos KPIs e do Relacionamento continua como era,
   somando o offshore pela cotação.

@@ -1903,6 +1903,15 @@
   .card-captacao-valor{font-weight:500;}
   .card-captacao.vazio{opacity:.55;}
   .valor-linha.vazia .lead-card-value{color:var(--ink-faint);}
+  .ficha-pipe-bloco{background:var(--gold-tint);border:1px solid #EADFC2;border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+  .field-row.ficha-pipe-bloco{gap:12px;}
+  .ficha-pipe-linha{display:flex;gap:8px;align-items:center;}
+  .ficha-pipe-linha input{flex:1;min-width:0;}
+  .ficha-pipe-acoes{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;}
+  .ficha-obs-cab{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .ficha-obs-texto{width:100%;min-height:90px;margin-top:8px;border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;font:inherit;font-size:13.5px;resize:vertical;}
+  .ficha-obs-acoes{display:flex;gap:8px;margin-top:8px;}
+  .ficha-obs-vazia{color:var(--ink-faint);font-style:italic;}
   .tag-gestao.tag-patrimonio{background:var(--bg);color:var(--ink-muted);}
   .hero-offshore{
     display:flex;align-items:center;gap:6px;margin-top:6px;
@@ -2627,6 +2636,9 @@
   .pn-carteira-rosca{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;}
   .pn-rosca{position:relative;width:200px;height:200px;margin:0 auto 18px;}
   .pn-rosca svg{width:100%;height:100%;display:block;}
+  .pn-fatia{transition:stroke-width .12s;}
+  .pn-fatia.ativa{stroke-width:27;}
+  .pn-rosca-centro{pointer-events:none;text-align:center;}
   .pn-rosca-centro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
   .pn-rosca-centro span{font-size:11.5px;color:var(--ink-faint);}
   .pn-rosca-centro strong{font-size:19px;color:var(--navy);}
@@ -2727,6 +2739,7 @@
   /* ================= Indicadores navegáveis ================= */
   .kn{display:flex;flex-direction:column;gap:14px;max-width:1180px;margin:0 auto;width:100%;}
   .kn-heroi{padding-bottom:26px;margin-bottom:18px;max-width:1180px;margin-left:auto;margin-right:auto;}
+  .kn-visao{margin:6px 0 16px;}
   .kn-periodos{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
   .kn-periodos button{
     border:1px solid rgba(255,255,255,.18);background:transparent;color:rgba(255,255,255,.85);
@@ -2826,6 +2839,28 @@
     .arv-barra{display:none;}
     .arv-num.m2, .arv-num.m3, .arv-num.m4{display:none;}
   }
+
+  /* ================= Detalhe lateral dos gráficos ================= */
+  .drill-fundo{position:fixed;inset:0;background:rgba(5,19,42,.32);z-index:60;display:flex;justify-content:flex-end;animation:knAbre .15s ease-out;}
+  .drill-painel{width:min(620px,100%);height:100%;background:var(--bg);box-shadow:-12px 0 40px rgba(5,19,42,.18);display:flex;flex-direction:column;}
+  .drill-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 22px;background:var(--surface);border-bottom:1px solid var(--border);}
+  .drill-cab h2{margin:4px 0 0;font-size:21px;color:var(--navy);}
+  .drill-corpo{flex:1;overflow:auto;padding:16px;}
+  .drill-painel .arv-barra{display:none;}
+  .drill-corpo .arv{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 16px 6px;}
+  /* Tudo que abre detalhe mostra que é clicável. */
+  .clica-drill{cursor:pointer;}
+  .bar-row.clica-drill:hover .bar-row-nome, .rosca-item.clica-drill:hover .rosca-nome{color:var(--primary);text-decoration:underline;}
+  .bar-row.clica-drill:hover .bar-track{box-shadow:0 0 0 1px var(--primary);}
+  .ind.clica-drill:hover .ind-rotulo{color:var(--primary) !important;}
+  .ind.clica-drill:hover{background:rgba(25,90,180,.04);border-radius:8px;}
+  .barra-v-col.clica-drill:hover .barra-v-fill{filter:brightness(1.12);}
+  .rosca-fatia.clica-drill{transition:stroke-width .12s;}
+  .rosca-fatia.ativa{stroke-width:26;}
+  .grafico-alvo{fill:transparent;cursor:pointer;}
+  .grafico-alvo:hover{fill:rgba(25,90,180,.06);}
+  .grafico-dica{font-family:'IBM Plex Mono',Consolas,monospace;font-size:10px;fill:var(--ink);}
+  @media print{ .drill-fundo{display:none !important;} }
 </style>
 </head>
 <body>
@@ -5886,11 +5921,32 @@ function Timeline({ itens, onEditar, onRemover, somenteLeitura }){
 /* ================= Ficha do cliente =================
    Modo de consulta: o que o assessor precisa ver antes de uma ligação,
    sem campos de formulário no caminho. A edição fica atrás de um botão. */
-function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegociacaoPipe, podeEditar }){
+function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegociacaoPipe, onSetCaptacao, onLimparCaptacao, onAbrirCaptacao, onSetObservacoes, podeEditar }){
   const jornada = (lead.funil || 'assessor') !== 'especialista';
   /* Vale para todo mundo, cliente da base incluído — mesma regra do
      formulário de cadastro. Só não existe pra negócio já ganho. */
-  const pipeEditavel = !!onSetPipe && !!onSetValorPipe && !!onSetValorNegociacaoPipe && !!podeEditar && !lead.ganho;
+  /* Desde 05/11/2026 o pipe tem UM lugar só, no topo da ficha, para todo
+     cliente: prospect (pipe total e em negociação) e quem já é carteira, da
+     base ou captado (captação nova, a mais sobre o sob gestão). Antes o
+     captado só tinha o pipe escondido no fim da ficha. */
+  const carteiraPipe = captaNova(lead);
+  const pipeEditavel = !!onSetPipe && !!onSetValorPipe && !!onSetValorNegociacaoPipe && !!podeEditar && (!lead.ganho || carteiraPipe);
+  const [captDraft, setCaptDraft] = useState(lead.valorEmCaptacao || '');
+  useEffect(() => { setCaptDraft(lead.valorEmCaptacao || ''); }, [lead.id, lead.valorEmCaptacao]);
+  const [captCustodia, setCaptCustodia] = useState(custodiaCaptacao(lead));
+  useEffect(() => { setCaptCustodia(custodiaCaptacao(lead)); }, [lead.id, lead.captacaoCustodia]);
+  const [obsEditando, setObsEditando] = useState(false);
+  const [obsDraft, setObsDraft] = useState(lead.observacoes || '');
+  useEffect(() => { setObsDraft(lead.observacoes || ''); setObsEditando(false); }, [lead.id]);
+  const gravarCaptacao = (texto, custodia) => {
+    const n = parseValor(texto);
+    const fmt = custodia === 'offshore' ? fmtUSD : fmtBRL;
+    const formatado = n === null || n <= 0 ? '' : fmt(n);
+    setCaptDraft(formatado);
+    const atual = parseValor(lead.valorEmCaptacao) || 0;
+    if(!formatado){ if(atual > 0 && onLimparCaptacao) onLimparCaptacao(); return; }
+    if(n !== atual || custodia !== custodiaCaptacao(lead)) onSetCaptacao && onSetCaptacao(formatado, custodia);
+  };
   /* Rascunho local dos dois valores: grava só ao sair do campo, não a cada
      tecla — senão cada dígito digitado viraria uma gravação no banco.
      Sincroniza de novo se o card mudar (outro cliente aberto) ou se o valor
@@ -5944,7 +6000,7 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
 
     /* Editável direto na ficha, sem precisar entrar em "Editar": clicar de
        novo no mesmo pipe limpa, igual no formulário de cadastro. */
-    pipeEditavel ? h('div',{className:'field'},
+    pipeEditavel ? h('div',{className:'field ficha-pipe-bloco'},
       h('label',null,'Pipe'),
       h('div',{className:'filtro-chips'},
         TEMPERATURAS.map(t => h('button',{
@@ -5964,7 +6020,24 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
        fatia que está sendo discutida agora — um número mais miúdo e mais
        volátil, que muda a cada conversa. Só existe para prospect: cliente
        da base já tem o par valor/temperatura dele no fluxo de captação. */
-    (pipeEditavel && jornada) ? h('div',{className:'field-row'},
+    (pipeEditavel && jornada && carteiraPipe) ? h('div',{className:'field ficha-pipe-bloco ficha-pipe-valor'},
+      h('label',null,'Captação nova · a mais sobre o sob gestão'),
+      h('div',{className:'ficha-pipe-linha'},
+        h('div',{className:'custodia-switch', role:'group', 'aria-label':'Moeda da captação'},
+          CUSTODIAS.map(c => h('button',{ key:c.key, type:'button', className: captCustodia === c.key ? 'active' : '',
+            onClick:()=>{ setCaptCustodia(c.key); if(parseValor(captDraft)) gravarCaptacao(captDraft, c.key); } },
+            c.moeda === 'USD' ? 'US$' : 'R$'))),
+        h('input',{ value:captDraft, onChange:e=>setCaptDraft(e.target.value), inputMode:'decimal',
+          placeholder: captCustodia === 'offshore' ? 'Ex: 200000 (em dólar)' : 'Ex: 500000',
+          'aria-label':'Valor da captação nova',
+          onBlur:()=>gravarCaptacao(captDraft, captCustodia),
+          onKeyDown:(e)=>{ if(e.key === 'Enter') e.target.blur(); } })),
+      (parseValor(lead.valorEmCaptacao) || 0) > 0 && onAbrirCaptacao ? h('div',{className:'ficha-pipe-acoes'},
+        h('button',{ type:'button', className:'link-btn', style:{color:'var(--success)'}, onClick:()=>onAbrirCaptacao('confirmar') }, 'O dinheiro entrou: confirmar captação'),
+        h('button',{ type:'button', className:'link-btn danger', onClick:()=>onAbrirCaptacao('encerrar') }, 'Encerrar sem captar')) : null,
+      h('div',{className:'field-hint'}, 'Quanto este cliente vai trazer a mais. Grava ao sair do campo; apagar o valor encerra a negociação.')
+    ) : null,
+    (pipeEditavel && jornada && !carteiraPipe) ? h('div',{className:'field-row ficha-pipe-bloco'},
       h('div',{className:'field'},
         h('label',null,'Pipe total'),
         h('input',{ value:valorDraft, onChange:e=>setValorDraft(e.target.value),
@@ -6078,14 +6151,32 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
       lead.briefing.perfil ? h('p',{className:'brief-perfil'}, lead.briefing.perfil) : null
     ) : null,
 
-    lead.observacoes ? h('div',{className:'ficha-obs'},
-      h('div',{className:'ficha-rotulo'},'Observações'),
-      h('p',null, lead.observacoes)
+    /* Observações editáveis ali mesmo (pedido do Emil, 05/11/2026): antes só
+       pelo "Editar", no meio do formulário inteiro. */
+    (lead.observacoes || (podeEditar && onSetObservacoes)) ? h('div',{className:'ficha-obs'},
+      h('div',{className:'ficha-obs-cab'},
+        h('div',{className:'ficha-rotulo'},'Observações'),
+        (podeEditar && onSetObservacoes && !obsEditando)
+          ? h('button',{ type:'button', className:'link-btn', onClick:()=>{ setObsDraft(lead.observacoes || ''); setObsEditando(true); } },
+              lead.observacoes ? 'Editar' : '+ Escrever')
+          : null),
+      obsEditando
+        ? h(Fragment, null,
+            h('textarea',{ className:'ficha-obs-texto', value:obsDraft, autoFocus:true, rows:4,
+              placeholder:'O que foi conversado, retorno do cliente, próximo passo…',
+              onChange:e=>setObsDraft(e.target.value) }),
+            h('div',{className:'ficha-obs-acoes'},
+              h('button',{ type:'button', className:'btn btn-primary', style:{height:32,fontSize:12.5},
+                onClick:()=>{ if(obsDraft !== (lead.observacoes || '')) onSetObservacoes(obsDraft); setObsEditando(false); } }, 'Salvar'),
+              h('button',{ type:'button', className:'btn btn-ghost', style:{height:32,fontSize:12.5},
+                onClick:()=>{ setObsDraft(lead.observacoes || ''); setObsEditando(false); } }, 'Cancelar')))
+        : (lead.observacoes ? h('p',{ onDoubleClick: (podeEditar && onSetObservacoes) ? ()=>setObsEditando(true) : undefined }, lead.observacoes)
+            : h('p',{className:'ficha-obs-vazia'}, 'Nenhuma observação ainda.'))
     ) : null
   );
 }
 
-function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAdmin, onLose, onWin, onMove, onAddActivity, onEditarAtividade, onRemoverAtividade, onCorrectStage, somenteLeitura, onEncaminhar, onTogglePauta, onAddAlerta, onResolverAlerta, onRemoverAlerta, grupos, grupo, pendenteIndicacao, onAddMov, onRemoverMov, onIniciarCaptacao, onConfirmarCaptacao, onEncerrarCaptacao, onSetPipe, onSetValorPipe, onSetValorNegociacaoPipe }){
+function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAdmin, onLose, onWin, onMove, onAddActivity, onEditarAtividade, onRemoverAtividade, onCorrectStage, somenteLeitura, onEncaminhar, onTogglePauta, onAddAlerta, onResolverAlerta, onRemoverAlerta, grupos, grupo, pendenteIndicacao, onAddMov, onRemoverMov, onIniciarCaptacao, onConfirmarCaptacao, onEncerrarCaptacao, onSetPipe, onSetValorPipe, onSetValorNegociacaoPipe, onSetObservacoes }){
   useEsc(onClose);
   const [draft, setDraft] = useState(lead);
   const [errors, setErrors] = useState({});
@@ -6269,7 +6360,11 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
           : h(Ficha,{ lead: draft, users, grupo, podeEditar: !somenteLeitura,
               onSetPipe: (key) => { const atualizado = onSetPipe(draft.id, key); if(atualizado) setDraft(atualizado); },
               onSetValorPipe: (valor) => { const atualizado = onSetValorPipe(draft.id, valor); if(atualizado) setDraft(atualizado); },
-              onSetValorNegociacaoPipe: (valor) => { const atualizado = onSetValorNegociacaoPipe(draft.id, valor); if(atualizado) setDraft(atualizado); } }),
+              onSetValorNegociacaoPipe: (valor) => { const atualizado = onSetValorNegociacaoPipe(draft.id, valor); if(atualizado) setDraft(atualizado); },
+              onSetCaptacao: (valor, custodia) => { const at = onIniciarCaptacao(draft.id, { valor, custodia, temperatura: draft.temperatura || '' }); if(at) setDraft(at); },
+              onLimparCaptacao: () => { const at = onEncerrarCaptacao(draft.id, { motivo:'valor apagado na ficha' }); if(at) setDraft(at); },
+              onAbrirCaptacao: abrirCaptacao,
+              onSetObservacoes: onSetObservacoes ? (txt) => { const at = onSetObservacoes(draft.id, txt); if(at) setDraft(at); } : null }),
         h('div',{className:'meta-line'}, 'Criado em ', new Date(draft.criadoEm).toLocaleDateString('pt-BR')),
         somenteLeitura ? h('div',{className:'readonly-note'},
           h(Icon,{path:'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM8 11V7a4 4 0 118 0v4', size:14}),
@@ -6340,15 +6435,13 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                vai ser atualizada pelo BTG (decisão do Emil, sabendo que NNM,
                captação bruta e saídas ficam parados até a API chegar). Os
                lançamentos antigos continuam gravados e contando. O pipe fica. */
-            h('div',{className:'bento-eyebrow'},'Carteira e pipe'),
+            h('div',{className:'bento-eyebrow'},'Carteira'),
             !somenteLeitura
               ? h('div',{className:'captacao-links'},
                   /* Cliente da base começa captação nova daqui: ela é um
                      aporte que ainda não aconteceu, e mora junto dos que já
                      aconteceram. Com uma aberta, as ações ficam nela. */
-                  (daBase && !captacaoAberta && !captacaoForm)
-                    ? h('button',{className:'link-btn', onClick:()=>abrirCaptacao('nova')}, '+ Pipe')
-                    : null)
+                  null)
               : null
           ),
 
@@ -6380,12 +6473,6 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                  flex-wrap do .extrato-resumo, não o encurtamento do número. */
               h('span',{className:'extrato-valor forte'},
                 moeda(offshoreAberto ? valorEmCarteiraOffshore(draft) : valorEmCarteira(draft)))),
-            h('div',{className:'extrato-bloco'},
-              h('span',{className:'extrato-rotulo'},'Pipe'),
-              h('span',{className:'extrato-valor'},
-                (daBase ? (custodiaCaptacao(draft) === (offshoreAberto ? 'offshore' : 'onshore') && valorCaptacaoNaMoeda(draft) > 0
-                    ? moedaCompacta(valorCaptacaoNaMoeda(draft)) : '—')
-                  : (!offshoreAberto && valorCaptacaoNaMoeda(draft) > 0 ? moedaCompacta(valorCaptacaoNaMoeda(draft)) : '—'))))
           ),
 
           /* Captação da base em negociação, dentro do extrato: é o aporte que
@@ -6393,7 +6480,9 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
              virar quando for confirmada. Tracejada, porque é promessa e não
              saldo. Aberta, aparece na aba da custódia dela; com formulário
              aberto, em qualquer aba. */
-          (daBase && (captacaoForm || (captacaoAberta && custodiaAba === custodiaCaptacao(draft))))
+          /* O pipe mora no topo da ficha; aqui só aparecem os passos de
+             confirmar ou encerrar, quando chamados de lá. */
+          (daBase && (captacaoForm === 'confirmar' || captacaoForm === 'encerrar'))
             ? h('div',{className:'captacao-pendente'},
                 h('div',{className:'captacao-cab'},
                   h('span',{className:'captacao-rotulo'},
@@ -6700,8 +6789,7 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                 ? (captacaoAberta
                     ? h('button',{className:'btn btn-danger-ghost', style:{color:'var(--success)'}, onClick:()=>abrirCaptacao('confirmar')},
                         h(IconThumbsUp,{size:13}), 'Confirmar captação')
-                    : h('button',{className:'btn btn-danger-ghost', style:{color:'var(--success)'}, onClick:()=>abrirCaptacao('nova')},
-                        h(IconPlus,{size:13}), 'Pipe'))
+                    : null)
               : (draft.ganho && jornadaLead) ? null
                 : h('button',{className:'btn btn-danger-ghost', style:{color:'var(--success)'}, onClick:()=>onWin(draft)},
                     h(IconThumbsUp,{size:13}), jornadaLead ? 'Captação efetivada' : 'Marcar venda')
@@ -7379,7 +7467,8 @@ function fmtUSDCompact(n){
 /* Série mensal em SVG: área para o volume criado, linhas para os desfechos.
    Barras lado a lado obrigam a comparar alturas isoladas; a linha mostra a
    trajetória, que é a pergunta real de "como o mês passado se compara". */
-function GraficoMensal({ meses, max }){
+function GraficoMensal({ meses, max, drillMes }){
+  const drillCtx = useDrill();
   if(!meses || meses.length === 0) return h('div',{className:'empty-kpi'},'Sem dados no período.');
 
   const L = 34, R = 14, T = 14, B = 26, W = 560, H = 190;
@@ -7426,7 +7515,14 @@ function GraficoMensal({ meses, max }){
       }))),
       meses.map((m, i) => h('text',{
         key:'r'+i, x:x(i), y:H-7, className:'grafico-mes', textAnchor:'middle',
-      }, m.label))
+      }, m.label)),
+      /* Alvo invisível por mês: o mouse mostra os três números do mês e o
+         clique abre os negócios dele. */
+      meses.map((m, i) => h('rect',{ key:'a'+i, className:'grafico-alvo',
+        x: x(i) - (passo || largura) / 2, y: T, width: passo || largura, height: altura + 8,
+        onClick: (drillMes && drillCtx) ? ()=>drillCtx.abrir(drillMes(m)) : undefined },
+        h('title',null, m.label + ': ' + m.criados + ' criados · ' + m.ganhos + ' ganhos · ' + m.perdidos + ' perdidos'
+          + ((drillMes && drillCtx) ? ' · clique para ver os negócios' : ''))))
     ),
     h('div',{className:'month-legend'},
       series.map(se => h('div',{key:se.campo, className:'month-legend-item'},
@@ -7435,7 +7531,9 @@ function GraficoMensal({ meses, max }){
   );
 }
 
-function BarRow({ label, value, display, max, color, dotColor, posicao, secundario, meta, metaLabel, semDados }){
+function BarRow({ label, value, display, max, color, dotColor, posicao, secundario, meta, metaLabel, semDados, drill }){
+  const drillCtx = useDrill();
+  const clica = !!(drill && drillCtx);
   /* Sem dado não se desenha barra: um toco colorido ao lado de "—" sugere
      um valor pequeno, quando o caso é ausência de informação. */
   if(semDados){
@@ -7453,7 +7551,11 @@ function BarRow({ label, value, display, max, color, dotColor, posicao, secundar
   const metaPct = (meta && max > 0) ? Math.min(100, (meta/max)*100) : null;
   const passou = metaPct !== null && pct > metaPct;
 
-  return h('div',{className:'bar-row'},
+  return h('div',{className:'bar-row' + (clica ? ' clica-drill' : ''),
+    title: clica ? label + ' · ' + display + ' · clique para abrir' : label + ' · ' + display,
+    role: clica ? 'button' : undefined, tabIndex: clica ? 0 : undefined,
+    onClick: clica ? ()=>drillCtx.abrir(drill) : undefined,
+    onKeyDown: clica ? (e)=>{ if(e.key === 'Enter') drillCtx.abrir(drill); } : undefined},
     h('div',{className:'bar-row-topo'},
       h('div',{className:'bar-row-label'},
         posicao ? h('span',{className:'bar-row-pos'}, String(posicao).padStart(2,'0')) : null,
@@ -7930,7 +8032,10 @@ function GraficoCarteira({ dados, formato, cor, id, rotuloAcumulado, descricao }
       })),
       serie.map((m, i) => h('text',{
         key:'r'+i, x:x(i), y:H-9, className:'grafico-mes', textAnchor:'middle',
-      }, m.label))
+      }, m.label)),
+      serie.map((m, i) => h('rect',{ key:'a'+i, className:'grafico-alvo', style:{ cursor:'default' },
+        x: x(i) - (passo || largura) / 2, y: T, width: passo || largura, height: altura },
+        h('title',null, m.label + ': ' + fmt(m.carteira) + ' sob gestão · entrou ' + fmt(m.captado || 0) + ' · saiu ' + fmt(m.retirado || 0))))
     ),
     h('div',{className:'month-legend'},
       h('div',{className:'month-legend-item'},
@@ -8320,9 +8425,13 @@ function useContagem(valor, duracao){
 }
 
 /* Número grande do painel, com rótulo e contexto. */
-function Indicador({ rotulo, valor, formato, contexto, tom, largo }){
+function Indicador({ rotulo, valor, formato, contexto, tom, largo, drill }){
   const animado = useContagem(valor);
-  return h('div',{className:'ind' + (tom ? ' ' + tom : '') + (largo ? ' largo' : '')},
+  const drillCtx = useDrill();
+  const clica = !!(drill && drillCtx);
+  return h('div',{className:'ind' + (tom ? ' ' + tom : '') + (largo ? ' largo' : '') + (clica ? ' clica-drill' : ''),
+    title: clica ? rotulo + ' · ' + formato(valor) + ' · clique para abrir' : undefined,
+    onClick: clica ? ()=>drillCtx.abrir(drill) : undefined},
     h('div',{className:'ind-rotulo'}, rotulo),
     h('div',{className:'ind-valor'}, formato(animado)),
     contexto ? h('div',{className:'ind-contexto'}, contexto) : null
@@ -8355,6 +8464,8 @@ function BarraComposicao({ partes, total }){
    que um gestor já lê em painel — o rótulo fica fora do gráfico, não sobre
    as fatias, para funcionar mesmo com fatias pequenas. */
 function Rosca({ partes, formato }){
+  const drillCtx = useDrill();
+  const [foco, setFoco] = useState(null);
   const total = partes.reduce((a,p) => a + p.valor, 0);
   const raio = 54, espessura = 22, circ = 2 * Math.PI * raio;
   let acumulado = 0;
@@ -8370,13 +8481,17 @@ function Rosca({ partes, formato }){
             const fatia = (p.valor / total) * circ;
             const offset = -acumulado;
             acumulado += fatia;
+            const clica = !!(p.drill && drillCtx);
             return h('circle',{
               key:p.chave, cx:70, cy:70, r:raio, fill:'none',
               stroke:p.cor, strokeWidth:espessura,
               strokeDasharray: fatia + ' ' + (circ - fatia),
               strokeDashoffset: offset,
-              className:'rosca-fatia', style:{ animationDelay: (i * 0.12) + 's' },
-            });
+              className:'rosca-fatia' + (clica ? ' clica-drill' : '') + (foco === p.chave ? ' ativa' : ''),
+              style:{ animationDelay: (i * 0.12) + 's' },
+              onMouseEnter:()=>setFoco(p.chave), onMouseLeave:()=>setFoco(null),
+              onClick: clica ? ()=>drillCtx.abrir(p.drill) : undefined,
+            }, h('title',null, p.chave + ': ' + formato(p.valor) + ' (' + Math.round((p.valor/total)*100) + '%)'));
           })
         ),
         /* O total mora dentro do furo da rosca, que tem largura fixa. Um
@@ -8384,13 +8499,18 @@ function Rosca({ partes, formato }){
            quebra nem aperta - transborda por cima do anel, em silencio, e a
            auditoria de layout nao ve texto de SVG. Encolher pelo numero de
            caracteres e o que mantem o valor inteiro e dentro. */
-        h('text',{ x:70, y:66, textAnchor:'middle',
-          className:'rosca-total' + (String(formato(total)).length > 8 ? ' longo' : '') }, formato(total)),
-        h('text',{ x:70, y:82, className:'rosca-legenda-total', textAnchor:'middle' }, 'total')
+        (() => { const pf = foco ? partes.find(x => x.chave === foco) : null; const v = pf ? pf.valor : total;
+          return h('text',{ x:70, y:66, textAnchor:'middle',
+            className:'rosca-total' + (String(formato(v)).length > 8 ? ' longo' : '') }, formato(v)); })(),
+        h('text',{ x:70, y:82, className:'rosca-legenda-total', textAnchor:'middle' },
+          foco ? String(foco).slice(0, 14) + ' · ' + Math.round(((partes.find(x => x.chave === foco) || {}).valor || 0) / total * 100) + '%' : 'total')
       )
     ),
     h('div',{className:'rosca-legenda'},
-      partes.map(p => h('div',{key:p.chave, className:'rosca-item'},
+      partes.map(p => h('div',{key:p.chave, className:'rosca-item' + (p.drill && drillCtx ? ' clica-drill' : ''),
+        onMouseEnter:()=>setFoco(p.chave), onMouseLeave:()=>setFoco(null),
+        onClick: (p.drill && drillCtx) ? ()=>drillCtx.abrir(p.drill) : undefined,
+        title: p.drill && drillCtx ? 'Clique para ver os clientes' : undefined},
         h('span',{className:'rosca-ponto', style:{background:p.cor}}),
         h('span',{className:'rosca-nome'}, p.chave),
         h('span',{className:'rosca-valor'}, formato(p.valor)),
@@ -8403,10 +8523,13 @@ function Rosca({ partes, formato }){
 /* Barras verticais para rankings curtos: a comparação entre pares fica mais
    direta na vertical do que em linhas empilhadas. */
 function BarrasVerticais({ itens, formato }){
+  const drillCtx = useDrill();
   if(!itens || itens.length === 0) return h('div',{className:'empty-kpi'},'Sem dados no período.');
   const max = Math.max(1, ...itens.map(i => i.valor));
   return h('div',{className:'barras-v'},
-    itens.map((it, i) => h('div',{key:it.chave, className:'barra-v-col', title: it.chave + ' · ' + formato(it.valor)},
+    itens.map((it, i) => h('div',{key:it.chave, className:'barra-v-col' + (it.drill && drillCtx ? ' clica-drill' : ''),
+      title: it.chave + ' · ' + formato(it.valor) + (it.drill && drillCtx ? ' · clique para ver os clientes' : ''),
+      onClick: (it.drill && drillCtx) ? ()=>drillCtx.abrir(it.drill) : undefined},
       h('div',{className:'barra-v-num'}, formato(it.valor)),
       h('div',{className:'barra-v-trilha'},
         h('div',{className:'barra-v-fill', style:{
@@ -8555,6 +8678,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
     /* Filtros na coluna, painel na área maior: os recortes ficam sempre à
        vista enquanto os números mudam ao lado. */
     h(KpiTopo,{ filtros, onFiltros,
+      assessores: users.filter(u => u.status === 'ativo' && u.role !== 'especialista'),
       escopo: filtros.assessor && filtros.assessor !== 'all' ? ((users.find(u => u.id === filtros.assessor) || {}).nome || 'Toda a casa') : 'Toda a casa',
       detalhe: descreverRecorte(filtros, users) + ' · clique num cartão para abrir a seção' },
       h(KpiFiltros,{ filtros, onChange:onFiltros, funil:'especialista', users, leads, consolidado:true })
@@ -8578,7 +8702,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
         h('span',{className:'painel-secao-desc'},'investimentos sob gestão')
       ),
       h('div',{className:'painel-linha linha-3'},
-        h(Indicador,{ rotulo:'Total da carteira', largo:true,
+        h(Indicador,{ drill: DR.todos('Carteira sob gestão', 'onshore', l => valorEmCarteira(l) > 0 || valorEmCarteiraOffshore(l) > 0), rotulo:'Total da carteira', largo:true,
           valor: carteira.totalCarteira, formato: fmtBRLCompact,
           /* Onshore e offshore no mesmo número: o contexto diz de que ele é
              feito, senão o admin não sabe o que está olhando. */
@@ -8587,7 +8711,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
                 ? carteira.sobGestao + ' clientes · ' + fmtUSDCompact(carteira.offshore.usd) + ' offshore incluídos'
                 : carteira.sobGestao + ' clientes · ' + fmtUSDCompact(carteira.offshore.usd) + ' offshore FORA, sem cotação')
             : carteira.sobGestao + ' de ' + carteira.ativos.length + ' clientes sob gestão' }),
-        h(Indicador,{ rotulo:'Pipe', tom:'ouro',
+        h(Indicador,{ drill: DR.pipe(), rotulo:'Pipe', tom:'ouro',
           valor: carteira.emCaptacao, formato: fmtBRLCompact, contexto:'clientes novos e da base' }),
         h(Indicador,{ rotulo:'Net New Money',
           tom: carteira.fluxo.liquido < 0 ? 'alerta' : 'verde',
@@ -8600,10 +8724,10 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
         h('span',{className:'painel-secao-desc'},'consórcio e seguro')
       ),
       h('div',{className:'painel-linha linha-2'},
-        h(Indicador,{ rotulo:'Produção', tom:'verde',
+        h(Indicador,{ drill: DR.negocios('Negócios fechados', l => !!l.ganho), rotulo:'Produção', tom:'verde',
           valor: producaoTotal, formato: fmtBRLCompact,
           contexto: fechados.length + (fechados.length === 1 ? ' negócio fechado' : ' negócios fechados') }),
-        h(Indicador,{ rotulo:'Em negociação',
+        h(Indicador,{ drill: DR.negocios('Negócios em aberto', l => !l.ganho && !l.perdido), rotulo:'Em negociação',
           valor: emJogo, formato: fmtBRLCompact, contexto: abertos.length + ' em aberto' })
       ),
 
@@ -8618,13 +8742,13 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
         h('div',{className:'painel-caixa'},
           h('div',{className:'painel-caixa-titulo'},'Carteira por segmento'),
           h(Rosca,{ formato: fmtBRLCompact,
-            partes: carteira.porSegmento.map(sg => ({ chave:sg.key, valor:sg.valor, cor:CORES_SEGMENTO[sg.key] })) })
+            partes: carteira.porSegmento.map(sg => ({ chave:sg.key, valor:sg.valor, cor:CORES_SEGMENTO[sg.key], drill: DR.seg(sg.key) })) })
         ),
         h('div',{className:'painel-caixa'},
           h('div',{className:'painel-caixa-titulo'},'Carteira por assessor',
             h('span',null,'sob acompanhamento')),
           h(BarrasVerticais,{ formato: fmtBRLCompact,
-            itens: carteira.ranking.slice(0,12).map(v => ({ chave:v.nome, valor:v.valor })) })
+            itens: carteira.ranking.slice(0,12).map(v => ({ chave:v.nome, valor:v.valor, drill: DR.ass(v.id, v.nome) })) })
         )
       ),
 
@@ -8655,7 +8779,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
             /* "Sem classificação" é um dos quatro, não nota de rodapé: é o que
                mostra se a temperatura virou rotina ou ficou no papel. */
             h('div',{className:'painel-linha linha-4'},
-              captacaoTemp.porTemperatura.map(t => h(Indicador,{ key:t.key,
+              captacaoTemp.porTemperatura.map(t => h(Indicador,{ key:t.key, drill: DR.temp(t.key),
                 rotulo: t.label, valor: t.valor, formato: fmtBRLCompact,
                 contexto: t.count === 0 ? 'nenhuma captação'
                   : t.novos + (t.novos === 1 ? ' novo' : ' novos') + ' · ' + t.base + ' da base' }))
@@ -8665,7 +8789,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
                 h('div',{className:'painel-caixa-titulo'},'Por assessor',
                   h('span',null,'em jogo · quanto está quente')),
                 captacaoTemp.porAssessor.slice(0,12).map((a,i) => h(BarRow,{
-                  key:a.id, label:a.nome, value:a.valor, posicao:i+1,
+                  drill: DR.assPipe(a.id, a.nome), key:a.id, label:a.nome, value:a.valor, posicao:i+1,
                   max: Math.max(1, ...captacaoTemp.porAssessor.map(x => x.valor)),
                   display: fmtBRLCompact(a.valor),
                   secundario: a.valorQuente > 0 ? fmtBRLCompact(a.valorQuente) + ' quente' : 'nada quente',
@@ -8682,7 +8806,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
                      depender da cor. */
                   const tempLabel = tempInfo ? tempInfo.label : 'Sem classificação';
                   return h(BarRow,{
-                    key:c.id, label:c.cliente, value:c.valor, posicao:i+1, dotColor:cor, color:cor,
+                    drill: DR.cli(c.id, c.cliente, 'pipe'), key:c.id, label:c.cliente, value:c.valor, posicao:i+1, dotColor:cor, color:cor,
                     max: Math.max(1, ...captacaoTemp.captacoes.map(x => x.valor)),
                     /* Na moeda da negociação: o dólar é o número que o assessor combinou. */
                     display: c.valorMoeda > 0 ? (c.custodia === 'offshore' ? fmtUSDCompact : fmtBRLCompact)(c.valorMoeda) : 'sem valor',
@@ -8711,7 +8835,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
               'Nenhum cliente com carteira no exterior neste recorte. O patrimônio offshore é preenchido na ficha do cliente, em dólar.'))
         : h(Fragment, null,
             h('div',{className:'painel-linha offshore-linha'},
-              h(Indicador,{ rotulo:'Total offshore', valor: offshore.totalUsd, formato: fmtUSDCompact,
+              h(Indicador,{ drill: DR.off(), rotulo:'Total offshore', valor: offshore.totalUsd, formato: fmtUSDCompact,
                 contexto: offshore.clientes.length + (offshore.clientes.length === 1 ? ' cliente' : ' clientes') }),
               h(Indicador,{ rotulo:'Equivalente em reais', tom:'ouro',
                 valor: offshore.totalBrl === null ? 0 : offshore.totalBrl,
@@ -8739,13 +8863,13 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
         h('div',{className:'painel-caixa'},
           h('div',{className:'painel-caixa-titulo'},'Produção por produto'),
           h(Rosca,{ formato: fmtBRLCompact,
-            partes: prod.porProduto.map(p => ({ chave:p.produto, valor:p.valorGanho,
+            partes: prod.porProduto.map(p => ({ chave:p.produto, valor:p.valorGanho, drill: DR.produto(p.produto),
               cor: p.produto === 'Seguro' ? '#2E7D5B' : '#7C8BA1' })) })
         ),
         h('div',{className:'painel-caixa'},
           h('div',{className:'painel-caixa-titulo'},'Negócios dos especialistas',
             h('span',null,'por mês')),
-          h(GraficoMensal,{ meses: evolucao.monthly, max: evolucao.monthlyMax })
+          h(GraficoMensal,{ meses: evolucao.monthly, max: evolucao.monthlyMax, drillMes: (m) => DR.negocios('Negócios de ' + m.label, l => monthKey(l.criadoEm) === m.key || (!!l.ganhoEm && monthKey(l.ganhoEm) === m.key) || (!!l.perdidoEm && monthKey(l.perdidoEm) === m.key)) })
         )
       ),
 
@@ -8767,7 +8891,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
               indicacao.porIndicados.length === 0
                 ? h('div',{className:'empty-kpi'},'Nenhuma indicação no recorte.')
                 : indicacao.porIndicados.map((r,i) => h(BarRow,{
-                    key:r.id, label:r.nome, value:r.indicados, max:indicacao.maxIndicados, posicao:i+1,
+                    drill: DR.indicou(r.id, r.nome, false), key:r.id, label:r.nome, value:r.indicados, max:indicacao.maxIndicados, posicao:i+1,
                     display: r.indicados + (r.indicados === 1 ? ' negócio' : ' negócios'),
                     color:'var(--primary)' }))
             ),
@@ -8776,7 +8900,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
               indicacao.porFechados.length === 0
                 ? h('div',{className:'empty-kpi'},'Nenhum fechamento no recorte.')
                 : indicacao.porFechados.map((r,i) => h(BarRow,{
-                    key:r.id, label:r.nome, value:r.fechados, max:indicacao.maxFechados, posicao:i+1,
+                    drill: DR.indicou(r.id, r.nome, true), key:r.id, label:r.nome, value:r.fechados, max:indicacao.maxFechados, posicao:i+1,
                     display: r.fechados + (r.fechados === 1 ? ' negócio' : ' negócios'),
                     secundario: r.valorFechado > 0 ? fmtBRLCompact(r.valorFechado) : null,
                     color:'var(--success)' }))
@@ -8804,8 +8928,8 @@ function OffshoreGraficos({ s, evolucao, admin }){
            e a tela diz isso em vez de inventar. */
         s.temCotacao
           ? h(Rosca,{ formato: fmtBRLCompact, partes: [
-              { chave:'Onshore',  valor: s.totalOnshore, cor:'#195AB4' },
-              { chave:'Offshore', valor: s.totalBrl,     cor:'#0F766E' },
+              { chave:'Onshore',  valor: s.totalOnshore, cor:'#195AB4', drill: DR.todos('Clientes com onshore', 'onshore', l => valorEmCarteira(l) > 0) },
+              { chave:'Offshore', valor: s.totalBrl,     cor:'#0F766E', drill: DR.off() },
             ] })
           : h('div',{className:'empty-kpi'},'Defina a cotação do dólar para comparar as duas custódias na mesma moeda.')
       ),
@@ -8815,11 +8939,11 @@ function OffshoreGraficos({ s, evolucao, admin }){
           h('span',null,'em dólar')),
         admin
           ? h(BarrasVerticais,{ formato: fmtUSDCompact,
-              itens: s.porAssessor.slice(0,12).map(v => ({ chave:v.nome, valor:v.valor, cor:'#0F766E' })) })
+              itens: s.porAssessor.slice(0,12).map(v => ({ chave:v.nome, valor:v.valor, cor:'#0F766E', drill: DR.offAss(v.id, v.nome) })) })
           : (s.clientes.length === 0
               ? h('div',{className:'empty-kpi'},'Nenhum cliente com carteira no exterior.')
               : s.clientes.slice(0,8).map((c,i) => h(BarRow,{
-                  key:c.id, label:c.cliente, value:c.usd, posicao:i+1,
+                  drill: DR.cli(c.id, c.cliente, 'offshore'), key:c.id, label:c.cliente, value:c.usd, posicao:i+1,
                   max: Math.max(1, ...s.clientes.map(x => x.usd)),
                   display: c.emFormacao ? 'em captação' : fmtUSDCompact(c.usd),
                   secundario: s.temCotacao && !c.emFormacao ? (c.fatia*100).toFixed(0) + '% do patrimônio' : null,
@@ -8845,7 +8969,7 @@ function OffshoreGraficos({ s, evolucao, admin }){
         s.porSegmento.every(x => x.valor === 0)
           ? h('div',{className:'empty-kpi'},'Nenhum cliente offshore com patrimônio classificado.')
           : h(Rosca,{ formato: fmtUSDCompact,
-              partes: s.porSegmento.map(sg => ({ chave:sg.key, valor:sg.valor, cor:CORES_SEGMENTO[sg.key] })) })
+              partes: s.porSegmento.map(sg => ({ chave:sg.key, valor:sg.valor, cor:CORES_SEGMENTO[sg.key], drill: DR.offSeg(sg.key) })) })
       )
     )
   );
@@ -9181,7 +9305,7 @@ function OffshoreView({ leads, users, filtros, currentUser, isAdmin, onOpen, onS
         )
       : h(Navegavel, { modo: 'blocos' },
         h('div',{className:'painel-linha'},
-          h(Indicador,{ rotulo:'Total offshore', largo:true,
+          h(Indicador,{ drill: DR.off(), rotulo:'Total offshore', largo:true,
             valor: s.totalUsd, formato: fmtUSDCompact,
             contexto: s.clientes.length + (s.clientes.length === 1 ? ' cliente' : ' clientes')
               + (s.emFormacao ? ' · ' + s.emFormacao + ' ainda em captação' : '') }),
@@ -9205,7 +9329,7 @@ function OffshoreView({ leads, users, filtros, currentUser, isAdmin, onOpen, onS
             s.porAssessor.length === 0
               ? h('div',{className:'empty-kpi'},'Nenhum assessor com carteira offshore.')
               : s.porAssessor.map((x,i) => h(BarRow,{
-                  key:x.id, label:x.nome, value:x.valor, max:s.porAssessorMax, posicao:i+1,
+                  drill: DR.offAss(x.id, x.nome), key:x.id, label:x.nome, value:x.valor, max:s.porAssessorMax, posicao:i+1,
                   display: fmtUSDCompact(x.valor), color:'var(--primary)',
                   secundario: x.count + (x.count === 1 ? ' cliente' : ' clientes'),
                 }))
@@ -9216,7 +9340,7 @@ function OffshoreView({ leads, users, filtros, currentUser, isAdmin, onOpen, onS
             s.porSegmento.every(x => x.count === 0)
               ? h('div',{className:'empty-kpi'},'Sem clientes classificados.')
               : s.porSegmento.map(x => h(BarRow,{
-                  key:x.key, label:x.key, value:x.valor, max:maxSegmento,
+                  drill: DR.offSeg(x.key), key:x.key, label:x.key, value:x.valor, max:maxSegmento,
                   display: x.count === 0 ? 'sem cliente' : fmtUSDCompact(x.valor),
                   color: CORES_SEGMENTO[x.key],
                   secundario: x.count === 0 ? null : x.count + (x.count === 1 ? ' cliente' : ' clientes'),
@@ -9447,7 +9571,7 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
         h('div',{className:'kpi-section-head'}, h('h2',null,'Pipe por temperatura'),
           h('span',null, captacaoTemp.classificados + ' de ' + captacaoTemp.total + ' com temperatura')),
         captacaoTemp.porTemperatura.map(t => h(BarRow,{
-          key:t.key, label:t.label, dotColor:t.cor, color:t.cor, value:t.valor,
+          drill: DR.temp(t.key), key:t.key, label:t.label, dotColor:t.cor, color:t.cor, value:t.valor,
           max: Math.max(1, ...captacaoTemp.porTemperatura.map(x => x.valor)),
           display: fmtBRLCompact(t.valor),
           secundario: t.novos + (t.novos === 1 ? ' novo' : ' novos') + ' · ' + t.base + ' da base' }))
@@ -9458,7 +9582,7 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
           const tempInfo = temperaturaInfo(c.temperatura);
           const cor = tempInfo ? tempInfo.cor : '#C9D1DC';
           const tempLabel = tempInfo ? tempInfo.label : 'Sem classificação';
-          return h(BarRow,{ key:c.id, label:c.cliente, value:c.valor, posicao:i+1, dotColor:cor, color:cor,
+          return h(BarRow,{ drill: DR.cli(c.id, c.cliente, 'pipe'), key:c.id, label:c.cliente, value:c.valor, posicao:i+1, dotColor:cor, color:cor,
             max: Math.max(1, ...captacaoTemp.captacoes.map(x => x.valor)),
             display: c.valorMoeda > 0 ? (c.custodia === 'offshore' ? fmtUSDCompact : fmtBRLCompact)(c.valorMoeda) : 'sem valor',
             semDados: c.valorMoeda === 0,
@@ -9528,7 +9652,7 @@ function CarteiraSecoes({ stats, leads, admin }){
         h('div',{className:'kpi-section-head'}, h('h2',null,'Carteira por segmento'), h('span',null,'patrimônio e número de clientes')),
         s.ativos.length === 0 ? h('div',{className:'empty-kpi'},'Nenhum cliente na carteira ainda.') :
         s.porSegmento.map(sg => h(BarRow,{
-          key:sg.key, label:sg.key, value:sg.valor, max:maxSegmento,
+          drill: DR.seg(sg.key), key:sg.key, label:sg.key, value:sg.valor, max:maxSegmento,
           display: fmtBRLCompact(sg.valor),
           secundario: sg.count + (sg.count === 1 ? ' cliente' : ' clientes'),
           /* Mesmo tom da barra de composição do topo. */
@@ -9539,7 +9663,7 @@ function CarteiraSecoes({ stats, leads, admin }){
         h('div',{className:'kpi-section-head'}, h('h2',null,'Clientes por etapa'), h('span',null,'onde a carteira está parada')),
         s.ativos.length === 0 ? h('div',{className:'empty-kpi'},'Sem dados ainda.') :
         s.porEtapa.map(e => h(BarRow,{
-          key:e.key, label:etapaCurta(e.key), dotColor:e.color, value:e.count, max:maxEtapa,
+          drill: DR.etapa(e.key), key:e.key, label:etapaCurta(e.key), dotColor:e.color, value:e.count, max:maxEtapa,
           display: String(e.count), color:e.color,
         }))
       )
@@ -9551,7 +9675,7 @@ function CarteiraSecoes({ stats, leads, admin }){
         ? h('div',{className:'empty-kpi'},'Nenhuma origem registrada. Preencha "como chegou" no cadastro.')
         : h(Fragment, null,
             s.porOrigem.map((o, i) => h(BarRow,{
-              key:o.key, label:o.key, value:o.valor, max:maxOrigem, posicao:i+1,
+              drill: DR.origem(o.key), key:o.key, label:o.key, value:o.valor, max:maxOrigem, posicao:i+1,
               display: fmtBRLCompact(o.valor),
               secundario: o.count + (o.count === 1 ? ' cliente' : ' clientes'),
               color:'var(--primary)',
@@ -9567,7 +9691,7 @@ function CarteiraSecoes({ stats, leads, admin }){
       h('div',{className:'kpi-section-head'}, h('h2',null,'Carteira por assessor'), h('span',null,'patrimônio sob acompanhamento')),
       s.ranking.length === 0 ? h('div',{className:'empty-kpi'},'Nenhum assessor com carteira.') :
       s.ranking.map((v, i) => h(BarRow,{
-        key:v.id, label:v.nome, value:v.valor, max:s.rankingMax, posicao:i+1,
+        drill: DR.ass(v.id, v.nome), key:v.id, label:v.nome, value:v.valor, max:s.rankingMax, posicao:i+1,
         display: fmtBRLCompact(v.valor),
         secundario: v.count + (v.count === 1 ? ' cliente' : ' clientes'),
         color:'var(--primary)',
@@ -9629,7 +9753,7 @@ function ProducaoSecoes({ leads, users }){
       prod.porEspecialista.length === 0
         ? h('div',{className:'empty-kpi'},'Nenhum especialista com negócios no recorte.')
         : prod.porEspecialista.map((e, i) => h(BarRow,{
-            key:e.id, label:e.nome + ' · ' + e.produto, posicao:i+1,
+            drill: DR.espec(e.id, e.nome, e.produto), key:e.id, label:e.nome + ' · ' + e.produto, posicao:i+1,
             value:e.valorGanho, max:prod.maxEspecialista,
             display: fmtBRLCompact(e.valorGanho),
             secundario: e.ganhos + ' de ' + e.total
@@ -9720,7 +9844,7 @@ function KpisView({ scopedLeads, allLeads, users, vendorFilter, currentUser, per
         h('div',{className:'kpi-section-head'}, h('h2',null,'Funil de conversão'), h('span',null, 'quantos leads já alcançaram cada etapa')),
         s.funnelBase === 0 ? h('div',{className:'empty-kpi'},'Ainda não há dados suficientes.') :
         s.funnelStages.map((stage,i) => h(BarRow,{
-          key:stage, label: stage === 'Fechado (venda)' ? stage : etapaCurta(stage),
+          drill: DR.funil(stage), key:stage, label: stage === 'Fechado (venda)' ? stage : etapaCurta(stage),
           value: s.funnelCounts[i], max: s.funnelBase,
           display: s.funnelCounts[i] + ' (' + Math.round((s.funnelCounts[i]/s.funnelBase)*100) + '%)',
           color: stage==='Fechado (venda)' ? 'var(--success)' : stageInfo(stage).color,
@@ -9730,7 +9854,7 @@ function KpisView({ scopedLeads, allLeads, users, vendorFilter, currentUser, per
         h('div',{className:'kpi-section-head'}, h('h2',null,'Ranking por vendedor'), h('span',null,'valor fechado')),
         s.vendorRanking.length === 0 ? h('div',{className:'empty-kpi'},'Nenhum vendedor cadastrado.') :
         s.vendorRanking.map(v => h(BarRow,{
-          key:v.id, label: v.nome, value: v.valor, max: s.vendorMax,
+          drill: DR.espec(v.id, v.nome), key:v.id, label: v.nome, value: v.valor, max: s.vendorMax,
           display: fmtBRLCompact(v.valor), color:'var(--primary)',
         }))
       )
@@ -9739,7 +9863,7 @@ function KpisView({ scopedLeads, allLeads, users, vendorFilter, currentUser, per
     h('div',{className:'kpi-two-col'},
     h('div',{className:'kpi-section'},
       h('div',{className:'kpi-section-head'}, h('h2',null,'Evolução mensal'), h('span',null,'últimos 6 meses · toda a equipe')),
-      h(GraficoMensal,{ meses: s.monthly, max: s.monthlyMax })
+      h(GraficoMensal,{ meses: s.monthly, max: s.monthlyMax, drillMes: (m) => DR.negocios('Negócios de ' + m.label, l => monthKey(l.criadoEm) === m.key || (!!l.ganhoEm && monthKey(l.ganhoEm) === m.key) || (!!l.perdidoEm && monthKey(l.perdidoEm) === m.key)) })
     ),
       h('div',{className:'kpi-section'},
         h('div',{className:'kpi-section-head'}, h('h2',null,'Tempo médio por etapa'), h('span',null,'em dias')),
@@ -10347,7 +10471,7 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.05.3';
+const CRM_VERSAO = 'versão do CRM 2026.11.05.4';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -10428,14 +10552,18 @@ const pnPct = (v, total) => total > 0 ? (v / total * 100).toLocaleString('pt-BR'
 const pnSinal = (v) => (v >= 0 ? '+' : '−') + fmtBRLCompact(Math.abs(v));
 const pnData = (iso) => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
 
-function PainelRosca({ grupos, total, rotulo }){
+function PainelRosca({ grupos, total, rotulo, onEscolher }){
   const R = 70, C = 2 * Math.PI * R;
+  const [foco, setFoco] = useState(null);
   let acumulado = 0;
   const fatias = grupos.filter(g => g.onshore > 0).map(g => {
     const frac = total > 0 ? g.onshore / total : 0;
     const el = h('circle', { key: g.key, cx: 90, cy: 90, r: R, fill: 'none', stroke: g.cor, strokeWidth: 22,
       strokeDasharray: Math.max(0, frac * C - 2) + ' ' + C, strokeDashoffset: -acumulado * C,
-      transform: 'rotate(-90 90 90)' });
+      transform: 'rotate(-90 90 90)', className: 'pn-fatia' + (onEscolher ? ' clica-drill' : '') + (foco === g.key ? ' ativa' : ''),
+      onMouseEnter: () => setFoco(g.key), onMouseLeave: () => setFoco(null),
+      onClick: onEscolher ? () => onEscolher(g.key) : undefined },
+      h('title', null, g.nome + ': ' + fmtBRLCompact(g.onshore) + ' (' + pnPct(g.onshore, total) + ')'));
     acumulado += frac;
     return el;
   });
@@ -10443,9 +10571,10 @@ function PainelRosca({ grupos, total, rotulo }){
     h('svg', { viewBox: '0 0 180 180', role: 'img', 'aria-label': 'Distribuição da carteira onshore' },
       h('circle', { cx: 90, cy: 90, r: R, fill: 'none', stroke: 'var(--border)', strokeWidth: 22 }),
       fatias),
-    h('div', { className: 'pn-rosca-centro' },
-      h('span', null, rotulo),
-      h('strong', null, fmtBRLCompact(total)))
+    (() => { const gf = foco ? grupos.find(g => g.key === foco) : null;
+      return h('div', { className: 'pn-rosca-centro' },
+        h('span', null, gf ? gf.nome + ' · ' + pnPct(gf.onshore, total) : rotulo),
+        h('strong', null, fmtBRLCompact(gf ? gf.onshore : total))); })()
   );
 }
 
@@ -10630,7 +10759,7 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
         h('button', { className: por === 'segmento' ? 'ativo' : '', onClick: () => { setAgrupar('segmento'); setGrupoAberto(null); } }, 'Por segmento'))),
     grupos.length ? h('div', { className: 'pn-carteira' },
       h('div', { className: 'pn-carteira-rosca' },
-        h(PainelRosca, { grupos, total: totalGrupos, rotulo: grupos.length + (grupos.length === 1 ? ' grupo' : ' grupos') }),
+        h(PainelRosca, { grupos, total: totalGrupos, rotulo: grupos.length + (grupos.length === 1 ? ' grupo' : ' grupos'), onEscolher: (k) => setGrupoAberto(k) }),
         h('div', { className: 'pn-legenda' }, grupos.map(g => h('div', { key: g.key, className: 'pn-legenda-item' },
           h('i', { style: { background: g.cor } }), h('span', null, g.nome), h('b', null, pnPct(g.onshore, totalGrupos)))))),
       h('div', { className: 'pn-carteira-lista' }, grupos.map(g => {
@@ -10790,14 +10919,28 @@ function Navegavel({ modo, juntar, numeros, rodape, children }){
 /* Topo dos indicadores: o período vira pílula, à vista; o resto dos recortes
    (assessor, produto, especialista, temperatura) fica atrás de "Mais filtros",
    em vez de ocupar uma coluna fixa da tela. */
-function KpiTopo({ escopo, filtros, onFiltros, detalhe, children }){
+function KpiTopo({ escopo, filtros, onFiltros, detalhe, assessores, children }){
   const [mais, setMais] = useState(false);
   const extras = (filtros.assessor && filtros.assessor !== 'all') || (filtros.produtos && filtros.produtos.length)
     || (filtros.especialista && filtros.especialista !== 'all') || (filtros.temperatura && filtros.temperatura.length);
   return h(Fragment, null,
     h('section', { className: 'pn-heroi kn-heroi' },
       h('div', { className: 'pn-rotulo' }, 'Indicadores'),
-      h('div', { className: 'pn-ola' }, escopo),
+      /* Filtro por assessor à vista (pedido do Emil, 05/11/2026): o head
+         comercial abre a reunião individual já no recorte do assessor. */
+      assessores && assessores.length ? (() => {
+        const ids = ['all'].concat(assessores.map(u => u.id));
+        const atual = filtros.assessor || 'all';
+        const ir = (delta) => { const i = ids.indexOf(atual); onFiltros({ ...filtros, assessor: ids[(i + delta + ids.length) % ids.length] }); };
+        return h('div', { className: 'pn-visao kn-visao' },
+          h('button', { className: 'pn-visao-seta', onClick: () => ir(-1), 'aria-label': 'Assessor anterior' }, '‹'),
+          h('label', { className: 'pn-visao-caixa' },
+            h('span', null, 'Assessor'),
+            h('select', { value: atual, onChange: e => onFiltros({ ...filtros, assessor: e.target.value }) },
+              h('option', { value: 'all' }, 'Toda a casa'),
+              assessores.map(u => h('option', { key: u.id, value: u.id }, u.nome)))),
+          h('button', { className: 'pn-visao-seta', onClick: () => ir(1), 'aria-label': 'Próximo assessor' }, '›'));
+      })() : h('div', { className: 'pn-ola' }, escopo),
       h('div', { className: 'kn-periodos', role: 'group', 'aria-label': 'Período' },
         PERIODOS.map(p => h('button', { key: p.valor, type: 'button', className: filtros.periodo === p.valor ? 'ativo' : '',
           onClick: () => onFiltros({ ...filtros, periodo: p.valor }) }, p.label)),
@@ -10915,6 +11058,7 @@ function Arvore({ titulo, desc, linhas, niveis, metricas, folha, colunasExcel, n
    cada um abre em assessor e depois em cliente, e baixa em Excel. */
 function KpiPanorama({ jornada, users, admin, onOpen }){
   const cotacao = useCotacao();
+  const drillCtx = useDrill();
   const nomeDe = (id) => ((users.find(u => u.id === id) || {}).nome) || 'Sem assessor';
   const dados = useMemo(() => {
     const vivos = jornada.filter(l => !l.excluido && !l.perdido && (l.funil || 'assessor') !== 'especialista');
@@ -10953,7 +11097,7 @@ function KpiPanorama({ jornada, users, admin, onOpen }){
       h('div', { className: 'kp-caixa' },
         h(Arvore, { extra: h(PainelRosca, { grupos: (() => { const m = new Map(); dados.carteira.forEach(c => { const k = c.segmento || '—'; m.set(k, (m.get(k) || 0) + c.onshore); });
             return SEGMENTOS.map(s => s.key).concat(['—']).filter(k => m.has(k)).map(k => ({ key: k, nome: k, onshore: m.get(k), cor: CORES_SEGMENTO[k] || '#95A1B0' })); })(),
-          total: soma('onshore')(dados.carteira), rotulo: 'onshore' }), titulo: 'Carteira por segmento', desc: 'segmento → ' + (admin ? 'assessor → ' : '') + 'cliente · onshore em reais, offshore à parte',
+          total: soma('onshore')(dados.carteira), rotulo: 'onshore', onEscolher: drillCtx ? (k) => drillCtx.abrir(k === '—' ? DR.todos('Sem segmento', 'onshore', l => !l.segmento && (valorEmCarteira(l) > 0 || valorEmCarteiraOffshore(l) > 0)) : DR.seg(k)) : null }), titulo: 'Carteira por segmento', desc: 'segmento → ' + (admin ? 'assessor → ' : '') + 'cliente · onshore em reais, offshore à parte',
           linhas: dados.carteira, niveis: admin ? [nivelSegmento, nivelAssessor] : [nivelSegmento],
           metricas: [{ titulo: 'Onshore', soma: soma('onshore'), formatar: fmtBRLCompact },
             { titulo: 'Offshore', soma: soma('offshore'), formatar: n => n > 0 ? fmtUSDCompact(n) : '—' }, contar],
@@ -10975,6 +11119,116 @@ function KpiPanorama({ jornada, users, admin, onOpen }){
           contar],
         folha, colunasExcel: colunasBase, nomeExcel: 'Ranking de assessores' })) : null
   );
+}
+
+/* ================= Detalhe ao clicar em qualquer gráfico =================
+   Pedido do Emil (05/11/2026): TODO gráfico e tabela dos KPIs interativo —
+   passar o mouse mostra o número, clicar abre a lista. Em vez de montar uma
+   lista diferente embaixo de cada gráfico, cada fatia, barra, linha ou número
+   carrega uma "receita" (drill: título, o que medir e quem entra), e um painel
+   lateral único mostra assessor → cliente (ou responsável → negócio), com
+   Excel. Ele usa o MESMO recorte da tela (filtros de período, assessor,
+   produto), recebido do App. */
+const DrillCtx = createContext(null);
+const useDrill = () => useContext(DrillCtx);
+const tempChave = (l) => temperaturaInfo(l.temperatura) ? l.temperatura : 'sem';
+const DR = {
+  todos: (titulo, medida, filtro) => ({ titulo, medida: medida || 'onshore', filtro: filtro || (() => true) }),
+  seg: (k) => ({ titulo: 'Segmento ' + k, medida: 'onshore', filtro: l => (l.segmento || '') === k && (valorEmCarteira(l) > 0 || valorEmCarteiraOffshore(l) > 0) }),
+  ass: (id, nome) => ({ titulo: 'Carteira de ' + (nome || 'assessor'), medida: 'onshore', filtro: l => l.responsavelId === id && (valorEmCarteira(l) > 0 || valorEmCarteiraOffshore(l) > 0) }),
+  temp: (k) => ({ titulo: 'Pipe · ' + (temperaturaInfo(k) ? temperaturaInfo(k).label : 'Sem classificação'), medida: 'pipe',
+    filtro: l => valorCaptacaoNaMoeda(l) > 0 && tempChave(l) === k }),
+  pipe: () => ({ titulo: 'Pipe da jornada', medida: 'pipe', filtro: l => valorCaptacaoNaMoeda(l) > 0 }),
+  assPipe: (id, nome) => ({ titulo: 'Pipe de ' + (nome || 'assessor'), medida: 'pipe', filtro: l => valorCaptacaoNaMoeda(l) > 0 && l.responsavelId === id }),
+  cli: (id, nome, medida) => ({ titulo: nome || 'Cliente', medida: medida || 'onshore', filtro: l => l.id === id }),
+  etapa: (k) => ({ titulo: 'Etapa ' + etapaCurta(k), medida: 'onshore', filtro: l => l.etapa === k && !l.perdido }),
+  origem: (k) => ({ titulo: 'Origem: ' + k, medida: 'onshore', filtro: l => l.origem === k && !l.perdido }),
+  off: () => ({ titulo: 'Clientes com offshore', medida: 'offshore', filtro: l => valorEmCarteiraOffshore(l) > 0 }),
+  offAss: (id, nome) => ({ titulo: 'Offshore de ' + (nome || 'assessor'), medida: 'offshore', filtro: l => l.responsavelId === id && valorEmCarteiraOffshore(l) > 0 }),
+  offSeg: (k) => ({ titulo: 'Offshore · ' + k, medida: 'offshore', filtro: l => (l.segmento || '') === k && valorEmCarteiraOffshore(l) > 0 }),
+  produto: (p) => ({ titulo: 'Negócios de ' + p, tipo: 'negocio', filtro: l => l.produto === p }),
+  negocios: (titulo, filtro) => ({ titulo, tipo: 'negocio', filtro }),
+  espec: (id, nome, produto) => ({ titulo: 'Negócios de ' + (nome || 'especialista') + (produto ? ' · ' + produto : ''), tipo: 'negocio',
+    filtro: l => l.responsavelId === id && (!produto || l.produto === produto) }),
+  indicou: (id, nome, soFechados) => ({ titulo: (soFechados ? 'Fechados' : 'Indicados') + ' por ' + (nome || 'assessor'), tipo: 'negocio',
+    filtro: (l, aux) => { const o = aux.porId.get(l.origemLeadId); return !!o && o.responsavelId === id && (!soFechados || !!l.ganho); } }),
+  funil: (etapa) => ({ titulo: 'Funil · ' + (etapa === 'Fechado (venda)' ? etapa : etapaCurta(etapa)), tipo: 'negocio',
+    filtro: l => etapa === 'Fechado (venda)' ? !!l.ganho : l.etapa === etapa }),
+  mesNeg: (m, campo) => ({ titulo: (campo === 'ganhos' ? 'Ganhos' : campo === 'perdidos' ? 'Perdidos' : 'Criados') + ' em ' + m.label, tipo: 'negocio',
+    filtro: l => campo === 'ganhos' ? (!!l.ganhoEm && monthKey(l.ganhoEm) === m.key)
+      : campo === 'perdidos' ? (!!l.perdidoEm && monthKey(l.perdidoEm) === m.key) : monthKey(l.criadoEm) === m.key })
+};
+
+function DrillProvider({ jornada, negocios, todos, users, onOpen, children }){
+  const [spec, setSpec] = useState(null);
+  const valor = useMemo(() => ({ abrir: setSpec }), []);
+  return h(DrillCtx.Provider, { value: valor }, children,
+    spec ? h(DrillPainel, { spec, jornada, negocios, todos, users, onOpen, onClose: () => setSpec(null) }) : null);
+}
+
+/* Clientes no formato das listas (o mesmo do panorama). */
+function clientesKpi(leads, users, cotacao){
+  const nomeDe = (id) => ((users.find(u => u.id === id) || {}).nome) || 'Sem assessor';
+  return leads.map(l => ({ lead: l, cliente: (l.cliente || '').trim() || nomeCliente(l), conta: l.conta || '',
+    segmento: l.segmento || '', assessorId: l.responsavelId || '—', assessor: nomeDe(l.responsavelId),
+    onshore: valorEmCarteira(l), offshore: valorEmCarteiraOffshore(l), pipe: valorEmCaptacao(l, cotacao),
+    pipeMoeda: valorCaptacaoNaMoeda(l), custodiaPipe: captaNova(l) ? custodiaCaptacao(l) : 'onshore',
+    temperatura: tempChave(l), tipo: captaNova(l) ? 'carteira' : 'novo' }));
+}
+
+function DrillPainel({ spec, jornada, negocios, todos, users, onOpen, onClose }){
+  useEsc(onClose);
+  const cotacao = useCotacao();
+  const nomeDe = (id) => ((users.find(u => u.id === id) || {}).nome) || 'Sem responsável';
+  const aux = useMemo(() => ({ porId: new Map((todos || []).map(l => [l.id, l])) }), [todos]);
+  const soma = (campo) => (lista) => lista.reduce((s, c) => s + (c[campo] || 0), 0);
+  const contar = { titulo: 'Qtd.', soma: l => l.length, formatar: n => String(n) };
+  const abrir = (l) => { onClose(); onOpen(l); };
+  let arvore;
+  if(spec.tipo === 'negocio'){
+    const linhas = (negocios || []).filter(l => spec.filtro(l, aux)).map(l => ({ lead: l, cliente: nomeCliente(l),
+      produto: l.produto || '', assessorId: l.responsavelId || '—', assessor: nomeDe(l.responsavelId),
+      status: l.ganho ? 'Fechado' : l.perdido ? 'Perdido' : 'Em aberto',
+      valor: parseValor(l.valorFechado) || parseValor(l.valorPotencial) || 0 }));
+    arvore = h(Arvore, { titulo: 'Negócios', desc: 'situação → responsável → negócio', linhas,
+      niveis: [{ chave: c => c.status, nome: k => k, ordem: ['Fechado', 'Em aberto', 'Perdido'],
+        cor: k => k === 'Fechado' ? 'var(--success)' : k === 'Perdido' ? 'var(--danger)' : 'var(--gold)' },
+        { chave: c => c.assessorId, nome: (k, c) => c.assessor }],
+      metricas: [{ titulo: 'Valor', soma: soma('valor'), formatar: fmtBRLCompact }, contar],
+      folha: { nome: c => c.cliente, meta: c => [c.produto, c.assessor].filter(Boolean).join(' · '), abrir: c => abrir(c.lead) },
+      colunasExcel: [{ titulo: 'Cliente', valor: c => c.cliente }, { titulo: 'Produto', valor: c => c.produto },
+        { titulo: 'Responsável', valor: c => c.assessor }, { titulo: 'Situação', valor: c => c.status },
+        { titulo: 'Valor (R$)', valor: c => Math.round(c.valor * 100) / 100 }],
+      nomeExcel: spec.titulo, abertoInicial: '/Fechado', vazio: 'Nenhum negócio neste recorte.' });
+  } else {
+    const linhas = clientesKpi((jornada || []).filter(l => !l.excluido && spec.filtro(l, aux)), users, cotacao);
+    const med = spec.medida || 'onshore';
+    const metricas = med === 'pipe'
+      ? [{ titulo: 'Pipe', soma: soma('pipe'), formatar: fmtBRLCompact }, contar]
+      : med === 'offshore'
+        ? [{ titulo: 'Offshore', soma: soma('offshore'), formatar: fmtUSDCompact }, { titulo: 'Onshore', soma: soma('onshore'), formatar: fmtBRLCompact }, contar]
+        : [{ titulo: 'Onshore', soma: soma('onshore'), formatar: fmtBRLCompact }, { titulo: 'Offshore', soma: soma('offshore'), formatar: n => n > 0 ? fmtUSDCompact(n) : '—' }, contar];
+    arvore = h(Arvore, { titulo: 'Clientes', desc: 'assessor → cliente · clique no cliente para abrir a ficha', linhas,
+      niveis: [{ chave: c => c.assessorId, nome: (k, c) => c.assessor }],
+      metricas, abertoInicial: linhas.length && new Set(linhas.map(c => c.assessorId)).size === 1 ? '/' + linhas[0].assessorId : null,
+      folha: { nome: c => c.cliente, abrir: c => abrir(c.lead),
+        meta: c => [c.conta ? 'conta ' + c.conta : null, c.segmento || null,
+          med === 'pipe' ? ((temperaturaInfo(c.temperatura) ? temperaturaInfo(c.temperatura).label : 'sem temperatura') + (c.custodiaPipe === 'offshore' ? ' · ' + fmtUSDCompact(c.pipeMoeda) : '')) : null].filter(Boolean).join(' · ') },
+      colunasExcel: [{ titulo: 'Cliente', valor: c => c.cliente }, { titulo: 'Conta', valor: c => c.conta },
+        { titulo: 'Assessor', valor: c => c.assessor }, { titulo: 'Segmento', valor: c => c.segmento },
+        { titulo: 'Sob gestão onshore (R$)', valor: c => Math.round(c.onshore * 100) / 100 },
+        { titulo: 'Sob gestão offshore (US$)', valor: c => Math.round(c.offshore * 100) / 100 },
+        { titulo: 'Pipe (moeda da negociação)', valor: c => Math.round(c.pipeMoeda * 100) / 100 },
+        { titulo: 'Moeda do pipe', valor: c => c.pipeMoeda > 0 ? (c.custodiaPipe === 'offshore' ? 'US$' : 'R$') : '' },
+        { titulo: 'Temperatura', valor: c => temperaturaInfo(c.temperatura) ? temperaturaInfo(c.temperatura).label : '' }],
+      nomeExcel: spec.titulo, vazio: 'Nenhum cliente neste recorte.' });
+  }
+  return h('div', { className: 'drill-fundo', onClick: (e) => { if(e.target === e.currentTarget) onClose(); } },
+    h('aside', { className: 'drill-painel', role: 'dialog', 'aria-label': spec.titulo },
+      h('div', { className: 'drill-cab' },
+        h('div', null, h('div', { className: 'pn-rotulo-escuro' }, 'Detalhe'), h('h2', null, spec.titulo)),
+        h('button', { className: 'modal-close', onClick: onClose, 'aria-label': 'Fechar' }, h(IconX, { size: 18 }))),
+      h('div', { className: 'drill-corpo' }, arvore)));
 }
 
 /* ================= App ================= */
@@ -11915,7 +12169,8 @@ function App(){
      parte, no extrato, para quem está com uma captação nova em jogo). */
   const setPipe = (leadId, key) => {
     const lead = leads.find(l => l.id === leadId);
-    if(!lead || !podeEditar(lead) || lead.ganho) return null;
+    /* Captado também tem pipe (captaNova): a temperatura vale para ele. */
+    if(!lead || !podeEditar(lead) || (lead.ganho && !captaNova(lead))) return null;
     return mutate(leadId, l => ({ ...l, temperatura: (l.temperatura || '') === key ? '' : key }));
   };
 
@@ -11927,6 +12182,13 @@ function App(){
     const lead = leads.find(l => l.id === leadId);
     if(!lead || !podeEditar(lead) || lead.ganho) return null;
     return mutate(leadId, l => ({ ...l, valorPotencial: valor }));
+  };
+
+  /* Observações editadas direto na ficha. */
+  const setObservacoes = (leadId, texto) => {
+    const lead = leads.find(l => l.id === leadId);
+    if(!lead || !podeEditar(lead)) return null;
+    return mutate(leadId, l => ({ ...l, observacoes: texto }));
   };
 
   /* A fatia em negociação, separada do total. */
@@ -12359,7 +12621,7 @@ function App(){
         : h(OutcomeBoard,{ leads: lostLeads, users, onReopen:reopenLead, mode:'lost', funil })
     )
     : (view==='offshore' && isAdmin)
-      ? h(Fragment, null,
+      ? h(DrillProvider, { jornada: kpiRecorte.jornada, negocios: kpiRecorte.negocios, todos: leads, users, onOpen: setOpenLead },
           h('div',{className:'board-actions'},
             h('div',{className:'board-actions-left'}),
             h('button',{className:'btn btn-primary', onClick:()=>window.print()},
@@ -12376,7 +12638,7 @@ function App(){
       ? h(ImportacaoBaseView,{ leads, users, currentUser,
           onAplicar: aplicarImportacaoBase, onOpen: setOpenLead })
     : view==='kpis'
-      ? h(Fragment, null,
+      ? h(DrillProvider, { jornada: kpiRecorte.jornada, negocios: kpiRecorte.negocios, todos: leads, users, onOpen: setOpenLead },
           /* Impressão vive na página que ela imprime, não na barra do
              aplicativo: assim os controles do topo não mudam de tela para tela. */
           h('div',{className:'board-actions'},
@@ -12417,7 +12679,7 @@ function App(){
     creating ? h(CreateModal,{ funil, grupos, produto: produtoFiltro, onClose:()=>{ setCreating(false); setQuickAddStage(null); }, onCreate:createLead, users, currentUser, isAdmin, initialStage:quickAddStage }) : null,
     openLead ? h(DetailModal,{ lead:openLead, grupos, grupo: grupoDe(leads, openLead, cotacao),
       pendenteIndicacao: pendentesIndicacao.has(openLead.id), somenteLeitura: !podeEditar(openLead), onEncaminhar:(l)=>setEncaminhando(l), onClose:()=>setOpenLead(null), onSave:saveLead, onDelete:deleteLead, users, currentUser, isAdmin, onLose:(lead)=>{ setOpenLead(null); setLosingLead(lead); }, onWin:(lead)=>{ setOpenLead(null); setWinningLead(lead); }, onMove:(lead, to)=>requestMove(lead.id, to), onAddActivity:addActivity, onEditarAtividade:editarAtividade, onRemoverAtividade:removerAtividade, onCorrectStage:correctStage, onTogglePauta:toggleOnboarding, onAddAlerta:addAlerta, onResolverAlerta:resolverAlerta, onRemoverAlerta:removerAlerta, onAddMov:addMovimentacao, onRemoverMov:removerMovimentacao,
-      onIniciarCaptacao:iniciarCaptacaoLead, onConfirmarCaptacao:confirmarCaptacaoLead, onEncerrarCaptacao:encerrarCaptacaoLead, onSetPipe:setPipe, onSetValorPipe:setValorPipe, onSetValorNegociacaoPipe:setValorNegociacaoPipe }) : null,
+      onIniciarCaptacao:iniciarCaptacaoLead, onConfirmarCaptacao:confirmarCaptacaoLead, onEncerrarCaptacao:encerrarCaptacaoLead, onSetPipe:setPipe, onSetValorPipe:setValorPipe, onSetValorNegociacaoPipe:setValorNegociacaoPipe, onSetObservacoes:setObservacoes }) : null,
     managingTeam ? h(TeamModal,{ onClose:()=>setManagingTeam(false), users, leads, onDefinirRole:definirRole, onDefinirProdutos:definirProdutos, onApprove:approveUser, onRemove:removeUser, onResetPin:resetPin, onSetPadrao:definirPadrao, currentUser,
       convites, onConvidar:criarConvite, onCancelarConvite:cancelarConvite }) : null,
     losingLead ? h(LoseModal,{ lead:losingLead, onClose:()=>setLosingLead(null), onConfirm:confirmLose }) : null,
