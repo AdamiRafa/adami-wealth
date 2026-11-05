@@ -75,7 +75,10 @@ modelos = {
     f'<p style="{P}">Clique no botão abaixo e escolha a nova senha.</p>',
     "Criar nova senha",
     '<p style="margin:0 0 10px;">O link vale por tempo limitado e só pode ser usado uma vez. Se expirar, peça outro na tela de login, em <strong>Esqueci minha senha</strong>.</p>'
-    '<p style="margin:0;">Não foi você? Pode ignorar este e-mail. A sua senha continua a mesma.</p>'),
+    '<p style="margin:0;">Não foi você? Pode ignorar este e-mail. A sua senha continua a mesma.</p>',
+    # O link só abre a tela; o código é gasto no clique em "Salvar nova senha".
+    # Assim o robô de segurança do e-mail, que abre os links, não queima o código.
+    link="{{ .SiteURL }}?token_hash={{ .TokenHash }}&type=recovery"),
   "boas-vindas.html": email(
     "Bem-vindo ao Hub Adami",
     "Seu acesso ao Hub Adami está liberado. Crie sua senha para entrar.",

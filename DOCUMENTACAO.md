@@ -218,6 +218,20 @@ Não existe criação de conta pelo administrador, porque isso exigiria a chave
 O convite é marcado como consumido em vez de apagado, para não depender da ordem em que
 os gatilhos rodam.
 
+**Link de redefinir senha (desde a 2.85).** O modelo do e-mail aponta para
+`{{ .SiteURL }}?token_hash={{ .TokenHash }}&type=recovery`, e não para o
+`{{ .ConfirmationURL }}` padrão. Motivo: o link padrão gasta o código no momento em que
+é aberto, e os robôs de segurança dos provedores de e-mail abrem os links para
+conferir. Os registros de Auth de 05/11 mostram isso: cada link foi aberto duas vezes em
+segundos, uma delas por um "Windows NT" que não era o Emil, e o clique da pessoa caía em
+"link já usado". Agora o link só abre a tela de nova senha; o código vira sessão
+(`POST /auth/v1/verify` com `type: recovery`) apenas no clique em "Salvar nova senha".
+Se a troca falhar depois disso (ex.: senha igual à antiga), a sessão fica guardada e a
+segunda tentativa não precisa do código. O formato antigo (`#access_token`) continua
+aceito, e o retorno de erro do Supabase (`#error_code=otp_expired`) vira mensagem na tela
+de login. O Site URL precisa continuar `https://adamicaptal.com.br/hub/`, porque o link
+é montado a partir dele.
+
 **E-mail de boas-vindas (desde a 2.84).** Logo depois do `rpc/convidar`, o portal chama a
 Edge Function `enviar-convite` (código em `supabase/functions/enviar-convite/index.ts`),
 que manda o e-mail pela caixa `hub@adamicaptal.com.br` da HostGator (SMTP direto, porta
@@ -506,7 +520,11 @@ calcula NNM/aplicações/resgates/renda passiva/caixa, tela de auditoria — ver
 **2.84 (05/11/2026) tela de login vira "Hub Adami"; convite manda e-mail de boas-vindas
 sozinho (função `enviar-convite`, botão "reenviar e-mail"); link do e-mail abre o
 Primeiro acesso já preenchido; Enter no Primeiro acesso cria a conta em vez de tentar
-login; senha nova igual à antiga mostra mensagem em português**.
+login; senha nova igual à antiga mostra mensagem em português** ·
+**2.85 (05/11/2026) link de redefinir senha à prova de robô de e-mail: o código só é
+gasto no clique em "Salvar nova senha" (`token_hash` + `POST /auth/v1/verify`); link
+vencido explica na tela; mensagens do "Esqueci minha senha" em português; aviso de
+sucesso em verde**.
 
 ---
 
@@ -527,11 +545,12 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 
 ## 14. Pendências
 
-- **Ligar o e-mail próprio (em andamento, 05/11/2026).** Criar a caixa
-  `hub@adamicaptal.com.br` na HostGator, configurar o SMTP no Supabase (remetente "Hub
-  Adami"), colar o modelo de redefinir senha, instalar a função `enviar-convite` com o
-  segredo `SMTP_SENHA`. Até lá, o e-mail de recuperação sai como "Supabase Auth", com
-  limite de 2/hora, e o convite avisa que o e-mail de boas-vindas não saiu.
+- **E-mail próprio (05/11/2026):** caixa `hub@adamicaptal.com.br` criada, SMTP do
+  Supabase e função `enviar-convite` configurados; boas-vindas confirmado chegando.
+  Falta colar de novo o modelo de redefinir senha da 2.85 (link com `token_hash`) e o
+  Emil confirmar o reset de ponta a ponta. Se os e-mails caírem em spam, conferir SPF e
+  DKIM do `adamicaptal.com.br` no Editor de zona DNS (o cPanel desse plano não mostra
+  "Email Deliverability").
 - **Decidir se a importação passa a criar clientes novos** já vinculados ao assessor pelo
   código. Hoje ela apenas lista.
 - **Importador de extrato BTG** no Gerador de Planos Patrimoniais nunca foi calibrado

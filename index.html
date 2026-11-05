@@ -86,6 +86,7 @@ input,select,textarea{font-family:inherit;font-size:13px}
 .auth-card button.entrar[disabled]{opacity:.55}
 .auth-card .erro{border-left:2px solid var(--alert);background:#FBEDEB;color:#7E2C20;
   font-size:12.5px;line-height:1.5;padding:11px 13px;margin-bottom:22px}
+.auth-card .erro.ok{border-left-color:var(--green);background:#E8F3EC;color:#0A5A36}
 .auth-card .pe{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
   font-size:11.5px;color:var(--muted);line-height:1.6}
 @media (prefers-reduced-motion:reduce){.auth-card{animation:none}}
@@ -670,8 +671,18 @@ function recuperarSenha(email){
     headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
     body:JSON.stringify({email:email})
   }).then(function(res){
-    if(!res.ok) return res.json().then(function(j){
-      throw new Error((j&&(j.msg||j.message))||"Não foi possível enviar o e-mail.");
+    if(!res.ok) return res.text().then(function(t){
+      var j=null; try{ j=t?JSON.parse(t):null; }catch(e){}
+      var m=(j&&(j.msg||j.message||j.error_description))||"";
+      var cod=(j&&j.error_code)||"";
+      if(/after \d+ seconds?/i.test(m)||cod==="over_request_rate_limit")
+        m="Já mandamos um e-mail há pouco. Espere um minuto antes de pedir outro.";
+      else if(res.status===429||cod==="over_email_send_rate_limit")
+        m="Muitos e-mails de senha pedidos na última hora. Tente de novo mais tarde, ou peça a um master para trocar sua senha.";
+      else if(res.status>=500)
+        m="O servidor de e-mail não conseguiu enviar agora. Tente de novo em alguns minutos, ou peça a um master para trocar sua senha.";
+      else if(!m) m="Não foi possível enviar o e-mail.";
+      throw new Error(m);
     });
     return true;
   });
@@ -1147,7 +1158,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.84";
+var VERSAO="versão 2.85";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3605,7 +3616,7 @@ function verSenha(idCampo,idBotao){
   b.setAttribute("title",mostrar?"Ocultar senha":"Mostrar senha");
   i.focus();
 }
-function viewLogin(erro){
+function viewLogin(erro,sucesso){
   return '<div class="auth">'+
     '<div class="auth-side">'+
       '<img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">'+
@@ -3622,7 +3633,7 @@ function viewLogin(erro){
       '<p class="hint">'+(MODO_LOGIN==="novo"
         ? "Use o e-mail que recebeu o convite e escolha a sua senha."
         : "Entre com o e-mail cadastrado pela empresa.")+'</p>'+
-      (erro?'<div class="erro">'+esc(erro)+'</div>':'')+
+      (erro?'<div class="erro'+(sucesso?' ok':'')+'" role="'+(sucesso?'status':'alert')+'">'+esc(erro)+'</div>':'')+
       '<label for="lgEmail">E-mail</label>'+
       '<div class="campo"><input type="email" id="lgEmail" autocomplete="username" placeholder="nome@'+EMPRESA.dominio+'"'+
         (EMAIL_INICIAL?' value="'+esc(EMAIL_INICIAL)+'"':'')+' onkeydown="if(event.key===\'Enter\')enviarLogin()"></div>'+
@@ -3714,7 +3725,7 @@ function esqueciSenha(){
          alternativo (pedir pro master trocar), em vez de um "enviado" que
          deixa a pessoa esperando um e-mail que pode nunca vir. */
       document.getElementById("view").innerHTML=
-        viewLogin("Se este e-mail tiver conta, mandamos um link para trocar a senha — confira a caixa de entrada e o spam nos próximos minutos. Não chegou? Peça a um master para trocar sua senha por você.");
+        viewLogin("Se este e-mail tiver conta no Hub Adami, o link para trocar a senha chega em até um minuto. Confira também o spam. Use sempre o e-mail mais recente.",true);
     })
     .catch(function(err){
       document.getElementById("view").innerHTML=viewLogin(String(err.message||err));
@@ -3726,8 +3737,20 @@ function esqueciSenha(){
    &type=recovery), nunca processado antes -- clicar no link so abria o portal
    normal, sem nenhum jeito de digitar a senha nova. Essa tela fecha esse buraco. */
 var TOKEN_RECUPERACAO=null;
+/* Desde a 2.85 o e-mail traz ?token_hash=...&type=recovery e o código só é
+   gasto no clique em "Salvar nova senha". Antes, o link já consumia o código ao
+   abrir: o robô de segurança do e-mail (que abre os links para conferir) gastava
+   o código e o clique da pessoa caía em "link já usado". O formato antigo (#access_token)
+   continua aceito para e-mails enviados antes da troca do modelo. */
+var ERRO_LINK_EMAIL="";
 function detectarRecuperacaoNaUrl(){
+  var q=new URLSearchParams(location.search);
+  if(q.get("token_hash")&&q.get("type")==="recovery") return {token_hash:q.get("token_hash")};
   var hash=location.hash||"";
+  if(/error_code=|error=access_denied/.test(hash)){
+    ERRO_LINK_EMAIL="O link do e-mail expirou ou já foi usado. Peça um novo em \"Esqueci minha senha\".";
+    return null;
+  }
   if(!hash || hash.indexOf("type=recovery")===-1) return null;
   var params=new URLSearchParams(hash.replace(/^#/,""));
   var at=params.get("access_token");
@@ -3769,6 +3792,24 @@ function cancelarRedefinicao(){
   MODO_LOGIN="entrar";
   document.getElementById("view").innerHTML=viewLogin();
 }
+/* Link novo: o código (token_hash) vira sessão só agora, no clique. Guarda a
+   sessão em TOKEN_RECUPERACAO para que uma segunda tentativa (ex.: senha igual
+   à antiga) não precise do código de novo, que já foi gasto. */
+function sessaoDoLinkDeSenha(){
+  if(TOKEN_RECUPERACAO.access_token) return Promise.resolve();
+  return fetch(SB_URL+"/auth/v1/verify",{
+    method:"POST",
+    headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({type:"recovery",token_hash:TOKEN_RECUPERACAO.token_hash})
+  }).then(function(res){
+    return res.text().then(function(t){
+      var j=null; try{ j=t?JSON.parse(t):null; }catch(e){}
+      if(!res.ok||!j||!j.access_token)
+        throw new Error("Esse link expirou ou já foi usado. Peça um novo em \"Esqueci minha senha\".");
+      TOKEN_RECUPERACAO={access_token:j.access_token,refresh_token:j.refresh_token||"",user:j.user};
+    });
+  });
+}
 function salvarNovaSenha(){
   if(!TOKEN_RECUPERACAO){ cancelarRedefinicao(); return; }
   var p1=document.getElementById("rsSenha1").value;
@@ -3777,11 +3818,11 @@ function salvarNovaSenha(){
   if(p1.length<6){ document.getElementById("view").innerHTML=viewRedefinirSenha("A senha precisa ter pelo menos 6 caracteres."); return; }
   if(p1!==p2){ document.getElementById("view").innerHTML=viewRedefinirSenha("As senhas digitadas são diferentes."); return; }
   var b=document.getElementById("rsBtn"); if(b){ b.disabled=true; b.textContent="Salvando…"; }
-  fetch(SB_URL+"/auth/v1/user",{
+  sessaoDoLinkDeSenha().then(function(){ return fetch(SB_URL+"/auth/v1/user",{
     method:"PUT",
     headers:{"apikey":SB_KEY,"Authorization":"Bearer "+TOKEN_RECUPERACAO.access_token,"Content-Type":"application/json"},
     body:JSON.stringify({password:p1})
-  }).then(function(res){
+  }); }).then(function(res){
     return res.json().then(function(j){
       if(!res.ok){
         var m=(j&&(j.msg||j.error_description||j.message))||"Não foi possível trocar a senha.";
@@ -3927,14 +3968,19 @@ TOKEN_RECUPERACAO=detectarRecuperacaoNaUrl();
 if(TOKEN_RECUPERACAO){
   /* Tira o token da barra de endereço assim que lido -- ele não precisa
      continuar visível ali, e sobreviveria a um F5 sem motivo. */
-  history.replaceState(null,"",location.pathname+location.search);
+  history.replaceState(null,"",location.pathname);
   document.getElementById("view").innerHTML=viewRedefinirSenha(null);
   document.querySelector(".rail").style.display="none";
   document.querySelector(".topbar").style.display="none";
   document.querySelector(".main").style.margin="0";
   document.querySelector(".main").style.padding="0";
   setTimeout(function(){ var i=document.getElementById("rsSenha1"); if(i) i.focus(); },30);
+}else if(ERRO_LINK_EMAIL&&!(SESSAO&&SESSAO.access_token)){
+  history.replaceState(null,"",location.pathname+location.search);
+  render();
+  document.getElementById("view").innerHTML=viewLogin(ERRO_LINK_EMAIL);
 }else if(SESSAO&&SESSAO.access_token){
+  if(ERRO_LINK_EMAIL) history.replaceState(null,"",location.pathname+location.search);
   carregar().then(function(){
     if(db.clientes.length) S.cliente=db.clientes[0].id;
     montarRascunho(); render();
