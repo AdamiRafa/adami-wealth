@@ -974,6 +974,33 @@ de prazo.
 **Selo de versão do CRM:** `CRM_VERSAO`, no rodapé do painel. O CRM não tinha selo até
 aqui.
 
+**Segunda rodada (05/11/2026, `2026.11.05.2`), pedidos do Emil:**
+
+- **Movimentações saíram da ficha do cliente.** O bloco virou "Carteira e pipe": mostra o
+  sob gestão (onshore/offshore) e o pipe, sem "+ Registrar", sem extrato e sem os totais de
+  aportes, retiradas e NNM. Decisão consciente do Emil: até a API do BTG chegar, nenhum
+  aporte ou resgate novo entra no CRM, então NNM, captação bruta e saídas do painel ficam
+  parados. Os lançamentos antigos continuam gravados e contando. O fluxo de captação da
+  base (+ Pipe, alterar, confirmar, encerrar) ficou, porque é pipe; "confirmar captação"
+  ainda grava o aporte correspondente.
+- **Pipe em todos os cards** do quadro: prospect mostra o patrimônio potencial, cliente da
+  base a captação nova em negociação, negócio de especialista o valor do negócio; sem nada
+  em jogo, traço esmaecido.
+- **Receita gerada no mês** substitui "Receita PJ2" no Dashboard: aberto, divide PJ1
+  (receita da carteira no BTG, desligado até a API) e PJ2.
+- **KPIs navegáveis** (`Navegavel` + `KpiTopo`): o período virou pílula no topo azul, os
+  outros recortes ficam em "Mais filtros", e cada seção vira um cartão com o número de
+  abertura. Clicou, abre embaixo. O painel do admin deixou o tema escuro e a coluna de
+  filtros. Nenhum gráfico ou cálculo foi reescrito: o `Navegavel` só reorganiza as seções
+  que já existiam. Na impressão todas as seções saem abertas (PDF conferido: 5 páginas,
+  margens iguais às de antes).
+- **Mesmo estilo** em Offshore (topo azul, cartões), Captados e Desqualificados (total no
+  topo, grupos por mês ou por assessor que se abrem, com Histórico e Reabrir dentro) e no
+  topo e nos cards do quadro de Relacionamento (só visual; colunas e arrastar iguais).
+- Atenção à diferença de números entre telas: o Dashboard mostra o patrimônio onshore e o
+  offshore separados; o "Total da carteira" dos KPIs e do Relacionamento continua como era,
+  somando o offshore pela cotação.
+
 **Pendência encontrada no teste:** no celular (390 px) o cabeçalho do CRM (abas, seletor
 de equipe, botão Equipe, nome) passa da borda e a página rola para o lado (753 px). Já era
 assim antes do painel; o painel em si cabe na tela.

@@ -1901,6 +1901,7 @@
     text-transform:uppercase;letter-spacing:.04em;
   }
   .card-captacao-valor{font-weight:500;}
+  .card-captacao.vazio{opacity:.55;}
   .hero-offshore{
     display:flex;align-items:center;gap:6px;margin-top:6px;
     font-family:'IBM Plex Mono',Consolas,Menlo,'Courier New',monospace;font-size:11.5px;color:#9FB2CE;
@@ -2660,6 +2661,18 @@
   .pn-cliente-nome strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .pn-cliente-seta{color:var(--ink-faint);font-size:18px;}
   .pn-vazio{background:var(--surface);border:1px dashed var(--border-strong);border-radius:14px;padding:28px;text-align:center;color:var(--ink-faint);}
+  .pn-receita{margin-top:12px;}
+  .pn-receita-partes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+  .pn-receita-parte{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;gap:4px;}
+  .pn-receita-parte span{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);font-weight:600;}
+  .pn-receita-parte strong{font-family:'Fraunces',Georgia,serif;font-size:24px;color:var(--gold);}
+  .pn-receita-parte small{font-size:12.5px;color:var(--ink-faint);}
+  .pn-receita-parte.desligada{background:transparent;border-style:dashed;}
+  .pn-receita-parte.desligada strong{color:var(--ink-faint);}
+  .pn-heroi-curto{padding-bottom:26px;margin-bottom:22px;}
+  .pn-conteudo-solto{padding:0;}
+  .pn-bloco-corpo.lost-list{display:flex;flex-direction:column;gap:8px;padding:12px;}
+  .pn-bloco-corpo.lost-list .lost-row{margin:0;}
   .pn-rodape-nota{font-size:12.5px;color:var(--ink-faint);margin-top:14px;}
 
   .pn-tabela-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow-x:auto;}
@@ -2691,6 +2704,75 @@
     .pn-bloco-cab{padding:14px;gap:10px;}
     .pn-cliente{padding:11px 14px 11px 33px;}
     .pn-linha{padding:10px 14px;flex-wrap:wrap;}
+  }
+
+  /* ================= Quadro de Relacionamento no estilo do painel =================
+     Só visual (05/11/2026): mesmo azul com degradê do Dashboard, números
+     grandes em serifa e cantos iguais. Colunas, arrastar e cliques ficam
+     como estavam. */
+  .bento-block{border-radius:14px;}
+  .bento-block.navy{
+    background:linear-gradient(180deg,#0B1E3F 0%,var(--navy) 100%);border-radius:18px;
+    box-shadow:0 6px 24px rgba(5,19,42,.14);
+  }
+  .bento-block.navy::before{display:none;}
+  .hero-figure{font-family:'Fraunces',Georgia,'Times New Roman',serif;font-weight:500;letter-spacing:-.01em;}
+  .tile-figure{font-family:'Fraunces',Georgia,'Times New Roman',serif;font-weight:600;color:var(--navy);letter-spacing:-.01em;}
+  .bento-tile.alert .tile-figure{color:var(--danger);}
+  .bento-tile.clear .tile-figure{color:var(--success);}
+  .lead-card{border-radius:12px;}
+
+  /* ================= Indicadores navegáveis ================= */
+  .kn{display:flex;flex-direction:column;gap:14px;max-width:1180px;margin:0 auto;width:100%;}
+  .kn-heroi{padding-bottom:26px;margin-bottom:18px;max-width:1180px;margin-left:auto;margin-right:auto;}
+  .kn-periodos{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+  .kn-periodos button{
+    border:1px solid rgba(255,255,255,.18);background:transparent;color:rgba(255,255,255,.85);
+    border-radius:999px;padding:7px 14px;font:500 13px 'Inter',-apple-system,sans-serif;cursor:pointer;
+  }
+  .kn-periodos button:hover{background:rgba(255,255,255,.08);}
+  .kn-periodos button.ativo{background:#fff;color:var(--navy);border-color:#fff;font-weight:600;}
+  .kn-periodos .kn-mais{margin-left:auto;border-style:dashed;}
+  .kn-periodos .kn-mais.ligado{border-style:solid;background:rgba(176,138,46,.25);border-color:rgba(244,221,162,.5);color:#F4DDA2;}
+  .kn-datas{display:flex;align-items:center;gap:8px;margin-top:12px;color:rgba(255,255,255,.7);font-size:13px;}
+  .kn-datas input{height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;padding:0 10px;font-family:inherit;color-scheme:dark;}
+  .kn-heroi .pn-meta{margin-top:12px;}
+  .kn-filtros{max-width:1180px;margin:-6px auto 18px;}
+  .kn-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
+  .kn-card-titulo{font-family:'Fraunces',Georgia,serif;font-size:19px;font-weight:600;color:var(--navy);margin:8px 0 4px;line-height:1.25;}
+  .kn-corpo{display:none;flex-direction:column;gap:var(--space-4);}
+  .kn-corpo.aberto{display:flex;animation:knAbre .18s ease-out;}
+  @keyframes knAbre{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+  /* O painel do admin era escuro e com coluna de filtros; agora segue o
+     Dashboard: fundo claro, uma coluna, cartões brancos. */
+  .painel.kn-admin{
+    --bg:#F4F6F9; --surface:#FFFFFF; --ink:#0C1626; --ink-muted:#5C6B7F; --ink-faint:#95A1B0;
+    --border:#E2E6ED; --border-strong:#CCD3DD; --primary:#195AB4; --primary-tint:#E7EFFB;
+    --success:#2F7A56; --success-tint:#E6F1EC; --danger:#B3403A; --danger-tint:#FBEBEA;
+    --gold:#B08A2E; --gold-tint:#F7F0DC;
+    display:block;background:transparent;color:var(--ink);padding:0;box-shadow:none;border-radius:0;
+    max-width:1180px;margin:0 auto;
+  }
+  /* As cores claras são as mesmas que a impressão do painel já usava. */
+  .painel.kn-admin .ind{border-left-color:var(--border);}
+  .painel.kn-admin .ind-rotulo{color:#54627A;}
+  .painel.kn-admin .ind-valor{color:#0F1B2D;}
+  .painel.kn-admin .ind-contexto{color:#8A97AB;}
+  .painel.kn-admin .ind.ouro .ind-valor{color:#8A6A18;}
+  .painel.kn-admin .ind.verde .ind-valor{color:#2F7A57;}
+  .painel.kn-admin .ind.alerta .ind-valor{color:#B4453E;}
+  .painel.kn-admin .rosca-total{fill:#0F1B2D;}
+  .painel.kn-admin .rosca-legenda-total, .painel.kn-admin .grafico-svg .grade-num,
+  .painel.kn-admin .grafico-svg .grafico-mes{fill:#8A97AB;}
+  .painel.kn-admin .bar-track{box-shadow:none;}
+  @media print{
+    .kn-grade, .kn-heroi, .kn-filtros{display:none !important;}
+    .kn-corpo{display:flex !important;}
+  }
+  @media (max-width:640px){
+    .kn-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+    .kn-periodos .kn-mais{margin-left:0;}
+    .kn-card-titulo{font-size:16px;}
   }
 </style>
 </head>
@@ -5249,16 +5331,21 @@ function LeadCard({ lead, onOpen, onDragStart, onDragEnd, dragging, ownerName, s
         h('span',{className:'card-offshore-valor'}, fmtUSDCompact(offshoreUsd)),
         cotacaoValida(cotacao) ? null : h('span',{className:'card-offshore-aviso'},'fora do total')
       ) : null,
-      /* Cliente da base com captação em negociação: o valor acima é o que já
-         está em casa; esta linha é o que está em jogo. */
-      (clienteDaBase(lead) && valorCaptacaoNaMoeda(lead) > 0) ? h('div',{className:'card-captacao',
-        title: custodiaCaptacao(lead) === 'offshore'
-          ? 'Captação offshore em negociação com este cliente da base'
-          : 'Captação em negociação com este cliente da base'},
-        h('span',{className:'card-captacao-rotulo'}, custodiaCaptacao(lead) === 'offshore' ? 'Pipe · off' : 'Pipe'),
-        h('span',{className:'card-captacao-valor'},
-          (custodiaCaptacao(lead) === 'offshore' ? fmtUSDCompact : fmtBRLCompact)(valorCaptacaoNaMoeda(lead)))
-      ) : null,
+      /* Pipe em TODO card (pedido do Emil, 05/11/2026): o que está em jogo com
+         este cliente. Prospect: o patrimônio potencial. Cliente da base: a
+         captação nova em negociação. Negócio de especialista: o valor do
+         negócio. Captado, desqualificado ou base sem negociação: traço, para a
+         linha existir igual em todos e a ausência ficar visível. */
+      (() => {
+        const esp = (lead.funil || 'assessor') === 'especialista';
+        const off = !esp && clienteDaBase(lead) && custodiaCaptacao(lead) === 'offshore';
+        const v = esp ? ((lead.ganho || lead.perdido) ? 0 : (parseValor(lead.valorPotencial) || 0)) : valorCaptacaoNaMoeda(lead);
+        return h('div',{className:'card-captacao' + (v > 0 ? '' : ' vazio'),
+          title: v > 0 ? (clienteDaBase(lead) ? 'Captação nova em negociação com este cliente da base' : 'Valor em jogo com este cliente')
+            : 'Nada em negociação com este cliente agora'},
+          h('span',{className:'card-captacao-rotulo'}, off ? 'Pipe · off' : 'Pipe'),
+          h('span',{className:'card-captacao-valor'}, v > 0 ? (off ? fmtUSDCompact : fmtBRLCompact)(v) : '—'));
+      })(),
       /* O rodapé só existe quando há responsável a mostrar: datas de contato
          e telefone saíram do card e seguem na ficha. */
       showOwner ? h('div',{className:'lead-card-foot'},
@@ -6184,7 +6271,11 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
         /* Extrato da carteira: o que entrou e o que saiu, com saldo. */
         jornadaLead ? h('div',{className:'extrato', ref:captacaoRef},
           h('div',{className:'pauta-head'},
-            h('div',{className:'bento-eyebrow'},'Movimentações'),
+            /* Desde 05/11/2026 a ficha não lança mais aporte e resgate: a carteira
+               vai ser atualizada pelo BTG (decisão do Emil, sabendo que NNM,
+               captação bruta e saídas ficam parados até a API chegar). Os
+               lançamentos antigos continuam gravados e contando. O pipe fica. */
+            h('div',{className:'bento-eyebrow'},'Carteira e pipe'),
             !somenteLeitura
               ? h('div',{className:'captacao-links'},
                   /* Cliente da base começa captação nova daqui: ela é um
@@ -6192,9 +6283,7 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                      aconteceram. Com uma aberta, as ações ficam nela. */
                   (daBase && !captacaoAberta && !captacaoForm)
                     ? h('button',{className:'link-btn', onClick:()=>abrirCaptacao('nova')}, '+ Pipe')
-                    : null,
-                  h('button',{className:'link-btn', onClick:()=>{ setCaptacaoForm(null); setCriandoMov(v => !v); }},
-                    criandoMov ? 'Cancelar' : '+ Registrar'))
+                    : null)
               : null
           ),
 
@@ -6227,15 +6316,11 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
               h('span',{className:'extrato-valor forte'},
                 moeda(offshoreAberto ? valorEmCarteiraOffshore(draft) : valorEmCarteira(draft)))),
             h('div',{className:'extrato-bloco'},
-              h('span',{className:'extrato-rotulo'},'Aportes'),
-              h('span',{className:'extrato-valor entrada'}, moedaCompacta(totaisMov.aportes))),
-            h('div',{className:'extrato-bloco'},
-              h('span',{className:'extrato-rotulo'},'Retiradas'),
-              h('span',{className:'extrato-valor saida'}, moedaCompacta(totaisMov.retiradas))),
-            h('div',{className:'extrato-bloco'},
-              h('span',{className:'extrato-rotulo'},'Net New Money'),
-              h('span',{className:'extrato-valor' + (totaisMov.liquido < 0 ? ' saida' : ' entrada')},
-                (totaisMov.liquido >= 0 ? '+' : '−') + moedaCompacta(Math.abs(totaisMov.liquido))))
+              h('span',{className:'extrato-rotulo'},'Pipe'),
+              h('span',{className:'extrato-valor'},
+                (daBase ? (custodiaCaptacao(draft) === (offshoreAberto ? 'offshore' : 'onshore') && valorCaptacaoNaMoeda(draft) > 0
+                    ? moedaCompacta(valorCaptacaoNaMoeda(draft)) : '—')
+                  : (!offshoreAberto && valorCaptacaoNaMoeda(draft) > 0 ? moedaCompacta(valorCaptacaoNaMoeda(draft)) : '—'))))
           ),
 
           /* Captação da base em negociação, dentro do extrato: é o aporte que
@@ -6342,53 +6427,6 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                 ) : null
               )
             : null,
-
-          criandoMov ? h('div',{className:'alerta-form'},
-            h('div',{className:'activity-form-row'},
-              h('select',{ className:'select-sm', value:novaMov.tipo, 'aria-label':'Tipo de movimentação',
-                onChange:e=>setNovaMov({ ...novaMov, tipo:e.target.value }) },
-                TIPOS_MOVIMENTACAO.map(t => h('option',{key:t.key, value:t.key}, t.label))),
-              h('input',{ className:'select-sm', value:novaMov.valor, inputMode:'decimal',
-                placeholder: offshoreAberto ? 'Valor em US$' : 'Valor em R$',
-                'aria-label': offshoreAberto ? 'Valor em dólares' : 'Valor em reais',
-                onChange:e=>{ setNovaMov({ ...novaMov, valor:e.target.value }); if(movErro) setMovErro(''); },
-                onBlur:(e)=>{ const n = parseValor(e.target.value); setNovaMov(m => ({ ...m, valor: n === null ? '' : moeda(n) })); } }),
-              h('input',{ className:'select-sm', type:'date', value:novaMov.data, 'aria-label':'Data',
-                max: todayISO(),
-                onChange:e=>setNovaMov({ ...novaMov, data:e.target.value }) })
-            ),
-            h('input',{ className:'alerta-texto', value:novaMov.nota,
-              placeholder:'Observação (opcional). Ex: resgate para compra de imóvel',
-              onChange:e=>setNovaMov({ ...novaMov, nota:e.target.value }),
-              onKeyDown:(e)=>{ if(e.key==='Enter') registrarMov(); } }),
-            movErro ? h('div',{className:'field-error'}, movErro) : null,
-            h('button',{className:'btn btn-ghost', style:{height:32,fontSize:12.5,alignSelf:'flex-start'},
-              onClick:registrarMov}, h(IconPlus,{size:13}), 'Registrar')
-          ) : null,
-
-          movimentacoesDe(draft, custodiaAba).length === 0 && !criandoMov
-            ? h('div',{className:'history-empty'},
-                offshoreAberto ? 'Nenhuma movimentação offshore registrada.' : 'Nenhuma movimentação registrada.')
-            : h('div',{className:'extrato-lista'},
-                movimentacoesDe(draft, custodiaAba).map(m => {
-                  const saida = m.tipo === 'retirada';
-                  return h('div',{key:m.id, className:'extrato-item'},
-                    h('span',{className:'extrato-seta ' + (saida ? 'saida' : 'entrada')}, saida ? '↓' : '↑'),
-                    h('div',{className:'extrato-corpo'},
-                      h('div',{className:'extrato-linha'},
-                        h('span',{className:'extrato-tipo'}, saida ? 'Retirada' : 'Aporte'),
-                        h('span',{className:'extrato-data'}, fmtDate(m.data))
-                      ),
-                      m.nota ? h('div',{className:'extrato-nota'}, m.nota) : null,
-                      h('div',{className:'extrato-autor'},'por ', m.autor)
-                    ),
-                    h('span',{className:'extrato-montante ' + (saida ? 'saida' : 'entrada')},
-                      (saida ? '−' : '+') + moeda(parseValor(m.valor) || 0)),
-                    !somenteLeitura ? h('button',{className:'link-btn danger', title:'Excluir movimentação',
-                      onClick:()=>{ const at = onRemoverMov(draft.id, m.id); if(at) setDraft(at); }}, '×') : null
-                  );
-                })
-              )
         ) : null,
 
         /* Régua de relacionamento (padrão Supernova): só existe para quem já
@@ -7099,6 +7137,8 @@ function OutcomeBoard({ leads, users, onReopen, mode, funil }){
   const isWon = mode === 'won';
   /* Abrir o cliente só para reler o que foi registrado é caro; o histórico
      vem num modal próprio, sem os campos de cadastro no caminho. */
+  const [por, setPor] = useState('mes');
+  const [aberto, setAberto] = useState(undefined);
   const [verHistorico, setVerHistorico] = useState(null);
   const especialista = funil === 'especialista';
   const valorDe = (l) => (isWon ? parseValor(l.valorFechado) : parseValor(l.valorPotencial)) || 0;
@@ -7111,26 +7151,27 @@ function OutcomeBoard({ leads, users, onReopen, mode, funil }){
         : (especialista ? 'Nenhum negócio perdido por aqui ainda.' : 'Nenhum cliente desqualificado por aqui ainda.'));
   }
 
-  return h('div',null,
-    /* Resumo do que a tela lista: sem ele o assessor precisa somar de cabeça. */
-    h('div',{className:'desfecho-resumo' + (isWon ? ' ganho' : ' perda')},
-      h('div',{className:'desfecho-bloco'},
-        h('span',{className:'desfecho-rotulo'}, isWon
-          ? (especialista ? 'Total fechado' : 'Total captado')
-          : (especialista ? 'Total perdido' : 'Total desqualificado')),
-        h('span',{className:'desfecho-valor'}, fmtBRL(total))
-      ),
-      h('div',{className:'desfecho-bloco'},
-        h('span',{className:'desfecho-rotulo'}, especialista ? 'Negócios' : 'Clientes'),
-        h('span',{className:'desfecho-valor'}, leads.length)
-      ),
-      h('div',{className:'desfecho-bloco'},
-        h('span',{className:'desfecho-rotulo'},'Média'),
-        h('span',{className:'desfecho-valor'}, leads.length ? fmtBRLCompact(total / leads.length) : '—')
-      )
-    ),
-    h('div',{className:'lost-list'},
-    leads.slice().sort((a,b)=>((isWon?b.ganhoEm:b.perdidoEm)||0)-((isWon?a.ganhoEm:a.perdidoEm)||0)).map(lead => {
+  /* Mesmo desenho do Dashboard (pedido do Emil, 05/11/2026): o total no topo
+     azul, depois grupos que se abrem — por mês ou por assessor — e dentro de
+     cada um a mesma linha de sempre, com Histórico e Reabrir. */
+  const dataDe = (l) => (isWon ? l.ganhoEm : l.perdidoEm) || 0;
+  const ordenados = leads.slice().sort((a,b) => dataDe(b) - dataDe(a));
+  const chaveDe = por === 'mes'
+    ? (l => { const t = dataDe(l); if(!t) return '0000-00'; const dt = new Date(t);
+        return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0'); })
+    : (l => l.responsavelId || '—');
+  const MESES_NOME = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const nomeGrupo = (k) => por === 'mes'
+    ? (k === '0000-00' ? 'Sem data' : MESES_NOME[Number(k.slice(5)) - 1].replace(/^./, c => c.toUpperCase()) + ' de ' + k.slice(0, 4))
+    : nameFor(k === '—' ? null : k);
+  const mapa = new Map();
+  ordenados.forEach(l => { const k = chaveDe(l); if(!mapa.has(k)) mapa.set(k, []); mapa.get(k).push(l); });
+  const grupos = Array.from(mapa.entries()).map(([k, itens]) => ({ key:k, nome:nomeGrupo(k), itens, total: itens.reduce((s,l) => s + valorDe(l), 0) }));
+  if(por === 'mes') grupos.sort((a,b) => b.key.localeCompare(a.key)); else grupos.sort((a,b) => b.total - a.total);
+  const abertoEfetivo = aberto === undefined ? (grupos[0] && grupos[0].key) : aberto;
+  const ultimo = ordenados[0] ? dataDe(ordenados[0]) : 0;
+
+  const linha = (lead) => {
       const valor = isWon ? parseValor(lead.valorFechado) : parseValor(lead.valorPotencial);
       const dataRef = isWon ? lead.ganhoEm : lead.perdidoEm;
       const registros = linhaDoTempo(lead);
@@ -7159,7 +7200,38 @@ function OutcomeBoard({ leads, users, onReopen, mode, funil }){
           h('button',{className:'btn btn-ghost', style:{height:32,padding:'0 12px',fontSize:12}, onClick:()=>onReopen(lead.id)}, h(IconRefresh,{size:12}), 'Reabrir')
         )
       );
-    })
+  };
+
+  return h('div',{className:'pn'},
+    h('section',{className:'pn-heroi pn-heroi-curto'},
+      h('div',{className:'pn-rotulo'}, isWon
+        ? (especialista ? 'Total fechado' : 'Total captado')
+        : (especialista ? 'Total perdido' : 'Total desqualificado')),
+      h('div',{className:'pn-grande'}, h('small',null,'R$'), total.toLocaleString('pt-BR',{ minimumFractionDigits:2, maximumFractionDigits:2 })),
+      h('div',{className:'pn-pilulas'},
+        h('span',{className:'pn-pilula ' + (isWon ? 'boa' : 'ruim')}, leads.length + (especialista
+          ? (leads.length === 1 ? ' negócio' : ' negócios') : (leads.length === 1 ? ' cliente' : ' clientes'))),
+        h('span',{className:'pn-pilula'}, 'média ' + (leads.length ? fmtBRLCompact(total / leads.length) : '—')),
+        ultimo ? h('span',{className:'pn-pilula'}, 'último em ' + new Date(ultimo).toLocaleDateString('pt-BR')) : null)
+    ),
+    h('div',{className:'pn-conteudo pn-conteudo-solto'},
+      h('div',{className:'pn-carteira-topo'},
+        h('span',{className:'pn-rotulo-escuro'}, isWon ? (especialista ? 'Vendas fechadas' : 'Captações efetivadas') : (especialista ? 'Negócios perdidos' : 'Clientes desqualificados')),
+        h('div',{className:'pn-alternar', role:'group'},
+          h('button',{ className: por === 'mes' ? 'ativo' : '', onClick:()=>{ setPor('mes'); setAberto(undefined); } }, 'Por mês'),
+          h('button',{ className: por === 'assessor' ? 'ativo' : '', onClick:()=>{ setPor('assessor'); setAberto(undefined); } }, especialista ? 'Por responsável' : 'Por assessor'))),
+      h('div',{className:'pn-carteira-lista'}, grupos.map((g, gi) => {
+        const ab = abertoEfetivo === g.key;
+        return h('div',{ key:g.key, className:'pn-bloco' + (ab ? ' aberto' : '') },
+          h('button',{ className:'pn-bloco-cab', 'aria-expanded': ab, onClick:()=>setAberto(ab ? null : g.key) },
+            h('i',{ style:{ background: PN_CORES[gi % PN_CORES.length] } }),
+            h('span',{className:'pn-bloco-nome'}, h('strong',null, g.nome),
+              h('small',null, g.itens.length + (especialista ? (g.itens.length === 1 ? ' negócio' : ' negócios') : (g.itens.length === 1 ? ' cliente' : ' clientes')))),
+            h('span',{className:'pn-bloco-valor'}, h('strong',null, fmtBRL(g.total)),
+              h('small',null, total > 0 ? pnPct(g.total, total) + ' do total' : '')),
+            h('span',{className:'pn-bloco-seta'}, h(IconChevron,{size:15}))),
+          ab ? h('div',{className:'pn-bloco-corpo lost-list'}, g.itens.map(linha)) : null);
+      }))
     ),
 
     verHistorico ? h(HistoricoModal,{
@@ -8404,7 +8476,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
   const producaoTotal = fechados.reduce((a,l) => a + valorDe(l), 0);
   const emJogo = abertos.reduce((a,l) => a + valorDe(l), 0);
 
-  return h('div',{className:'painel'},
+  return h('div',{className:'painel kn-admin'},
     h('div',{className:'print-header'},
       h('div',{className:'print-brand'}, h('span',{className:'brand-mark'}), h('span',null,'CRM')),
       h('h1',null,'Panorama do escritório'),
@@ -8417,11 +8489,19 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
 
     /* Filtros na coluna, painel na área maior: os recortes ficam sempre à
        vista enquanto os números mudam ao lado. */
-    h('aside',{className:'painel-lado'},
-      h(KpiFiltros,{ filtros, onChange:onFiltros, funil:'especialista', users, leads, consolidado:true, coluna:true })
+    h(KpiTopo,{ filtros, onFiltros,
+      escopo: filtros.assessor && filtros.assessor !== 'all' ? ((users.find(u => u.id === filtros.assessor) || {}).nome || 'Toda a casa') : 'Toda a casa',
+      detalhe: descreverRecorte(filtros, users) + ' · clique num cartão para abrir a seção' },
+      h(KpiFiltros,{ filtros, onChange:onFiltros, funil:'especialista', users, leads, consolidado:true })
     ),
 
-    h('div',{className:'painel-area'},
+    h(Navegavel,{ modo:'marcador', juntar:{ Assessoria:'Carteira' },
+      numeros:{
+        Pipe: { valor: fmtBRLCompact(carteira.emCaptacao), tom:'ouro',
+          sub: 'em jogo · ' + captacaoTemp.total + (captacaoTemp.total === 1 ? ' captação' : ' captações') },
+        'Quem indicou': { valor: String(indicacao.porIndicados.reduce((s, r) => s + r.indicados, 0)),
+          sub: 'negócios indicados · ' + indicacao.porFechados.reduce((s, r) => s + r.fechados, 0) + ' fechados' }
+      } },
       /* Faixa de números: a leitura de abertura, agora em duas linhas — uma
          por mundo. Investimento (carteira sob gestão, Pipe, fluxo, prazo) e
          negócios de produto (Seguro e Consórcio) são leituras diferentes,
@@ -9015,7 +9095,7 @@ function OffshoreView({ leads, users, filtros, currentUser, isAdmin, onOpen, onS
   const nomeDe = (id) => (users.find(u => u.id === id) || {}).nome || '—';
   const maxSegmento = Math.max(1, ...s.porSegmento.map(y => y.valor));
 
-  return h('div',{className:'painel offshore'},
+  return h('div',{className:'painel offshore kn-admin'},
     h('div',{className:'print-header'},
       h('div',{className:'print-brand'}, h('span',{className:'brand-mark'}), h('span',null,'CRM')),
       h('h1',null,'Carteira offshore'),
@@ -9033,7 +9113,7 @@ function OffshoreView({ leads, users, filtros, currentUser, isAdmin, onOpen, onS
           h('h2',null,'Nenhum cliente com carteira no exterior'),
           h('p',null,'O patrimônio offshore é preenchido na ficha do cliente, em dólar. Assim que houver um valor, ele passa a contar no total da carteira e aparece aqui.')
         )
-      : h(Fragment, null,
+      : h(Navegavel, { modo: 'blocos' },
         h('div',{className:'painel-linha'},
           h(Indicador,{ rotulo:'Total offshore', largo:true,
             valor: s.totalUsd, formato: fmtUSDCompact,
@@ -9237,7 +9317,7 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
   const maxEtapa = Math.max(1, ...s.porEtapa.map(x => x.count));
   const maxOrigem = Math.max(1, ...s.porOrigem.map(x => x.valor));
 
-  return h(Fragment, null,
+  return h(Navegavel, { modo: 'blocos' },
     h('div',{className:'print-header'},
       h('h1',null,'Indicadores da assessoria'),
       h('div',{className:'print-meta'}, 'Escopo: ', escopo, ' · ', periodoLabel(periodo),
@@ -9520,7 +9600,7 @@ function KpisView({ scopedLeads, allLeads, users, vendorFilter, currentUser, per
   }, [scopedLeads]);
   const generatedAt = new Date().toLocaleString('pt-BR');
 
-  return h(Fragment, null,
+  return h(Navegavel, { modo: 'blocos' },
     h('div',{className:'print-header'},
       h('div',{className:'print-brand'}, h('span',{className:'brand-mark'}), h('span',null,'CRM')),
       h('h1',null,'Relatório de indicadores comerciais'),
@@ -10201,7 +10281,7 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.05';
+const CRM_VERSAO = 'versão do CRM 2026.11.05.2';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -10424,9 +10504,12 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
         sub: 'lançados como alerta no cliente', aberto: aberto === 'venc', onClick: () => toggle('venc') }),
       h(PainelCard, { key: 'parado', label: 'Dinheiro parado em conta', valor: '—', disabled: true,
         sub: 'chega com a API do BTG · vai avisar qualquer valor' }),
-      h(PainelCard, { key: 'pj2', tom: 'ouro', label: 'Receita PJ2', valor: fmtBRLCompact(st.receitaPJ2),
-        sub: st.pj2.length + (st.pj2.length === 1 ? ' negócio de consórcio ou seguro' : ' negócios de consórcio e seguro'),
-        aberto: aberto === 'pj2', onClick: () => toggle('pj2') })
+      /* Receita gerada no mês: um número só, que se abre em PJ1 (a receita
+         da carteira no BTG, que chega com a API) e PJ2 (consórcio e seguro).
+         Enquanto o PJ1 não chega, o total é só o PJ2 e o card diz isso. */
+      h(PainelCard, { key: 'receita', tom: 'ouro', label: 'Receita gerada no mês', valor: fmtBRLCompact(st.receitaPJ2),
+        sub: 'PJ2 ' + fmtBRLCompact(st.receitaPJ2) + ' · PJ1 chega com a API do BTG',
+        aberto: aberto === 'receita', onClick: () => toggle('receita') })
     ], [
       aberto === 'contas' ? h(PainelLista, { key: 'l', itens: st.semAtivar, vazio: 'Todas as contas abertas já estão ativadas.',
         linha: (c) => linhaCliente(c, c.diasNaCarteira === null ? '—' : 'há ' + c.diasNaCarteira + 'd na carteira') }) : null,
@@ -10436,8 +10519,15 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
             v.texto ? h('span', { className: 'pn-linha-quem' }, ' · ' + v.texto) : null),
           h('span', { className: 'pn-linha-meta' + (v.diasAtraso > 0 ? ' atrasado' : '') }, atraso(v.diasAtraso)),
           h('button', { className: 'pn-linha-acao', onClick: () => onResolverAlerta(v.leadId, v.alertaId) }, 'Concluído')) }) : null,
-      aberto === 'pj2' ? h(PainelLista, { key: 'l', itens: st.pj2, vazio: 'Nenhum negócio fechado este mês.',
-        linha: (n) => linhaCliente(n, (n.produto || '') + ' · ' + fmtBRLCompact(n.valor || 0)) }) : null
+      aberto === 'receita' ? h('div', { key: 'l', className: 'pn-receita' },
+        h('div', { className: 'pn-receita-partes' },
+          h('div', { className: 'pn-receita-parte desligada' },
+            h('span', null, 'PJ1 · carteira'), h('strong', null, '—'), h('small', null, 'receita da carteira no BTG; chega com a API')),
+          h('div', { className: 'pn-receita-parte' },
+            h('span', null, 'PJ2 · consórcio e seguro'), h('strong', null, fmtBRLCompact(st.receitaPJ2)),
+            h('small', null, st.pj2.length + (st.pj2.length === 1 ? ' negócio fechado no mês' : ' negócios fechados no mês')))),
+        h(PainelLista, { itens: st.pj2, vazio: 'Nenhum negócio de PJ2 fechado este mês.',
+          linha: (n) => linhaCliente(n, (n.produto || '') + ' · ' + fmtBRLCompact(n.valor || 0)) })) : null
     ]),
     grupo('Relacionamento', 'hoje', [
       h(PainelCard, { key: 'contato', tom: st.contatosAtrasados.length ? 'ruim' : '', label: 'Contato atrasado', valor: st.contatosAtrasados.length,
@@ -10513,6 +10603,134 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
     heroi, abas,
     h('div', { className: 'pn-conteudo' }, aba === 'resumo' ? resumo : aba === 'carteira' ? carteiraTela : rotina),
     h('div', { className: 'pn-versao' }, CRM_VERSAO));
+}
+
+/* ================= Indicadores navegáveis =================
+   Pedido do Emil (05/11/2026): os KPIs eram uma página fixa, recortada por
+   um painel de filtros, e ele quer navegar como no Dashboard — clica, abre.
+   Em vez de reescrever cada gráfico (e arriscar um número diferente do que
+   já foi conferido), o Navegavel pega as seções que as telas JÁ têm e as
+   transforma em cartões: o título e o número de abertura de cada uma ficam
+   à vista, e a seção abre embaixo ao clicar. Na impressão tudo sai aberto.
+
+   modo 'marcador': o painel do admin, cujas seções começam num cabeçalho
+   .painel-secao; o número do cartão é o primeiro Indicador da seção.
+   modo 'blocos': as telas do assessor e do especialista, em que cada bloco
+   de primeiro nível é uma seção e o nome vem dos títulos h2 dela. */
+function knTexto(el){
+  if(el === null || el === undefined || el === false || el === true) return '';
+  if(typeof el === 'string' || typeof el === 'number') return String(el);
+  if(Array.isArray(el)) return el.map(knTexto).join('');
+  if(knClasse(el).indexOf('off-tag') !== -1) return '';
+  return el.props ? knTexto(el.props.children) : '';
+}
+function knAchar(el, teste, max){
+  const achados = [];
+  const andar = (n) => {
+    if(achados.length >= (max || 1) || n === null || n === undefined || typeof n !== 'object') return;
+    if(Array.isArray(n)){ n.forEach(andar); return; }
+    if(teste(n)) achados.push(n);
+    if(n.props) andar(n.props.children);
+  };
+  andar(el);
+  return achados;
+}
+const knClasse = (el) => (el && el.props && typeof el.props.className === 'string') ? el.props.className : '';
+
+function Navegavel({ modo, juntar, numeros, children }){
+  const [aberto, setAberto] = useState(null);
+  const itens = React.Children.toArray(children);
+  const fixos = [], grupos = [];
+  itens.forEach((el, i) => {
+    const c = knClasse(el);
+    if(c.indexOf('print-header') !== -1 || c.indexOf('kpi-grid') !== -1){ fixos.push(el); return; }
+    if(modo === 'marcador'){
+      if(c.indexOf('painel-secao') !== -1){
+        const spans = React.Children.toArray(el.props.children);
+        grupos.push({ key: 'g' + i, titulo: knTexto(spans[0]), desc: knTexto(spans[1]), cabeca: el, corpo: [] });
+      } else if(grupos.length){
+        grupos[grupos.length - 1].corpo.push(el);
+      } else {
+        fixos.push(el);
+      }
+    } else {
+      /* Seção que é um componente inteiro não mostra os títulos por fora:
+         o nome vem desta tabela. */
+      const nomeComp = typeof el.type === 'function' ? ({ CarteiraSecoes:'Carteira em detalhe',
+        ProducaoSecoes:'Produção', OffshoreGraficos:'Offshore em gráficos', PipelineOverview:'Funil' })[el.type.name] : null;
+      const titulos = nomeComp ? [nomeComp] : knAchar(el, n => n.type === 'h2', 4).map(knTexto).filter(Boolean);
+      if(!titulos.length){ fixos.push(el); return; }
+      grupos.push({ key: 'g' + i, titulo: titulos[0], desc: titulos.slice(1).join(' · '), cabeca: null, corpo: [el] });
+    }
+  });
+  /* Seções do mesmo assunto viram um cartão só (o resumo de Negócios do topo
+     e o detalhe de Negócios lá embaixo, por exemplo). */
+  const apelido = juntar || {};
+  const porTitulo = new Map(), unidos = [];
+  grupos.forEach(g => {
+    const t = apelido[g.titulo] || g.titulo;
+    if(porTitulo.has(t)){
+      const f = porTitulo.get(t);
+      if(g.cabeca) f.corpo.push(g.cabeca);
+      g.corpo.forEach(x => f.corpo.push(x));
+    } else { g.titulo = t; porTitulo.set(t, g); unidos.push(g); }
+  });
+  grupos.length = 0; unidos.forEach(g => grupos.push(g));
+  /* O número de abertura de cada seção: o primeiro Indicador dentro dela,
+     a menos que a tela diga qual é o número certo (numeros). */
+  grupos.forEach(g => {
+    const fixo = numeros && numeros[g.titulo];
+    if(fixo){ g.valor = fixo.valor; g.sub = fixo.sub; g.tom = fixo.tom || ''; return; }
+    const ind = knAchar(g.corpo, n => n.type === Indicador, 1)[0];
+    if(ind){
+      const p = ind.props;
+      g.valor = typeof p.formato === 'function' ? p.formato(p.valor) : String(p.valor);
+      g.sub = (p.rotulo || '') + (p.contexto ? ' · ' + knTexto(p.contexto) : '');
+      g.tom = p.tom === 'alerta' ? 'ruim' : p.tom === 'verde' ? 'boa' : p.tom === 'ouro' ? 'ouro' : '';
+    }
+  });
+  return h('div', { className: 'kn' },
+    fixos,
+    grupos.length ? h('div', { className: 'kn-grade' }, grupos.map(g =>
+      g.valor !== undefined
+        ? h(PainelCard, { key: g.key, label: g.titulo, valor: g.valor, sub: g.sub || g.desc, tom: g.tom,
+            aberto: aberto === g.key, onClick: () => setAberto(a => a === g.key ? null : g.key) })
+        : h('div', { key: g.key, role: 'button', tabIndex: 0, 'aria-expanded': aberto === g.key,
+            className: 'pn-card clicavel kn-card' + (aberto === g.key ? ' aberto' : ''),
+            onClick: () => setAberto(a => a === g.key ? null : g.key),
+            onKeyDown: (e) => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); setAberto(a => a === g.key ? null : g.key); } } },
+            h('div', { className: 'pn-card-label' }, 'Ver seção', h('span', { className: 'pn-card-seta' }, h(IconChevron, { size: 13 }))),
+            h('div', { className: 'kn-card-titulo' }, g.titulo),
+            g.desc ? h('div', { className: 'pn-card-sub' }, g.desc) : null)
+    )) : null,
+    grupos.map(g => h('div', { key: g.key + 'c', className: 'kn-corpo' + (aberto === g.key ? ' aberto' : '') },
+      g.cabeca, g.corpo))
+  );
+}
+
+/* Topo dos indicadores: o período vira pílula, à vista; o resto dos recortes
+   (assessor, produto, especialista, temperatura) fica atrás de "Mais filtros",
+   em vez de ocupar uma coluna fixa da tela. */
+function KpiTopo({ escopo, filtros, onFiltros, detalhe, children }){
+  const [mais, setMais] = useState(false);
+  const extras = (filtros.assessor && filtros.assessor !== 'all') || (filtros.produtos && filtros.produtos.length)
+    || (filtros.especialista && filtros.especialista !== 'all') || (filtros.temperatura && filtros.temperatura.length);
+  return h(Fragment, null,
+    h('section', { className: 'pn-heroi kn-heroi' },
+      h('div', { className: 'pn-rotulo' }, 'Indicadores'),
+      h('div', { className: 'pn-ola' }, escopo),
+      h('div', { className: 'kn-periodos', role: 'group', 'aria-label': 'Período' },
+        PERIODOS.map(p => h('button', { key: p.valor, type: 'button', className: filtros.periodo === p.valor ? 'ativo' : '',
+          onClick: () => onFiltros({ ...filtros, periodo: p.valor }) }, p.label)),
+        h('button', { type: 'button', className: 'kn-mais' + (mais || extras ? ' ligado' : ''), onClick: () => setMais(v => !v) },
+          mais ? 'Fechar filtros' : (extras ? 'Filtros ativos' : 'Mais filtros'))),
+      filtros.periodo === 'custom' ? h('div', { className: 'kn-datas' },
+        h('input', { type: 'date', value: filtros.de || '', 'aria-label': 'Data inicial', onChange: e => onFiltros({ ...filtros, de: e.target.value }) }),
+        h('span', null, 'até'),
+        h('input', { type: 'date', value: filtros.ate || '', 'aria-label': 'Data final', onChange: e => onFiltros({ ...filtros, ate: e.target.value }) })) : null,
+      detalhe ? h('div', { className: 'pn-meta' }, detalhe) : null),
+    mais ? h('div', { className: 'kn-filtros' }, children) : null
+  );
 }
 
 /* ================= App ================= */
@@ -11903,8 +12121,9 @@ function App(){
             h('button',{className:'btn btn-primary', onClick:()=>window.print()},
               h(IconPrinter,{size:14}), 'Imprimir / salvar PDF')
           ),
-          h(KpiFiltros,{ filtros:kpiFiltros, onChange:setKpiFiltros, funil, users, leads,
-            simples:!isAdmin }),
+          h(KpiTopo,{ filtros:kpiFiltros, onFiltros:setKpiFiltros,
+            escopo: 'Carteira offshore', detalhe: descreverRecorte(kpiFiltros, users) + ' · em dólar · clique num cartão para abrir a seção' },
+            h(KpiFiltros,{ filtros:kpiFiltros, onChange:setKpiFiltros, funil, users, leads, simples:!isAdmin })),
           h(OffshoreView,{
             leads: kpiRecorte.jornada, users, filtros: kpiFiltros,
             currentUser, isAdmin, onOpen:setOpenLead, onSalvarCotacao:salvarCotacao })
@@ -11933,8 +12152,10 @@ function App(){
                 h(IconPrinter,{size:14}), 'Imprimir / salvar PDF')
             )
           ),
-          isAdmin ? null : h(KpiFiltros,{
-            filtros:kpiFiltros, onChange:setKpiFiltros, funil, users, leads, simples:true }),
+          isAdmin ? null : h(KpiTopo,{ filtros:kpiFiltros, onFiltros:setKpiFiltros,
+            escopo: vendorFilter === 'all' ? (currentUser.nome || 'Sua carteira') : ((users.find(u=>u.id===vendorFilter)||{}).nome || currentUser.nome),
+            detalhe: periodoLabel(kpiFiltros) + ' · clique num cartão para abrir a seção' },
+            h(KpiFiltros,{ filtros:kpiFiltros, onChange:setKpiFiltros, funil, users, leads, simples:true })),
           isAdmin
             ? h(AdminKpis,{ jornada: kpiRecorte.jornada, negocios: kpiRecorte.negocios,
                 users, currentUser, filtros: kpiFiltros, onFiltros: setKpiFiltros, leads })
