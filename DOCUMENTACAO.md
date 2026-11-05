@@ -218,6 +218,26 @@ Não existe criação de conta pelo administrador, porque isso exigiria a chave
 O convite é marcado como consumido em vez de apagado, para não depender da ordem em que
 os gatilhos rodam.
 
+**E-mail de boas-vindas (desde a 2.84).** Logo depois do `rpc/convidar`, o portal chama a
+Edge Function `enviar-convite` (código em `supabase/functions/enviar-convite/index.ts`),
+que manda o e-mail pela caixa `hub@adamicaptal.com.br` da HostGator (SMTP direto, porta
+465, remetente "Hub Adami"). O link do e-mail é `adamicaptal.com.br/hub/?primeiro=<e-mail>`
+e só preenche a tela de Primeiro acesso: não cria conta, não carrega token e não expira.
+Quem autoriza o envio é o banco: a função chama `listar_convites` com a sessão de quem
+clicou, e essa função só devolve convite pendente para master. A função não usa
+`service_role`. A senha da caixa fica só no Supabase, em Edge Functions → Secrets
+(`SMTP_SENHA`), e a função é instalada com "Verify JWT" desligado (a conferência é a do
+banco). Se o envio falhar, o convite continua valendo e a tela diz o motivo; na lista de
+convites pendentes há "reenviar e-mail".
+
+- **nodemailer não funciona ali.** No runtime Deno das Edge Functions ele não conclui o
+  TLS da porta 465 ("Greeting never received"). Por isso o SMTP é escrito à mão, com
+  `Deno.connectTls`. Testado contra servidor SMTP e PostgREST falsos: envio, master/não
+  master, convite inexistente, sessão expirada, senha errada, injeção de cabeçalho.
+- Supabase bloqueia saída nas portas 25 e 587 das Edge Functions. Usar 465.
+- Depois de mudar o modelo (`emails/_base.py`), é preciso colar o `index.ts` de novo no
+  Supabase: o repositório não publica a função sozinho.
+
 **Recuperação de senha** manda o link por `POST /auth/v1/recover`, com `redirect_to`
 explícito (a origem+caminho atual) em vez de depender só do "Site URL" do painel — mas
 o Supabase só segue esse `redirect_to` se a URL estiver na lista de "Redirect URLs"
@@ -237,10 +257,15 @@ pros dois lados (envio e `redirect_to`), depois de configurar SMTP próprio (ver
 pendência na seção 14). A URL do portal já está nas Redirect URLs desde 05/11/2026
 (`https://adamicaptal.com.br/hub/**`, e Site URL `https://adamicaptal.com.br/hub/`).
 
-**Modelos de e-mail (marca "Hub Adami"):** ficam em `emails/`, gerados por
-`emails/_base.py` a partir de um layout único (`python3 emails/_base.py`). São colados à
-mão no Supabase, em Authentication → Emails → Templates; o repositório é a fonte, o painel
-é cópia. Usam as variáveis do Supabase `{{ .ConfirmationURL }}` e `{{ .Email }}`. O logo e
+**Modelos de e-mail (marca "Hub Adami"):** gerados por `emails/_base.py` a partir de um
+layout único (`python3 emails/_base.py`). O de redefinir senha
+(`emails/redefinir-senha.html`) é colado à mão no Supabase, em Authentication → Emails →
+Templates → Reset Password, e usa as variáveis `{{ .ConfirmationURL }}` e `{{ .Email }}`.
+O de boas-vindas é gravado pelo script dentro da função `enviar-convite`
+(`emails/boas-vindas.html` é só a cópia de referência). O repositório é a fonte; o
+painel é cópia. Os e-mails do Supabase (redefinir senha) saem pelo SMTP próprio
+configurado em Authentication → Emails → SMTP Settings, com a mesma caixa
+`hub@adamicaptal.com.br` e remetente "Hub Adami". O logo e
 os ícones vêm de `img/`, publicada junto com o portal em `adamicaptal.com.br/hub/img/`:
 cliente de e-mail não mostra imagem embutida em base64, então ela precisa estar num
 endereço público. Apagar ou renomear arquivo de `img/` quebra a imagem dos e-mails já
@@ -477,7 +502,11 @@ ativo, só mês/ano/12 meses/desde o início** · **2.82 conserta "Esqueci minha
 link do e-mail de recuperação não tinha nenhuma tela esperando por ele, então clicar não
 levava a lugar nenhum — existe a tela de "defina sua nova senha" agora** ·
 **2.83 Fluxo e Captação (`fluxo.html`), fatia 1: importa a Movimentação geral do BTG,
-calcula NNM/aplicações/resgates/renda passiva/caixa, tela de auditoria — ver seção 15**.
+calcula NNM/aplicações/resgates/renda passiva/caixa, tela de auditoria — ver seção 15** ·
+**2.84 (05/11/2026) tela de login vira "Hub Adami"; convite manda e-mail de boas-vindas
+sozinho (função `enviar-convite`, botão "reenviar e-mail"); link do e-mail abre o
+Primeiro acesso já preenchido; Enter no Primeiro acesso cria a conta em vez de tentar
+login; senha nova igual à antiga mostra mensagem em português**.
 
 ---
 
@@ -498,10 +527,11 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 
 ## 14. Pendências
 
-- **SMTP próprio no Supabase.** Sem ele, o e-mail de recuperação de senha não entrega
-  (limite de 2/hora do serviço embutido). A Redirect URL já está cadastrada (05/11/2026)
-  e a tela que recebe o link existe desde a 2.82: falta só o SMTP para funcionar ponta a
-  ponta.
+- **Ligar o e-mail próprio (em andamento, 05/11/2026).** Criar a caixa
+  `hub@adamicaptal.com.br` na HostGator, configurar o SMTP no Supabase (remetente "Hub
+  Adami"), colar o modelo de redefinir senha, instalar a função `enviar-convite` com o
+  segredo `SMTP_SENHA`. Até lá, o e-mail de recuperação sai como "Supabase Auth", com
+  limite de 2/hora, e o convite avisa que o e-mail de boas-vindas não saiu.
 - **Decidir se a importação passa a criar clientes novos** já vinculados ao assessor pelo
   código. Hoje ela apenas lista.
 - **Importador de extrato BTG** no Gerador de Planos Patrimoniais nunca foi calibrado

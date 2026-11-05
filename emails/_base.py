@@ -1,14 +1,18 @@
-# Gera os modelos de e-mail do Hub Adami (emails/*.html) a partir de um layout único.
+# Gera os e-mails do Hub Adami a partir de um layout único.
 # Rodar: python3 emails/_base.py
-# Os arquivos gerados são colados no Supabase (Authentication > Emails > Templates).
-# {{ .ConfirmationURL }} e {{ .Email }} são variáveis do próprio Supabase.
-import os
+#
+# - emails/redefinir-senha.html: colado no Supabase (Authentication > Emails > Templates >
+#   Reset Password). {{ .ConfirmationURL }} e {{ .Email }} são variáveis do Supabase.
+# - emails/boas-vindas.html: cópia de referência do e-mail de boas-vindas. Quem envia é a
+#   função supabase/functions/enviar-convite/index.ts, e este script grava o modelo dentro
+#   dela ({{LINK}}, {{EMAIL}} e {{SAUDACAO}} são trocados pela função na hora do envio).
+import os, json, re
 IMG = "https://adamicaptal.com.br/hub/img/"
 NAVY, NAVY_D, INK, INK2, MUTED, GOLD, PAPER, LINE = "#1B3A5F", "#132B47", "#16324F", "#3C4C60", "#7A8698", "#C0A265", "#EDF0F4", "#DCE2EA"
 SANS = "Helvetica, Arial, sans-serif"
 SERIF = "Georgia, 'Times New Roman', serif"
 
-def email(titulo_aba, preheader, icone, titulo, corpo, botao, depois):
+def email(titulo_aba, preheader, icone, titulo, corpo, botao, depois, link="{{ .ConfirmationURL }}"):
     return f"""<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -36,14 +40,14 @@ def email(titulo_aba, preheader, icone, titulo, corpo, botao, depois):
     <tr><td style="padding:20px 40px 8px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
         <td align="center" bgcolor="{NAVY}" style="border-radius:6px;">
-          <a href="{{{{ .ConfirmationURL }}}}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:{SANS};font-size:15px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:6px;">{botao}</a>
+          <a href="{link}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:{SANS};font-size:15px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:6px;">{botao}</a>
         </td>
       </tr></table>
     </td></tr>
     <tr><td style="padding:20px 40px 32px;font-family:{SANS};font-size:13px;line-height:1.6;color:{INK2};">
       {depois}
       <p style="margin:20px 0 0;padding-top:16px;border-top:1px solid {LINE};font-size:12px;color:{MUTED};">Se o botão não funcionar, copie e cole este endereço no navegador:<br>
-      <a href="{{{{ .ConfirmationURL }}}}" style="color:{NAVY};word-break:break-all;">{{{{ .ConfirmationURL }}}}</a></p>
+      <a href="{link}" style="color:{NAVY};word-break:break-all;">{link}</a></p>
     </td></tr>
   </table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
@@ -77,13 +81,41 @@ modelos = {
     "Seu acesso ao Hub Adami está liberado. Crie sua senha para entrar.",
     "icone-entrada.png",
     "Bem-vindo ao Hub Adami",
+    f'<p style="{P}">{{{{SAUDACAO}}}}</p>'
     f'<p style="{P}">Seu acesso ao <strong style="color:{INK};">Hub Adami</strong> está liberado. É o ambiente interno da Adami Captal, com carteiras, CRM, Mesa RV e as ferramentas da casa em um só lugar.</p>'
-    f'<p style="{P}">Para entrar pela primeira vez, clique no botão abaixo e escolha a sua senha. O seu login é <strong style="color:{INK};">{{{{ .Email }}}}</strong>.</p>',
+    f'<p style="{P}">Para entrar pela primeira vez, clique no botão abaixo e escolha a sua senha. O seu login é <strong style="color:{INK};">{{{{EMAIL}}}}</strong>.</p>',
     "Criar minha senha",
     '<p style="margin:0 0 10px;">Depois disso, é só entrar em <strong>adamicaptal.com.br/hub</strong> com o seu e-mail e a senha que escolheu. Vale salvar nos favoritos.</p>'
-    '<p style="margin:0;">Se o link expirar, entre em adamicaptal.com.br/hub e clique em <strong>Esqueci minha senha</strong>.</p>'),
+    '<p style="margin:0;">Este link não expira. Se você já criou a senha, use <strong>Entrar</strong> na mesma tela.</p>',
+    link="{{LINK}}"),
 }
 pasta = os.path.dirname(os.path.abspath(__file__))
 for nome, html in modelos.items():
     open(os.path.join(pasta, nome), "w").write(html)
     print(nome, len(html.encode()), "bytes")
+
+TEXTO_BOAS_VINDAS = """{{SAUDACAO}}
+
+Seu acesso ao Hub Adami está liberado. É o ambiente interno da Adami Captal, com carteiras, CRM, Mesa RV e as ferramentas da casa em um só lugar.
+
+Para entrar pela primeira vez, abra o link abaixo e escolha a sua senha. O seu login é {{EMAIL}}.
+
+{{LINK}}
+
+Depois disso, é só entrar em adamicaptal.com.br/hub com o seu e-mail e a senha que escolheu. Este link não expira.
+
+Hub Adami · Adami Captal
+E-mail automático, não precisa responder.
+"""
+
+# Grava o modelo dentro da função do Supabase, entre os marcadores.
+funcao = os.path.join(pasta, "..", "supabase", "functions", "enviar-convite", "index.ts")
+ts = open(funcao).read()
+bloco = ("// <modelo> gerado por emails/_base.py\n"
+         "const MODELO = " + json.dumps(modelos["boas-vindas.html"], ensure_ascii=False) + ";\n"
+         "const MODELO_TEXTO = " + json.dumps(TEXTO_BOAS_VINDAS, ensure_ascii=False) + ";\n"
+         "// </modelo>")
+ts2 = re.sub(r"// <modelo>.*?// </modelo>", lambda m: bloco, ts, flags=re.S)
+assert ts2 != ts or bloco in ts
+open(funcao, "w").write(ts2)
+print("modelo gravado em", os.path.relpath(funcao, os.path.join(pasta, "..")))

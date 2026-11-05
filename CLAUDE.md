@@ -50,6 +50,8 @@ lado:
 | `adami_completo.sql` | Banco inteiro, portal + CRM |
 
 Backend: Supabase (`ghxjqmjtmbqzvogwzylo.supabase.co`), Postgres com RLS.
+E-mail: caixa `hub@adamicaptal.com.br` (HostGator), remetente "Hub Adami". O de boas-vindas
+sai pela Edge Function `supabase/functions/enviar-convite` (colada à mão no Supabase).
 A chave *publishable* fica no código do navegador, o que é correto: a proteção está na
 RLS. A *service_role* **nunca** entra em arquivo servido ao navegador.
 

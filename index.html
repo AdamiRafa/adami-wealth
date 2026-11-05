@@ -601,6 +601,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
    ============================================================ */
 var EMPRESA={
   nome:      "Adami Captal",
+  hub:       "Hub Adami",
   dominio:   "adamicaptal.com.br",
   produto:   "Consolidado de Carteiras",
   chamada:   "Ambiente administrativo da Adami Captal. Carteiras, planejamento e relat\u00f3rios em um s\u00f3 lugar.",
@@ -1027,8 +1028,8 @@ function alternarProduto(i,prod,ligado){
 
 /* ---------- convidar ---------- */
 function blocoConvite(){
-  var h='<p class="eqsub">O convite libera o e-mail para o primeiro acesso. '+
-    'A pessoa escolhe a própria senha ao entrar pela primeira vez — você não precisa criar nem '+
+  var h='<p class="eqsub">O convite libera o e-mail e manda para a pessoa um e-mail de boas-vindas, '+
+    'com o link para ela escolher a própria senha. Você não precisa criar nem '+
     'guardar senha de ninguém. Sem convite, o cadastro é recusado.</p>'+
     '<div class="eqform">'+
       '<div class="eqc"><label>Nome</label><input id="cvNome" placeholder="Maria Silva"></div>'+
@@ -1049,7 +1050,9 @@ function blocoConvite(){
       h+='<tr><td><div class="eqnome">'+esc(c.nome||"—")+'</div>'+
          '<div class="eqmail">'+esc(c.email)+'</div></td>'+
          '<td>'+esc(c.role)+(c.master?" · master":"")+(c.admin?" · admin":"")+(c.mesa_rv?" · mesa RV":"")+'</td>'+
-         '<td class="c"><button class="eqsw" onclick="revogar(\''+esc(c.email)+'\')" '+
+         '<td class="c" style="white-space:nowrap"><button class="eqsw" onclick="reenviarConvite(\''+esc(c.email)+'\')" '+
+         'style="width:auto;padding:4px 10px;border-radius:6px;font-size:11px;margin-right:6px">reenviar e-mail</button>'+
+         '<button class="eqsw" onclick="revogar(\''+esc(c.email)+'\')" '+
          'style="width:auto;padding:4px 10px;border-radius:6px;font-size:11px">revogar</button></td></tr>';
     });
     h+='</table>';
@@ -1067,10 +1070,42 @@ function enviarConvite(){
     p_email:email, p_nome:nome, p_role:g("cvRole"),
     p_master:c("cvMaster"), p_admin:c("cvAdmin"), p_mesa_rv:c("cvRv"), p_produtos:[]}})
     .then(function(){
-      msgEq(nome+" pode entrar agora pelo \"Primeiro acesso\" com o e-mail "+email+".");
-      return abrirEquipe();
+      msgEq("Convite criado. Enviando o e-mail de boas-vindas…");
+      return enviarEmailConvite(email).then(function(){
+        msgEq("Convite enviado. "+nome+" recebeu o e-mail de boas-vindas em "+email+".");
+      },function(err){
+        msgEq("Convite criado, mas o e-mail não saiu: "+String(err.message||err)+
+              " Avise "+nome+" para entrar em adamicaptal.com.br/hub pelo \"Primeiro acesso\", "+
+              "ou use \"reenviar e-mail\" na lista abaixo.",true);
+      }).then(function(){ return abrirEquipe(); });
     })
     .catch(function(e){ msgEq(String(e.message||e),true); });
+}
+/* O e-mail de boas-vindas sai pela função enviar-convite do Supabase
+   (supabase/functions/enviar-convite). Ela só envia para convite pendente e só
+   para master: quem confere é o banco, pela mesma sessão de quem clicou. */
+function enviarEmailConvite(email,jaTentou){
+  var tk=(SESSAO&&SESSAO.access_token)||"";
+  return fetch(SB_URL+"/functions/v1/enviar-convite",{
+    method:"POST",
+    headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk,"Content-Type":"application/json"},
+    body:JSON.stringify({email:email})
+  }).then(function(res){
+    if(res.status===401&&SESSAO&&!jaTentou)
+      return renovar().then(function(){ return enviarEmailConvite(email,true); });
+    return res.text().then(function(t){
+      var j=null; try{ j=t?JSON.parse(t):null; }catch(e){}
+      if(res.status===404) throw new Error("A função de e-mail ainda não foi instalada no Supabase.");
+      if(!res.ok) throw new Error((j&&(j.erro||j.message||j.msg))||("Erro "+res.status+"."));
+      return j;
+    });
+  });
+}
+function reenviarConvite(email){
+  msgEq("Reenviando o e-mail de boas-vindas para "+email+"…");
+  enviarEmailConvite(email)
+    .then(function(){ msgEq("E-mail de boas-vindas reenviado para "+email+"."); })
+    .catch(function(e){ msgEq("O e-mail não saiu: "+String(e.message||e),true); });
 }
 function revogar(email){
   if(!confirm("Revogar o convite de "+email+"?")) return;
@@ -1112,7 +1147,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.83";
+var VERSAO="versão 2.84";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3583,15 +3618,16 @@ function viewLogin(erro){
     '</div>'+
     '<div class="auth-form"><div class="auth-card">'+
       '<div class="rule"></div>'+
-      '<h1>Admin '+EMPRESA.nome+'</h1>'+
+      '<h1>'+EMPRESA.hub+'</h1>'+
       '<p class="hint">'+(MODO_LOGIN==="novo"
         ? "Use o e-mail que recebeu o convite e escolha a sua senha."
         : "Entre com o e-mail cadastrado pela empresa.")+'</p>'+
       (erro?'<div class="erro">'+esc(erro)+'</div>':'')+
       '<label for="lgEmail">E-mail</label>'+
-      '<div class="campo"><input type="email" id="lgEmail" autocomplete="username" placeholder="nome@'+EMPRESA.dominio+'"></div>'+
+      '<div class="campo"><input type="email" id="lgEmail" autocomplete="username" placeholder="nome@'+EMPRESA.dominio+'"'+
+        (EMAIL_INICIAL?' value="'+esc(EMAIL_INICIAL)+'"':'')+' onkeydown="if(event.key===\'Enter\')enviarLogin()"></div>'+
       '<label for="lgSenha">'+(MODO_LOGIN==="novo"?"Crie uma senha":"Senha")+'</label>'+
-      '<div class="campo"><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
+      '<div class="campo"><input type="password" id="lgSenha" autocomplete="'+(MODO_LOGIN==="novo"?"new-password":"current-password")+'" placeholder="••••••••" onkeydown="if(event.key===\'Enter\')enviarLogin()">'+
         '<button type="button" class="olho" id="lgOlho" onclick="verSenha()" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
       (MODO_LOGIN==="novo"?'<p class="hint" style="margin:-6px 0 14px">Mínimo de 6 caracteres.</p>':'')+
       '<button class="entrar" id="lgBtn" onclick="'+(MODO_LOGIN==="novo"?"criarAcesso()":"fazerLogin()")+'">'+
@@ -3632,6 +3668,10 @@ function viewCodigoMfa(erro){
   '</div>';
 }
 var MODO_LOGIN="entrar";
+/* E-mail que chega pelo link do e-mail de boas-vindas (?primeiro=...): abre o
+   "Primeiro acesso" já preenchido. Só preenche a tela; quem libera é o convite no banco. */
+var EMAIL_INICIAL="";
+function enviarLogin(){ if(MODO_LOGIN==="novo") criarAcesso(); else fazerLogin(); }
 function modoLogin(m){
   MODO_LOGIN=m;
   document.getElementById("view").innerHTML=viewLogin();
@@ -3745,7 +3785,9 @@ function salvarNovaSenha(){
     return res.json().then(function(j){
       if(!res.ok){
         var m=(j&&(j.msg||j.error_description||j.message))||"Não foi possível trocar a senha.";
-        if(/expired|invalid/i.test(m)) m="Esse link expirou ou já foi usado. Peça um novo em \"Esqueci minha senha\".";
+        if((j&&j.error_code==="same_password")||/different from the old/i.test(m))
+          m="Essa já é a sua senha atual. Escolha uma senha diferente, ou volte para o login e entre com ela.";
+        else if(/expired|invalid/i.test(m)) m="Esse link expirou ou já foi usado. Peça um novo em \"Esqueci minha senha\".";
         throw new Error(m);
       }
       return j;
@@ -3831,11 +3873,7 @@ function render(manterScroll){
     document.querySelector(".main").style.padding="0";
     document.getElementById("view").innerHTML=viewLogin(null);
     setTimeout(function(){
-      var i=document.getElementById("lgEmail"); if(i) i.focus();
-      ["lgEmail","lgSenha"].forEach(function(id){
-        var el=document.getElementById(id);
-        if(el) el.addEventListener("keydown",function(ev){ if(ev.key==="Enter") fazerLogin(); });
-      });
+      var i=document.getElementById(EMAIL_INICIAL?"lgSenha":"lgEmail"); if(i) i.focus();
     },30);
     return;
   }
@@ -3877,6 +3915,15 @@ function render(manterScroll){
 }
 
 TOKEN_RECUPERACAO=detectarRecuperacaoNaUrl();
+(function(){
+  var q=new URLSearchParams(location.search);
+  var e=(q.get("primeiro")||"").trim().toLowerCase();
+  if(!e) return;
+  q.delete("primeiro");
+  var resto=q.toString();
+  history.replaceState(null,"",location.pathname+(resto?"?"+resto:"")+location.hash);
+  if(e.indexOf("@")>0&&!(SESSAO&&SESSAO.access_token)){ EMAIL_INICIAL=e; MODO_LOGIN="novo"; }
+})();
 if(TOKEN_RECUPERACAO){
   /* Tira o token da barra de endereço assim que lido -- ele não precisa
      continuar visível ali, e sobreviveria a um F5 sem motivo. */

@@ -20,19 +20,19 @@
     <tr><td style="padding:36px 40px 8px;" class="miolo">
       <img src="https://adamicaptal.com.br/hub/img/icone-entrada.png" width="56" height="56" alt="" style="display:block;border:0;width:56px;height:56px;">
       <h1 style="margin:20px 0 12px;font-family:Georgia, 'Times New Roman', serif;font-weight:normal;font-size:26px;line-height:1.25;color:#16324F;">Bem-vindo ao Hub Adami</h1>
-      <p style="margin:0 0 14px;font-family:Helvetica, Arial, sans-serif;font-size:15px;line-height:1.6;color:#3C4C60;">Seu acesso ao <strong style="color:#16324F;">Hub Adami</strong> está liberado. É o ambiente interno da Adami Captal, com carteiras, CRM, Mesa RV e as ferramentas da casa em um só lugar.</p><p style="margin:0 0 14px;font-family:Helvetica, Arial, sans-serif;font-size:15px;line-height:1.6;color:#3C4C60;">Para entrar pela primeira vez, clique no botão abaixo e escolha a sua senha. O seu login é <strong style="color:#16324F;">{{ .Email }}</strong>.</p>
+      <p style="margin:0 0 14px;font-family:Helvetica, Arial, sans-serif;font-size:15px;line-height:1.6;color:#3C4C60;">{{SAUDACAO}}</p><p style="margin:0 0 14px;font-family:Helvetica, Arial, sans-serif;font-size:15px;line-height:1.6;color:#3C4C60;">Seu acesso ao <strong style="color:#16324F;">Hub Adami</strong> está liberado. É o ambiente interno da Adami Captal, com carteiras, CRM, Mesa RV e as ferramentas da casa em um só lugar.</p><p style="margin:0 0 14px;font-family:Helvetica, Arial, sans-serif;font-size:15px;line-height:1.6;color:#3C4C60;">Para entrar pela primeira vez, clique no botão abaixo e escolha a sua senha. O seu login é <strong style="color:#16324F;">{{EMAIL}}</strong>.</p>
     </td></tr>
     <tr><td style="padding:20px 40px 8px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
         <td align="center" bgcolor="#1B3A5F" style="border-radius:6px;">
-          <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:Helvetica, Arial, sans-serif;font-size:15px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:6px;">Criar minha senha</a>
+          <a href="{{LINK}}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:Helvetica, Arial, sans-serif;font-size:15px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:6px;">Criar minha senha</a>
         </td>
       </tr></table>
     </td></tr>
     <tr><td style="padding:20px 40px 32px;font-family:Helvetica, Arial, sans-serif;font-size:13px;line-height:1.6;color:#3C4C60;">
-      <p style="margin:0 0 10px;">Depois disso, é só entrar em <strong>adamicaptal.com.br/hub</strong> com o seu e-mail e a senha que escolheu. Vale salvar nos favoritos.</p><p style="margin:0;">Se o link expirar, entre em adamicaptal.com.br/hub e clique em <strong>Esqueci minha senha</strong>.</p>
+      <p style="margin:0 0 10px;">Depois disso, é só entrar em <strong>adamicaptal.com.br/hub</strong> com o seu e-mail e a senha que escolheu. Vale salvar nos favoritos.</p><p style="margin:0;">Este link não expira. Se você já criou a senha, use <strong>Entrar</strong> na mesma tela.</p>
       <p style="margin:20px 0 0;padding-top:16px;border-top:1px solid #DCE2EA;font-size:12px;color:#7A8698;">Se o botão não funcionar, copie e cole este endereço no navegador:<br>
-      <a href="{{ .ConfirmationURL }}" style="color:#1B3A5F;word-break:break-all;">{{ .ConfirmationURL }}</a></p>
+      <a href="{{LINK}}" style="color:#1B3A5F;word-break:break-all;">{{LINK}}</a></p>
     </td></tr>
   </table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
