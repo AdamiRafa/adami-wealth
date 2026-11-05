@@ -2511,8 +2511,20 @@
   @media (max-width:720px){
     #app{padding:var(--space-4) var(--space-4) 56px;}
     .masthead{padding:12px var(--space-4);}
-    .view-tabs{width:100%;overflow-x:auto;}
-    .view-tab{flex:1;justify-content:center;}
+    /* Celular (05/11/2026): o cabeçalho estourava a tela para o lado. Aqui
+       ele vira uma coluna só, as ferramentas quebram linha e as abas rolam
+       para o lado dentro da própria faixa, sem empurrar a página. */
+    .topbar{grid-template-columns:minmax(0,1fr);}
+    .topbar-actions{grid-column:1;flex-wrap:wrap;justify-content:flex-start;}
+    .topbar-actions select{max-width:100%;flex:1 1 160px;}
+    .busca-slot{width:100%;min-width:0;flex:1 1 100%;}
+    .busca-slot.oculta{display:none;}
+    .search-wrap{min-width:0;}
+    .user-chip .name{display:none;}
+    .topbar-nav{min-width:0;}
+    .topbar-nav > *{max-width:100%;}
+    .view-tabs{width:100%;overflow-x:auto;min-width:0;}
+    .view-tab{flex:0 0 auto;justify-content:center;}
     /* Alvos de toque confortáveis nas ações do card */
     .lose-btn, .win-btn{width:26px;height:26px;}
   }
@@ -2861,6 +2873,172 @@
   .grafico-alvo:hover{fill:rgba(25,90,180,.06);}
   .grafico-dica{font-family:'IBM Plex Mono',Consolas,monospace;font-size:10px;fill:var(--ink);}
   @media print{ .drill-fundo{display:none !important;} }
+
+  /* ================= Agenda (aba própria, ao lado do Dashboard) =================
+     Herói, abas e caixa "Agenda de" reaproveitam o desenho do Dashboard (pn-).
+     O resto tem prefixo ag- para não encostar em nada que já existe. A cor da
+     borda esquerda de cada item diz de onde ele veio (AG_ORIGENS). */
+  .ag{max-width:1180px;margin:0 auto;}
+  .ag-heroi-topo{flex-wrap:wrap;gap:12px;}
+  .ag-novo{
+    height:42px;padding:0 18px;border-radius:10px;border:0;background:#fff;color:var(--navy);
+    font:600 14px 'Inter',-apple-system,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+  }
+  .ag-novo:hover{background:#E9EEF5;}
+  .ag-novo:disabled{opacity:.55;cursor:not-allowed;}
+  .ag-dia-titulo{font-family:'Fraunces',Georgia,serif;font-size:clamp(22px,3vw,28px);font-weight:500;margin:0 0 4px;}
+  .ag-aviso{
+    background:var(--gold-tint);border:1px solid #E6D3A0;color:#5E4810;border-radius:12px;
+    padding:12px 16px;font-size:13.5px;line-height:1.5;margin:0 18px 18px;
+  }
+  .ag-hoje{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;padding:0 18px;}
+  .ag-col{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:22px;}
+  .ag-lado{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:16px;}
+  .ag-secao-titulo{
+    display:flex;align-items:baseline;gap:8px;margin:0 0 10px;font-size:11.5px;letter-spacing:.16em;
+    text-transform:uppercase;font-weight:600;color:var(--ink-muted);
+  }
+  .ag-secao-titulo em{font-style:normal;letter-spacing:0;text-transform:none;font-weight:500;color:var(--ink-faint);font-size:12px;}
+  .ag-secao-titulo.atrasada{color:var(--danger);}
+  .ag-lista{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+  .ag-lista.atrasadas{border-color:#F0CFCC;}
+  .ag-vazio{padding:16px 18px;color:var(--ink-faint);font-size:13.5px;}
+  .ag-item{
+    display:flex;gap:12px;align-items:flex-start;padding:12px 14px 12px 12px;
+    border-top:1px solid var(--border);border-left:4px solid var(--ag-cor,#195AB4);
+  }
+  .ag-item:first-child{border-top:0;}
+  .ag-check{
+    width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border-strong);background:var(--surface);
+    cursor:pointer;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;color:transparent;padding:0;
+  }
+  .ag-check:hover{border-color:var(--success);color:var(--success);}
+  .ag-check:disabled{cursor:default;opacity:.5;}
+  .ag-check:disabled:hover{border-color:var(--border-strong);color:transparent;}
+  .ag-item.feita .ag-check{background:var(--success);border-color:var(--success);color:#fff;}
+  .ag-item.feita .ag-item-titulo{text-decoration:line-through;color:var(--ink-faint);}
+  .ag-hora{
+    font-family:'IBM Plex Mono',Consolas,monospace;font-size:13px;font-weight:500;color:var(--navy);
+    width:44px;flex-shrink:0;padding-top:5px;
+  }
+  .ag-item-corpo{flex:1;min-width:0;}
+  .ag-item-titulo{font-weight:600;font-size:14px;color:var(--ink);overflow-wrap:anywhere;padding-top:4px;}
+  .ag-item-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:4px;font-size:12.5px;color:var(--ink-muted);}
+  .ag-selo{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;}
+  .ag-cliente{border:0;background:none;padding:0;color:var(--primary);font:inherit;font-weight:500;cursor:pointer;text-align:left;}
+  .ag-cliente:hover{text-decoration:underline;}
+  .ag-atraso{color:var(--danger);font-weight:600;}
+  .ag-acoes{display:flex;gap:2px;flex-shrink:0;}
+  .ag-icone{
+    width:34px;height:34px;border-radius:8px;border:1px solid transparent;background:none;color:var(--ink-faint);
+    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;
+  }
+  .ag-icone:hover{border-color:var(--border);color:var(--ink);background:var(--bg);}
+  .ag-registro{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+  .ag-registro textarea{
+    width:100%;min-height:64px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;
+    font:13.5px/1.45 'Inter',-apple-system,sans-serif;color:var(--ink);background:var(--surface);resize:vertical;box-sizing:border-box;
+  }
+  .ag-registro textarea:focus{outline:none;border-color:var(--primary);}
+  .ag-registro-botoes{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+  .ag-mais{
+    display:block;width:100%;border:0;border-top:1px solid var(--border);background:var(--bg);padding:10px;
+    font:500 13px 'Inter',-apple-system,sans-serif;color:var(--primary);cursor:pointer;
+  }
+  .ag-mais:hover{text-decoration:underline;}
+  .ag-cartao{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;}
+  .ag-cartao h3{margin:0 0 10px;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-muted);font-weight:600;}
+  .ag-prox{display:flex;flex-direction:column;gap:12px;}
+  .ag-prox-dia strong{display:block;font-size:12.5px;color:var(--navy);margin-bottom:4px;}
+  .ag-prox-linha{
+    display:flex;gap:8px;align-items:baseline;font-size:12.5px;color:var(--ink);padding:3px 0 3px 8px;
+    border-left:3px solid var(--ag-cor);width:100%;text-align:left;background:none;border-top:0;border-right:0;border-bottom:0;
+    font-family:inherit;cursor:pointer;
+  }
+  .ag-prox-linha:hover{color:var(--primary);}
+  .ag-prox-linha span{font-family:'IBM Plex Mono',Consolas,monospace;font-size:11px;color:var(--ink-muted);flex-shrink:0;}
+  .ag-legenda-item{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--ink-muted);margin-bottom:7px;line-height:1.4;}
+  .ag-legenda-item strong{color:var(--ink);font-weight:600;}
+  .ag-legenda-cor{width:10px;height:10px;border-radius:3px;margin-top:3px;flex-shrink:0;}
+  .ag-nota{font-size:12px;color:var(--ink-faint);line-height:1.5;margin:8px 0 0;}
+
+  .ag-nav{display:flex;align-items:center;gap:8px;margin:0 18px 12px;flex-wrap:wrap;}
+  .ag-nav strong{font-size:15px;color:var(--navy);margin:0 6px;}
+  .ag-nav-btn{
+    height:38px;min-width:38px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:8px;
+    cursor:pointer;font:500 13.5px 'Inter',-apple-system,sans-serif;color:var(--ink);
+  }
+  .ag-nav-btn:hover{border-color:var(--border-strong);background:var(--bg);}
+  .ag-semana-rolagem{overflow-x:auto;margin:0 18px;padding-bottom:4px;}
+  .ag-semana{display:grid;grid-template-columns:repeat(7,minmax(128px,1fr));gap:8px;min-width:930px;}
+  .ag-coluna{background:var(--surface);border:1px solid var(--border);border-radius:12px;min-height:280px;display:flex;flex-direction:column;}
+  .ag-coluna.hoje{border-color:var(--navy);box-shadow:0 0 0 1px var(--navy);}
+  .ag-coluna.fds{background:#FAFBFC;}
+  .ag-coluna-cab{padding:9px 10px;border-bottom:1px solid var(--border);font-size:12.5px;font-weight:600;color:var(--ink-muted);border-radius:11px 11px 0 0;}
+  .ag-coluna.hoje .ag-coluna-cab{background:var(--navy);color:#fff;}
+  .ag-coluna-corpo{padding:6px;display:flex;flex-direction:column;gap:5px;}
+  .ag-chip{
+    display:block;width:100%;text-align:left;border:0;border-left:3px solid var(--ag-cor);background:var(--bg);
+    border-radius:6px;padding:6px 7px;font:500 12px/1.35 'Inter',-apple-system,sans-serif;color:var(--ink);cursor:pointer;overflow-wrap:anywhere;
+  }
+  .ag-chip:hover{background:#E6ECF4;}
+  .ag-chip.feita{color:var(--ink-faint);text-decoration:line-through;}
+  .ag-chip.atrasada{background:var(--danger-tint);}
+  .ag-chip-hora{font-family:'IBM Plex Mono',Consolas,monospace;font-size:11px;color:var(--ink-muted);margin-right:4px;}
+  .ag-chip-quem{display:block;font-size:11px;color:var(--ink-faint);font-weight:400;margin-top:1px;}
+
+  .ag-mes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:0 18px;}
+  .ag-mes-cab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);text-align:center;padding:4px 0;font-weight:600;}
+  .ag-mes-dia{
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;min-height:100px;padding:6px;text-align:left;
+    cursor:pointer;display:flex;flex-direction:column;gap:3px;font:inherit;color:inherit;min-width:0;
+  }
+  .ag-mes-dia:hover{border-color:var(--border-strong);}
+  .ag-mes-dia.fora{opacity:.45;}
+  .ag-mes-dia.escolhido{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary);}
+  .ag-mes-num{font-size:12px;font-weight:600;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ag-mes-dia.hoje .ag-mes-num{background:var(--navy);color:#fff;}
+  .ag-mes-chip{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:6px;border-left:3px solid var(--ag-cor);color:var(--ink);}
+  .ag-mes-chip.feita{color:var(--ink-faint);text-decoration:line-through;}
+  .ag-mes-mais{font-size:11px;color:var(--ink-faint);}
+  .ag-mes-conta{display:none;}
+  .ag-dia-escolhido{margin:18px 18px 0;}
+
+  .ag-form .field-row{margin-bottom:0;}
+  .ag-opcoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
+  .ag-opcao{
+    min-height:40px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;
+    font:500 13px 'Inter',-apple-system,sans-serif;color:var(--ink);padding:0 10px;text-align:left;
+  }
+  .ag-opcao.on{border-color:var(--navy);background:var(--navy);color:#fff;}
+  .ag-dias{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .ag-dia-chip{
+    min-width:44px;height:38px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;
+    font:500 13px 'Inter',-apple-system,sans-serif;color:var(--ink);
+  }
+  .ag-dia-chip.on{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .ag-check-linha{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink);cursor:pointer;line-height:1.4;}
+  .ag-check-linha input{width:18px;height:18px;margin:1px 0 0;flex-shrink:0;}
+
+  .ag-faixa{
+    max-width:1180px;margin:0 auto 16px;display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 16px;box-sizing:border-box;
+  }
+  .ag-faixa-rotulo{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;color:var(--ink-muted);}
+  .ag-faixa-txt{font-size:14px;color:var(--ink);flex:1 1 260px;min-width:0;}
+  .ag-faixa-txt .ag-atraso{margin-left:4px;}
+
+  @media (max-width:720px){
+    .ag-hoje,.ag-col{gap:16px;}
+    .ag-hoje{padding:0 4px;}
+    .ag-nav,.ag-semana-rolagem,.ag-mes,.ag-dia-escolhido,.ag-aviso{margin-left:4px;margin-right:4px;}
+    .ag-mes{gap:3px;}
+    .ag-mes-dia{min-height:52px;padding:4px;align-items:center;}
+    .ag-mes-chip,.ag-mes-mais{display:none;}
+    .ag-mes-conta{display:block;font-size:10.5px;font-weight:600;color:var(--primary);}
+    .ag-hora{width:40px;}
+    .ag-opcoes{grid-template-columns:1fr;}
+  }
 </style>
 </head>
 <body>
@@ -5133,6 +5311,82 @@ async function fetchProfiles(){
   ]);
   if(error) throw error;
   return (data || []).map(p => ({ id:p.id, nome:p.nome, role:p.role, status:p.status, produtos:p.produtos || [], especialistasPadrao:p.especialistas_padrao || {}, codigo: codigos[p.id] || '' }));
+}
+
+/* ---------- Agenda: tarefas (tabela `tarefas`, agenda.sql) ----------
+   A hora vem do banco como "14:00:00"; a tela trabalha com "14:00". */
+function tarefaFromRow(r){
+  return {
+    id: r.id, titulo: r.titulo || '', tipo: r.tipo || 'tarefa', leadId: r.lead_id || '',
+    donoId: r.dono_id, criadoPor: r.criado_por || null, data: r.data,
+    hora: r.hora ? String(r.hora).slice(0,5) : '', repeticao: r.repeticao || 'nao',
+    diasSemana: r.dias_semana || [], concluidas: r.concluidas || [],
+    emailManha: r.email_manha !== false, nota: r.nota || '',
+  };
+}
+/* criado_por fica de fora de propósito: quem preenche é o gatilho do banco. */
+function tarefaToRow(t){
+  return {
+    id: t.id, titulo: t.titulo, tipo: t.tipo, lead_id: t.leadId || null, dono_id: t.donoId,
+    data: t.data, hora: t.hora || null, repeticao: t.repeticao,
+    dias_semana: t.repeticao === 'semana' ? (t.diasSemana || []) : [],
+    concluidas: t.concluidas || [], email_manha: t.emailManha !== false, nota: t.nota || '',
+  };
+}
+/* Demonstração: tarefas de exemplo em volta de hoje, montadas na primeira
+   leitura a partir dos clientes e da equipe que o demo já tem. */
+function semearTarefasDemo(){
+  const hoje = todayISO();
+  const dia = (n) => { const d = new Date(hoje + 'T12:00:00'); d.setDate(d.getDate() + n); return toISODate(d); };
+  const cliente = (dono, i) => (demoStore.leads.filter(l => l.responsavelId === dono && !l.excluido)[i] || {}).id || '';
+  const t = (o) => ({ id: agNovoId(), tipo: 'tarefa', leadId: '', criadoPor: o.donoId, hora: '', repeticao: 'nao',
+    diasSemana: [], concluidas: [], emailManha: true, nota: '', ...o });
+  demoStore.tarefas = [
+    t({ titulo: 'Reunião de carteira com o time', tipo: 'reuniao', donoId: 'u-admin', data: dia(-14), hora: '08:30', repeticao: 'semana', diasSemana: [agDiaSemana(hoje)] }),
+    t({ titulo: 'Ligar para apresentar o fundo exclusivo', tipo: 'ligacao', donoId: 'u-admin', data: hoje, hora: '11:30', leadId: cliente('u-admin', 0) }),
+    t({ titulo: 'Apresentação do wealth planning', tipo: 'reuniao', donoId: 'u-admin', data: hoje, hora: '14:00', leadId: cliente('u-admin', 1) }),
+    t({ titulo: 'Retornar proposta de previdência', tipo: 'ligacao', donoId: 'u-admin', data: dia(-2), leadId: cliente('u-admin', 2) }),
+    t({ titulo: 'Fechamento semanal de captação', donoId: 'u-admin', data: dia(-10), hora: '09:00', repeticao: 'dia_util', concluidas: [dia(-1)] }),
+    t({ titulo: 'Enviar extrato consolidado', tipo: 'email', donoId: 'u-ana', criadoPor: 'u-admin', data: hoje, leadId: cliente('u-ana', 0) }),
+    t({ titulo: 'Atualizar o pipe dos clientes quentes', donoId: 'u-ana', criadoPor: 'u-admin', data: dia(1), hora: '10:00' }),
+    t({ titulo: 'Revisar vencimentos do mês', donoId: 'u-ana', data: dia(-20), repeticao: 'mes' }),
+  ];
+}
+async function fetchTarefas(){
+  if(MODO_DEMO){
+    if(!demoStore.tarefas) semearTarefasDemo();
+    return demoStore.tarefas.map(t => ({ ...t, concluidas: t.concluidas.slice(), diasSemana: t.diasSemana.slice() }));
+  }
+  const { data, error } = await sb.from('tarefas').select('*');
+  if(error) throw error;
+  return (data || []).map(tarefaFromRow);
+}
+async function gravarTarefa(t, nova){
+  if(MODO_DEMO){
+    const copia = { ...t, concluidas: (t.concluidas || []).slice(), diasSemana: (t.diasSemana || []).slice() };
+    if(nova) demoStore.tarefas.push(copia);
+    else demoStore.tarefas = demoStore.tarefas.map(x => x.id === t.id ? { ...copia, criadoPor: x.criadoPor } : x);
+    return demoStore.tarefas.find(x => x.id === t.id);
+  }
+  const row = tarefaToRow(t);
+  const q = nova ? sb.from('tarefas').insert(row) : sb.from('tarefas').update(row).eq('id', t.id);
+  const { data, error } = await q.select().single();
+  if(error) throw error;
+  return tarefaFromRow(data);
+}
+async function apagarTarefaBanco(id){
+  if(MODO_DEMO){ demoStore.tarefas = demoStore.tarefas.filter(x => x.id !== id); return; }
+  const { error, count } = await sb.from('tarefas').delete({ count: 'exact' }).eq('id', id);
+  if(error) throw error;
+  if(count === 0) throw new Error('Só quem criou a tarefa, o head comercial ou um master pode excluir.');
+}
+/* Master (perfis.super) também atribui tarefa, mesmo sem ser admin do CRM.
+   Só decide o que aparece na tela; quem barra de verdade é o banco. */
+async function fetchSouMaster(){
+  if(MODO_DEMO) return false;
+  const { data, error } = await sb.rpc('eh_super');
+  if(error) return false;
+  return data === true;
 }
 
 function emptyLead(ownerId){
@@ -10455,6 +10709,569 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
   );
 }
 
+/* ================= Agenda (aba própria, ao lado do Dashboard) =================
+   Decidido com o Emil em 05/11/2026, protótipo aprovado no mesmo dia:
+   - as tarefas criadas na mão moram na tabela `tarefas` (agenda.sql);
+   - próximo contato, vencimento e régua NÃO viram tarefa gravada: são lidos
+     da ficha do cliente a cada abertura, para os dois nunca discordarem
+     (mesma razão de a régua não ser alerta gravado);
+   - head comercial (admin do CRM) e master atribuem tarefa a qualquer
+     pessoa e enxergam a agenda de todos; o assessor enxerga a própria. Quem
+     garante isso é o banco (políticas de `tarefas`), não esta tela;
+   - tarefa recorrente: não repete, todo dia útil, toda semana em dias
+     escolhidos ou todo mês;
+   - concluir tarefa ligada a cliente registra a atividade na ficha dele;
+   - Outlook só leitura, quando o administrador do Microsoft 365 autorizar
+     (ainda não ligado). */
+const AG_TIPOS = [
+  { key:'ligacao', label:'Ligação' },
+  { key:'reuniao', label:'Reunião' },
+  { key:'email',   label:'E-mail' },
+  { key:'tarefa',  label:'Tarefa interna' },
+];
+const agTipoLabel = (k) => (AG_TIPOS.find(t => t.key === k) || AG_TIPOS[3]).label;
+/* Tipo da tarefa -> tipo da atividade que ela registra na ficha ao ser concluída. */
+const AG_TIPO_ATIVIDADE = { ligacao:'ligacao', reuniao:'reuniao', email:'email', tarefa:'nota' };
+const AG_ORIGENS = {
+  manual:     { nome:'Minha',           cor:'#195AB4', desc:'criada pela própria pessoa' },
+  atribuida:  { nome:'Atribuída',       cor:'#7C5CC4', desc:'passada pelo head comercial ou por um master' },
+  contato:    { nome:'Próximo contato', cor:'#2F7A56', desc:'data marcada na ficha do cliente' },
+  vencimento: { nome:'Vencimento',      cor:'#B3403A', desc:'alerta de vencimento na ficha do cliente' },
+  regua:      { nome:'Régua',           cor:'#8A6A18', desc:'contato previsto pela régua de relacionamento' },
+};
+const AG_DIAS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const AG_REPETE = [
+  { key:'nao',      label:'Não repete' },
+  { key:'dia_util', label:'Todo dia útil' },
+  { key:'semana',   label:'Toda semana' },
+  { key:'mes',      label:'Todo mês' },
+];
+/* Recorrente atrasada só olha o último mês: uma tarefa diária esquecida não
+   vira trinta linhas vermelhas, vira uma ("atrasada desde"). */
+const AG_JANELA_ATRASO = 31;
+const AG_ATRASADAS_VISIVEIS = 8;
+
+const agData = (iso) => new Date(iso + 'T12:00:00');
+const agSoma = (iso, n) => { const d = agData(iso); d.setDate(d.getDate() + n); return toISODate(d); };
+const agDiaSemana = (iso) => { const g = agData(iso).getDay(); return g === 0 ? 7 : g; };
+const agSegunda = (iso) => agSoma(iso, 1 - agDiaSemana(iso));
+const agDiasEntre = (de, ate) => Math.round((agData(ate) - agData(de)) / DIA_MS);
+const agPrimeiraMaiuscula = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+const agDataLonga = (iso) => agPrimeiraMaiuscula(agData(iso).toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' }));
+const agDataCurta = (iso) => AG_DIAS[agDiaSemana(iso) - 1] + ', ' + iso.slice(8,10) + '/' + iso.slice(5,7);
+const agMesAno = (iso) => agPrimeiraMaiuscula(agData(iso).toLocaleDateString('pt-BR', { month:'long', year:'numeric' }));
+function agRotuloDia(iso, hoje){
+  const d = agDiasEntre(hoje, iso);
+  if(d === 0) return 'Hoje';
+  if(d === 1) return 'Amanhã';
+  if(d === -1) return 'Ontem';
+  return agDataCurta(iso);
+}
+function agNovoId(){
+  try{ if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID(); }catch(e){}
+  /* Navegador antigo: UUID v4 montado à mão (a coluna é uuid). */
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+/* A tarefa acontece neste dia? A repetição começa no dia de "data". */
+function tarefaCaiEm(t, dia){
+  if(!t || !t.data || dia < t.data) return false;
+  switch(t.repeticao){
+    case 'dia_util': return agDiaSemana(dia) <= 5;
+    case 'semana':   return (t.diasSemana || []).indexOf(agDiaSemana(dia)) !== -1;
+    case 'mes': {
+      /* Dia 31 num mês de 30 dias cai no último dia do mês, não some. */
+      const alvo = Number(t.data.slice(8,10));
+      const d = agData(dia);
+      const ultimo = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      return Number(dia.slice(8,10)) === Math.min(alvo, ultimo);
+    }
+    default: return dia === t.data;
+  }
+}
+function agRepeteTexto(t){
+  if(!t) return '';
+  if(t.repeticao === 'dia_util') return 'todo dia útil';
+  if(t.repeticao === 'semana'){
+    const dias = (t.diasSemana || []).slice().sort((a,b) => a - b).map(n => AG_DIAS[n - 1].toLowerCase());
+    return dias.length ? 'toda ' + dias.join(', ') : 'toda semana';
+  }
+  if(t.repeticao === 'mes') return 'todo dia ' + Number(t.data.slice(8,10));
+  return '';
+}
+
+/* ---------- Itens da agenda ----------
+   Tudo vira o mesmo formato de item, venha da tabela ou da ficha:
+   { chave, origem, dia, hora, titulo, tipo, leadId, cliente, donoId, dono,
+     por, repete, feita, atrasada, tarefa?, alertaId?, reguaTipo? }
+   donos: Set de ids de quem a agenda mostra, ou null para toda a equipe. */
+function agBaseTarefa(t, porLead, nomeDe){
+  const origem = t.criadoPor && t.criadoPor !== t.donoId ? 'atribuida' : 'manual';
+  const lead = t.leadId ? porLead.get(t.leadId) : null;
+  return {
+    origem, tarefa: t, titulo: t.titulo, tipo: t.tipo, hora: t.hora || '',
+    leadId: lead ? lead.id : '', cliente: lead ? nomeCliente(lead) : '',
+    donoId: t.donoId, dono: nomeDe(t.donoId),
+    por: origem === 'atribuida' ? nomeDe(t.criadoPor) : '',
+    repete: agRepeteTexto(t),
+  };
+}
+function agLeadsDaAgenda(leads, donos){
+  return ativos(leads).filter(l => !saiuDoQuadro(l) && (!donos || donos.has(l.responsavelId)));
+}
+/* Os três tipos que vêm da ficha do cliente, já com o dia em que caem. */
+function agItensDaFicha(leads, users, donos, hoje){
+  const nomeDe = (id) => (users.find(u => u.id === id) || {}).nome || '';
+  const itens = [];
+  agLeadsDaAgenda(leads, donos).forEach(l => {
+    const base = { leadId: l.id, cliente: nomeCliente(l), donoId: l.responsavelId, dono: nomeDe(l.responsavelId),
+      hora: '', por: '', repete: '', feita: false };
+    if(l.proximoContato){
+      itens.push({ ...base, chave: 'c:' + l.id, origem: 'contato', dia: l.proximoContato, tipo: 'ligacao',
+        titulo: 'Contato agendado · ' + etapaCurta(l.etapa, l.funil) + (l.oportunidade ? ' · ' + l.oportunidade : '') });
+    }
+    alertasAbertos(l).filter(a => a.tipo === 'vencimento' && a.data).forEach(a => {
+      itens.push({ ...base, chave: 'v:' + l.id + ':' + a.id, origem: 'vencimento', dia: a.data, tipo: 'tarefa',
+        alertaId: a.id, titulo: a.texto ? 'Vencimento · ' + a.texto : 'Vencimento' });
+    });
+    reguaStatus(l, hoje).forEach(r => {
+      itens.push({ ...base, chave: 'r:' + l.id + ':' + r.tipo, origem: 'regua', dia: r.prevista, tipo: 'reuniao',
+        reguaTipo: r.tipo, titulo: r.label + ' (régua ' + l.segmento + ')' });
+    });
+  });
+  return itens.map(it => ({ ...it, atrasada: it.dia < hoje }));
+}
+const agOrdenar = (a, b) => a.dia.localeCompare(b.dia)
+  || (a.hora || '99').localeCompare(b.hora || '99')
+  || a.titulo.localeCompare(b.titulo);
+
+/* Tudo o que cai entre "de" e "ate" (inclusive). */
+function agendaItens({ tarefas, leads, users, donos, de, ate, hoje }){
+  const nomeDe = (id) => (users.find(u => u.id === id) || {}).nome || '';
+  const porLead = new Map(leads.map(l => [l.id, l]));
+  const itens = [];
+  (tarefas || []).forEach(t => {
+    if(donos && !donos.has(t.donoId)) return;
+    const base = agBaseTarefa(t, porLead, nomeDe);
+    const concluidas = t.concluidas || [];
+    for(let d = t.data > de ? t.data : de; d <= ate; d = agSoma(d, 1)){
+      if(!tarefaCaiEm(t, d)) continue;
+      const feita = concluidas.indexOf(d) !== -1;
+      itens.push({ ...base, chave: t.id + '@' + d, dia: d, feita, atrasada: !feita && d < hoje });
+    }
+  });
+  agItensDaFicha(leads, users, donos, hoje).forEach(it => {
+    if(it.dia >= de && it.dia <= ate) itens.push(it);
+  });
+  return itens.sort(agOrdenar);
+}
+
+/* O que ficou para trás. Tarefa recorrente conta uma vez só (a última
+   ocorrência antes de hoje, se não foi feita) e só até chegar a próxima: a
+   reunião de quinta esquecida deixa de ser atrasada quando a quinta seguinte
+   chega, porque aí ela já aparece em "Hoje". */
+function agendaAtrasadas({ tarefas, leads, users, donos, hoje }){
+  const nomeDe = (id) => (users.find(u => u.id === id) || {}).nome || '';
+  const porLead = new Map(leads.map(l => [l.id, l]));
+  const itens = [];
+  (tarefas || []).forEach(t => {
+    if((donos && !donos.has(t.donoId)) || !t.data || t.data >= hoje) return;
+    const concluidas = t.concluidas || [];
+    let dia = null;
+    if(t.repeticao === 'nao') dia = t.data;
+    else if(tarefaCaiEm(t, hoje)) return;
+    else {
+      const limite = agSoma(hoje, -AG_JANELA_ATRASO);
+      for(let d = agSoma(hoje, -1); d >= t.data && d >= limite; d = agSoma(d, -1)){
+        if(tarefaCaiEm(t, d)){ dia = d; break; }
+      }
+    }
+    if(!dia || concluidas.indexOf(dia) !== -1) return;
+    itens.push({ ...agBaseTarefa(t, porLead, nomeDe), chave: t.id + '@' + dia, dia, feita: false, atrasada: true });
+  });
+  agItensDaFicha(leads, users, donos, hoje).forEach(it => { if(it.dia < hoje) itens.push(it); });
+  return itens.sort(agOrdenar);
+}
+
+/* Resumo de um dia para a faixa do Dashboard e o herói da Agenda. */
+function agResumo(itensHoje, atrasadas){
+  const abertas = itensHoje.filter(i => !i.feita);
+  const agora = new Date();
+  const hhmm = String(agora.getHours()).padStart(2,'0') + ':' + String(agora.getMinutes()).padStart(2,'0');
+  const proxima = abertas.filter(i => i.hora && i.hora >= hhmm).sort((a,b) => a.hora.localeCompare(b.hora))[0] || null;
+  return { total: itensHoje.length, abertas: abertas.length, feitas: itensHoje.length - abertas.length,
+    atrasadas: atrasadas.length, proxima };
+}
+const agPlural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+
+/* Faixa no topo do Dashboard: o dia em uma linha, com atalho para a Agenda. */
+function AgendaFaixa({ tarefas, leads, users, donoId, onAbrir }){
+  const hoje = todayISO();
+  const donos = useMemo(() => new Set([donoId]), [donoId]);
+  const r = useMemo(() => agResumo(
+    agendaItens({ tarefas, leads, users, donos, de: hoje, ate: hoje, hoje }),
+    agendaAtrasadas({ tarefas, leads, users, donos, hoje })), [tarefas, leads, users, donos, hoje]);
+  return h('div', { className: 'ag-faixa' },
+    h('span', { className: 'ag-faixa-rotulo' }, 'Agenda de hoje'),
+    h('span', { className: 'ag-faixa-txt' },
+      r.abertas ? agPlural(r.abertas, 'tarefa', 'tarefas') + (r.abertas === 1 ? ' aberta' : ' abertas') : 'Nada pendente para hoje',
+      r.proxima ? ' · próxima às ' + r.proxima.hora : '',
+      r.atrasadas ? h('span', { className: 'ag-atraso' }, ' · ' + agPlural(r.atrasadas, 'atrasada', 'atrasadas')) : null),
+    h('button', { className: 'btn btn-ghost', onClick: onAbrir }, 'Abrir a Agenda'));
+}
+
+function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir, podeEditarLead,
+  onSalvarTarefa, onApagarTarefa, onConcluir, onOpen, onResolverAlerta, onRegistrar }){
+  const hoje = todayISO();
+  const [visao, setVisao] = useState('hoje');
+  const [quem, setQuem] = useState(currentUser.id);
+  const [refSemana, setRefSemana] = useState(agSegunda(hoje));
+  const [refMes, setRefMes] = useState(hoje.slice(0,8) + '01');
+  const [diaMes, setDiaMes] = useState(hoje);
+  const [form, setForm] = useState(null);
+  const [registrando, setRegistrando] = useState(null);
+  const [textoRegistro, setTextoRegistro] = useState('');
+  const [todasAtrasadas, setTodasAtrasadas] = useState(false);
+
+  /* Quem pode ser visto: head comercial e master veem todos, o assessor só a si. */
+  const pessoas = useMemo(() => {
+    const ativas = users.filter(u => u.status === 'ativo' && u.id !== currentUser.id)
+      .sort((a,b) => (a.nome || '').localeCompare(b.nome || ''));
+    return [currentUser].concat(ativas);
+  }, [users, currentUser]);
+  const visoes = podeAtribuir ? pessoas.map(p => p.id).concat(['todos']) : [currentUser.id];
+  const donos = useMemo(() => quem === 'todos' ? null : new Set([quem]), [quem]);
+  const nomeDe = (id) => (users.find(u => u.id === id) || {}).nome || '';
+  const irPara = (delta) => {
+    const i = visoes.indexOf(quem);
+    setQuem(visoes[(i + delta + visoes.length) % visoes.length]);
+  };
+
+  const base = { tarefas, leads, users, donos, hoje };
+  const atrasadas = useMemo(() => agendaAtrasadas(base), [tarefas, leads, users, donos, hoje]);
+  const itensHoje = useMemo(() => agendaItens({ ...base, de: hoje, ate: hoje }), [tarefas, leads, users, donos, hoje]);
+  const proximos = useMemo(() => agendaItens({ ...base, de: agSoma(hoje, 1), ate: agSoma(hoje, 7) }), [tarefas, leads, users, donos, hoje]);
+  const resumo = agResumo(itensHoje, atrasadas);
+  const semanaFim = agSoma(refSemana, 6);
+  const itensSemana = useMemo(() => visao === 'semana' ? agendaItens({ ...base, de: refSemana, ate: semanaFim }) : [],
+    [visao, tarefas, leads, users, donos, refSemana, hoje]);
+  const mesInicio = agSegunda(refMes);
+  const mesUltimo = (() => { const d = agData(refMes); return toISODate(new Date(d.getFullYear(), d.getMonth() + 1, 0)); })();
+  const mesFim = agSoma(agSegunda(mesUltimo), 6);
+  const itensMes = useMemo(() => visao === 'mes' ? agendaItens({ ...base, de: mesInicio, ate: mesFim }) : [],
+    [visao, tarefas, leads, users, donos, refMes, hoje]);
+
+  const mostrarDono = quem === 'todos';
+  const leadDe = (id) => leads.find(l => l.id === id) || null;
+  const abrirLead = (id) => { const l = leadDe(id); if(l) onOpen(l); };
+  const meu = (t) => t.criadoPor === currentUser.id || (!t.criadoPor && t.donoId === currentUser.id);
+  const podeEditarTarefa = (t) => podeAtribuir || meu(t);
+  const podeConcluirTarefa = (t) => t.donoId === currentUser.id || podeEditarTarefa(t);
+  const semTabela = !!tarefasErro;
+
+  const novaTarefa = (dia) => setForm({ nova: true, tarefa: {
+    id: agNovoId(), titulo: '', tipo: 'ligacao', leadId: '', donoId: quem === 'todos' ? currentUser.id : quem,
+    criadoPor: currentUser.id, data: dia || hoje, hora: '', repeticao: 'nao', diasSemana: [agDiaSemana(dia || hoje)],
+    concluidas: [], emailManha: true, nota: '' } });
+
+  /* Clicar num item: tarefa editável abre o formulário; o resto abre a ficha. */
+  const abrirItem = (it) => {
+    if(it.tarefa && podeEditarTarefa(it.tarefa)) setForm({ nova: false, tarefa: it.tarefa });
+    else if(it.leadId) abrirLead(it.leadId);
+  };
+
+  const fecharRegistro = () => { setRegistrando(null); setTextoRegistro(''); };
+  const clicarCheck = (it) => {
+    if(it.tarefa){ onConcluir(it.tarefa, it.dia, !it.feita); return; }
+    if(it.origem === 'vencimento'){ onResolverAlerta(it.leadId, it.alertaId); return; }
+    setRegistrando(registrando === it.chave ? null : it.chave); setTextoRegistro('');
+  };
+  const salvarRegistro = (it) => {
+    if(!textoRegistro.trim()) return;
+    onRegistrar(it, textoRegistro.trim());
+    fecharRegistro();
+  };
+  const podeMexer = (it) => it.tarefa ? podeConcluirTarefa(it.tarefa) : (!!leadDe(it.leadId) && podeEditarLead(leadDe(it.leadId)));
+  const rotuloCheck = (it) => it.tarefa ? (it.feita ? 'Desmarcar como feita' : 'Marcar como feita')
+    : it.origem === 'vencimento' ? 'Marcar o vencimento como resolvido'
+    : it.origem === 'contato' ? 'Registrar o contato' : 'Registrar o contato da régua';
+
+  const selo = (origem) => { const o = AG_ORIGENS[origem];
+    return h('span', { className: 'ag-selo', style: { background: o.cor + '1A', color: o.cor } }, o.nome); };
+
+  const linha = (it, opcoes) => {
+    const o = AG_ORIGENS[it.origem];
+    const mexe = podeMexer(it);
+    const mostrarDia = opcoes && opcoes.mostrarDia;
+    return h('div', { key: it.chave, className: 'ag-item' + (it.feita ? ' feita' : ''), style: { '--ag-cor': o.cor } },
+      h('button', { className: 'ag-check', disabled: !mexe, onClick: () => clicarCheck(it),
+        'aria-label': rotuloCheck(it), title: mexe ? rotuloCheck(it) : 'Só o responsável pelo cliente pode registrar' },
+        h(Icon, { size: 15, path: 'M20 6 9 17l-5-5' })),
+      it.hora ? h('span', { className: 'ag-hora' }, it.hora) : null,
+      h('div', { className: 'ag-item-corpo' },
+        h('div', { className: 'ag-item-titulo' }, it.titulo),
+        h('div', { className: 'ag-item-meta' },
+          mostrarDia ? h('span', { className: it.atrasada ? 'ag-atraso' : '' },
+            it.atrasada ? 'atrasada desde ' + agDataCurta(it.dia) : agRotuloDia(it.dia, hoje)) : null,
+          it.tarefa ? h('span', null, agTipoLabel(it.tipo)) : null,
+          it.cliente ? h('button', { className: 'ag-cliente', onClick: () => abrirLead(it.leadId) }, it.cliente) : null,
+          selo(it.origem),
+          it.por ? h('span', null, 'de ' + it.por) : null,
+          mostrarDono && it.dono ? h('span', null, 'para ' + it.dono) : null,
+          it.repete ? h('span', null, '↻ ' + it.repete) : null),
+        registrando === it.chave ? h('div', { className: 'ag-registro' },
+          h('textarea', { value: textoRegistro, autoFocus: true, onChange: e => setTextoRegistro(e.target.value),
+            placeholder: 'O que foi conversado? Fica registrado na ficha do cliente.' }),
+          h('div', { className: 'ag-registro-botoes' },
+            h('button', { className: 'btn btn-ghost', onClick: fecharRegistro }, 'Cancelar'),
+            h('button', { className: 'btn btn-primary', disabled: !textoRegistro.trim(), onClick: () => salvarRegistro(it) }, 'Registrar contato'))) : null),
+      h('div', { className: 'ag-acoes' },
+        it.tarefa && podeEditarTarefa(it.tarefa)
+          ? h('button', { className: 'ag-icone', onClick: () => setForm({ nova: false, tarefa: it.tarefa }), 'aria-label': 'Editar tarefa', title: 'Editar' }, h(IconEditar, { size: 15 }))
+          : null,
+        !it.tarefa && it.leadId
+          ? h('button', { className: 'ag-icone', onClick: () => abrirLead(it.leadId), 'aria-label': 'Abrir a ficha do cliente', title: 'Abrir a ficha' }, h(Icon, { size: 15, path: 'M9 18l6-6-6-6' }))
+          : null));
+  };
+
+  const lista = (itens, vazio, opcoes) => h('div', { className: 'ag-lista' + (opcoes && opcoes.classe ? ' ' + opcoes.classe : '') },
+    itens.length ? itens.map(it => linha(it, opcoes)) : h('div', { className: 'ag-vazio' }, vazio),
+    opcoes && opcoes.mais ? opcoes.mais : null);
+
+  /* ---------- herói ---------- */
+  const nomeQuem = quem === 'todos' ? 'Toda a equipe' : quem === currentUser.id ? 'Minha agenda' : nomeDe(quem);
+  const heroi = h('section', { className: 'pn-heroi' },
+    h('div', { className: 'pn-heroi-topo ag-heroi-topo' },
+      podeAtribuir ? h('div', { className: 'pn-visao' },
+        h('button', { className: 'pn-visao-seta', onClick: () => irPara(-1), 'aria-label': 'Agenda anterior' }, '‹'),
+        h('label', { className: 'pn-visao-caixa' },
+          h('span', null, 'Agenda de'),
+          h('select', { value: quem, onChange: e => setQuem(e.target.value) },
+            pessoas.map(p => h('option', { key: p.id, value: p.id }, p.id === currentUser.id ? 'Minha agenda (' + p.nome + ')' : p.nome)),
+            h('option', { value: 'todos' }, 'Toda a equipe'))),
+        h('button', { className: 'pn-visao-seta', onClick: () => irPara(1), 'aria-label': 'Próxima agenda' }, '›')
+      ) : h('div', { className: 'pn-visao-fixa' }, h('span', null, 'Agenda de'), h('strong', null, currentUser.nome)),
+      h('button', { className: 'ag-novo', onClick: () => novaTarefa(hoje), disabled: semTabela,
+        title: semTabela ? 'Falta criar a tabela de tarefas no banco' : '' }, h(IconPlus, { size: 15 }), 'Nova tarefa')),
+    h('h2', { className: 'ag-dia-titulo' }, agDataLonga(hoje)),
+    h('div', { className: 'pn-pilulas' },
+      h('span', { className: 'pn-pilula' }, resumo.abertas
+        ? agPlural(resumo.abertas, 'tarefa aberta hoje', 'tarefas abertas hoje')
+        : (resumo.total ? 'Tudo feito hoje' : 'Nada marcado para hoje')),
+      resumo.feitas ? h('span', { className: 'pn-pilula boa' }, agPlural(resumo.feitas, 'feita', 'feitas')) : null,
+      resumo.atrasadas ? h('span', { className: 'pn-pilula ruim' }, agPlural(resumo.atrasadas, 'atrasada', 'atrasadas')) : null,
+      resumo.proxima ? h('span', { className: 'pn-pilula alerta' }, 'Próxima às ' + resumo.proxima.hora) : null),
+    h('div', { className: 'pn-meta' }, nomeQuem + ' · tarefas criadas na Agenda, próximos contatos, vencimentos e régua de relacionamento'));
+
+  const abas = h('div', { className: 'pn-abas', role: 'tablist', 'aria-label': 'Visão da agenda' },
+    [['hoje','Hoje'], ['semana','Semana'], ['mes','Mês']].map(([k, rot]) =>
+      h('button', { key: k, role: 'tab', 'aria-selected': visao === k ? 'true' : 'false',
+        className: visao === k ? 'ativa' : '', onClick: () => setVisao(k) }, rot)));
+
+  const aviso = semTabela ? h('div', { className: 'ag-aviso', role: 'status' },
+    h('strong', null, 'A Agenda ainda não está ligada ao banco. '),
+    'Falta rodar o arquivo agenda.sql no SQL Editor do Supabase. Enquanto isso, ela mostra só o que vem das fichas dos clientes: próximo contato, vencimento e régua.') : null;
+
+  /* ---------- Hoje ---------- */
+  const legenda = h('div', { className: 'ag-cartao' },
+    h('h3', null, 'De onde vem cada item'),
+    Object.keys(AG_ORIGENS).map(k => h('div', { key: k, className: 'ag-legenda-item' },
+      h('span', { className: 'ag-legenda-cor', style: { background: AG_ORIGENS[k].cor } }),
+      h('span', null, h('strong', null, AG_ORIGENS[k].nome), ': ' + AG_ORIGENS[k].desc))),
+    h('p', { className: 'ag-nota' }, 'Concluir uma tarefa ligada a um cliente registra a atividade na ficha dele. As reuniões do Outlook entram aqui quando o administrador do Microsoft 365 autorizar o acesso.'));
+  const porDia = proximos.reduce((acc, it) => { (acc[it.dia] = acc[it.dia] || []).push(it); return acc; }, {});
+  const proximosDias = h('div', { className: 'ag-cartao' },
+    h('h3', null, 'Próximos 7 dias'),
+    Object.keys(porDia).length ? h('div', { className: 'ag-prox' },
+      Object.keys(porDia).sort().map(d => h('div', { key: d, className: 'ag-prox-dia' },
+        h('strong', null, agRotuloDia(d, hoje) + (agDiasEntre(hoje, d) > 1 ? '' : ' · ' + agDataCurta(d).split(', ')[1])),
+        porDia[d].slice(0, 6).map(it => h('button', { key: it.chave, className: 'ag-prox-linha', style: { '--ag-cor': AG_ORIGENS[it.origem].cor },
+          onClick: () => abrirItem(it) },
+          it.hora ? h('span', null, it.hora) : null, it.titulo + (it.cliente ? ' · ' + it.cliente : ''))),
+        porDia[d].length > 6 ? h('div', { className: 'ag-nota', style: { margin: 0 } }, '+ ' + (porDia[d].length - 6) + ' no dia') : null)))
+      : h('p', { className: 'ag-nota', style: { margin: 0 } }, 'Nada marcado para a próxima semana.'));
+
+  const atrasadasVisiveis = todasAtrasadas ? atrasadas : atrasadas.slice(0, AG_ATRASADAS_VISIVEIS);
+  const telaHoje = h('div', { className: 'ag-hoje' },
+    h('div', { className: 'ag-col' },
+      atrasadas.length ? h('div', null,
+        h('h3', { className: 'ag-secao-titulo atrasada' }, 'Atrasadas', h('em', null, String(atrasadas.length))),
+        lista(atrasadasVisiveis, '', { classe: 'atrasadas', mostrarDia: true,
+          mais: atrasadas.length > AG_ATRASADAS_VISIVEIS ? h('button', { className: 'ag-mais', onClick: () => setTodasAtrasadas(v => !v) },
+            todasAtrasadas ? 'Mostrar menos' : 'Mostrar as outras ' + (atrasadas.length - AG_ATRASADAS_VISIVEIS)) : null })) : null,
+      h('div', null,
+        h('h3', { className: 'ag-secao-titulo' }, 'Hoje', h('em', null, itensHoje.length ? String(itensHoje.length) : '')),
+        lista(itensHoje, semTabela ? 'Nada vindo das fichas para hoje.' : 'Nada marcado para hoje. Use "Nova tarefa" para planejar o dia.'))),
+    h('aside', { className: 'ag-lado' }, proximosDias, legenda));
+
+  /* ---------- Semana ---------- */
+  const diasSemana = Array.from({ length: 7 }, (_, i) => agSoma(refSemana, i));
+  const tituloSemana = refSemana.slice(8,10) + '/' + refSemana.slice(5,7) + ' a ' + semanaFim.slice(8,10) + '/' + semanaFim.slice(5,7);
+  const chip = (it) => h('button', { key: it.chave, className: 'ag-chip' + (it.feita ? ' feita' : '') + (it.atrasada ? ' atrasada' : ''),
+    style: { '--ag-cor': AG_ORIGENS[it.origem].cor }, onClick: () => abrirItem(it),
+    title: AG_ORIGENS[it.origem].nome + (it.cliente ? ' · ' + it.cliente : '') },
+    it.hora ? h('span', { className: 'ag-chip-hora' }, it.hora) : null, it.titulo,
+    it.cliente || (mostrarDono && it.dono) ? h('span', { className: 'ag-chip-quem' },
+      [it.cliente, mostrarDono ? it.dono : ''].filter(Boolean).join(' · ')) : null);
+  const telaSemana = h('div', null,
+    h('div', { className: 'ag-nav' },
+      h('button', { className: 'ag-nav-btn', onClick: () => setRefSemana(agSoma(refSemana, -7)), 'aria-label': 'Semana anterior' }, '‹'),
+      h('strong', null, 'Semana de ' + tituloSemana),
+      h('button', { className: 'ag-nav-btn', onClick: () => setRefSemana(agSoma(refSemana, 7)), 'aria-label': 'Próxima semana' }, '›'),
+      refSemana !== agSegunda(hoje) ? h('button', { className: 'ag-nav-btn', onClick: () => setRefSemana(agSegunda(hoje)) }, 'Esta semana') : null),
+    h('div', { className: 'ag-semana-rolagem' },
+      h('div', { className: 'ag-semana' }, diasSemana.map((d, i) => {
+        const doDia = itensSemana.filter(it => it.dia === d);
+        return h('div', { key: d, className: 'ag-coluna' + (d === hoje ? ' hoje' : '') + (i >= 5 ? ' fds' : '') },
+          h('div', { className: 'ag-coluna-cab' }, AG_DIAS[i] + ' ' + Number(d.slice(8,10))),
+          h('div', { className: 'ag-coluna-corpo' },
+            doDia.map(chip),
+            !semTabela ? h('button', { className: 'ag-chip', style: { '--ag-cor': 'transparent', background: 'none', color: 'var(--ink-faint)' },
+              onClick: () => novaTarefa(d < hoje ? hoje : d), 'aria-label': 'Nova tarefa em ' + agDataCurta(d) }, '+ tarefa') : null));
+      }))));
+
+  /* ---------- Mês ---------- */
+  const diasMes = [];
+  for(let d = mesInicio; d <= mesFim; d = agSoma(d, 1)) diasMes.push(d);
+  const mesmoMes = (d) => d.slice(0,7) === refMes.slice(0,7);
+  const mudarMes = (delta) => {
+    const d = agData(refMes);
+    const novo = toISODate(new Date(d.getFullYear(), d.getMonth() + delta, 1));
+    setRefMes(novo);
+    setDiaMes(novo.slice(0,7) === hoje.slice(0,7) ? hoje : novo);
+  };
+  const itensDiaMes = itensMes.filter(it => it.dia === diaMes);
+  const telaMes = h('div', null,
+    h('div', { className: 'ag-nav' },
+      h('button', { className: 'ag-nav-btn', onClick: () => mudarMes(-1), 'aria-label': 'Mês anterior' }, '‹'),
+      h('strong', null, agMesAno(refMes)),
+      h('button', { className: 'ag-nav-btn', onClick: () => mudarMes(1), 'aria-label': 'Próximo mês' }, '›'),
+      refMes.slice(0,7) !== hoje.slice(0,7) ? h('button', { className: 'ag-nav-btn', onClick: () => { setRefMes(hoje.slice(0,8) + '01'); setDiaMes(hoje); } }, 'Este mês') : null),
+    h('div', { className: 'ag-mes' },
+      AG_DIAS.map(d => h('div', { key: d, className: 'ag-mes-cab' }, d)),
+      diasMes.map(d => {
+        const doDia = itensMes.filter(it => it.dia === d);
+        return h('button', { key: d, onClick: () => setDiaMes(d),
+          className: 'ag-mes-dia' + (mesmoMes(d) ? '' : ' fora') + (d === hoje ? ' hoje' : '') + (d === diaMes ? ' escolhido' : ''),
+          'aria-label': agDataCurta(d) + ': ' + agPlural(doDia.length, 'item', 'itens') },
+          h('span', { className: 'ag-mes-num' }, Number(d.slice(8,10))),
+          doDia.slice(0, 3).map(it => h('span', { key: it.chave, className: 'ag-mes-chip' + (it.feita ? ' feita' : ''),
+            style: { '--ag-cor': AG_ORIGENS[it.origem].cor } }, (it.hora ? it.hora + ' ' : '') + it.titulo)),
+          doDia.length > 3 ? h('span', { className: 'ag-mes-mais' }, '+ ' + (doDia.length - 3)) : null,
+          doDia.length ? h('span', { className: 'ag-mes-conta' }, doDia.length) : null);
+      })),
+    h('div', { className: 'ag-dia-escolhido' },
+      h('h3', { className: 'ag-secao-titulo' }, agDataLonga(diaMes), h('em', null, itensDiaMes.length ? String(itensDiaMes.length) : '')),
+      lista(itensDiaMes, 'Nada marcado neste dia.')));
+
+  return h('div', { className: 'pn ag' },
+    heroi, abas, aviso,
+    visao === 'hoje' ? telaHoje : visao === 'semana' ? telaSemana : telaMes,
+    form ? h(AgendaForm, { inicial: form.tarefa, nova: form.nova, users, leads, currentUser, podeAtribuir,
+      podeApagar: !form.nova && (podeAtribuir || meu(form.tarefa)),
+      onClose: () => setForm(null),
+      onSalvar: async (t) => { const ok = await onSalvarTarefa(t, form.nova); if(ok) setForm(null); },
+      onApagar: async (t) => { const ok = await onApagarTarefa(t); if(ok) setForm(null); } }) : null);
+}
+
+function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, podeApagar, onClose, onSalvar, onApagar }){
+  useEsc(onClose);
+  const [t, setT] = useState(() => ({ ...inicial, diasSemana: (inicial.diasSemana && inicial.diasSemana.length)
+    ? inicial.diasSemana.slice() : [agDiaSemana(inicial.data || todayISO())] }));
+  const [erro, setErro] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const [confirmaApagar, setConfirmaApagar] = useState(false);
+  const muda = (campo, valor) => { setT(prev => ({ ...prev, [campo]: valor })); setErro(''); };
+
+  /* Cliente: só os da carteira de quem vai fazer a tarefa. Rótulo com a conta
+     para distinguir homônimos; a escolha é conferida contra a lista. */
+  const rotuloLead = (l) => nomeCliente(l) + (l.conta ? ' · conta ' + l.conta : '');
+  const clientes = useMemo(() => ativos(leads)
+    .filter(l => !l.perdido && l.responsavelId === t.donoId)
+    .sort((a,b) => nomeCliente(a).localeCompare(nomeCliente(b))), [leads, t.donoId]);
+  const atual = t.leadId ? leads.find(l => l.id === t.leadId) : null;
+  const [textoCliente, setTextoCliente] = useState(atual ? rotuloLead(atual) : '');
+  const escolherCliente = (txt) => {
+    setTextoCliente(txt);
+    const achado = clientes.find(l => rotuloLead(l) === txt) || null;
+    muda('leadId', achado ? achado.id : '');
+  };
+  const pessoas = users.filter(u => u.status === 'ativo').sort((a,b) => (a.nome || '').localeCompare(b.nome || ''));
+  const atribuida = !nova && inicial.criadoPor && inicial.criadoPor !== inicial.donoId;
+
+  const salvar = async () => {
+    if(!t.titulo.trim()){ setErro('Escreva o que precisa ser feito.'); return; }
+    if(!t.data){ setErro('Escolha o dia.'); return; }
+    if(t.repeticao === 'semana' && !t.diasSemana.length){ setErro('Marque pelo menos um dia da semana.'); return; }
+    if(textoCliente.trim() && !t.leadId){ setErro('Escolha o cliente na lista, ou deixe o campo vazio.'); return; }
+    setSalvando(true);
+    await onSalvar({ ...t, titulo: t.titulo.trim(), nota: (t.nota || '').trim(),
+      diasSemana: t.repeticao === 'semana' ? t.diasSemana.slice().sort((a,b) => a - b) : [] });
+    setSalvando(false);
+  };
+
+  const opcao = (lista, campo) => h('div', { className: 'ag-opcoes', role: 'radiogroup' },
+    lista.map(o => h('button', { key: o.key, type: 'button', role: 'radio', 'aria-checked': t[campo] === o.key ? 'true' : 'false',
+      className: 'ag-opcao' + (t[campo] === o.key ? ' on' : ''), onClick: () => muda(campo, o.key) }, o.label)));
+
+  return h('div', { className: 'overlay', onClick: (e) => { if(e.target === e.currentTarget) onClose(); } },
+    h('div', { className: 'modal ag-form', role: 'dialog', 'aria-modal': 'true', 'aria-label': nova ? 'Nova tarefa' : 'Editar tarefa' },
+      h('div', { className: 'modal-head' }, h('h2', null, nova ? 'Nova tarefa' : 'Editar tarefa'),
+        h('button', { className: 'modal-close', onClick: onClose, 'aria-label': 'Fechar' }, h(IconX, { size: 18 }))),
+      h('div', { className: 'modal-body' },
+        atribuida ? h('p', { className: 'field-hint', style: { marginTop: 0, marginBottom: 14 } },
+          'Tarefa atribuída por ' + ((users.find(u => u.id === inicial.criadoPor) || {}).nome || 'outra pessoa') + '.') : null,
+        h('div', { className: 'field' },
+          h('label', { htmlFor: 'ag-titulo' }, 'O que fazer'),
+          h('input', { id: 'ag-titulo', value: t.titulo, maxLength: 200, autoFocus: nova,
+            placeholder: 'Ex.: Ligar para apresentar o fundo exclusivo', onChange: e => muda('titulo', e.target.value) })),
+        h('div', { className: 'field' }, h('label', null, 'Tipo'), opcao(AG_TIPOS, 'tipo')),
+        podeAtribuir ? h('div', { className: 'field' },
+          h('label', { htmlFor: 'ag-dono' }, 'Para quem'),
+          h('select', { id: 'ag-dono', value: t.donoId, onChange: e => { const v = e.target.value; setTextoCliente(''); setErro(''); setT(prev => ({ ...prev, donoId: v, leadId: '' })); } },
+            pessoas.map(p => h('option', { key: p.id, value: p.id }, p.id === currentUser.id ? 'Eu (' + p.nome + ')' : p.nome)))) : null,
+        h('div', { className: 'field' },
+          h('label', { htmlFor: 'ag-cliente' }, 'Cliente (opcional)'),
+          h('input', { id: 'ag-cliente', list: 'ag-clientes', value: textoCliente, placeholder: 'Comece a digitar o nome',
+            onChange: e => escolherCliente(e.target.value) }),
+          h('datalist', { id: 'ag-clientes' }, clientes.map(l => h('option', { key: l.id, value: rotuloLead(l) }))),
+          h('div', { className: 'field-hint' }, 'Ao concluir, a atividade é registrada na ficha deste cliente.')),
+        h('div', { className: 'field-row' },
+          h('div', { className: 'field' },
+            h('label', { htmlFor: 'ag-data' }, t.repeticao === 'nao' ? 'Dia' : 'Começa em'),
+            h('input', { id: 'ag-data', type: 'date', value: t.data, onChange: e => muda('data', e.target.value) })),
+          h('div', { className: 'field' },
+            h('label', { htmlFor: 'ag-hora' }, 'Hora (opcional)'),
+            h('input', { id: 'ag-hora', type: 'time', value: t.hora, onChange: e => muda('hora', e.target.value) }))),
+        h('div', { className: 'field' }, h('label', null, 'Repetir'), opcao(AG_REPETE, 'repeticao'),
+          t.repeticao === 'semana' ? h('div', { className: 'ag-dias', role: 'group', 'aria-label': 'Dias da semana' },
+            AG_DIAS.map((d, i) => {
+              const n = i + 1, on = t.diasSemana.indexOf(n) !== -1;
+              return h('button', { key: d, type: 'button', className: 'ag-dia-chip' + (on ? ' on' : ''), 'aria-pressed': on ? 'true' : 'false',
+                onClick: () => muda('diasSemana', on ? t.diasSemana.filter(x => x !== n) : t.diasSemana.concat([n])) }, d);
+            })) : null,
+          t.repeticao === 'mes' && t.data ? h('div', { className: 'field-hint' }, 'Todo dia ' + Number(t.data.slice(8,10)) + '. Em mês mais curto, cai no último dia.') : null),
+        h('div', { className: 'field' },
+          h('label', { htmlFor: 'ag-nota' }, 'Observação (opcional)'),
+          h('textarea', { id: 'ag-nota', value: t.nota, maxLength: 2000, onChange: e => muda('nota', e.target.value) })),
+        h('label', { className: 'ag-check-linha' },
+          h('input', { type: 'checkbox', checked: t.emailManha, onChange: e => muda('emailManha', e.target.checked) }),
+          h('span', null, 'Incluir no e-mail da manhã', h('br'), h('span', { className: 'field-hint' }, 'O e-mail sai nos dias úteis, por volta das 7h, com as tarefas do dia e as atrasadas.'))),
+        erro ? h('div', { className: 'field-error', role: 'alert', style: { marginTop: 12 } }, erro) : null),
+      h('div', { className: 'modal-foot' },
+        h('div', { style: { display: 'flex', gap: 8 } },
+          podeApagar ? (confirmaApagar
+            ? h('button', { className: 'btn btn-danger-ghost', onClick: () => onApagar(t) }, h(IconTrash, { size: 13 }), 'Confirmar exclusão')
+            : h('button', { className: 'btn btn-danger-ghost', onClick: () => setConfirmaApagar(true) }, h(IconTrash, { size: 13 }), 'Excluir'))
+          : null),
+        h('div', { style: { display: 'flex', gap: 8 } },
+          h('button', { className: 'btn btn-ghost', onClick: onClose }, 'Cancelar'),
+          h('button', { className: 'btn btn-primary', onClick: salvar, disabled: salvando }, salvando ? 'Salvando…' : (nova ? 'Criar tarefa' : 'Salvar'))))));
+}
+
 /* ================= Painel (aba Dashboard) =================
    O cockpit da carteira: a casa inteira para o admin, a própria carteira para
    o assessor. Cada número abre o que o compõe — casa, assessor, cliente — e o
@@ -10471,7 +11288,7 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.05.5';
+const CRM_VERSAO = 'versão do CRM 2026.11.05.6';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -11254,7 +12071,9 @@ function App(){
   useEffect(() => {
     if(!currentUser || viewInicializada.current) return;
     viewInicializada.current = true;
-    if(currentUser.role !== 'especialista') setView('hoje');
+    /* O botão do e-mail da manhã chega com #agenda e abre direto na Agenda. */
+    if(location.hash === '#agenda') setView('agenda');
+    else if(currentUser.role !== 'especialista') setView('hoje');
   }, [currentUser]);
   const [losingLead, setLosingLead] = useState(null);
   const [winningLead, setWinningLead] = useState(null);
@@ -11284,6 +12103,11 @@ function App(){
   const [funil, setFunil] = useState('assessor');
   const [produtoFiltro, setProdutoFiltro] = useState(PRODUTOS[0]);
   const [toasts, setToasts] = useState([]);
+  /* Agenda: tarefas da tabela `tarefas`. O erro fica guardado para a aba
+     avisar que falta rodar agenda.sql, em vez de quebrar o CRM inteiro. */
+  const [tarefas, setTarefas] = useState([]);
+  const [tarefasErro, setTarefasErro] = useState('');
+  const [souMaster, setSouMaster] = useState(false);
 
   /* Fila de avisos: toda mutação agora confirma o que aconteceu.
      Antes só o bloqueio de trajeto falava com o usuário. */
@@ -11307,6 +12131,9 @@ function App(){
        não rodou, a tabela não existe. Sem cotação o app funciona — só não
        consolida o offshore, e diz isso na tela. */
     try{ setCotacao(await fetchConfig(COTACAO_CHAVE)); }catch(e){ setCotacao(null); }
+    try{ setTarefas(await fetchTarefas()); setTarefasErro(''); }
+    catch(e){ setTarefas([]); setTarefasErro(String((e && e.message) || e || 'erro')); }
+    try{ setSouMaster(await fetchSouMaster()); }catch(e){ setSouMaster(false); }
   };
 
   useEffect(() => {
@@ -11512,7 +12339,7 @@ function App(){
     setFiltrosAbertos(false);
     setView('kanban');
     if(!MODO_DEMO) await sb.auth.signOut();
-    setCurrentUser(null); setLeads([]); setPhase('login');
+    setCurrentUser(null); setLeads([]); setTarefas([]); setSouMaster(false); setPhase('login');
     setQuery(''); setVendorFilter('all'); setView('kanban');
   };
 
@@ -12248,6 +13075,84 @@ function App(){
     return mutate(leadId, l => ({ ...l, atividades: (l.atividades || []).filter(a => a.id !== atividadeId) }));
   };
 
+  /* ---------- Agenda ----------
+     Quem pode atribuir: head comercial (admin do CRM) e master. A tela só
+     usa isso para mostrar os controles; quem barra é o banco. */
+  const podeAtribuir = !!currentUser && (currentUser.role === 'admin' || souMaster);
+  const erroTarefa = (e) => {
+    const m = String((e && e.message) || e || '');
+    if(/atribuída a você/.test(m)) return m;
+    if(/row-level security|permission denied/i.test(m)) return 'Você não tem permissão para mexer nesta tarefa.';
+    return 'Não foi possível salvar a tarefa (' + m + ').';
+  };
+  const salvarTarefa = async (t, nova) => {
+    try{
+      const salva = await gravarTarefa(t, nova);
+      setTarefas(prev => nova ? [...prev, salva] : prev.map(x => x.id === salva.id ? salva : x));
+      const dono = (users.find(u => u.id === salva.donoId) || {}).nome || '';
+      pushToast(nova
+        ? (salva.donoId === currentUser.id ? 'Tarefa criada.' : 'Tarefa criada para ' + dono + '.')
+        : 'Tarefa atualizada.', 'success');
+      return true;
+    }catch(e){ pushToast(erroTarefa(e), 'error'); return false; }
+  };
+  const apagarTarefa = async (t) => {
+    try{
+      await apagarTarefaBanco(t.id);
+      setTarefas(prev => prev.filter(x => x.id !== t.id));
+      pushToast('Tarefa excluída.', 'success');
+      return true;
+    }catch(e){ pushToast(erroTarefa(e), 'error'); return false; }
+  };
+  /* Marca ou desmarca uma ocorrência. Na hora, sem esperar o banco; se o
+     banco recusar, volta como estava. Concluir tarefa ligada a cliente
+     registra a atividade na ficha dele (desmarcar não apaga o registro:
+     ele se corrige na própria ficha). */
+  const concluirTarefa = async (t, dia, feita) => {
+    const concluidas = feita
+      ? Array.from(new Set([...(t.concluidas || []), dia])).sort()
+      : (t.concluidas || []).filter(d => d !== dia);
+    const nova = { ...t, concluidas };
+    setTarefas(prev => prev.map(x => x.id === t.id ? nova : x));
+    try{
+      const salva = await gravarTarefa(nova, false);
+      setTarefas(prev => prev.map(x => x.id === salva.id ? salva : x));
+    }catch(e){
+      setTarefas(prev => prev.map(x => x.id === t.id ? t : x));
+      pushToast(erroTarefa(e), 'error');
+      return;
+    }
+    const lead = feita && t.leadId ? leads.find(l => l.id === t.leadId) : null;
+    if(lead && podeEditar(lead)){
+      const hoje = todayISO();
+      addActivity(lead.id, {
+        id: uid('a'), tipo: AG_TIPO_ATIVIDADE[t.tipo] || 'nota', data: dia < hoje ? dia : hoje,
+        nota: t.titulo + (t.nota ? '\n' + t.nota : '') + '\n(concluída na Agenda)',
+        autor: currentUser.nome, criadoEm: Date.now(),
+      });
+    }
+  };
+  /* Próximo contato e régua se resolvem registrando o contato, como na
+     ficha. No próximo contato a data marcada é limpa, porque já aconteceu;
+     a próxima se marca na ficha. */
+  const registrarDaAgenda = (item, nota) => {
+    const lead = leads.find(l => l.id === item.leadId);
+    if(!lead || !podeEditar(lead)) return;
+    const atividade = { id: uid('a'), tipo: item.origem === 'regua' ? item.reguaTipo : 'ligacao',
+      data: todayISO(), nota, autor: currentUser.nome, criadoEm: Date.now() };
+    if(item.origem === 'contato'){
+      mutate(lead.id, l => ({ ...l, atividades: [...(l.atividades || []), atividade],
+        ultimoContato: (!l.ultimoContato || atividade.data > l.ultimoContato) ? atividade.data : l.ultimoContato,
+        proximoContato: '' }));
+      pushToast('Contato registrado. Marque o próximo na ficha do cliente.', 'success');
+    } else {
+      addActivity(lead.id, atividade);
+    }
+  };
+  const resolverVencimentoDaAgenda = (leadId, alertaId) => {
+    if(resolverAlerta(leadId, alertaId)) pushToast('Vencimento marcado como resolvido.', 'success');
+  };
+
   /* Válvula de escape da trava de trajeto: o admin corrige um movimento errado,
      e a correção fica registrada na linha do tempo como tal. */
   const correctStage = (leadId, para, motivo) => {
@@ -12434,6 +13339,7 @@ function App(){
     : view==='offshore' ? 'Carteira offshore'
     : view==='importacao' ? 'Atualização da base'
     : view==='hoje' ? 'Dashboard'
+    : view==='agenda' ? 'Agenda'
     : especialistaView ? produtoFiltro + ' · negócios em andamento'
     : 'Jornada do cliente';
 
@@ -12468,6 +13374,9 @@ function App(){
             ? h('button',{className:'view-tab' + (view==='hoje' ? ' active':''), onClick:()=>setView('hoje')},
                 h(IconSun,{size:12}), 'Dashboard')
             : null,
+          /* Agenda vale para todo mundo, nos dois funis: tarefa não é etapa. */
+          h('button',{className:'view-tab' + (view==='agenda' ? ' active':''), onClick:()=>setView('agenda')},
+            h(Icon,{size:12, path:'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z'}), 'Agenda'),
           h('button',{className:'view-tab' + (view==='kanban' ? ' active':''), onClick:()=>setView('kanban')}, 'Relacionamento'),
           /* Só na Jornada, e só para o admin: o funil de produto não tem
              custódia, e a carteira do assessor é uma só — a leitura offshore
@@ -12533,10 +13442,10 @@ function App(){
         /* FERRAMENTAS — sempre nas mesmas posições. A busca reserva o
            espaço dela mesmo onde não se aplica, senão tudo à direita
            desliza ao trocar de tela. */
-        h('div',{className:'busca-slot' + (view === 'kpis' || view === 'offshore' || view === 'hoje' ? ' oculta' : '')},
+        h('div',{className:'busca-slot' + (view === 'kpis' || view === 'offshore' || view === 'hoje' || view === 'agenda' ? ' oculta' : '')},
           h('div',{className:'search-wrap'}, h(IconSearch,{size:15}),
             h('input',{ placeholder:'Buscar por nome, conta, telefone ou e-mail', value:query,
-              onChange:e=>setQuery(e.target.value), tabIndex: (view === 'kpis' || view === 'offshore' || view === 'hoje') ? -1 : 0 }))
+              onChange:e=>setQuery(e.target.value), tabIndex: (view === 'kpis' || view === 'offshore' || view === 'hoje' || view === 'agenda') ? -1 : 0 }))
         ),
         isAdmin ? h('select',{ className:'select-sm', value:vendorFilter, onChange:e=>setVendorFilter(e.target.value) },
           h('option',{value:'all'}, 'Toda a equipe'),
@@ -12553,8 +13462,15 @@ function App(){
         h('button',{className:'btn btn-ghost', onClick:handleLogout, title:'Sair'}, h(IconLogout,{size:14}))
       )
     ),
-    view==='hoje' ? h(Painel,{ leads, users, currentUser, isAdmin, vendorFilter, setVendorFilter,
-      onOpen:setOpenLead, onResolverAlerta:resolverAlerta, onAddActivity:addActivity }) :
+    view==='hoje' ? h(Fragment, null,
+      /* O dia de quem está na tela: o próprio, ou o do assessor simulado. */
+      h(AgendaFaixa,{ tarefas, leads, users, donoId: simulando ? vendorFilter : currentUser.id, onAbrir:()=>setView('agenda') }),
+      h(Painel,{ leads, users, currentUser, isAdmin, vendorFilter, setVendorFilter,
+        onOpen:setOpenLead, onResolverAlerta:resolverAlerta, onAddActivity:addActivity })) :
+    view==='agenda' ? h(Agenda,{ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
+      podeEditarLead: podeEditar, onSalvarTarefa: salvarTarefa, onApagarTarefa: apagarTarefa,
+      onConcluir: concluirTarefa, onOpen: setOpenLead, onResolverAlerta: resolverVencimentoDaAgenda,
+      onRegistrar: registrarDaAgenda }) :
     view==='kanban' ? h('div',{className: (overviewOpen && filtered.length > 0) ? '' : 'overview-fechada'},
       /* Em notebook a visão geral come altura do funil — dá para recolher. */
       filtered.length > 0 ? h('div',{className:'overview-toggle'},

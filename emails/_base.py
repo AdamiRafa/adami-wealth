@@ -6,6 +6,10 @@
 # - emails/boas-vindas.html: cópia de referência do e-mail de boas-vindas. Quem envia é a
 #   função supabase/functions/enviar-convite/index.ts, e este script grava o modelo dentro
 #   dela ({{LINK}}, {{EMAIL}} e {{SAUDACAO}} são trocados pela função na hora do envio).
+# - emails/senha-funcao.html: o reset que sai pela função enviar-senha (desde 05/11/2026).
+#   Mesmo texto do redefinir-senha.html, com {{LINK}} e {{EMAIL}} trocados pela função.
+# - emails/agenda-manha.html: o e-mail da manhã da Agenda do CRM (função agenda-manha).
+#   {{CONTEUDO}} é a lista montada pela função; {{SAUDACAO}} e {{LINK}} também.
 import os, json, re
 IMG = "https://adamicaptal.com.br/hub/img/"
 NAVY, NAVY_D, INK, INK2, MUTED, GOLD, PAPER, LINE = "#1B3A5F", "#132B47", "#16324F", "#3C4C60", "#7A8698", "#C0A265", "#EDF0F4", "#DCE2EA"
@@ -92,6 +96,24 @@ modelos = {
     '<p style="margin:0;">Este link não expira. Se você já criou a senha, use <strong>Entrar</strong> na mesma tela.</p>',
     link="{{LINK}}"),
 }
+CORPO_SENHA = (f'<p style="{P}">Recebemos um pedido para redefinir a senha do Hub Adami da conta <strong style="color:{INK};">{{{{EMAIL}}}}</strong>.</p>'
+    f'<p style="{P}">Clique no botão abaixo e escolha a nova senha.</p>')
+DEPOIS_SENHA = ('<p style="margin:0 0 10px;">O link vale por tempo limitado e só pode ser usado uma vez. Se expirar, peça outro na tela de login, em <strong>Esqueci minha senha</strong>.</p>'
+    '<p style="margin:0;">Não foi você? Pode ignorar este e-mail. A sua senha continua a mesma.</p>')
+modelos["senha-funcao.html"] = email(
+    "Redefinir sua senha",
+    "Use o botão para criar uma nova senha no Hub Adami.",
+    "icone-chave.png", "Redefinir sua senha", CORPO_SENHA, "Criar nova senha", DEPOIS_SENHA, link="{{LINK}}")
+modelos["agenda-manha.html"] = email(
+    "Sua agenda de hoje",
+    "Suas tarefas de hoje e as atrasadas, da Agenda do CRM.",
+    "icone-agenda.png",
+    "{{SAUDACAO}}",
+    "{{CONTEUDO}}",
+    "Abrir a Agenda",
+    '<p style="margin:0;">Este resumo sai nos dias úteis, por volta das 7h. Para tirar uma tarefa daqui, desmarque "Incluir no e-mail da manhã" nela, na Agenda do CRM.</p>',
+    link="{{LINK}}")
+
 pasta = os.path.dirname(os.path.abspath(__file__))
 for nome, html in modelos.items():
     open(os.path.join(pasta, nome), "w").write(html)
@@ -111,14 +133,43 @@ Hub Adami · Adami Captal
 E-mail automático, não precisa responder.
 """
 
-# Grava o modelo dentro da função do Supabase, entre os marcadores.
-funcao = os.path.join(pasta, "..", "supabase", "functions", "enviar-convite", "index.ts")
-ts = open(funcao).read()
-bloco = ("// <modelo> gerado por emails/_base.py\n"
-         "const MODELO = " + json.dumps(modelos["boas-vindas.html"], ensure_ascii=False) + ";\n"
-         "const MODELO_TEXTO = " + json.dumps(TEXTO_BOAS_VINDAS, ensure_ascii=False) + ";\n"
-         "// </modelo>")
-ts2 = re.sub(r"// <modelo>.*?// </modelo>", lambda m: bloco, ts, flags=re.S)
-assert ts2 != ts or bloco in ts
-open(funcao, "w").write(ts2)
-print("modelo gravado em", os.path.relpath(funcao, os.path.join(pasta, "..")))
+TEXTO_SENHA = """Recebemos um pedido para redefinir a senha do Hub Adami da conta {{EMAIL}}.
+
+Abra o link abaixo e escolha a nova senha:
+
+{{LINK}}
+
+O link vale por tempo limitado e só pode ser usado uma vez. Se expirar, peça outro na tela de login, em Esqueci minha senha.
+Não foi você? Pode ignorar este e-mail. A sua senha continua a mesma.
+
+Hub Adami · Adami Captal
+E-mail automático, não precisa responder.
+"""
+
+TEXTO_AGENDA = """{{SAUDACAO}}
+
+{{CONTEUDO}}
+
+Abrir a Agenda: {{LINK}}
+
+Este resumo sai nos dias úteis, por volta das 7h.
+Hub Adami · Adami Captal
+"""
+
+# Grava cada modelo dentro da sua função do Supabase, entre os marcadores.
+raiz = os.path.join(pasta, "..")
+for nome_funcao, html, texto in [
+    ("enviar-convite", modelos["boas-vindas.html"], TEXTO_BOAS_VINDAS),
+    ("enviar-senha", modelos["senha-funcao.html"], TEXTO_SENHA),
+    ("agenda-manha", modelos["agenda-manha.html"], TEXTO_AGENDA),
+]:
+    funcao = os.path.join(raiz, "supabase", "functions", nome_funcao, "index.ts")
+    ts = open(funcao).read()
+    bloco = ("// <modelo> gerado por emails/_base.py\n"
+             "const MODELO = " + json.dumps(html, ensure_ascii=False) + ";\n"
+             "const MODELO_TEXTO = " + json.dumps(texto, ensure_ascii=False) + ";\n"
+             "// </modelo>")
+    assert ts.count("// <modelo>") == 1, nome_funcao
+    ts2 = re.sub(r"// <modelo>.*?// </modelo>", lambda m: bloco, ts, flags=re.S)
+    open(funcao, "w").write(ts2)
+    print("modelo gravado em", os.path.relpath(funcao, raiz))

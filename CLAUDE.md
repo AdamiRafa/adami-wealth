@@ -51,7 +51,10 @@ lado:
 
 Backend: Supabase (`ghxjqmjtmbqzvogwzylo.supabase.co`), Postgres com RLS.
 E-mail: caixa `hub@adamicaptal.com.br` (HostGator), remetente "Hub Adami". O de boas-vindas
-sai pela Edge Function `supabase/functions/enviar-convite` (colada à mão no Supabase).
+sai pela Edge Function `supabase/functions/enviar-convite` (colada à mão no Supabase); o de
+redefinir senha pela `enviar-senha` e o e-mail da manhã da Agenda pela `agenda-manha`. Os
+modelos são gerados por `emails/_base.py`, que grava cada um dentro da sua função.
+Agenda do CRM: tabela `tarefas` (`agenda.sql`); detalhes na seção 19 da documentação.
 A chave *publishable* fica no código do navegador, o que é correto: a proteção está na
 RLS. A *service_role* **nunca** entra em arquivo servido ao navegador.
 
@@ -149,5 +152,6 @@ execução e fica registrado no histórico.
 
 ## Pendências
 
-Ver `DOCUMENTACAO.md` seção 14. As mais quentes: acesso à API de parceiros do BTG (as
-regras da integração já estão decididas) e o cabeçalho do CRM no celular.
+Ver `DOCUMENTACAO.md` seção 14. As mais quentes: instalar a Agenda no Supabase
+(`agenda.sql` e as funções `enviar-senha` e `agenda-manha`), o reset de senha que ainda não
+chega no Microsoft 365, e o acesso à API de parceiros do BTG (regras já decididas).

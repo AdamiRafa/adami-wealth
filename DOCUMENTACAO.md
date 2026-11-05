@@ -535,7 +535,13 @@ login; senha nova igual à antiga mostra mensagem em português** ·
 **2.85 (05/11/2026) link de redefinir senha à prova de robô de e-mail: o código só é
 gasto no clique em "Salvar nova senha" (`token_hash` + `POST /auth/v1/verify`); link
 vencido explica na tela; mensagens do "Esqueci minha senha" em português; aviso de
-sucesso em verde**.
+sucesso em verde** ·
+**2.86 (05/11/2026) "Esqueci minha senha" vira tela própria (digita o e-mail, envia,
+"Confira seu e-mail"); o reset passa a sair pela função `enviar-senha` (caixa hub@, com o
+erro real do servidor de e-mail na tela), com volta automática ao envio antigo enquanto a
+função não estiver instalada. CRM `2026.11.05.6`: aba Agenda (seção 19), faixa "Agenda de
+hoje" no Dashboard, e-mail da manhã (função `agenda-manha`) e cabeçalho do CRM cabendo no
+celular**.
 
 ---
 
@@ -567,7 +573,16 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
   BTG"; conta nova vira cliente ligado ao assessor pelo código do BTG; conta que some vira
   encerrada, nunca apagada; troca de assessor só pelo código; trava se uma atualização
   mexer em mais de 5% do patrimônio da casa. Falta o BTG liberar a API de parceiros.
-- **Cabeçalho do CRM no celular** passa da borda e a página rola para o lado (seção 18).
+- **Agenda (05/11/2026), falta instalar:** rodar `agenda.sql` no SQL Editor; criar as
+  funções `enviar-senha` e `agenda-manha` (Verify JWT desligado, as duas usam o
+  `SMTP_SENHA` que já existe). Ver seção 19.
+- **Reset de senha ainda não chegava depois do SPF (05/11/2026).** SPF público conferido
+  com `a:br542.hostgator.com.br`. Suspeitas abertas: quarentena do Microsoft 365
+  (security.microsoft.com → Quarentena) e o "Roteamento de e-mail" do cPanel em "Local"
+  (a HostGator entregaria na caixa dela em vez de mandar para o Microsoft 365). A função
+  `enviar-senha` grava cada tentativa em `pedidos_senha` com a resposta do servidor.
+- **Outlook na Agenda:** só leitura, decidido; depende de o administrador do Microsoft 365
+  registrar um aplicativo (Microsoft Graph, permissão de leitura de calendário).
 - **Importador de extrato BTG** no Gerador de Planos Patrimoniais nunca foi calibrado
   contra um arquivo real. Sem ele não há enquadramento por produto.
 - **IPCA contra IMA-B nos meses históricos.** Os rótulos mudaram, os valores antigos não.
@@ -1059,3 +1074,67 @@ antes 0, simulação agora 8.
 **Pendência encontrada no teste:** no celular (390 px) o cabeçalho do CRM (abas, seletor
 de equipe, botão Equipe, nome) passa da borda e a página rola para o lado (753 px). Já era
 assim antes do painel; o painel em si cabe na tela.
+Resolvido na `2026.11.05.6`: no celular o cabeçalho vira uma coluna, as ferramentas quebram
+linha e as abas rolam dentro da própria faixa. Medido a 390 px em todas as abas, como
+admin, assessor e especialista: nenhuma passa de 390.
+
+---
+
+## 19. Agenda do CRM (aba própria, `2026.11.05.6`)
+
+Pedido do Emil em 05/11/2026; protótipo aprovado no mesmo dia. Decisões:
+
+1. Aba **Agenda** ao lado do Dashboard (nos dois funis, para todo mundo) e uma faixa
+   "Agenda de hoje" no topo do Dashboard com atalho. `crm.html#agenda` abre direto nela.
+2. **Head comercial (admin do CRM) e master** atribuem tarefa a qualquer pessoa e veem a
+   agenda de todos ("Agenda de", com "Toda a equipe"). O assessor vê e cria só a própria.
+3. **Tarefas automáticas na mesma lista**, lidas da ficha e nunca gravadas como tarefa:
+   próximo contato (`proximoContato`), vencimento (alerta aberto do tipo vencimento) e
+   régua de relacionamento (`reguaStatus`). Assim a ficha e a agenda não discordam.
+4. **Outlook só leitura**, ainda não ligado (pendência na seção 14).
+5. **Recorrência**: não repete, todo dia útil, toda semana (dias escolhidos) ou todo mês
+   (dia 31 cai no último dia do mês curto). A repetição começa no dia de "data".
+6. **E-mail da manhã** nos dias úteis, por volta das 7h, só para quem tem algo no dia.
+
+**Banco (`agenda.sql`, também no fim do `adami_completo.sql`, seção 8.7).** Tabela
+`tarefas` (título, tipo, cliente opcional, dono, criado_por, data, hora, repetição,
+dias_semana, `concluidas` = dias já feitos, email_manha, nota). Políticas: lê quem é dono,
+quem criou, admin do CRM e master; cria para si, ou para qualquer um se admin/master;
+altera dono/criador/admin/master, mas só admin/master passa a tarefa para outra pessoa;
+apaga quem criou, admin ou master. O gatilho `tarefas_carimbo` preenche `criado_por` com a
+sessão (o navegador não escolhe) e impede quem RECEBEU uma tarefa atribuída de mudar texto,
+dia ou repetição: ele só marca como feita. Testado num Postgres local com quatro perfis
+(14 casos: criar para outro, ver só as suas, concluir atribuída, editar atribuída, passar
+para outro, apagar atribuída, ler as tabelas internas, head vendo tudo).
+`agenda_emails` (um por pessoa por dia) e `pedidos_senha` não têm política: só as funções,
+com a chave de serviço, usam.
+
+**Tela (`Agenda`, `AgendaForm`, `AgendaFaixa`, funções `ag*` no `crm.html`).** Hoje
+(Atrasadas, Hoje, Próximos 7 dias, legenda), Semana (7 colunas, rola para o lado no
+celular) e Mês (grade; no celular só a contagem; clique no dia lista os itens). A cor da
+borda diz a origem (`AG_ORIGENS`). Concluir tarefa ligada a cliente registra a atividade na
+ficha (`AG_TIPO_ATIVIDADE`, data do dia da tarefa ou hoje). Próximo contato e régua se
+resolvem registrando o contato ali mesmo (texto obrigatório; o próximo contato é limpo,
+o próximo se marca na ficha); vencimento é marcado como resolvido. Recorrente atrasada
+aparece uma vez só (a última ocorrência não feita, até 31 dias) e deixa de ser atrasada
+quando a ocorrência seguinte chega. Sem a tabela no banco, a aba avisa e mostra só o que
+vem das fichas. Testado com Playwright no modo demonstração (`semearTarefasDemo`).
+
+**E-mail da manhã (`supabase/functions/agenda-manha`).** Chamado pelo `pg_cron`
+("agenda-manha", `50 9 * * 1-5` em UTC = 6h50 de Brasília) via `pg_net`. Só envia em dia
+útil entre 6h e 11h de Brasília, reserva o envio em `agenda_emails` antes de mandar (não
+duplica) e pula quem não tem nada. Entram as tarefas com "Incluir no e-mail da manhã" e os
+três tipos da ficha; atrasadas, hoje e a prévia de amanhã (na sexta, a de segunda), até 15
+por seção. As regras de régua e recorrência estão copiadas do `crm.html`: mudou lá, muda
+lá. Modelo gerado por `emails/_base.py` (`emails/agenda-manha.html`, ícone
+`img/icone-agenda.png`). Testado com Supabase e SMTP falsos.
+
+**Reset de senha pela função `enviar-senha`.** Gera o código com
+`/auth/v1/admin/generate_link` (que não manda e-mail) e envia pela caixa hub@, com o
+modelo `emails/senha-funcao.html`. Mesma resposta exista ou não a conta; 1 pedido por
+minuto e 5 por hora por e-mail, 40 por hora no total; cada pedido fica em `pedidos_senha`
+com o resultado ("enviado", "sem link: User not found", "falha no envio: ..."). Se a função
+não existir (404) ou estiver com Verify JWT ligado (401), o portal volta ao envio antigo
+do Supabase. As duas funções novas usam a `SUPABASE_SERVICE_ROLE_KEY` que o próprio
+Supabase coloca no ambiente da função; ela nunca vai ao navegador.
+

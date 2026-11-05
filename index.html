@@ -1158,7 +1158,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.85";
+var VERSAO="versão 2.86";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3647,7 +3647,7 @@ function viewLogin(erro,sucesso){
         (MODO_LOGIN==="novo"
           ? '<button type="button" class="link" onclick="modoLogin(\'entrar\')">Já tenho acesso</button>'
           : '<button type="button" class="link" onclick="modoLogin(\'novo\')">Primeiro acesso</button>'+
-            '<button type="button" class="link" onclick="esqueciSenha()">Esqueci minha senha</button>')+
+            '<button type="button" class="link" onclick="abrirEsqueci()">Esqueci minha senha</button>')+
       '</div>'+
     '</div></div>'+
   '</div>';
@@ -3709,27 +3709,98 @@ function criarAcesso(){
       document.getElementById("view").innerHTML=viewLogin(String(err.message||err));
     });
 }
-function esqueciSenha(){
-  var e=document.getElementById("lgEmail").value.trim().toLowerCase();
-  if(e.indexOf("@")<1){
-    document.getElementById("view").innerHTML=viewLogin("Digite o seu e-mail acima e clique de novo.");
+/* ===================== Esqueci minha senha (tela própria, 2.86) =====================
+   Antes era um link embaixo do login que usava o e-mail digitado no campo de
+   cima; quem clicava sem ter digitado recebia um erro e ficava sem saber o que
+   fazer. Agora abre uma tela só para isso. O envio sai pela função
+   enviar-senha (mesma caixa hub@ do e-mail de boas-vindas), que devolve o erro
+   real do servidor de e-mail. Enquanto a função não estiver instalada no
+   Supabase, cai no envio antigo, pelo próprio Supabase. */
+var EMAIL_ESQUECI="";
+function viewEsqueci(msg,enviado){
+  var lado='<div class="auth-side">'+
+      '<img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">'+
+      '<div class="auth-say"><div class="rule"></div>'+
+        '<h2>Apoiando famílias, planejando o futuro</h2>'+
+        '<p>'+EMPRESA.chamada+'</p>'+
+      '</div>'+
+      '<div class="auth-meta"><span>Acesso restrito</span><span>'+VERSAO+'</span></div>'+
+      '<div class="auth-copy">&copy; '+new Date().getFullYear()+' '+EMPRESA.nome+'. Todos os direitos reservados.</div>'+
+    '</div>';
+  if(enviado){
+    return '<div class="auth">'+lado+
+      '<div class="auth-form"><div class="auth-card">'+
+        '<div class="rule"></div>'+
+        '<h1>Confira seu e-mail</h1>'+
+        '<p class="hint">Se <strong>'+esc(EMAIL_ESQUECI)+'</strong> tiver conta no Hub Adami, o link para criar uma senha nova chega em até 2 minutos.</p>'+
+        '<div class="erro ok" role="status">Não achou? Olhe também a caixa de spam ou lixo eletrônico. O link vale por pouco tempo e só uma vez: use sempre o e-mail mais recente.</div>'+
+        '<button class="entrar" onclick="voltarAoLogin()">Voltar para o login</button>'+
+        '<div class="pe-links">'+
+          '<button type="button" class="link" onclick="abrirEsqueci()">Não chegou? Pedir de novo</button>'+
+        '</div>'+
+      '</div></div>'+
+    '</div>';
+  }
+  return '<div class="auth">'+lado+
+    '<div class="auth-form"><div class="auth-card">'+
+      '<div class="rule"></div>'+
+      '<h1>Esqueceu a senha?</h1>'+
+      '<p class="hint">Digite o e-mail que você usa no Hub Adami. Vamos mandar um link para você criar uma senha nova.</p>'+
+      (msg?'<div class="erro" role="alert">'+esc(msg)+'</div>':'')+
+      '<label for="esEmail">E-mail</label>'+
+      '<div class="campo"><input type="email" id="esEmail" autocomplete="username" placeholder="nome@'+EMPRESA.dominio+'"'+
+        (EMAIL_ESQUECI?' value="'+esc(EMAIL_ESQUECI)+'"':'')+' onkeydown="if(event.key===\'Enter\')enviarEsqueci()"></div>'+
+      '<button class="entrar" id="esBtn" onclick="enviarEsqueci()">Enviar link</button>'+
+      '<div class="pe-links">'+
+        '<button type="button" class="link" onclick="voltarAoLogin()">Voltar para o login</button>'+
+      '</div>'+
+    '</div></div>'+
+  '</div>';
+}
+function abrirEsqueci(){
+  /* Leva junto o e-mail que já estava digitado no login, se houver. */
+  var lg=document.getElementById("lgEmail");
+  if(lg && lg.value.trim()) EMAIL_ESQUECI=lg.value.trim().toLowerCase();
+  document.getElementById("view").innerHTML=viewEsqueci();
+  var i=document.getElementById("esEmail"); if(i){ i.focus(); try{ i.select(); }catch(e){} }
+}
+function voltarAoLogin(){
+  MODO_LOGIN="entrar";
+  if(EMAIL_ESQUECI) EMAIL_INICIAL=EMAIL_ESQUECI;
+  document.getElementById("view").innerHTML=viewLogin();
+  var i=document.getElementById(EMAIL_INICIAL?"lgSenha":"lgEmail"); if(i) i.focus();
+}
+/* Pede o link pela função enviar-senha. 404 (função não instalada) ou 401
+   (instalada com "Verify JWT" ligado) caem no envio antigo do Supabase. */
+function pedirLinkSenha(email){
+  return fetch(SB_URL+"/functions/v1/enviar-senha",{
+    method:"POST",
+    headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({email:email})
+  }).then(function(res){
+    if(res.status===404||res.status===401) return recuperarSenha(email);
+    return res.text().then(function(t){
+      var j=null; try{ j=t?JSON.parse(t):null; }catch(e){}
+      if(res.ok && j && j.ok) return true;
+      throw new Error((j&&j.erro)||("Não foi possível enviar o e-mail ("+res.status+")."));
+    });
+  },function(){
+    /* Sem resposta nenhuma (rede ou bloqueio de origem): tenta o caminho antigo. */
+    return recuperarSenha(email);
+  });
+}
+function enviarEsqueci(){
+  var e=(document.getElementById("esEmail").value||"").trim().toLowerCase();
+  EMAIL_ESQUECI=e;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){
+    document.getElementById("view").innerHTML=viewEsqueci("Digite um e-mail válido, como nome@"+EMPRESA.dominio+".");
+    var i=document.getElementById("esEmail"); if(i) i.focus();
     return;
   }
-  var b=document.getElementById("lgBtn"); if(b) b.disabled=true;
-  recuperarSenha(e)
-    .then(function(){
-      /* O Supabase devolve 200 mesmo quando o e-mail nao sai (limite de
-         2 por hora no projeto inteiro sem SMTP proprio, ou endereco nao
-         cadastrado) -- nao da pra saber por aqui se chegou de verdade.
-         Por isso a mensagem avisa que pode nao chegar e ja deixa o caminho
-         alternativo (pedir pro master trocar), em vez de um "enviado" que
-         deixa a pessoa esperando um e-mail que pode nunca vir. */
-      document.getElementById("view").innerHTML=
-        viewLogin("Se este e-mail tiver conta no Hub Adami, o link para trocar a senha chega em até um minuto. Confira também o spam. Use sempre o e-mail mais recente.",true);
-    })
-    .catch(function(err){
-      document.getElementById("view").innerHTML=viewLogin(String(err.message||err));
-    });
+  var b=document.getElementById("esBtn"); if(b){ b.disabled=true; b.textContent="Enviando…"; }
+  pedirLinkSenha(e)
+    .then(function(){ document.getElementById("view").innerHTML=viewEsqueci(null,true); })
+    .catch(function(err){ document.getElementById("view").innerHTML=viewEsqueci(String(err.message||err)); });
 }
 
 /* ===================== Redefinir senha (link de recuperação) =====================
