@@ -70,7 +70,9 @@ na branch `main` do GitHub `AdamiRafa/adami-wealth` (transferido de
 Enquanto a HostGator não estiver confirmada no ar, a Vercel continua como está.
 
 **Backend:** Supabase (PostgreSQL + PostgREST + Auth + Row Level Security).
-Projeto ativo: `ghxjqmjtmbqzvogwzylo.supabase.co`. A chave *publishable* vive no código
+Projeto ativo: `ghxjqmjtmbqzvogwzylo.supabase.co`, na conta do Rafael (organização
+"Adami Wealth", plano Free) desde novembro/2026. O projeto foi transferido, não
+recriado: o código continua o mesmo. A chave *publishable* vive no código
 do navegador, o que é correto: a proteção real está na RLS. A chave *service_role* nunca
 deve aparecer em arquivo servido pelo navegador.
 
@@ -231,8 +233,9 @@ O serviço de e-mail embutido do Supabase entrega só 2 por hora, **no projeto i
 promete "enviado", avisa que pode não chegar e já indica o caminho alternativo (pedir a
 um master pra trocar a senha pela própria tela do Supabase: Authentication → Users →
 a pessoa → Reset Password, não precisa de e-mail nenhum). Só funciona de verdade,
-pros dois lados (envio e `redirect_to`), depois de configurar SMTP próprio e cadastrar a
-URL do portal nas Redirect URLs — ver pendência na seção 14.
+pros dois lados (envio e `redirect_to`), depois de configurar SMTP próprio (ver
+pendência na seção 14). A URL do portal já está nas Redirect URLs desde 05/11/2026
+(`https://adamicaptal.com.br/hub/**`, e Site URL `https://adamicaptal.com.br/hub/`).
 
 ### Login único entre portal e CRM
 
@@ -364,11 +367,15 @@ repositório.
 - **Supabase:** em Authentication → URL Configuration, o Site URL e as Redirect URLs
   precisam do endereço novo (`https://adamicaptal.com.br/hub/**`), senão o link de
   recuperação de senha volta para o lugar errado.
-- **Estado (04/11/2026):** script e workflow publicados e testados contra um servidor
-  FTPS local (pasta nova, republicação, trava contra pasta errada, senha errada,
-  certificado inválido). Faltam: conta FTP na HostGator, segredos no GitHub, ajuste no
-  Supabase e o primeiro teste real. Depois de confirmado, desligar o projeto na Vercel e
-  apagar o `vercel.json`.
+- **Estado (05/11/2026):** conta FTP `portal@adamicaptal.com.br` criada no cPanel
+  (servidor `br542.hostgator.com.br`, diretório `adamicaptal.com.br/hub`), segredos
+  cadastrados no GitHub, primeiro envio real concluído com sucesso (todos os HTML e
+  `vendor/`, por FTPS com certificado conferido). Site URL e Redirect URLs do Supabase
+  ajustados. Falta: o Emil confirmar o portal abrindo e o login em
+  `adamicaptal.com.br/hub`, inclusive no wi-fi do escritório. Depois de alguns dias sem
+  problema, desligar o projeto na Vercel e apagar o `vercel.json`.
+- Existe outra conta FTP no mesmo domínio, `intranet@adamicaptal.com.br`, apontando para
+  uma pasta `intranet`. Não é do portal e não foi mexida.
 
 **Para o assistente conseguir commitar**, duas condições:
 
@@ -481,11 +488,10 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 
 ## 14. Pendências
 
-- **SMTP próprio no Supabase, e cadastrar a URL do portal em Redirect URLs.** Sem o
-  SMTP, o e-mail de recuperação de senha não entrega (limite de 2/hora do serviço
-  embutido). Sem a Redirect URL cadastrada, o `redirect_to` do link é ignorado e ele
-  pode voltar pro lugar errado. A tela que recebe o link (clique no link → defina a
-  senha nova) já existe desde a 2.82 — falta só isso pra funcionar ponta a ponta.
+- **SMTP próprio no Supabase.** Sem ele, o e-mail de recuperação de senha não entrega
+  (limite de 2/hora do serviço embutido). A Redirect URL já está cadastrada (05/11/2026)
+  e a tela que recebe o link existe desde a 2.82: falta só o SMTP para funcionar ponta a
+  ponta.
 - **Concluir a mudança para `adamicaptal.com.br/hub` na HostGator** e desligar a Vercel.
   Passo a passo e estado na seção 10.
 - **Decidir se a importação passa a criar clientes novos** já vinculados ao assessor pelo
