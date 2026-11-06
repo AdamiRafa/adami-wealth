@@ -143,7 +143,7 @@ function api(path,opts,jaTentou){
 
 <div id="telaBloqueada" style="display:none" class="bloqueado">
   <h1>Acesso restrito</h1>
-  <p style="font-size:13px;color:var(--ink-muted);line-height:1.6">Esta tela mostra captação da casa inteira, de todos os assessores — só o master entra aqui.</p>
+  <p style="font-size:13px;color:var(--ink-muted);line-height:1.6">Esta tela mostra captação da casa inteira, de todos os assessores — só entra quem tem o Fluxo e Captação liberado no perfil (o master libera em Equipe, Perfis e acessos).</p>
   <button class="btn ouro" style="margin-top:16px" onclick="location.href='index.html'">Voltar ao início</button>
 </div>
 
@@ -204,9 +204,15 @@ var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarca
   drillDistFonte:null, drillDistMes:null, drillDistGrupo:null };
 function resetarDrill(){ ESTADO.drillClasse=null; ESTADO.drillGrupo=null; ESTADO.drillPassivaOrigem=null; }
 
-/* ---------------- gate de master ---------------- */
-api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super,admin").then(function(r){
-  var sou = r && r[0] && r[0].super;
+/* ---------------- quem entra ----------------
+   Desde a 2.94 quem decide é a tabela Perfis e acessos (Equipe): ferramenta
+   "Fluxo e Captação". Banco sem a tabela ainda: vale a regra antiga (master). */
+api("rpc/minhas_permissoes",{method:"POST",body:{}}).then(function(m){
+  if(m && m.permissoes) return m.permissoes.indexOf("ferramenta.fluxo")>=0;
+  return api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super").then(function(r){ return !!(r && r[0] && r[0].super); });
+},function(){
+  return api("perfis?user_id=eq."+encodeURIComponent(SESSAO.id||"")+"&select=super").then(function(r){ return !!(r && r[0] && r[0].super); });
+}).then(function(sou){
   if(!sou){ document.getElementById("telaBloqueada").style.display="block"; return; }
   document.getElementById("app").style.display="block";
   renderCaixasUpload();

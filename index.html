@@ -788,6 +788,23 @@ html[data-cor="noite"] .eqx .btn.pri{background:#EEF2F8;border-color:#EEF2F8;col
 .eqx .eqficha-topo{margin:0 0 18px}
 .eqx .eqficha-topo .eqnome{font-size:18px}
 .eqform .eqform-nota{grid-column:1/-1;margin:0}
+.eqx.largo{max-width:1120px}
+.eqmatriz-rolagem{overflow-x:auto;border:1px solid var(--m-ln);border-radius:12px}
+.eqx table.eqmatriz{min-width:860px}
+.eqx table.eqmatriz th{position:sticky;top:0;background:var(--m-bg,#fff);padding:12px 6px 10px;vertical-align:bottom;font-size:10.5px}
+.eqx table.eqmatriz td{padding:9px 6px}
+.eqx table.eqmatriz td.c,.eqx table.eqmatriz th.c{width:82px;text-align:center}
+.eqx .eqm-rot{padding-left:14px!important;min-width:250px}
+.eqx .eqm-nome{font-weight:600;color:var(--m-tx)}
+.eqx .eqm-desc{font-size:11.5px;color:var(--m-tx3);line-height:1.35;margin-top:2px}
+.eqx .eqm-qtd{display:block;text-transform:none;letter-spacing:0;font-weight:500;color:var(--m-tx3);margin-top:3px}
+.eqx tr.eqm-grupo td{background:var(--m-chip)!important;font:700 11px Inter,"Segoe UI",sans-serif;letter-spacing:.6px;text-transform:uppercase;color:var(--m-tx2);padding:9px 14px}
+.eqx .eqm-cx{width:18px;height:18px;accent-color:#2F7A56;cursor:pointer}
+.eqx .eqm-cx:disabled{cursor:not-allowed;opacity:.55}
+.eqx .eqm-pessoa{border:1px solid var(--m-ln);border-radius:12px;padding:12px 14px;margin:0 0 18px;font-size:13px;color:var(--m-tx)}
+.eqx .eqm-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.eqx .eqm-chips-rot{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--m-tx3);width:42px}
+.eqx .eqm-chip{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--m-chip);color:var(--m-tx)}
 html[data-cor="noite"] .eqtag.rev{color:#F2A29C;border-color:rgba(242,162,156,.6)}
 html[data-cor="noite"] .eqx .eqvoltar,html[data-cor="noite"] .eqx .eqeditar{color:#7FB0F0}
 html[data-cor="noite"] .eqx .eqpessoa:hover .eqnome{color:#7FB0F0}
@@ -1072,7 +1089,7 @@ function renovar(){
    A escrita em admin/mesa_rv esta bloqueada na API de proposito.
    Toda mudanca passa pela funcao definir_privilegio no banco, que
    confere de novo quem esta chamando antes de gravar.               */
-var EQUIPE=[], CONVITES=[], ABA_EQ="equipe";
+var EQUIPE=[], CONVITES=[], ABA_EQ="equipe", MATRIZ=null;
 /* Singular, "Seguro" — não "Seguros". O CRM (crm.html) compara pelo texto
    exato pra achar o especialista de cada produto; a grafia tem que bater
    com a mesma constante lá (PRODUTOS), senão o vínculo nunca casa e o
@@ -1095,8 +1112,9 @@ function abrirEquipe(){
   pintarEquipe("<p class='eqsub'>Carregando…</p>");
   Promise.all([
     api("rpc/listar_equipe",{method:"POST",body:{}}).catch(function(){ return []; }),
-    api("rpc/listar_convites",{method:"POST",body:{}}).catch(function(){ return []; })
-  ]).then(function(r){ EQUIPE=r[0]||[]; CONVITES=r[1]||[]; pintarEquipe(); })
+    api("rpc/listar_convites",{method:"POST",body:{}}).catch(function(){ return []; }),
+    api("rpc/permissoes_matriz",{method:"POST",body:{}}).catch(function(){ return null; })
+  ]).then(function(r){ EQUIPE=r[0]||[]; CONVITES=r[1]||[]; MATRIZ=r[2]; pintarEquipe(); })
     .catch(function(e){ pintarEquipe("<p class='eqsub err'>"+esc(e.message||e)+"</p>"); });
 }
 function fecharEquipe(){
@@ -1109,9 +1127,11 @@ function pintarEquipe(aviso){
     '<div class="eqabas">'+
       '<button class="eqaba'+(ABA_EQ==="equipe"?" on":"")+'" onclick="abaEq(\'equipe\')">Quem já tem conta</button>'+
       '<button class="eqaba'+(ABA_EQ==="convidar"?" on":"")+'" onclick="abaEq(\'convidar\')">Convidar pessoa</button>'+
+      '<button class="eqaba'+(ABA_EQ==="permissoes"?" on":"")+'" onclick="abaEq(\'permissoes\')">Perfis e acessos</button>'+
     '</div>';
+  var x=document.getElementById("eqx"); if(x) x.classList.toggle("largo",ABA_EQ==="permissoes");
   if(aviso){ pintar(h+aviso); return; }
-  pintar(h + (ABA_EQ==="pessoa" ? blocoPessoa() : (ABA_EQ==="equipe" ? blocoEquipe() : blocoConvite())) +
+  pintar(h + (ABA_EQ==="pessoa" ? blocoPessoa() : (ABA_EQ==="equipe" ? blocoEquipe() : (ABA_EQ==="permissoes" ? blocoPermissoes() : blocoConvite()))) +
     '<div class="eqfoot"><span class="eqmsg" id="eqmsg"></span>'+
     '<button class="btn" onclick="fecharEquipe()">Fechar</button></div>');
 }
@@ -1203,8 +1223,9 @@ function blocoEquipe(){
     'importação do CRM. Ele nasce sozinho (A001, A002…), mas pode ser trocado pelo que a sua '+
     'planilha já usa — o nome não serve para isso, porque “Rafael” e “Rafael Souza” são a mesma '+
     'pessoa para você e duas coisas diferentes para o sistema.</p>'+
+    '<p class="eqsub">O que cada chave e cada papel liberam está em <b>Perfis e acessos</b>. A pessoa tem a soma dos perfis dela.</p>'+
     '<table><tr><th>Pessoa</th><th>Código</th><th class="c">Master</th><th class="c">Admin</th>'+
-    '<th class="c">Mesa RV</th><th>Papel no CRM</th></tr>';
+    '<th class="c">Mesa RV</th><th class="c">Financeiro</th><th>Papel no CRM</th></tr>';
   EQUIPE.forEach(function(p,i){
     var eu = p.user_id===EU.id;
     h+='<tr'+(p.revogado?' class="eqrevogado"':'')+'><td><button type="button" class="eqpessoa" onclick="abrirPessoa('+i+')" title="Editar, revogar ou excluir">'+
@@ -1220,13 +1241,13 @@ function blocoEquipe(){
          '<button class="eqcopiar" onclick="copiarCodigo('+i+')">copiar</button></td>'+
        '<td class="c"><button class="eqsw'+(p.super?" on":"")+'"'+(eu?' disabled':'')+
          ' onclick="alternarPriv('+i+',\'super\')"><span></span></button></td>'+
-       '<td class="c"><button class="eqsw'+(p.admin||p.super?" on":"")+'"'+(p.super?' disabled':'')+
-         ' onclick="alternarPriv('+i+',\'admin\')"><span></span></button></td>'+
-       '<td class="c"><button class="eqsw'+(p.mesa_rv||p.admin||p.super?" on":"")+'"'+
-         ((p.super||p.admin)?' disabled':'')+' onclick="alternarPriv('+i+',\'mesa_rv\')"><span></span></button></td>'+
+       ['admin','mesa_rv','financeiro'].map(function(c){
+         return '<td class="c"><button class="eqsw'+(p[c]?" on":"")+'"'+(p.super?' disabled title="Master já tem tudo o que a coluna Master libera"':'')+
+           ' onclick="alternarPriv('+i+',\''+c+'\')"><span></span></button></td>';
+       }).join("")+
        '<td>'+seletorCrm(p,i)+'</td></tr>';
     if(p.crm_role==="especialista"||p.crm_role==="admin"){
-      h+='<tr class="eqprod"><td colspan="6">'+
+      h+='<tr class="eqprod"><td colspan="7">'+
          '<span class="eqprodlbl">'+(p.crm_role==="admin"?"Também atende como especialista em":"Produtos do especialista")+'</span>'+
          PRODUTOS_ESP.map(function(pr){
            var tem=(p.crm_produtos||[]).indexOf(pr)>=0;
@@ -1237,6 +1258,69 @@ function blocoEquipe(){
     }
   });
   return h+'</table>';
+}
+/* ---------- Perfis e acessos (2.94, permissoes.sql) ----------
+   Linhas: ferramentas e atribuições. Colunas: os perfis. Cada caixinha grava na
+   hora (permissoes_definir) e fica na auditoria. A pessoa tem a soma dos perfis
+   dela: as chaves Master, Admin, Mesa RV e Financeiro e o papel no CRM.
+   O banco obedece à tabela: ferramenta desmarcada não devolve dado. */
+function matrizLiberado(perfil,perm){
+  if(!MATRIZ||!MATRIZ.matriz) return false;
+  for(var i=0;i<MATRIZ.matriz.length;i++){ var m=MATRIZ.matriz[i]; if(m.perfil===perfil&&m.permissao===perm) return !!m.liberado; }
+  return false;
+}
+function qtdNoPerfil(perfil){ return EQUIPE.filter(function(p){ return !p.revogado&&(p.perfis||[]).indexOf(perfil)>=0; }).length; }
+function blocoPermissoes(){
+  if(!MATRIZ||!MATRIZ.perfis) return '<p class="eqsub err">Não foi possível carregar a tabela de permissões. Recarregue a página; se continuar, falta instalar o permissoes.sql no Supabase.</p>';
+  var pf=MATRIZ.perfis, grupos=[["ferramenta","Ferramentas: quem abre cada uma"],["atribuicao","Atribuições: o que cada perfil pode fazer"]];
+  var h='<p class="eqsub">Marque o que cada perfil pode usar. Vale na hora, para todo mundo do perfil, e o banco obedece: '+
+    'ferramenta desmarcada some do menu e não mostra os dados nem para quem abrir o endereço direto.</p>'+
+    '<p class="eqsub">Cada pessoa tem a <b>soma</b> dos perfis dela. Exemplo: quem é Administrador e Assessor no CRM abre tudo o que um ou outro abre. '+
+    'Os perfis vêm das chaves da aba <b>Quem já tem conta</b> (Master, Admin, Mesa RV, Financeiro) e do papel no CRM.</p>'+
+    '<div class="eqmatriz-rolagem"><table class="eqmatriz"><thead><tr><th class="eqm-rot"></th>'+
+    pf.map(function(f){ var n=qtdNoPerfil(f.chave);
+      return '<th class="c" title="'+esc(f.descricao)+'">'+esc(f.nome)+'<span class="eqm-qtd">'+n+(n===1?" pessoa":" pessoas")+'</span></th>'; }).join("")+
+    '</tr></thead><tbody>';
+  grupos.forEach(function(g){
+    h+='<tr class="eqm-grupo"><td colspan="'+(pf.length+1)+'">'+esc(g[1])+'</td></tr>';
+    MATRIZ.permissoes.filter(function(x){ return x.tipo===g[0]; }).forEach(function(x){
+      h+='<tr><td class="eqm-rot"><div class="eqm-nome">'+esc(x.nome)+'</div>'+(x.descricao?'<div class="eqm-desc">'+esc(x.descricao)+'</div>':'')+'</td>';
+      pf.forEach(function(f){
+        var on=matrizLiberado(f.chave,x.chave), trava=!!x.so_master;
+        var rot=(on?"Tirar ":"Liberar ")+x.nome+(on?" de ":" para ")+f.nome;
+        h+='<td class="c"><input type="checkbox" class="eqm-cx"'+(on?" checked":"")+(trava?' disabled title="Só o master, sempre"':' title="'+esc(rot)+'"')+
+           ' aria-label="'+esc(x.nome+" para "+f.nome)+'" onchange="definirPermissao('+jsStr(f.chave)+','+jsStr(x.chave)+',this)"></td>';
+      });
+      h+='</tr>';
+    });
+  });
+  return h+'</tbody></table></div>';
+}
+function definirPermissao(perfil,perm,cx){
+  var valor=!!cx.checked; cx.disabled=true;
+  var nomePf=(MATRIZ.perfis.filter(function(f){return f.chave===perfil;})[0]||{}).nome||perfil;
+  var nomePm=(MATRIZ.permissoes.filter(function(x){return x.chave===perm;})[0]||{}).nome||perm;
+  msgEq("Salvando…");
+  api("rpc/permissoes_definir",{method:"POST",body:{p_perfil:perfil,p_permissao:perm,p_liberado:valor}})
+    .then(function(){
+      var achou=false;
+      MATRIZ.matriz.forEach(function(m){ if(m.perfil===perfil&&m.permissao===perm){ m.liberado=valor; achou=true; } });
+      if(!achou) MATRIZ.matriz.push({perfil:perfil,permissao:perm,liberado:valor});
+      cx.disabled=false;
+      msgEq(nomePm+(valor?" liberado para ":" tirado de ")+nomePf+".");
+    })
+    .catch(function(e){ cx.checked=!valor; cx.disabled=false; msgEq(String(e.message||e),true); });
+}
+function blocoAcessosDaPessoa(p){
+  if(!MATRIZ||!MATRIZ.perfis) return '';
+  var meus=p.perfis||[];
+  var nomes=MATRIZ.perfis.filter(function(f){ return meus.indexOf(f.chave)>=0; }).map(function(f){ return f.nome; });
+  var abre=MATRIZ.permissoes.filter(function(x){ return meus.some(function(f){ return matrizLiberado(f,x.chave); }); });
+  var chip=function(x){ return '<span class="eqm-chip">'+esc(x.nome)+'</span>'; };
+  return '<div class="eqm-pessoa"><div><b>Perfis:</b> '+(nomes.length?esc(nomes.join(", ")):"nenhum (a pessoa não abre nada)")+'</div>'+
+    '<div class="eqm-chips"><span class="eqm-chips-rot">Abre</span>'+(abre.filter(function(x){return x.tipo==="ferramenta";}).map(chip).join("")||'<span class="eqm-desc">nenhuma ferramenta</span>')+'</div>'+
+    '<div class="eqm-chips"><span class="eqm-chips-rot">Pode</span>'+(abre.filter(function(x){return x.tipo==="atribuicao";}).map(chip).join("")||'<span class="eqm-desc">só o básico do próprio trabalho</span>')+'</div>'+
+    '<p class="eqsub" style="margin:8px 0 0">Para mudar: as chaves na aba <b>Quem já tem conta</b> ou as caixinhas em <b>Perfis e acessos</b>.</p></div>';
 }
 /* ---------- card da pessoa (06/11/2026): editar nome e e-mail, revogar, reativar, excluir ----------
    Tudo passa por funções do banco que exigem master e gravam na auditoria
@@ -1260,6 +1344,7 @@ function blocoPessoa(){
       (p.revogado?' <span class="eqtag rev">acesso revogado</span>':'')+'</div>'+
       '<div class="eqmail">Último acesso: '+esc(quandoCurto(p.ultimo_acesso))+' &middot; '+
         (p.qtd_leads||0)+' cliente(s) no CRM &middot; '+(p.qtd_carteiras||0)+' carteira(s)</div></div>'+
+    blocoAcessosDaPessoa(p)+
     '<div class="eqform">'+
       '<div class="eqc"><label for="pNome">Nome</label><input id="pNome" maxlength="80" value="'+esc(p.nome||"")+'"></div>'+
       '<div class="eqc"><label for="pEmail">E-mail de acesso</label><input id="pEmail" type="email" maxlength="200" value="'+esc(p.email||"")+'"></div>'+
@@ -1345,9 +1430,9 @@ function alternarPriv(i,campo){
   api("rpc/definir_privilegio",{method:"POST",
       body:{p_user_id:p.user_id,p_campo:campo,p_valor:novo}})
     .then(function(){
-      p[campo]=novo; pintarEquipe();
-      var nomes={super:"Master",admin:"Administrador",mesa_rv:"Mesa RV"};
-      msgEq(nomes[campo]+(novo?" concedido a ":" removido de ")+(p.nome||p.email));
+      p[campo]=novo;
+      var nomes={super:"Master",admin:"Administrador",mesa_rv:"Mesa RV",financeiro:"Financeiro"};
+      return recarregarEquipe(nomes[campo]+(novo?" concedido a ":" removido de ")+(p.nome||p.email));
     })
     .catch(function(e){ msgEq(String(e.message||e),true); });
 }
@@ -1441,6 +1526,7 @@ function blocoConvite(){
       '<div class="eqc"><span class="eqrot">Acesso no portal</span><div class="eqchks">'+
         '<label class="eqchk"><input type="checkbox" id="cvAdmin"> Administrador</label>'+
         '<label class="eqchk"><input type="checkbox" id="cvRv"> Mesa RV</label>'+
+        '<label class="eqchk"><input type="checkbox" id="cvFin"> Financeiro</label>'+
         '<label class="eqchk"><input type="checkbox" id="cvMaster"> Master</label></div></div>'+
       '<button class="btn pri eqconvidar" onclick="enviarConvite()">Convidar e enviar o e-mail</button>'+
     '</div>';
@@ -1449,7 +1535,7 @@ function blocoConvite(){
     CONVITES.forEach(function(c){
       h+='<tr><td><div class="eqnome">'+esc(c.nome||"—")+'</div>'+
          '<div class="eqmail">'+esc(c.email)+'</div></td>'+
-         '<td><span class="eqpapel">'+esc(({vendedor:"Assessor",especialista:"Especialista",admin:"Admin do CRM"})[c.role]||c.role)+(c.master?" · master":"")+(c.admin?" · administrador":"")+(c.mesa_rv?" · Mesa RV":"")+'</span></td>'+
+         '<td><span class="eqpapel">'+esc(({vendedor:"Assessor",especialista:"Especialista",admin:"Admin do CRM"})[c.role]||c.role)+(c.master?" · master":"")+(c.admin?" · administrador":"")+(c.mesa_rv?" · Mesa RV":"")+(c.financeiro?" · Financeiro":"")+'</span></td>'+
          '<td class="eqacoes"><button class="eqbt" onclick="reenviarConvite('+jsStr(c.email)+')">Reenviar e-mail</button>'+
          '<button class="eqbt perigo" onclick="revogar('+jsStr(c.email)+')">Revogar</button></td></tr>';
     });
@@ -1466,7 +1552,7 @@ function enviarConvite(){
   msgEq("Enviando…");
   api("rpc/convidar",{method:"POST",body:{
     p_email:email, p_nome:nome, p_role:g("cvRole"),
-    p_master:c("cvMaster"), p_admin:c("cvAdmin"), p_mesa_rv:c("cvRv"), p_produtos:[]}})
+    p_master:c("cvMaster"), p_admin:c("cvAdmin"), p_mesa_rv:c("cvRv"), p_produtos:[], p_financeiro:c("cvFin")}})
     .then(function(){
       msgEq("Convite criado. Enviando o e-mail de boas-vindas…");
       return enviarEmailConvite(email).then(function(){
@@ -1545,7 +1631,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.93";
+var VERSAO="versão 2.94";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -1740,16 +1826,22 @@ function cli(){ var id=S.cliente; return db.clientes.filter(function(c){return c
 function carregar(){
   status("wait","Carregando…");
   return Promise.all([
-    api("clientes?select=id,nome,assessor_id&order=nome.asc").catch(function(){ return api("clientes?select=id,nome&order=nome.asc"); }),
+    api("clientes?select=id,nome,assessor_id,contas_btg&order=nome.asc").catch(function(){ return api("clientes?select=id,nome,assessor_id&order=nome.asc").catch(function(){ return api("clientes?select=id,nome&order=nome.asc"); }); }),
     api("lancamentos?select=cliente_id,mes,ano,contas,indicadores"),
     api("cartas?select=mes,ano,conteudo").catch(function(){ return []; }),
-    api("perfis?select=user_id,nome,admin,mesa_rv,super").catch(function(){ return api("perfis?select=user_id,nome,admin").catch(function(){ return []; }); })
+    api("perfis?select=user_id,nome,admin,mesa_rv,super").catch(function(){ return api("perfis?select=user_id,nome,admin").catch(function(){ return []; }); }),
+    api("rpc/minhas_permissoes",{method:"POST",body:{}}).catch(function(){ return null; })
   ]).then(function(r){
     if(SESSAO&&!SESSAO.id){ SESSAO.id=idDoToken(SESSAO.access_token||""); try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){} }
     PERFIS={}; (r[3]||[]).forEach(function(x){ PERFIS[x.user_id]={nome:x.nome||"",admin:!!x.admin,mesa_rv:!!x.mesa_rv,super:!!x.super}; });
     EU.id=(SESSAO&&SESSAO.id)||null;
     EU.admin=!!(EU.id&&PERFIS[EU.id]&&(PERFIS[EU.id].admin||PERFIS[EU.id].super));
     EU.super=!!(EU.id&&PERFIS[EU.id]&&PERFIS[EU.id].super);
+    /* Perfis e acessos (2.94): o que a matriz da Equipe libera para esta pessoa.
+       null = o banco ainda não tem a matriz (permissoes.sql): vale a regra antiga. */
+    EU.perm=(r[4]&&r[4].permissoes)?r[4].permissoes:null;
+    EU.perfis=(r[4]&&r[4].perfis)?r[4].perfis:[];
+    if(EU.perm) EU.admin=EU.perm.indexOf("carteiras.todas")>=0;
     EU.nome=(EU.id&&PERFIS[EU.id]&&PERFIS[EU.id].nome)||((SESSAO&&SESSAO.email)||"").split("@")[0];
     db.clientes=r[0]||[];
     db.dados={};
@@ -2023,6 +2115,120 @@ function porInstituicao(r,cur){
 }
 
 /* ============ ações ============ */
+/* ===================== Puxar do BTG (fase 3, btg_rentabilidade.sql) =====================
+   Lê a Rentabilidade Mensal do BTG das contas BTG do cliente e preenche o rascunho do mês:
+   a conta BTG (saldo, movimentação, resultado), os ativos do BTG, a alocação por estratégia
+   e os índices que estiverem vazios. Contas e ativos de outros bancos ficam como estão.
+   Nada grava até "Salvar mês". Números do BTG chegam como texto ("1.234,56", "0,0105",
+   "1.06E+07"), e rentabilidade em fração (0,0105 = 1,05%). */
+function numBtg(v){
+  var s=String(v==null?"":v).trim(); if(!s) return 0;
+  if(/^-?[0-9.]+,[0-9]+$/.test(s)) s=s.replace(/\./g,"").replace(",",".");
+  else if(/^-?[0-9]+,[0-9]+$/.test(s)) s=s.replace(",",".");
+  var x=parseFloat(s); return isNaN(x)?0:x;
+}
+function pctBtg(v){ return Math.round(numBtg(v)*100*10000)/10000; }
+function ehBtg(inst){ return /btg/i.test(String(inst||"")); }
+function categoriaBtg(m){
+  var t=String(m||"").toUpperCase();
+  if(/COE/.test(t)) return "COE";
+  if(/PREV/.test(t)) return "Previdência";
+  if(/RV|ACAO|ACOES|AÇÃO|AÇÕES|EQUIT|BOLSA|FII|OPC|DERIV|CRIPT|CRYPT|BDR|ETF/.test(t)) return "Renda Variável";
+  if(/FUND|^FI/.test(t)) return "Fundos";
+  return "Renda Fixa";
+}
+function estratBtg(nome){
+  var t=String(nome||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  if(/pos/.test(t)) return "pos";
+  if(/pre/.test(t)) return "pre";
+  if(/infla/.test(t)) return "infl";
+  if(/multi|retorno absoluto/.test(t)) return "ma";
+  if(/variavel|acoes/.test(t)) return "rv";
+  if(/intern|global|exterior|offshore/.test(t)) return "intl";
+  if(/altern/.test(t)) return "alt";
+  return null;
+}
+function editarContasBtg(){
+  var c=cli(); if(!c) return;
+  var atual=(c.contas_btg||[]).join(", ");
+  api("rpc/btg_sugerir_contas",{method:"POST",body:{p_cliente:c.id}}).catch(function(){ return []; }).then(function(sug){
+    var txt="Contas BTG de "+c.nome+" (só os números; mais de uma, separe por vírgula):";
+    if(sug&&sug.length) txt+="\n\nEncontrei pelo nome:\n"+sug.map(function(x){ return "  "+x.nr_conta+"  ("+x.nome+", "+(x.fonte==="CRM"?"conta anotada no CRM":"base do BTG")+")"; }).join("\n");
+    var v=prompt(txt, atual||(sug&&sug.length?sug.map(function(x){return x.nr_conta;}).filter(function(x,i,a){return a.indexOf(x)===i;}).join(", "):""));
+    if(v===null) return;
+    var lista=String(v).split(/[,;\s]+/).map(function(x){ return x.replace(/\D/g,""); }).filter(Boolean);
+    status("wait","Salvando…");
+    api("clientes?id=eq."+c.id,{method:"PATCH",prefer:"return=representation",body:{contas_btg:lista}})
+      .then(function(r){ c.contas_btg=(r&&r[0]&&r[0].contas_btg)||lista; registrar("contas BTG",c.nome,c.contas_btg.join(", ")); status("ok","Sincronizado"); render(true); })
+      .catch(function(e){ status("err","Não salvou"); alert("Não foi possível salvar as contas: "+(e.message||e)+"\n\nSe o erro falar de \"contas_btg\", falta instalar o btg_rentabilidade.sql no Supabase."); });
+  });
+}
+function puxarBtg(){
+  var c=cli(); if(!c||!S.rasc) return;
+  if(!c.contas_btg||!c.contas_btg.length){
+    if(confirm("Informe antes a conta BTG de "+c.nome+". Abrir agora?")) editarContasBtg();
+    return;
+  }
+  status("wait","Buscando no BTG…");
+  api("rpc/btg_rent_cliente",{method:"POST",body:{p_cliente:c.id,p_mes:S.mes,p_ano:S.ano}}).then(function(d){
+    status("ok","Sincronizado");
+    var mesTxt=MESES[S.mes-1]+"/"+S.ano;
+    var fmtMes=function(iso){ if(!iso) return null; var p=String(iso).slice(0,7).split("-"); return MESES[Number(p[1])-1]+"/"+p[0]; };
+    if(!d||!d.carteira||!d.carteira.length){
+      var msg="O BTG ainda não mandou "+mesTxt+" para a(s) conta(s) "+((d&&d.contas)||c.contas_btg).join(", ")+".";
+      if(d&&d.ultimo_mes) msg+="\n\nÚltimo mês recebido para este cliente: "+fmtMes(d.ultimo_mes)+".";
+      else if(d&&d.ultimo_mes_casa) msg+="\n\nO BTG já mandou "+fmtMes(d.ultimo_mes_casa)+" para outras contas: confira se o número da conta deste cliente está certo.";
+      else msg+="\n\nNenhum relatório de rentabilidade chegou ainda. A integração com o BTG precisa estar ligada (webhooks cadastrados), e o pedido sai nos dias 2 e 5 de cada mês.";
+      alert(msg); return;
+    }
+    var contas=d.carteira.map(function(x){
+      var k=x.dados||{}, liq=numBtg(k.inflow_and_outflow);
+      return {nome:"BTG "+x.nr_conta, inst:"BTG Pactual", saldo:numBtg(k.auc_end), apl:liq>0?liq:0, res:liq<0?-liq:0,
+              rendRs:numBtg(k.profit_mtd), rendPct:pctBtg(k.profitability_mtd), moeda:"BRL"};
+    });
+    var ativos=(d.produtos||[]).filter(function(x){ return Math.abs(numBtg((x.dados||{}).auc_end))>0.005; }).map(function(x){
+      var k=x.dados||{};
+      return {nome:k.product_name||k.product_key||("Produto "+(k.product_id||"")), categoria:categoriaBtg(k.market_id), subcategoria:"",
+              inst:"BTG Pactual", taxa:"", vencimento:"", posicao:numBtg(k.auc_end),
+              rentMes:pctBtg(k.profitability_mtd), rentAno:pctBtg(k.profitability_ytd), rent12m:pctBtg(k.profitability_12m), rentInicio:pctBtg(k.profitability_ttd)};
+    });
+    var porEst={}, totEst=0, semMapa=[];
+    (d.estrategias||[]).forEach(function(x){
+      var v=numBtg((x.dados||{}).auc_end); if(v<=0) return;
+      var k=estratBtg(x.estrategia); totEst+=v;
+      if(k) porEst[k]=(porEst[k]||0)+v; else if(semMapa.indexOf(x.estrategia)<0) semMapa.push(x.estrategia);
+    });
+    var k0=(d.carteira[0]&&d.carteira[0].dados)||{};
+    var indBtg={cdi:k0.cdi_mtd, ipca:k0.imab_mtd, ibov:k0.ibovespa_mtd, dolar:k0.dolar_mtd, ifix:k0.ifix_mtd};
+    var indNovos=Object.keys(indBtg).filter(function(x){ return indBtg[x]!=null&&String(indBtg[x]).trim()!==""&&!n(S.rasc.ind[x]); });
+
+    var saldo=contas.reduce(function(a,x){return a+x.saldo;},0), res=contas.reduce(function(a,x){return a+x.rendRs;},0);
+    var outrasContas=S.rasc.contas.filter(function(x){ return !ehBtg(x.inst)&&((x.nome||"").trim()||n(x.saldo)); }).length;
+    var outrosAtivos=(S.rasc.ind.ativos||[]).filter(function(x){ return !ehBtg(x.inst)&&((x.nome||"").trim()||n(x.posicao)); }).length;
+    var txt="BTG, "+mesTxt+", "+contas.length+" conta(s):\n\n"+
+      "Saldo: "+brl2(saldo)+"\nResultado do mês: "+brl2(res)+(contas.length===1?" ("+pct(contas[0].rendPct)+")":"")+"\n"+
+      "Ativos: "+ativos.length+"\n"+
+      (totEst?"Alocação por estratégia: "+Object.keys(porEst).length+" estratégia(s)"+(semMapa.length?" (sem correspondência: "+semMapa.join(", ")+")":"")+"\n":"")+
+      (indNovos.length?"Índices preenchidos (estavam vazios): "+indNovos.map(function(x){ return ({cdi:"CDI",ipca:"IMA-B",ibov:"Ibovespa",dolar:"Dólar",ifix:"IFIX"})[x]; }).join(", ")+"\n":"")+
+      "\nIsso substitui a conta e os ativos do BTG deste mês."+
+      ((outrasContas||outrosAtivos)?" Ficam como estão "+outrasContas+" conta(s) e "+outrosAtivos+" ativo(s) de outros bancos.":"")+
+      "\nNada é gravado até você clicar em \"Salvar mês\". Continuar?";
+    if(!confirm(txt)) return;
+
+    S.rasc.contas=S.rasc.contas.filter(function(x){ return !(curDe(x)==="BRL"&&ehBtg(x.inst)); }).concat(contas);
+    S.rasc.ind.ativos=(S.rasc.ind.ativos||[]).filter(function(x){ return !ehBtg(x.inst); }).concat(ativos);
+    if(totEst){ var e={}; ESTRAT.forEach(function(x){ e[x[0]]=porEst[x[0]]?Math.round(porEst[x[0]]/totEst*10000)/100:0; }); S.rasc.ind.estrategias=e; }
+    indNovos.forEach(function(x){ S.rasc.ind[x]=pctBtg(indBtg[x]); });
+    S.rasc._herdado=false; S.rasc._btg=true;
+    registrar("puxou do BTG",c.nome,mesTxt);
+    render(true);
+    alert("Pronto. Confira os números e a categoria de cada ativo, e clique em \"Salvar mês e ver relatório\".");
+  }).catch(function(e){
+    status("err","Erro");
+    var m=String(e.message||e);
+    alert(/btg_rent_cliente|does not exist|404/.test(m)?"O \"Puxar do BTG\" ainda não foi instalado no Supabase (btg_rentabilidade.sql).":"Não foi possível buscar no BTG: "+m);
+  });
+}
 function novoCliente(){
   var nome=prompt("Nome do cliente:"); if(!nome) return;
   status("wait","Salvando…");
@@ -2750,11 +2956,14 @@ function viewPreencher(){
   var t=totais(r);
   h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
      '<div><div class="sec-title">'+esc(c.nome)+'</div><div class="sec-sub">Lançamento de '+MESES[S.mes-1]+' de '+S.ano+'</div></div>'+
-     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="renomear()">Renomear</button>'+
+     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" onclick="puxarBtg()" title="Preenche a conta BTG, os ativos do BTG, a alocação e os índices com a Rentabilidade Mensal do BTG">Puxar do BTG</button>'+
+     '<button class="btn" onclick="renomear()">Renomear</button>'+
      (reg(c.id,S.mes,S.ano)?'<button class="btn" onclick="excluirMes()">Excluir mês</button>':'')+
      (EU.admin?'<button class="btn" onclick="transferirCliente()">Assessor</button>':'')+
      '<button class="btn" onclick="excluirCliente()">Excluir cliente</button></div></div></div>'+
-     (EU.admin&&c.assessor_id!==EU.id?'<div class="sec-sub" style="margin-top:-8px">Cliente de '+esc(nomeAssessor(c.assessor_id))+'.</div>':'');
+     (EU.admin&&c.assessor_id!==EU.id?'<div class="sec-sub" style="margin-top:-8px">Cliente de '+esc(nomeAssessor(c.assessor_id))+'.</div>':'')+
+     '<div class="sec-sub" style="margin-top:-8px">Contas BTG: '+((c.contas_btg&&c.contas_btg.length)?esc(c.contas_btg.join(", ")):'<b>nenhuma informada</b>')+
+       ' &middot; <a href="#" onclick="editarContasBtg();return false">'+((c.contas_btg&&c.contas_btg.length)?"alterar":"informar")+'</a></div>';
   if(r._herdado) h+='<div class="note"><b>Dados herdados do mês anterior.</b> Contas e saldos vieram do último mês lançado. Atualize os saldos e informe o resultado do mês — nada é gravado até você clicar em “Salvar mês”.</div>';
   if(!r._herdado && r._onHerdado){
     h+='<div class="note" style="margin-bottom:14px"><b>'+r._onHerdado+' conta(s) em reais trazida(s) do m\u00eas anterior.</b> '+
@@ -3878,7 +4087,9 @@ var GRUPOS=[
   {id:"ferramentas", nome:"Ferramentas",
    desc:"O que a operação usa no dia a dia para produzir documento e controle."},
   {id:"simuladores", nome:"Simuladores",
-   desc:"Projeções e cenários para conversa com cliente, sem gerar documento oficial."}
+   desc:"Projeções e cenários para conversa com cliente, sem gerar documento oficial."},
+  {id:"financeiro", nome:"Financeiro",
+   desc:"Comissões e controles do financeiro da casa."}
 ];
 /* A tela inicial mostra todos os grupos empilhados, com o comercial em
    destaque no topo. A gaveta agora rola ate o grupo em vez de filtrar:
@@ -3903,19 +4114,30 @@ var APPS=[
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>'},
   {id:"alocacao",grupo:"ferramentas",nome:"Política de Alocação",desc:"Material do comitê do mês: macro, desempenho, diretrizes e as 3 carteiras recomendadas, prontos para gerar o PDF.",tag:"Disponível",ativo:true,url:"alocacao.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12L18 16"/><path d="M12 12L6.5 16.5"/></svg>'},
-  {id:"fluxo",grupo:"ferramentas",nome:"Fluxo e Captação",desc:"Mapa das movimentações do BTG: captação, aplicações, resgates — a base do comitê de alocação. Acesso restrito a master.",tag:"Disponível",ativo:true,url:"fluxo.html",restritoMaster:true,
+  {id:"fluxo",grupo:"ferramentas",nome:"Fluxo e Captação",desc:"Mapa das movimentações do BTG: captação, aplicações, resgates — a base do comitê de alocação.",tag:"Disponível",ativo:true,url:"fluxo.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>'},
   {id:"agio",grupo:"simuladores",nome:"Ágio e Troca de Ativos",desc:"Em quanto tempo a taxa melhor compensa o deságio assumido na saída antecipada.",tag:"Disponível",ativo:true,url:"agio.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 18C7 18 9 6 13 6s5 6 8 6"/><path d="M3 9c4 0 6 9 10 9"/><circle cx="12.4" cy="11.4" r="1.6"/></svg>'},
   {id:"liberdade",grupo:"simuladores",nome:"Liberdade Financeira",desc:"Quanto juntar para manter o padrão e quanto dá para retirar por mês, em termos reais.",tag:"Disponível",ativo:true,url:"liberdade.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 20h18"/><path d="M4 20V12l8-7 8 7v8"/><path d="M12 20v-5"/><circle cx="12" cy="9.5" r="1.4"/></svg>'},
+  {id:"comissoes",grupo:"financeiro",nome:"Comissões",desc:"Comissões da equipe por mês. Em construção.",tag:"Em construção",ativo:true,url:"comissoes.html",
+   ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.6-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2s1.1 1.7 2.8 2.1c1.8.4 2.9 1 2.9 2.2s-1.3 2.1-2.9 2.1c-1.3 0-2.4-.6-2.9-1.5"/><path d="M12 6.3v1.5M12 16.7v1.5"/></svg>'},
   {id:"processo",grupo:"comercial",nome:"Processo Comercial",desc:"Trilha comercial etapa a etapa: o que fazer, entregáveis e ritmo esperado em cada reunião.",tag:"Disponível",ativo:true,url:"processo.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 6h4"/><path d="M3 12h4"/><path d="M3 18h4"/><path d="M10 6h11"/><path d="M10 12h11"/><path d="M10 18h11"/></svg>'}
 ];
 
+/* Ferramenta liberada para quem está logado? Quem decide é a matriz de Perfis e
+   acessos (Equipe). O banco confere de novo: ferramenta desmarcada não devolve dado. */
+function temPerm(chave){ return EU.perm?EU.perm.indexOf(chave)>=0:null; }
+function podeFerramenta(id){
+  var t=temPerm("ferramenta."+id);
+  if(t===null) return (id!=="fluxo"&&id!=="comissoes")||EU.super;
+  return t;
+}
 function irParaApp(id){
   var a=APPS.filter(function(x){return x.id===id;})[0];
   if(!a||!a.ativo) return;
+  if(!podeFerramenta(id)){ alert("Seu perfil não tem acesso a "+a.nome+". Fale com o master."); return; }
   if(a.url){
     registrar("abriu sistema",a.nome,"");
     location.href=a.url;
@@ -4081,7 +4303,7 @@ function hbFiltrar(txt){
   });
 }
 function hbSemAcento(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
-function hbAppsDoGrupo(gr){ return APPS.filter(function(a){ return (a.grupo||"ferramentas")===gr.id && (!a.restritoMaster||EU.super); }); }
+function hbAppsDoGrupo(gr){ return APPS.filter(function(a){ return (a.grupo||"ferramentas")===gr.id && podeFerramenta(a.id); }); }
 function hbContApp(a){
   if(a.id==="crm"&&INICIO.agenda){ var n=INICIO.agenda.hoje.length+INICIO.agenda.atrasadas.length; return n?{n:n,quente:INICIO.agenda.atrasadas.length>0}:null; }
   if(a.id==="rv"&&INICIO.rv) return {n:INICIO.rv,quente:false};

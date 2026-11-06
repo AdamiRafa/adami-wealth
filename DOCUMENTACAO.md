@@ -222,6 +222,34 @@ o código do dia) e gravam em `auditoria`.
   revogado nem excluído (`equipe_ultimo_master`).
 - `listar_equipe` passou a trazer `revogado`, `ultimo_acesso`, `qtd_leads` e `qtd_carteiras`.
 
+### Perfis e acessos (2.94, `permissoes.sql`)
+
+Equipe > aba **Perfis e acessos**: linhas são ferramentas (uma por item do menu, mais Comissões) e
+atribuições; colunas são os 7 perfis. O master marca as caixinhas (`permissoes_definir`, com
+auditoria). Tabelas: `perfis_catalogo`, `permissoes_catalogo`, `permissoes_perfil` (sem leitura
+direta pela API).
+
+- **Perfis de uma pessoa** (`perfis_de`): as chaves Master, Admin, Mesa RV e **Financeiro** (coluna
+  nova `perfis.financeiro`, também no convite) e o papel no CRM com status ativo (Admin do CRM,
+  Assessor, Especialista). O acesso é a **soma** dos perfis.
+- **`tem_permissao(chave)`** responde por quem está logado (exige o código do dia). As quatro regras
+  antigas passaram a ler a tabela, com o mesmo nome: `eh_admin` = `carteiras.todas`,
+  `pode_editar_rv` = `rv.operar`, `is_admin` = `crm.todos`, `pode_publicar_aviso` =
+  `avisos.publicar`. Por isso todas as políticas antigas obedecem à tela sem reescrita.
+  `eh_super` (master) não mudou: gerenciar equipe é só do master, travado.
+- **Ferramenta desmarcada fecha os dados dela** (política restritiva `exige_ferramenta`): CRM (leads,
+  tarefas, anexos e arquivos), Carteiras (lançamentos, cartas; clientes também abre com Mesa RV),
+  Mesa RV, Política de Alocação, Fluxo e Captação (antes só master). Salvar a política exige
+  `alocacao.editar`.
+- **Tela:** o Hub esconde do menu o que a pessoa não abre (`minhas_permissoes`), e
+  `comum/sessao.js` manda de volta ao Hub quem abrir o endereço direto. Sem a tabela no banco, vale
+  a regra antiga (fluxo e comissões só master).
+- **Valores iniciais** = o que valia antes, mais Comissões para Master e Financeiro. Rodar o arquivo
+  de novo não desfaz o que foi marcado na tela.
+- Limite conhecido: as telas internas do CRM ainda seguem o papel do CRM (o banco já segue a
+  tabela). Ex.: tirar "ver todos os clientes" do Admin do CRM esvazia os dados, mas os menus de
+  admin continuam visíveis para ele.
+
 ### Convite e primeiro acesso
 
 Não existe criação de conta pelo administrador, porque isso exigiria a chave
@@ -584,6 +612,10 @@ Wealth Planning e Planos Patrimoniais com "Salvar no CRM"**.
  · **2.93 (06/11/2026) Equipe: clicar no nome da pessoa abre a ficha dela, com editar nome e
 e-mail, revogar acesso (reversível), reativar e excluir (só quem não tem cliente). Ver
 "Ficha da pessoa" na seção 5 e `equipe.sql`**.
+ · **2.94 (06/11/2026) Perfis e acessos: tabela na Equipe com perfis x ferramentas x atribuições,
+perfil Financeiro, ferramenta Comissões (em construção). Carteiras: "Puxar do BTG" e contas BTG do
+cliente (seção 23.8). Ver "Perfis e acessos" na seção 5, `permissoes.sql` e
+`btg_rentabilidade.sql`**.
 
 ---
 
@@ -1523,4 +1555,33 @@ de `adami_completo.sql`) e funções `btg-webhook` e `btg-sync` (Verify JWT desl
 **Para ligar (depois que o BTG liberar o domínio):** criar a senha do webhook (Secrets >
 `BTG_WEBHOOK_KEY`, 20+ caracteres), cadastrar no portal um webhook por serviço com a mesma senha
 (API Key) e o endereço com o serviço no fim, e então `update btg_config set ligado = true`.
+
+### 23.8. Fase 3: Rentabilidade Mensal nas Carteiras (`btg_rentabilidade.sql`, 06/11/2026)
+
+API de Rentabilidade Mensal (`iaas-profitability`, spec enviada pelo Emil em 06/11): três `POST`
+assíncronos com `{referenceMonth, referenceYear}`, entregues pelo btg-webhook nos serviços
+`monthly-customer-profitability` (conta), `monthly-product-profitability` (produto) e
+`monthly-strategy-profitability` (estratégia). Pedir o mês M traz o histórico até o dia 1 de M (o
+mês anterior fechado), até 12 meses; limite de 12 meses pedidos por dia e 30 chamadas por minuto.
+Rentabilidade vem em fração (0,0105 = 1,05%).
+
+- **Pedido:** btg-sync, janela `rentabilidade`, agendamento `btg-rentabilidade` nos dias 2 e 5, 9h
+  de Brasília (mês corrente). Master pode pedir na hora com `btg_pedir_agora('rentabilidade')`.
+- **Recebimento:** arquivo grande (todas as contas, 12 meses, um registro por produto). O
+  btg-webhook lê em pedaços (`LeitorCsv`, testado com 1.600 cortes aleatórios) e grava em lotes de
+  1.000 (`btg_rent_receber`), sem carregar tudo na memória. Do relatório por produto guarda só as
+  colunas usadas. Original no Storage até 45 MB. Tabelas `btg_rent_carteira`, `btg_rent_produto`,
+  `btg_rent_estrategia`, por conta e mês: pedir de novo atualiza.
+- **Carteiras:** cada cliente tem `clientes.contas_btg` (linha "Contas BTG" no Preencher, com
+  sugestão pelo nome na base do BTG e na conta anotada no CRM). **Puxar do BTG** lê
+  `btg_rent_cliente` (só quem vê o cliente) e, depois de mostrar o resumo, troca no rascunho: as
+  contas BRL do BTG (saldo, aplicação/resgate pela movimentação líquida, resultado e %), os ativos
+  com instituição BTG (categoria pelo `market_id`), a alocação por estratégia e os índices que
+  estavam vazios (CDI, IMA-B, Ibovespa, Dólar, IFIX). Outros bancos ficam como estão. Grava só no
+  "Salvar mês".
+- **A calibrar com o primeiro arquivo real:** valores de `market_id` (mapa em `categoriaBtg`),
+  nomes de estratégia (`estratBtg`), se `reference_month` do mês pedido é o mês fechado, e o tempo
+  de processamento do arquivo por produto (limite da função em segundo plano).
+- Testes locais: arquivo de 7.200 produtos compactado, conta em latin1 com `;` e decimal com
+  vírgula, link vencido, leitura por assessor dono e recusa para cliente de outro.
 

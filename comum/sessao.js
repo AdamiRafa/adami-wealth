@@ -36,6 +36,36 @@
       }
     }).catch(function(){});
   }catch(e){}
+  /* Perfis e acessos (2.94): ferramenta desmarcada para o perfil da pessoa volta
+     para o Hub. A tela fica escondida até a resposta (no máximo 5 segundos; sem
+     resposta, mostra: quem protege os dados é o banco, que recusa do mesmo jeito). */
+  var FERRAMENTA = {"crm.html":"crm","processo.html":"processo","patrimonial.html":"planos",
+    "imobiliario.html":"imobiliario","rv.html":"rv","diagnostico.html":"diagnostico",
+    "boletas.html":"boletas","alocacao.html":"alocacao","fluxo.html":"fluxo",
+    "comissoes.html":"comissoes","simulador.html":"simrv","agio.html":"agio","liberdade.html":"liberdade"};
+  var arquivo = (location.pathname.split("/").pop() || "").toLowerCase();
+  var ferr = FERRAMENTA[arquivo];
+  if(ferr){
+    var raiz = document.documentElement, mostrar = function(){ raiz.style.visibility = ""; };
+    raiz.style.visibility = "hidden";
+    var prazo = setTimeout(mostrar, 5000);
+    try{
+      var s2 = JSON.parse(localStorage.getItem("aw_sessao") || "null");
+      fetch("https://ghxjqmjtmbqzvogwzylo.supabase.co/rest/v1/rpc/minhas_permissoes", {
+        method: "POST",
+        headers: { "apikey": "sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB", "Authorization": "Bearer " + s2.access_token, "Content-Type": "application/json" },
+        body: "{}"
+      }).then(function(r){ return r.ok ? r.json() : null; }).then(function(m){
+        clearTimeout(prazo);
+        if(m && m.permissoes && m.permissoes.indexOf("ferramenta." + ferr) < 0){
+          alert("Seu perfil não tem acesso a esta ferramenta. Fale com o master.");
+          location.replace("index.html");
+          return;
+        }
+        mostrar();
+      }).catch(function(){ clearTimeout(prazo); mostrar(); });
+    }catch(e){ clearTimeout(prazo); mostrar(); }
+  }
   /* Aba aberta de um dia para o outro, ou logout em outra aba. */
   setInterval(function(){ if(!sessaoValida()) location.replace("index.html"); }, 60000);
   document.addEventListener("visibilitychange", function(){

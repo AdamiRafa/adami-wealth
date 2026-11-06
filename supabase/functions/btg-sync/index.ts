@@ -6,6 +6,9 @@
 //                 do dia útil anterior (posição por data);
 //   "tarde" 15h30: NNM (captação líquida);
 //   "noite" 20h30: movimentação do fim do dia.
+//   "rentabilidade" (dias 2 e 5 do mês, 9h): os três relatórios de Rentabilidade Mensal
+//                 (carteira, produto, estratégia) do mês corrente, que trazem o histórico
+//                 até o dia 1, ou seja, o mês anterior fechado (btg_rentabilidade.sql).
 // O BTG responde 202 e entrega o arquivo depois, na função btg-webhook.
 // Cada pedido fica registrado em btg_pedidos, com a resposta do BTG.
 //
@@ -48,7 +51,13 @@ function diaUtilAnterior(): { refDay: string; refMonth: string; refYear: string 
   return { refDay: p(d.getDate()), refMonth: p(d.getMonth() + 1), refYear: String(d.getFullYear()) };
 }
 
-function plano(janela: string): Pedido[] {
+// Mês corrente em Brasília, no formato da API de Rentabilidade ("11", "2026").
+function mesCorrente(): { referenceMonth: string; referenceYear: string } {
+  const hoje = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  return { referenceMonth: String(hoje.getMonth() + 1).padStart(2, "0"), referenceYear: String(hoje.getFullYear()) };
+}
+
+function plano(janela: string, ref?: { referenceMonth: string; referenceYear: string }): Pedido[] {
   const rm = "/api-rm-reports/api/v1/rm-reports";
   if (janela === "manha") return [
     { servico: "rm-reports-account-link", metodo: "GET", caminho: rm + "/account-link" },
@@ -59,6 +68,15 @@ function plano(janela: string): Pedido[] {
   ];
   if (janela === "tarde") return [{ servico: "rm-reports-nnm", metodo: "GET", caminho: rm + "/nnm" }];
   if (janela === "noite") return [{ servico: "rm-reports-movement", metodo: "GET", caminho: rm + "/movement" }];
+  if (janela === "rentabilidade") {
+    const pf = "/iaas-profitability/api/v1/profitability/monthly";
+    const corpo = ref ?? mesCorrente();
+    return [
+      { servico: "monthly-customer-profitability", metodo: "POST", caminho: pf + "/customer-profitability", corpo },
+      { servico: "monthly-product-profitability", metodo: "POST", caminho: pf + "/product-profitability", corpo },
+      { servico: "monthly-strategy-profitability", metodo: "POST", caminho: pf + "/strategy-profitability", corpo },
+    ];
+  }
   return [];
 }
 
@@ -98,9 +116,12 @@ Deno.serve(async (req: Request) => {
   const chave = req.headers.get("x-btg-sync") ?? "";
   if (!(await rpc("btg_sync_token_ok", { p: chave }))) return resposta({ erro: "não autorizado" }, 401);
 
-  const corpo = await req.json().catch(() => ({})) as { janela?: string; forcar?: boolean };
+  const corpo = await req.json().catch(() => ({})) as { janela?: string; forcar?: boolean; mes?: number; ano?: number };
   const janela = String(corpo.janela ?? "");
-  const pedidos = plano(janela);
+  const m = Number(corpo.mes), a = Number(corpo.ano);
+  const ref = m >= 1 && m <= 12 && a >= 2020 && a <= 2100
+    ? { referenceMonth: String(m).padStart(2, "0"), referenceYear: String(a) } : undefined;
+  const pedidos = plano(janela, ref);
   if (!pedidos.length) return resposta({ erro: "janela desconhecida: " + janela }, 400);
   if (!(await rpc("btg_ligado", {})) && !corpo.forcar) return resposta({ ok: true, desligado: true });
   if (!ID || !SEGREDO) return resposta({ erro: "Faltam BTG_CLIENT_ID e BTG_CLIENT_SECRET nos Secrets." }, 500);
