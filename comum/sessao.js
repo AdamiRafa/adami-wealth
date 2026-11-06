@@ -20,6 +20,22 @@
   }
   window.AW_HOJE = hoje;
   if(!sessaoValida()){ location.replace("index.html"); return; }
+  /* O banco é quem sabe se esta sessão confirmou o código hoje. Se não confirmou
+     (ex.: entrou antes de a verificação ser ligada), volta para a tela do código. */
+  try{
+    var s = JSON.parse(localStorage.getItem("aw_sessao") || "null");
+    fetch("https://ghxjqmjtmbqzvogwzylo.supabase.co/rest/v1/rpc/estado_acesso", {
+      method: "POST",
+      headers: { "apikey": "sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB", "Authorization": "Bearer " + s.access_token, "Content-Type": "application/json" },
+      body: "{}"
+    }).then(function(r){ return r.ok ? r.json() : null; }).then(function(st){
+      if(st && st.exige && !st.liberado){
+        var atual = JSON.parse(localStorage.getItem("aw_sessao") || "null");
+        if(atual){ atual.dia = null; atual.login_dia = hoje(); localStorage.setItem("aw_sessao", JSON.stringify(atual)); }
+        location.replace("index.html");
+      }
+    }).catch(function(){});
+  }catch(e){}
   /* Aba aberta de um dia para o outro, ou logout em outra aba. */
   setInterval(function(){ if(!sessaoValida()) location.replace("index.html"); }, 60000);
   document.addEventListener("visibilitychange", function(){
