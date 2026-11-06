@@ -1582,6 +1582,10 @@ Rentabilidade vem em fração (0,0105 = 1,05%).
 - **A calibrar com o primeiro arquivo real:** valores de `market_id` (mapa em `categoriaBtg`),
   nomes de estratégia (`estratBtg`), se `reference_month` do mês pedido é o mês fechado, e o tempo
   de processamento do arquivo por produto (limite da função em segundo plano).
+- **Instalado em 06/11/2026** pelo conector (migrações `perfis_e_acessos_2_94` e
+  `btg_fase3_rentabilidade_mensal`; funções btg-sync e btg-webhook versão 2). Conferido no banco
+  real: o que cada uma das 12 pessoas enxerga (leads, clientes, lançamentos, fluxo, política e as
+  quatro regras) ficou idêntico antes e depois.
 - Testes locais: arquivo de 7.200 produtos compactado, conta em latin1 com `;` e decimal com
   vírgula, link vencido, leitura por assessor dono e recusa para cliente de outro.
 
