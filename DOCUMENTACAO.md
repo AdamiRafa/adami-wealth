@@ -1445,3 +1445,19 @@ webhook) e os relatórios diários saem em janelas fixas (7h/8h, 15h, 20h); a ch
 cadastro. Por isso a atualização automática fica em **8h30 e 20h30** (e 15h30 para NNM), não
 8h e 18h como combinado antes: pedir antes da janela traz o arquivo da véspera.
 
+### 23.5. Protego e a regra de convivência (06/11/2026)
+
+No portal havia 5 webhooks ativos para `app.protego.com.br` (operations-by-account,
+positions-by-account, operations-by-partner, rm-reports-position, positions-by-account-v2),
+autenticação por API Key. O Emil não reconhece a Protego (talvez ligada à Quantum, usada antes).
+Decisão do Emil: **manter a Protego ativa por precaução**, sem interferir no Hub. Regras:
+
+- O Hub **nunca cadastra webhook nesses 5 serviços**: o portal tem um endereço por serviço, e
+  cadastrar o nosso tiraria a Protego do ar. Posição diária vem de `rm-reports-position-by-date`
+  (D-1, sob demanda) e da base de contas (PL por classe); movimentação vem de
+  `rm-reports-movement` e `rm-reports-monthly-movement`.
+- Credencial: se o portal permitir, o Hub usa uma credencial própria (não a que a Protego usa),
+  para cada um poder ser desligado sem afetar o outro.
+- Pedido aberto ao BTG (Resolve Aí) para identificar a Protego e liberar o domínio
+  `ghxjqmjtmbqzvogwzylo.supabase.co` (exigência do formulário de webhook).
+
