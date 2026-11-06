@@ -204,6 +204,24 @@ e registra em `auditoria`.
 **Filtrar no navegador não é segurança.** Se surgir demanda de restrição de acesso, ela
 tem que ser resolvida no banco, com política, nunca escondendo elemento na tela.
 
+### Ficha da pessoa (2.93, `equipe.sql`)
+
+Na Equipe, o nome de cada pessoa é um botão que abre a ficha dela. Só o master vê e usa;
+todas as ações passam por funções `security definer` que conferem `eh_super()` (que já exige
+o código do dia) e gravam em `auditoria`.
+
+- **Editar nome e e-mail** (`equipe_editar`): troca o nome em `perfis` e `profiles`; troca o
+  e-mail de login em `auth.users` e `auth.identities` e no convite. A pessoa passa a entrar
+  com o e-mail novo e a mesma senha. Recusa e-mail que já é de outra conta.
+- **Revogar acesso** (`equipe_revogar`): bloqueia o login (`banned_until` 2999), derruba as
+  sessões abertas e marca o CRM como `removido`. Clientes e histórico ficam. Reversível com
+  **Reativar** (`equipe_reativar`).
+- **Excluir** (`equipe_excluir`): apaga a conta de vez. Só para quem não tem cliente no CRM
+  nem carteira; com cliente, a tela manda transferir antes ou revogar. Pede digitar EXCLUIR.
+- **Travas:** ninguém revoga nem exclui a si mesmo; o último master ativo não pode ser
+  revogado nem excluído (`equipe_ultimo_master`).
+- `listar_equipe` passou a trazer `revogado`, `ultimo_acesso`, `qtd_leads` e `qtd_carteiras`.
+
 ### Convite e primeiro acesso
 
 Não existe criação de conta pelo administrador, porque isso exigiria a chave
@@ -563,6 +581,9 @@ auditoria de contraste em todas as telas e tabelas, nos dois modos** ·
 **2.88 (06/11/2026) tela inicial do Hub limpa: ferramentas só no menu; no meio, o dia, o
 calendário e os avisos. CRM `2026.11.06.1`: arquivos na ficha do cliente (seção 21).
 Wealth Planning e Planos Patrimoniais com "Salvar no CRM"**.
+ · **2.93 (06/11/2026) Equipe: clicar no nome da pessoa abre a ficha dela, com editar nome e
+e-mail, revogar acesso (reversível), reativar e excluir (só quem não tem cliente). Ver
+"Ficha da pessoa" na seção 5 e `equipe.sql`**.
 
 ---
 

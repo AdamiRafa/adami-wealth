@@ -777,6 +777,20 @@ html[data-cor="noite"] .eqx .btn.pri{background:#EEF2F8;border-color:#EEF2F8;col
 .eqx td{border-bottom:1px solid var(--m-ln);color:var(--m-tx)}
 .eqx tr:hover td{background:var(--m-hover)}
 .eqx .eqnome{color:var(--m-tx)}
+.eqx .eqpessoa{all:unset;display:block;cursor:pointer;border-radius:8px;padding:2px 4px;margin:-2px -4px}
+.eqx .eqpessoa:hover .eqnome{color:#195AB4}
+.eqx .eqpessoa:focus-visible{outline:2px solid #195AB4;outline-offset:2px}
+.eqx .eqeditar{font-size:11px;color:#195AB4;font-weight:600;margin-left:6px;opacity:0;transition:opacity .15s}
+.eqx tr:hover .eqeditar,.eqx .eqpessoa:focus-visible .eqeditar{opacity:1}
+.eqx tr.eqrevogado td{opacity:.6}
+.eqtag.rev{color:#B3403A;border-color:#B3403A}
+.eqx .eqvoltar{all:unset;cursor:pointer;font-size:13px;font-weight:600;color:#195AB4;margin:0 0 14px;display:inline-block}
+.eqx .eqficha-topo{margin:0 0 18px}
+.eqx .eqficha-topo .eqnome{font-size:18px}
+.eqform .eqform-nota{grid-column:1/-1;margin:0}
+html[data-cor="noite"] .eqtag.rev{color:#F2A29C;border-color:rgba(242,162,156,.6)}
+html[data-cor="noite"] .eqx .eqvoltar,html[data-cor="noite"] .eqx .eqeditar{color:#7FB0F0}
+html[data-cor="noite"] .eqx .eqpessoa:hover .eqnome{color:#7FB0F0}
 .eqx .eqmail{color:var(--m-tx3)}
 .eqx .eqpapel{font-size:12.5px;color:var(--m-tx2)}
 .eqx .eqacoes{text-align:right;white-space:nowrap}
@@ -1097,7 +1111,7 @@ function pintarEquipe(aviso){
       '<button class="eqaba'+(ABA_EQ==="convidar"?" on":"")+'" onclick="abaEq(\'convidar\')">Convidar pessoa</button>'+
     '</div>';
   if(aviso){ pintar(h+aviso); return; }
-  pintar(h + (ABA_EQ==="equipe" ? blocoEquipe() : blocoConvite()) +
+  pintar(h + (ABA_EQ==="pessoa" ? blocoPessoa() : (ABA_EQ==="equipe" ? blocoEquipe() : blocoConvite())) +
     '<div class="eqfoot"><span class="eqmsg" id="eqmsg"></span>'+
     '<button class="btn" onclick="fecharEquipe()">Fechar</button></div>');
 }
@@ -1193,10 +1207,12 @@ function blocoEquipe(){
     '<th class="c">Mesa RV</th><th>Papel no CRM</th></tr>';
   EQUIPE.forEach(function(p,i){
     var eu = p.user_id===EU.id;
-    h+='<tr><td><div class="eqnome">'+esc(p.nome||p.email.split("@")[0])+
+    h+='<tr'+(p.revogado?' class="eqrevogado"':'')+'><td><button type="button" class="eqpessoa" onclick="abrirPessoa('+i+')" title="Editar, revogar ou excluir">'+
+       '<div class="eqnome">'+esc(p.nome||p.email.split("@")[0])+
        (p.super?' <span class="eqtag">master</span>':'')+
-       (eu?' <span class="eqtag eu">você</span>':'')+'</div>'+
-       '<div class="eqmail">'+esc(p.email)+'</div></td>'+
+       (eu?' <span class="eqtag eu">você</span>':'')+
+       (p.revogado?' <span class="eqtag rev">acesso revogado</span>':'')+'</div>'+
+       '<div class="eqmail">'+esc(p.email)+' <span class="eqeditar">editar</span></div></button></td>'+
        '<td class="cod"><input class="eqcod" id="eqcod'+i+'" value="'+esc(p.codigo||"")+'" '+
          'maxlength="16" spellcheck="false" '+
          'onchange="salvarCodigo('+i+',this.value)" '+
@@ -1221,6 +1237,90 @@ function blocoEquipe(){
     }
   });
   return h+'</table>';
+}
+/* ---------- card da pessoa (06/11/2026): editar nome e e-mail, revogar, reativar, excluir ----------
+   Tudo passa por funções do banco que exigem master e gravam na auditoria
+   (equipe.sql). Excluir só vale para quem não tem cliente: apagar a pessoa
+   deixaria os clientes do CRM sem responsável. */
+var PESSOA_ID=null;
+function abrirPessoa(i){ var p=EQUIPE[i]; if(!p) return; PESSOA_ID=p.user_id; ABA_EQ="pessoa"; pintarEquipe(); }
+function pessoaAtual(){ for(var i=0;i<EQUIPE.length;i++) if(EQUIPE[i].user_id===PESSOA_ID) return EQUIPE[i]; return null; }
+function quandoCurto(t){
+  if(!t) return "nunca";
+  try{ return new Date(t).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}).replace(",",""); }
+  catch(e){ return String(t); }
+}
+function blocoPessoa(){
+  var p=pessoaAtual();
+  if(!p){ ABA_EQ="equipe"; return blocoEquipe(); }
+  var eu=p.user_id===EU.id, temClientes=(p.qtd_leads||0)+(p.qtd_carteiras||0)>0;
+  var h='<button type="button" class="eqvoltar" onclick="abaEq(\'equipe\')">&larr; Voltar para a equipe</button>'+
+    '<div class="eqficha-topo"><div class="eqnome">'+esc(p.nome||p.email)+
+      (p.super?' <span class="eqtag">master</span>':'')+(eu?' <span class="eqtag eu">você</span>':'')+
+      (p.revogado?' <span class="eqtag rev">acesso revogado</span>':'')+'</div>'+
+      '<div class="eqmail">Último acesso: '+esc(quandoCurto(p.ultimo_acesso))+' &middot; '+
+        (p.qtd_leads||0)+' cliente(s) no CRM &middot; '+(p.qtd_carteiras||0)+' carteira(s)</div></div>'+
+    '<div class="eqform">'+
+      '<div class="eqc"><label for="pNome">Nome</label><input id="pNome" maxlength="80" value="'+esc(p.nome||"")+'"></div>'+
+      '<div class="eqc"><label for="pEmail">E-mail de acesso</label><input id="pEmail" type="email" maxlength="200" value="'+esc(p.email||"")+'"></div>'+
+      '<p class="eqsub eqform-nota">Trocar o e-mail troca o login da pessoa, e o código de acesso passa a chegar no e-mail novo. Avise a pessoa antes.</p>'+
+      '<button class="btn pri eqconvidar" onclick="salvarPessoa()">Salvar alterações</button>'+
+    '</div>'+
+    '<h3 class="eqtit">Acesso</h3>';
+  if(p.revogado){
+    h+='<p class="eqsub">O acesso está bloqueado: a pessoa não consegue entrar no Hub nem no CRM. Os clientes e o histórico continuam como estavam.</p>'+
+       '<button class="eqbt" onclick="reativarPessoa()">Reativar acesso</button>';
+  }else{
+    h+='<p class="eqsub">Revogar bloqueia o login na hora, derruba a sessão aberta e tira a pessoa do CRM. Os clientes e o histórico continuam. Dá para reativar depois.</p>'+
+       (eu?'<p class="eqsub">Você não pode revogar o seu próprio acesso.</p>':'<button class="eqbt perigo" onclick="revogarPessoa()">Revogar acesso</button>');
+  }
+  h+='<h3 class="eqtit">Excluir da equipe</h3>';
+  if(eu) h+='<p class="eqsub">Você não pode excluir a si mesmo.</p>';
+  else if(temClientes) h+='<p class="eqsub">Para excluir, transfira antes '+(p.qtd_leads||0)+' cliente(s) do CRM e '+(p.qtd_carteiras||0)+
+    ' carteira(s) para outra pessoa. Enquanto isso, use <b>Revogar acesso</b>.</p>';
+  else h+='<p class="eqsub">Apaga a conta de vez. Não dá para desfazer: para voltar, só com um convite novo.</p>'+
+    '<button class="eqbt perigo" onclick="excluirPessoa()">Excluir da equipe</button>';
+  return h;
+}
+function recarregarEquipe(msg){
+  return api("rpc/listar_equipe",{method:"POST",body:{}}).then(function(r){
+    EQUIPE=r||[]; pintarEquipe(); if(msg) msgEq(msg);
+  });
+}
+function salvarPessoa(){
+  var p=pessoaAtual(); if(!p) return;
+  var nome=(document.getElementById("pNome").value||"").trim();
+  var email=(document.getElementById("pEmail").value||"").trim().toLowerCase();
+  if(email!==String(p.email||"").toLowerCase()&&!confirm("Trocar o e-mail de acesso de "+(p.nome||p.email)+" para "+email+"?\n\nO login passa a ser o e-mail novo.")) return;
+  msgEq("Salvando…");
+  api("rpc/equipe_editar",{method:"POST",body:{p_user_id:p.user_id,p_nome:nome,p_email:email}})
+    .then(function(){ return recarregarEquipe("Alterações salvas."); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
+}
+function revogarPessoa(){
+  var p=pessoaAtual(); if(!p) return;
+  if(!confirm("Revogar o acesso de "+(p.nome||p.email)+"?\n\nA pessoa sai do Hub e do CRM na hora. Os clientes e o histórico continuam, e dá para reativar depois.")) return;
+  msgEq("Revogando…");
+  api("rpc/equipe_revogar",{method:"POST",body:{p_user_id:p.user_id}})
+    .then(function(){ return recarregarEquipe("Acesso revogado."); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
+}
+function reativarPessoa(){
+  var p=pessoaAtual(); if(!p) return;
+  msgEq("Reativando…");
+  api("rpc/equipe_reativar",{method:"POST",body:{p_user_id:p.user_id}})
+    .then(function(){ return recarregarEquipe("Acesso reativado. A pessoa entra com a mesma senha e o código do e-mail."); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
+}
+function excluirPessoa(){
+  var p=pessoaAtual(); if(!p) return;
+  if(!confirm("Excluir "+(p.nome||p.email)+" da equipe de vez?\n\nNão dá para desfazer.")) return;
+  var conf=prompt("Para confirmar, digite EXCLUIR em maiúsculas:");
+  if(conf!=="EXCLUIR"){ msgEq("Cancelado. Nada foi excluído."); return; }
+  msgEq("Excluindo…");
+  api("rpc/equipe_excluir",{method:"POST",body:{p_user_id:p.user_id}})
+    .then(function(){ ABA_EQ="equipe"; PESSOA_ID=null; return recarregarEquipe((p.nome||p.email)+" foi excluído(a) da equipe."); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
 }
 function seletorCrm(p,i){
   var papeis=[["vendedor","Assessor"],["especialista","Especialista"],["admin","Admin do CRM"]];
@@ -1445,7 +1545,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.92";
+var VERSAO="versão 2.93";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
