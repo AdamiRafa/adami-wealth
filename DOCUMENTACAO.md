@@ -940,6 +940,15 @@ avisa e redireciona) antes de publicar.
 
 ---
 
+**Baixar PDF direto (versão 1.8, 06/11/2026).** No Chrome do Mac do Emil, a janela de
+impressão parava em "Salvando…" e o PDF de outubro nunca saía (a prévia aparecia certa, o
+travamento era na gravação do arquivo pelo navegador). Novo botão **Baixar PDF** no topo:
+cada folha da prévia vira uma imagem A4 (html2canvas, escala 2) e o jsPDF monta o arquivo,
+baixado direto como `Adami Captal - AAAA-MM - Politica de Alocacao.pdf` (sem acento no nome:
+com acento, o Chromium caía no nome genérico "download"). O botão "Imprimir" continua ao
+lado. Conferido página a página contra a impressão: 12 páginas A4, mesmo conteúdo, mesmas
+tabelas e gráficos. O texto do PDF baixado é imagem (não dá para selecionar).
+
 ## 17. Mesa RV (`rv.html`)
 
 **Tipo "Posição" (entregue).** Até a versão 2.78 só existia "Compra / Venda" (aba

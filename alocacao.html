@@ -242,7 +242,7 @@ function api(path,opts,jaTentou){
 <div class="topo">
   <div>
     <h1>Política de Alocação</h1>
-    <div class="sub">Preencha ao final do comitê — o relatório do mês monta sozinho, pronto para imprimir em PDF.</div>
+    <div class="sub">Preencha ao final do comitê — o relatório do mês monta sozinho, pronto para baixar em PDF.</div>
   </div>
   <div class="topo-acoes">
     <span class="selo" id="selo"></span>
@@ -251,7 +251,8 @@ function api(path,opts,jaTentou){
     </select>
     <button class="btn" id="btnSalvarPolitica" onclick="salvarPolitica()">Salvar esta política</button>
     <button class="btn claro" onclick="novoMes()">Novo mês</button>
-    <button class="btn ouro" onclick="window.print()">Imprimir / gerar PDF</button>
+    <button class="btn claro" onclick="window.print()" title="Abre a janela de impressão do navegador">Imprimir</button>
+    <button class="btn ouro" id="btnBaixarPdf" onclick="baixarPdf()">Baixar PDF</button>
   </div>
 </div>
 
@@ -264,7 +265,7 @@ function api(path,opts,jaTentou){
 <div id="msg"></div>
 
 <script>
-var VERSAO_ALOC="versão 1.7";
+var VERSAO_ALOC="versão 1.8";
 document.getElementById("selo").textContent=VERSAO_ALOC;
 
 var CHAVE="aw_alocacao";
@@ -936,6 +937,76 @@ function campo(label, tipo, bindExpr, valor, onInputCall){
 }
 
 /* ------------------------------------------------------------ preview */
+/* ------------------------------------------------------------- Baixar PDF
+   Gera o arquivo direto, sem a janela de impressão do navegador (no Chrome do
+   Mac ela às vezes fica parada em "Salvando…" e o PDF nunca sai, 06/11/2026).
+   Cada folha da prévia vira uma página A4 inteira, do mesmo jeito que sai na
+   impressão: 210 x 297 mm, sem sombra, o que passar da folha é cortado. */
+function carregarScript(src){
+  return new Promise(function(ok,erro){
+    if(document.querySelector('script[data-src="'+src+'"]')) return ok();
+    var sc=document.createElement('script'); sc.src=src; sc.setAttribute('data-src',src);
+    sc.onload=function(){ ok(); }; sc.onerror=function(){ erro(new Error('Não foi possível carregar '+src+'. Confira a internet e tente de novo.')); };
+    document.head.appendChild(sc);
+  });
+}
+function nomeArquivoPdf(){
+  var mes=String(numeroDoMes(EST.mes)).padStart(2,'0'), ano=n(EST.ano)||new Date().getFullYear();
+  return ('Adami Captal - '+ano+'-'+mes+' - Politica de Alocacao').replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim()+'.pdf';
+}
+function baixarPdf(){
+  var b=document.getElementById('btnBaixarPdf');
+  if(b.disabled) return;
+  b.disabled=true; b.textContent='Preparando…';
+  var folhas=[].slice.call(document.querySelectorAll('#painelPreview .folha'));
+  Promise.all([carregarScript('vendor/jspdf-2.5.1.umd.min.js'), carregarScript('vendor/html2canvas-1.4.1.min.js')])
+    .then(function(){ return document.fonts && document.fonts.ready; })
+    .then(function(){
+      var pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+      var i=0;
+      function proxima(){
+        if(i>=folhas.length) return null;
+        var el=folhas[i];
+        b.textContent='Gerando PDF… '+(i+1)+' de '+folhas.length;
+        /* Gráfico em SVG com largura em % sai em branco no html2canvas: na cópia
+           usada para a imagem, cada SVG vira uma <img> do tamanho que tem na tela. */
+        var tam=[].map.call(el.querySelectorAll('svg'),function(sv,k){
+          sv.setAttribute('data-pdf',k); var r=sv.getBoundingClientRect(); return [Math.round(r.width),Math.round(r.height)];
+        });
+        return window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',logging:false,useCORS:true,onclone:function(doc){
+          var st=doc.createElement('style');
+          st.textContent='.folha{box-shadow:none!important;height:297mm!important;min-height:297mm!important;overflow:hidden!important;margin:0!important}';
+          doc.head.appendChild(st);
+          [].forEach.call(doc.querySelectorAll('svg[data-pdf]'),function(sv){
+            var t=tam[+sv.getAttribute('data-pdf')]; if(!t||!t[0]||!t[1]) return;
+            var c=sv.cloneNode(true); c.setAttribute('width',t[0]); c.setAttribute('height',t[1]);
+            c.setAttribute('xmlns','http://www.w3.org/2000/svg'); c.removeAttribute('style');
+            var img=doc.createElement('img');
+            img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(c));
+            img.style.cssText='display:block;width:'+t[0]+'px;height:'+t[1]+'px';
+            sv.parentNode.replaceChild(img,sv);
+          });
+        }}).then(function(cv){
+          [].forEach.call(el.querySelectorAll('svg[data-pdf]'),function(sv){ sv.removeAttribute('data-pdf'); });
+          if(i>0) pdf.addPage('a4','portrait');
+          pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297,undefined,'FAST');
+          i++;
+          return proxima();
+        });
+      }
+      return Promise.resolve(proxima()).then(function(){
+        /* Baixa com o nome certo (o save() do jsPDF às vezes sai como "download"). */
+        var url=URL.createObjectURL(pdf.output('blob'));
+        var a=document.createElement('a'); a.href=url; a.download=nomeArquivoPdf();
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(url); },60000);
+        aviso('PDF baixado. Confira a pasta Downloads.');
+      });
+    })
+    .catch(function(e){ alert('Não consegui gerar o PDF.\n\n'+(e&&e.message||e)); })
+    .then(function(){ b.disabled=false; b.textContent='Baixar PDF'; });
+}
+
 function montarTudo(){ montarPreview(); salvar(); }
 
 function montarPreview(){
@@ -958,7 +1029,7 @@ function montarPreview(){
 }
 function avisoCorteDePagina(totalCaracteres, limite){
   return totalCaracteres>limite
-    ? '<p style="background:var(--gold-tint);border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;color:#3a2e0f">Texto longo demais pra uma página só — ao imprimir, o que passar do limite da folha é cortado sem aviso. Reduza o texto e confira no "Imprimir / gerar PDF" antes de mandar pro comitê.</p>'
+    ? '<p style="background:var(--gold-tint);border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;color:#3a2e0f">Texto longo demais pra uma página só — ao imprimir, o que passar do limite da folha é cortado sem aviso. Reduza o texto e confira no "Baixar PDF" antes de mandar pro comitê.</p>'
     : '';
 }
 function atualizarAvisoAtivosSugeridos(){
