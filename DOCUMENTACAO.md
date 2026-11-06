@@ -1437,3 +1437,11 @@ NNM e, pela API de Rentabilidade Mensal, a TIR mensal por cliente, produto e est
 CDI, Ibovespa, IPCA e IMA-B. Falta: a especificação dessa API (endpoints e parâmetros) e a tela
 de cadastro de webhook (o que o BTG manda para o nosso endereço se identificar).
 
+### 23.4. API de Relatórios Gerenciais (resumo em `btg/relatorios-gerenciais.md`)
+
+Servidor `https://api.btgpactual.com/api-rm-reports`. Toda chamada é assíncrona (arquivo CSV por
+webhook) e os relatórios diários saem em janelas fixas (7h/8h, 15h, 20h); a chamada devolve o
+último arquivo gerado. O primeiro arquivo de cada webhook só existe na janela seguinte ao
+cadastro. Por isso a atualização automática fica em **8h30 e 20h30** (e 15h30 para NNM), não
+8h e 18h como combinado antes: pedir antes da janela traz o arquivo da véspera.
+
