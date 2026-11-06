@@ -549,6 +549,11 @@ camada comum `estilo/adami-2026.css` nos 11 módulos; modo noite no Hub e no CRM
 **2.89 (06/11/2026) tela de Equipe e Segurança redesenhada, legível no modo noite (antes os
 campos ficavam escuros numa janela branca). CRM `2026.11.06.2`: simulando um assessor, os
 contadores de Consórcio, Seguro e Agenda no menu passam a ser dele, não do escritório** ·
+**2.90 (06/11/2026) menu lateral encostado na borda e mais largo (Hub e CRM); tema Dia, Noite
+ou Sistema (segue o modo escuro do computador); Carteiras sempre clara, com o botão "← Hub
+Adami" fixo no topo ao rolar. CRM `2026.11.06.3`: todas as fichas e a lista de clientes com
+Pipe (nada de "captação nova"), Relacionamento navegável (cada número abre a lista) e
+auditoria de contraste em todas as telas e tabelas, nos dois modos** ·
 **2.88 (06/11/2026) tela inicial do Hub limpa: ferramentas só no menu; no meio, o dia, o
 calendário e os avisos. CRM `2026.11.06.1`: arquivos na ficha do cliente (seção 21).
 Wealth Planning e Planos Patrimoniais com "Salvar no CRM"**.
@@ -1242,4 +1247,24 @@ sessão do portal e renova o token se ele venceu.
 - **Correção no Wealth Planning:** a rosca de uma fatia só (100%, ex.: só investimentos) não
   aparecia nem na tela: arco de 360 graus começa e termina no mesmo ponto. Agora fecha a
   0,003 rad da volta inteira.
+
+### 21.1. Ajustes da versão 2.90 (CRM `2026.11.06.3`)
+
+- **Menu na borda.** Em telas a partir de 901 px o menu lateral fica encostado na esquerda
+  (280 px no CRM, 290 px no Hub), da altura da tela, e o conteúdo usa até 1560 px.
+- **Tema Sistema.** O seletor no menu tem Dia, Noite e Sistema; `localStorage.aw_cor` guarda
+  `dia`, `noite` ou `sistema`. Em Sistema, o Hub e o CRM seguem `prefers-color-scheme` e trocam
+  sozinhos quando o computador muda. Menu recolhido: um botão que alterna os três.
+- **Carteiras sempre clara.** Os relatórios e o PDF das carteiras foram feitos para fundo claro;
+  o modo noite não se aplica ali. O botão "← Hub Adami" fica no topo da coluna e no topo fixo
+  do celular, sempre visível ao rolar.
+- **Pipe em todas as fichas.** Cliente da base mostra "Pipe total" (R$ ou US$) e "Pipe em
+  negociação"; "Captação nova" saiu da ficha e da etiqueta de temperatura. A lista de clientes
+  ganhou a coluna Pipe, com ordenação e soma no rodapé.
+- **Relacionamento navegável.** Cada cartão de número, cada etapa da legenda e o "Ver lista" do
+  destaque abrem o painel com os clientes daquele recorte.
+- **Contraste.** Auditoria automática (texto contra o fundo real, mínimo 3,2:1, ou 2,6:1 para
+  texto grande) em todas as abas do CRM nos três perfis (admin, assessor, SDR) e no Hub,
+  Equipe, Segurança e Carteiras, dia e noite: zero pendências. `--ink-faint` passou de
+  `#95A1B0` para `#6B7889`. PDF dos KPIs conferido de novo: 5 páginas, mesmas margens.
 

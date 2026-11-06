@@ -15,7 +15,9 @@
     --surface:#FFFFFF;
     --ink:#0C1626;
     --ink-muted:#5C6B7F;
-    --ink-faint:#95A1B0;
+    /* Escurecido em 06/11/2026: o cinza claro anterior (#95A1B0) ficava abaixo do contraste
+       mínimo de leitura sobre o fundo claro (auditoria automática). */
+    --ink-faint:#6B7889;
     --border:#E2E6ED;
     --border-strong:#CCD3DD;
     --primary:#195AB4;
@@ -2001,7 +2003,8 @@
   }
 
   /* Marcador no card do quadro */
-  .card-grupo{font-size:10.5px;color:var(--gold);font-weight:600;letter-spacing:.02em;}
+  .card-grupo{font-size:10.5px;color:#8A6A18;font-weight:600;letter-spacing:.02em;}
+  html[data-cor="noite"] .card-grupo{color:#E1C27A;}
 
   /* ---------- Ficha do cliente ---------- */
   .ficha{display:flex;flex-direction:column;gap:var(--space-4);margin-bottom:var(--space-2);}
@@ -2773,7 +2776,7 @@
   /* O painel do admin era escuro e com coluna de filtros; agora segue o
      Dashboard: fundo claro, uma coluna, cartões brancos. */
   .painel.kn-admin{
-    --bg:#F4F6F9; --surface:#FFFFFF; --ink:#0C1626; --ink-muted:#5C6B7F; --ink-faint:#95A1B0;
+    --bg:#F4F6F9; --surface:#FFFFFF; --ink:#0C1626; --ink-muted:#5C6B7F; --ink-faint:#6B7889;
     --border:#E2E6ED; --border-strong:#CCD3DD; --primary:#195AB4; --primary-tint:#E7EFFB;
     --success:#2F7A56; --success-tint:#E6F1EC; --danger:#B3403A; --danger-tint:#FBEBEA;
     --gold:#B08A2E; --gold-tint:#F7F0DC;
@@ -2784,7 +2787,7 @@
   .painel.kn-admin .ind{border-left-color:var(--border);}
   .painel.kn-admin .ind-rotulo{color:#54627A;}
   .painel.kn-admin .ind-valor{color:#0F1B2D;}
-  .painel.kn-admin .ind-contexto{color:#8A97AB;}
+  .painel.kn-admin .ind-contexto{color:#6B7889;}
   .painel.kn-admin .ind.ouro .ind-valor{color:#8A6A18;}
   .painel.kn-admin .ind.verde .ind-valor{color:#2F7A57;}
   .painel.kn-admin .ind.alerta .ind-valor{color:#B4453E;}
@@ -3265,10 +3268,71 @@
   .anx-meta{font-size:11px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .anx-x{width:30px;height:30px;border:0;background:none;color:var(--ink-faint);border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
   .anx-x:hover{color:var(--danger);background:var(--danger-tint);}
+
+
+  /* ---------- Menu encostado na borda e mais largo (06/11/2026) + seletor de aparência ---------- */
+  @media screen and (min-width:901px){
+    #app{max-width:none;padding:16px 24px 64px 16px;}
+    .casca{gap:24px;}
+    .mn{width:280px;height:calc(100vh - 32px);max-height:none;}
+    .mn.curto{width:76px;}
+    .casca-conteudo{max-width:1560px;}
+  }
+  .mn-tema{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--chip);}
+  .mn-tema button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;height:32px;border:0;border-radius:999px;
+    background:transparent;color:var(--ink-muted);font:600 12px 'Inter',sans-serif;cursor:pointer;padding:0 6px;}
+  .mn-tema button.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 8px rgba(5,19,42,.10);}
+  html[data-cor="noite"] .mn-tema button.on{background:rgba(255,255,255,.14);}
+  .mn-tema-curto{display:none !important;}
+  .mn.curto .mn-tema{display:none;}
+  .mn.curto .mn-tema-curto{display:flex !important;}
+  @media screen and (max-width:900px){ .mn-tema span{display:none;} .mn-tema button{width:36px;flex:none;} }
+
+  /* ---------- Contraste no modo noite: correções achadas pela auditoria (06/11/2026) ---------- */
+  .ag-selo{color:var(--c);background:color-mix(in srgb, var(--c) 11%, transparent);}
+  .tm-aviso{background:var(--gold-tint);border:1px solid color-mix(in srgb, var(--gold) 35%, transparent);border-radius:12px;padding:14px 16px;}
+  .tm-aviso p{margin:0 0 10px;line-height:1.55;}
+  .tm-pendente{margin-top:14px;font-size:13px;color:#8A6D2F;}
+  .tm-tabela{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px;}
+  .tm-tabela th{text-align:left;padding:6px 0;border-bottom:1px solid var(--border);color:var(--ink-muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;}
+  .tm-tabela td{padding:8px 0;border-bottom:1px solid var(--border);}
+  .tm-voce{margin-left:6px;font-size:10.5px;color:var(--primary);}
+  .tm-sub{font-size:11.5px;color:var(--ink-faint);}
+  @media screen{
+    html[data-cor="noite"] .ag-selo{color:var(--cn);filter:none;background:color-mix(in srgb, var(--cn) 14%, transparent);}
+    html[data-cor="noite"] :is(.arv-folha,.pn-bloco-corpo){background:rgba(255,255,255,.035);}
+    html[data-cor="noite"] :is(.pn-cliente:hover,.arv-folha:hover){background:rgba(255,255,255,.07);}
+    html[data-cor="noite"] .pn-bloco-ir{background:rgba(127,176,240,.10);color:#A3C6F5;}
+    html[data-cor="noite"] .bento-tile.alert{background:rgba(242,162,156,.10);border-color:rgba(242,162,156,.35);}
+    html[data-cor="noite"] .bento-tile.alert .tile-label{color:#F2A29C;}
+    html[data-cor="noite"] .bento-tile.clear{background:rgba(127,211,166,.08);border-color:rgba(127,211,166,.30);}
+    html[data-cor="noite"] .bento-tile.clear .tile-label{color:#7FD3A6;}
+    html[data-cor="noite"] :is(.card-alerta,.card-aniversario){background:rgba(225,194,122,.13);color:#E9CF8F;}
+    html[data-cor="noite"] .card-alerta.vencido{background:rgba(242,162,156,.12);color:#F2A29C;}
+    html[data-cor="noite"] .admin-fix-call{color:#E9CF8F;}
+    html[data-cor="noite"] .tm-pendente{color:#E9CF8F;}
+  }
+  .ficha-pipe-bloco .field-row{align-items:end;}
+  @media screen{ html[data-cor="noite"] .ficha-tag.gold{color:#E9CF8F;border-color:rgba(225,194,122,.45);background:rgba(225,194,122,.10);} }
+  /* Relacionamento navegável (06/11/2026). */
+  .bento-tile.clica{cursor:pointer;transition:transform .15s ease, box-shadow .15s ease, border-color .15s;}
+  .bento-tile.clica:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(5,19,42,.12);border-color:var(--border-strong);}
+  .bento-tile.clica:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+  .bento-eyebrow-acao{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .bento-ver{border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;height:28px;padding:0 12px;
+    font:600 11.5px 'Inter',sans-serif;letter-spacing:0;text-transform:none;cursor:pointer;}
+  .bento-ver:hover{background:rgba(255,255,255,.18);}
+  .spectrum-legend button.spectrum-key{border:0;background:none;padding:2px 4px;margin:-2px -4px;border-radius:6px;font-family:inherit;font-size:11px;color:#9FB2CE;cursor:pointer;}
+  .spectrum-legend button.spectrum-key:hover:not(:disabled){background:rgba(255,255,255,.12);}
+  .spectrum-legend button.spectrum-key:disabled{cursor:default;opacity:.6;}
+  /* Pipe da ficha: rótulo com a moeda ao lado (06/11/2026). */
+  .ficha-pipe-rotulo{display:flex !important;align-items:center;justify-content:space-between;gap:8px;}
+  .custodia-switch.mini{display:inline-flex;gap:2px;margin:0;}
+  .custodia-switch.mini button{height:22px;padding:0 8px;font-size:10.5px;border-radius:999px;text-transform:none;letter-spacing:0;}
 </style>
 </head>
 <body>
-<script>try{if(localStorage.getItem("aw_cor")==="noite")document.documentElement.dataset.cor="noite";}catch(e){}</script>
+<script>try{var c=localStorage.getItem("aw_cor");if(c==="noite"||(c==="sistema"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.dataset.cor="noite";}catch(e){}</script>
 <script>
 /* acesso restrito: exige sessao iniciada no portal */
 (function(){
@@ -5921,7 +5985,7 @@ function LeadCard({ lead, onOpen, onDragStart, onDragEnd, dragging, ownerName, s
         const off = !esp && captaNova(lead) && custodiaCaptacao(lead) === 'offshore';
         const v = esp ? ((lead.ganho || lead.perdido) ? 0 : (parseValor(lead.valorPotencial) || 0)) : valorCaptacaoNaMoeda(lead);
         return h('div',{className:'card-captacao' + (v > 0 ? '' : ' vazio'),
-          title: v > 0 ? (captaNova(lead) ? 'Captação nova em negociação com este cliente da base' : 'Valor em jogo com este cliente')
+          title: v > 0 ? 'Pipe: valor em jogo com este cliente'
             : 'Nada em negociação com este cliente agora'},
           h('span',{className:'card-captacao-rotulo'}, off ? 'Pipe · off' : 'Pipe'),
           h('span',{className:'card-captacao-valor'}, v > 0 ? (off ? fmtUSDCompact : fmtBRLCompact)(v) : '—'));
@@ -6466,7 +6530,7 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
         h('span',{className:'ficha-etapa', style:{background:info.color}}, etapaLonga(lead.etapa, lead.funil)),
         (!pipeEditavel && temperaturaDe(lead)) ? h('span',{className:'ficha-tag'},
           h('span',{className:'temp-dot', style:{background:temperaturaDe(lead).cor}}),
-          temperaturaDe(lead).label + ((captaNova(lead) && valorCaptacaoNaMoeda(lead) > 0) ? ' · captação' : '')) : null,
+          temperaturaDe(lead).label) : null,
         h('span',{className:'ficha-tag'}, lead.tipoPessoa === 'PJ' ? 'Pessoa jurídica' : 'Pessoa física'),
         jornada ? h('span',{className:'ficha-tag'}, lead.segmento) : null,
         jornada ? h('span',{className:'ficha-tag'},
@@ -6501,22 +6565,37 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
        fatia que está sendo discutida agora — um número mais miúdo e mais
        volátil, que muda a cada conversa. Só existe para prospect: cliente
        da base já tem o par valor/temperatura dele no fluxo de captação. */
-    (pipeEditavel && jornada && carteiraPipe) ? h('div',{className:'field ficha-pipe-bloco ficha-pipe-valor'},
-      h('label',null,'Captação nova · a mais sobre o sob gestão'),
-      h('div',{className:'ficha-pipe-linha'},
-        h('div',{className:'custodia-switch', role:'group', 'aria-label':'Moeda da captação'},
-          CUSTODIAS.map(c => h('button',{ key:c.key, type:'button', className: captCustodia === c.key ? 'active' : '',
-            onClick:()=>{ setCaptCustodia(c.key); if(parseValor(captDraft)) gravarCaptacao(captDraft, c.key); } },
-            c.moeda === 'USD' ? 'US$' : 'R$'))),
-        h('input',{ value:captDraft, onChange:e=>setCaptDraft(e.target.value), inputMode:'decimal',
-          placeholder: captCustodia === 'offshore' ? 'Ex: 200000 (em dólar)' : 'Ex: 500000',
-          'aria-label':'Valor da captação nova',
-          onBlur:()=>gravarCaptacao(captDraft, captCustodia),
-          onKeyDown:(e)=>{ if(e.key === 'Enter') e.target.blur(); } })),
+    /* Padrão único (06/11/2026, pedido do Emil: "todo card com o pipe, sem captação nova"):
+       quem já é carteira tem o mesmo par de campos do prospect. "Pipe total" é o que entra
+       a mais na carteira (grava em valorEmCaptacao, que alimenta "Em captação", com R$ ou
+       US$); "Pipe em negociação" é a fatia discutida agora. Confirmar e encerrar continuam
+       aqui embaixo, porque é por eles que o pipe vira carteira. */
+    (pipeEditavel && jornada && carteiraPipe) ? h('div',{className:'ficha-pipe-bloco'},
+      h('div',{className:'field-row'},
+        h('div',{className:'field'},
+          h('label',{className:'ficha-pipe-rotulo'}, 'Pipe total',
+            h('span',{className:'custodia-switch mini', role:'group', 'aria-label':'Moeda do pipe'},
+              CUSTODIAS.map(c => h('button',{ key:c.key, type:'button', className: captCustodia === c.key ? 'active' : '',
+                onClick:()=>{ setCaptCustodia(c.key); if(parseValor(captDraft)) gravarCaptacao(captDraft, c.key); } },
+                c.moeda === 'USD' ? 'US$' : 'R$')))),
+          h('input',{ value:captDraft, onChange:e=>setCaptDraft(e.target.value), inputMode:'decimal',
+            placeholder: captCustodia === 'offshore' ? 'Ex: 200000 (em dólar)' : 'Ex: 500000',
+            'aria-label':'Pipe total',
+            onBlur:()=>gravarCaptacao(captDraft, captCustodia),
+            onKeyDown:(e)=>{ if(e.key === 'Enter') e.target.blur(); } })),
+        h('div',{className:'field'},
+          h('label',null,'Pipe em negociação'),
+          h('input',{ value:negociacaoDraft, onChange:e=>setNegociacaoDraft(e.target.value),
+            inputMode:'decimal', placeholder:'Ex: 200000', 'aria-label':'Pipe em negociação',
+            onBlur:()=>{
+              const n = parseValor(negociacaoDraft);
+              const formatado = n === null ? '' : fmtBRL(n);
+              setNegociacaoDraft(formatado);
+              if(formatado !== (lead.valorEmNegociacao || '')) onSetValorNegociacaoPipe(formatado);
+            } }))),
       (parseValor(lead.valorEmCaptacao) || 0) > 0 && onAbrirCaptacao ? h('div',{className:'ficha-pipe-acoes'},
-        h('button',{ type:'button', className:'link-btn', style:{color:'var(--success)'}, onClick:()=>onAbrirCaptacao('confirmar') }, 'O dinheiro entrou: confirmar captação'),
-        h('button',{ type:'button', className:'link-btn danger', onClick:()=>onAbrirCaptacao('encerrar') }, 'Encerrar sem captar')) : null,
-      h('div',{className:'field-hint'}, 'Quanto este cliente vai trazer a mais. Grava ao sair do campo; apagar o valor encerra a negociação.')
+        h('button',{ type:'button', className:'link-btn', style:{color:'var(--success)'}, onClick:()=>onAbrirCaptacao('confirmar') }, 'O dinheiro entrou: confirmar'),
+        h('button',{ type:'button', className:'link-btn danger', onClick:()=>onAbrirCaptacao('encerrar') }, 'Encerrar sem captar')) : null
     ) : null,
     (pipeEditavel && jornada && !carteiraPipe) ? h('div',{className:'field-row ficha-pipe-bloco'},
       h('div',{className:'field'},
@@ -7881,40 +7960,40 @@ function TeamModal({ onClose, users, currentUser, convites }){
         h('button',{className:'modal-close', onClick:onClose}, h(IconX,{size:18}))
       ),
       h('div',{className:'modal-body'},
-        h('div',{style:{background:'#F7F4EE',border:'1px solid #E3DCCB',borderRadius:10,padding:'14px 16px'}},
+        h('div',{className:'tm-aviso'},
           h('p',{style:{margin:'0 0 10px',lineHeight:1.55}},
             h('strong',null,'A equipe é gerenciada no hub.'),
-            ' Papel no CRM, acesso ao portal, produtos do especialista e convite de pessoa nova ficam todos na tela de Equipe do hub, no menu de três traços. Um lugar só, para ninguém acabar com acesso num sistema e sem acesso no outro.'),
+            ' Papel no CRM, acesso ao portal, produtos do especialista e convite de pessoa nova ficam todos na tela de Equipe do Hub (menu lateral, "Gerenciar equipe"). Um lugar só, para ninguém acabar com acesso num sistema e sem acesso no outro.'),
           h('button',{className:'btn btn-primary',
             onClick:()=>{ window.location.href='index.html'; }}, 'Abrir a Equipe no hub')
         ),
         pendentes.length
-          ? h('p',{style:{marginTop:14,fontSize:13,color:'#8A6D2F'}},
+          ? h('p',{className:'tm-pendente'},
               pendentes.length + (pendentes.length === 1
                 ? ' pessoa aguarda liberação: já criou o acesso, mas só entra no CRM depois que um master ativar no hub.'
                 : ' pessoas aguardam liberação: já criaram o acesso, mas só entram no CRM depois que um master ativar no hub.'))
           : null,
-        h('table',{style:{width:'100%',borderCollapse:'collapse',marginTop:14,fontSize:13}},
+        h('table',{className:'tm-tabela'},
           h('thead',null, h('tr',null,
-            h('th',{style:{textAlign:'left',padding:'6px 0',borderBottom:'1px solid #E3E7EE'}},'Pessoa'),
-            h('th',{style:{textAlign:'left',padding:'6px 0',borderBottom:'1px solid #E3E7EE'}},'Papel'),
-            h('th',{style:{textAlign:'left',padding:'6px 0',borderBottom:'1px solid #E3E7EE'}},'Situação'))),
+            h('th',null,'Pessoa'),
+            h('th',null,'Papel'),
+            h('th',null,'Situação'))),
           h('tbody',null, (users || []).map(u =>
             h('tr',{key:u.id},
-              h('td',{style:{padding:'8px 0',borderBottom:'1px solid #F2F4F8'}},
+              h('td',null,
                 u.nome,
                 u.id === (currentUser && currentUser.id)
-                  ? h('span',{style:{marginLeft:6,fontSize:10,color:'#3D5178'}},'(você)') : null,
+                  ? h('span',{className:'tm-voce'},'(você)') : null,
                 (u.produtos && u.produtos.length)
-                  ? h('div',{style:{fontSize:11,color:'#8A93A6'}}, u.produtos.join(' · ')) : null),
-              h('td',{style:{padding:'8px 0',borderBottom:'1px solid #F2F4F8'}}, papel[u.role] || u.role),
-              h('td',{style:{padding:'8px 0',borderBottom:'1px solid #F2F4F8',
+                  ? h('div',{className:'tm-sub'}, u.produtos.join(' · ')) : null),
+              h('td',null, papel[u.role] || u.role),
+              h('td',{style:{
                 color: u.status === 'ativo' ? '#5C7A5C' : '#B5563A'}}, u.status)
             )
           ))
         ),
         (convites && convites.length)
-          ? h('p',{style:{marginTop:12,fontSize:12,color:'#8A93A6'}},
+          ? h('p',{className:'tm-sub', style:{marginTop:12}},
               convites.length + ' convite(s) aguardando primeiro acesso. Acompanhe no hub.')
           : null
       )
@@ -10521,8 +10600,19 @@ function KpisView({ scopedLeads, allLeads, users, vendorFilter, currentUser, per
    Substitui a antiga fileira de cards iguais. Três tamanhos de bloco:
    herói (valor em pipeline), tiles de contagem e um bloco acionável
    com os contatos vencidos — as únicas linhas da tela que pedem ação hoje. */
-function PipelineOverview({ leads, onOpen, funil }){
+function PipelineOverview({ leads, onOpen, funil, users }){
   const cotacao = useCotacao();
+  /* Navegável (06/11/2026): o total, cada etapa da faixa e cada contador abrem o
+     painel lateral dos KPIs (assessor → cliente, Excel, cliente abre a ficha). */
+  const [spec, setSpec] = useState(null);
+  const abrirLista = (titulo, filtro, medida) => setSpec(funil === 'especialista'
+    ? { tipo: 'negocio', titulo, filtro: (l) => filtro(l) }
+    : { titulo, filtro: (l) => filtro(l), medida: medida || 'onshore' });
+  const clicavel = (titulo, filtro, medida) => ({
+    role: 'button', tabIndex: 0, title: 'Ver a lista: ' + titulo,
+    onClick: () => abrirLista(titulo, filtro, medida),
+    onKeyDown: (e) => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrirLista(titulo, filtro, medida); } },
+  });
   const hoje = todayISO();
   const jornada = funil !== 'especialista';
   const t = termos(funil);
@@ -10546,13 +10636,17 @@ function PipelineOverview({ leads, onOpen, funil }){
   const semProximo = leads.filter(l => !proximoContatoEfetivo(l, hoje)).length;
 
   const notificacoes = notificacoesDe(leads, hoje);
+  const ehReuniao = (l) => jornada ? ['R1','R2','R2.1'].indexOf(l.etapa) !== -1 : ['R1','R2'].indexOf(l.etapa) !== -1;
 
-  return h('div',{className:'bento'},
+  return h(Fragment, null,
+    spec ? h(DrillPainel, { spec, jornada: leads, negocios: leads, todos: leads, users: users || [], onOpen, onClose: () => setSpec(null) }) : null,
+    h('div',{className:'bento'},
 
     /* --- Herói: o número que resume o funil inteiro --- */
     h('div',{className:'bento-block bento-hero navy'},
       h('div',null,
-        h('div',{className:'bento-eyebrow'}, jornada ? 'Total da carteira' : 'Valor em pipeline'),
+        h('div',{className:'bento-eyebrow bento-eyebrow-acao'}, jornada ? 'Total da carteira' : 'Valor em pipeline',
+          leads.length ? h('button',{ type:'button', className:'bento-ver', onClick:()=>abrirLista(jornada ? 'Toda a carteira desta visão' : 'Todos os negócios desta visão', () => true) }, 'Ver lista') : null),
         h('div',{className:'hero-figure'}, fmtBRL(totalValor)),
         h('div',{className:'hero-sub'},
           h('strong',null, leads.length), ' ',
@@ -10582,8 +10676,10 @@ function PipelineOverview({ leads, onOpen, funil }){
                   style:{flexGrow:s.count, background:s.color}})
               )
             ),
-            h('div',{className:'spectrum-legend','aria-hidden':'true'},
-              porEtapa.map(s => h('div',{key:s.key, className:'spectrum-key'},
+            h('div',{className:'spectrum-legend'},
+              porEtapa.map(s => h('button',{key:s.key, type:'button', className:'spectrum-key', disabled: !s.count,
+                  title: s.count ? 'Ver quem está em ' + etapaLonga(s.key, funil) : 'Ninguém nesta etapa',
+                  onClick:()=>abrirLista(etapaLonga(s.key, funil), (l) => l.etapa === s.key, s.key === 'Jornada Concluída' ? 'onshore' : 'pipe')},
                 h('span',{className:'spectrum-dot', style:{background:s.color}}),
                 etapaCurta(s.key), ' ', h('b',null, s.count)
               ))
@@ -10592,12 +10688,12 @@ function PipelineOverview({ leads, onOpen, funil }){
     ),
 
     /* --- Tiles de contagem --- */
-    h('div',{className:'bento-block bento-tile'},
+    h('div',{className:'bento-block bento-tile clica', ...clicavel(jornada ? 'Sem primeira reunião' : 'Sem contato ainda', (l) => l.etapa === 'Cliente Novo', 'pipe')},
       h('div',{className:'tile-figure'}, countOf('Cliente Novo')),
       h('div',{className:'tile-label'}, h('span',{className:'stat-dot', style:{background:'var(--stage-novo)'}}),
         jornada ? 'Sem primeira reunião' : 'Sem contato ainda')
     ),
-    h('div',{className:'bento-block bento-tile'},
+    h('div',{className:'bento-block bento-tile clica', ...clicavel('Em reunião', ehReuniao, 'pipe')},
       h('div',{className:'tile-figure'}, jornada ? emReuniao : countOf('R1') + countOf('R2')),
       h('div',{className:'tile-label'}, h('span',{className:'stat-dot', style:{background:'var(--stage-r2)'}}), 'Em reunião')
     ),
@@ -10630,19 +10726,20 @@ function PipelineOverview({ leads, onOpen, funil }){
           )
     ),
 
-    h('div',{className:'bento-block bento-tile'},
+    h('div',{className:'bento-block bento-tile clica', ...clicavel(jornada ? 'Jornadas concluídas' : 'Em negociação',
+        jornada ? (l) => l.etapa === 'Jornada Concluída' : (l) => l.etapa === 'Negociando' || l.etapa === 'Contato Futuro')},
       h('div',{className:'tile-figure'}, jornada ? countOf('Jornada Concluída') : emNegociacao),
       h('div',{className:'tile-label'}, h('span',{className:'stat-dot', style:{background: jornada ? 'var(--success)' : 'var(--stage-negociando)'}}),
         jornada ? 'Jornadas concluídas' : 'Em negociação')
     ),
-    h('div',{className:'bento-block bento-tile' + (semProximo > 0 ? ' alert' : ' clear')},
+    h('div',{className:'bento-block bento-tile clica' + (semProximo > 0 ? ' alert' : ' clear'), ...clicavel('Sem próximo contato', (l) => !proximoContatoEfetivo(l, hoje), 'pipe')},
       h('div',{className:'tile-figure'}, semProximo),
       h('div',{className:'tile-label'},
         h('span',{className:'stat-dot', style:{background: semProximo > 0 ? 'var(--danger)' : 'var(--success)'}}),
         'Sem próximo contato'
       )
     )
-  );
+  ));
 }
 
 /* ================= Board ================= */
@@ -10659,6 +10756,16 @@ function ListaClientes({ leads, onOpen, users, showOwner, funil, podeEditar }){
   const valorDe = (l) => jornada
     ? valorEmCarteiraTotal(l, cotacao)
     : (parseValor(l.valorFechado) || parseValor(l.valorPotencial) || 0);
+  /* Pipe em toda linha, igual ao card: o que está em jogo, em reais para ordenar. */
+  const pipeDe = (l) => jornada
+    ? (valorEmCaptacao(l, cotacao) || 0)
+    : ((l.ganho || l.perdido) ? 0 : (parseValor(l.valorPotencial) || 0));
+  const pipeTexto = (l) => {
+    if(!jornada) return pipeDe(l) > 0 ? fmtBRLCompact(pipeDe(l)) : '—';
+    const v = valorCaptacaoNaMoeda(l);
+    if(!(v > 0)) return '—';
+    return (captaNova(l) && custodiaCaptacao(l) === 'offshore') ? fmtUSDCompact(v) : fmtBRLCompact(v);
+  };
 
   const campos = {
     cliente:  (l) => (l.cliente || '').toLowerCase(),
@@ -10666,6 +10773,7 @@ function ListaClientes({ leads, onOpen, users, showOwner, funil, podeEditar }){
     segmento: (l) => l.segmento || '',
     etapa:    (l) => stagesDo(funil).findIndex(x => x.key === l.etapa),
     valor:    valorDe,
+    pipe:     (l) => pipeDe(l),
     /* Sem data vai para o fim: quem não tem contato agendado não é o mais
        urgente da lista, mas também não pode encabeçá-la. */
     proximo:  (l) => proximoContatoEfetivo(l, hoje) || '9999-99-99',
@@ -10709,6 +10817,7 @@ function ListaClientes({ leads, onOpen, users, showOwner, funil, podeEditar }){
         jornada ? cabecalho('segmento','Segmento') : null,
         cabecalho('etapa','Etapa'),
         cabecalho('valor', jornada ? 'Sob gestão' : 'Valor', 'num'),
+        cabecalho('pipe','Pipe','num'),
         cabecalho('proximo','Próximo contato','num'),
         showOwner ? cabecalho('responsavel','Responsável') : null
       )),
@@ -10733,6 +10842,9 @@ function ListaClientes({ leads, onOpen, users, showOwner, funil, podeEditar }){
             etapaCurta(l.etapa, l.funil))),
           h('td',{className:'num forte'}, fmtBRL(valorDe(l))),
           h('td',{className:'num'},
+            temperaturaDe(l) ? h('span',{className:'temp-dot', style:{background:temperaturaDe(l).cor, marginRight:6}, title:temperaturaDe(l).label}) : null,
+            h('span',{className: pipeDe(l) > 0 ? '' : 'lista-fraco'}, pipeTexto(l))),
+          h('td',{className:'num'},
             proximoContatoEfetivo(l, hoje)
               ? h('span',{className:'lista-data ' + taskUrgency(l)}, fmtDate(proximoContatoEfetivo(l, hoje)))
               : h('span',{className:'lista-fraco'},'—')),
@@ -10743,6 +10855,7 @@ function ListaClientes({ leads, onOpen, users, showOwner, funil, podeEditar }){
         h('td',{colSpan: 2 + (jornada ? 2 : 0)},
           ordenados.length + (ordenados.length === 1 ? ' registro' : ' registros')),
         h('td',{className:'num forte'}, fmtBRL(total)),
+        h('td',{className:'num'}, fmtBRLCompact(ordenados.reduce((a,l) => a + pipeDe(l), 0))),
         h('td',{colSpan: showOwner ? 2 : 1})
       ))
     )
@@ -11117,11 +11230,11 @@ const agTipoLabel = (k) => (AG_TIPOS.find(t => t.key === k) || AG_TIPOS[3]).labe
 /* Tipo da tarefa -> tipo da atividade que ela registra na ficha ao ser concluída. */
 const AG_TIPO_ATIVIDADE = { ligacao:'ligacao', reuniao:'reuniao', email:'email', tarefa:'nota' };
 const AG_ORIGENS = {
-  manual:     { nome:'Minha',           cor:'#195AB4', desc:'criada pela própria pessoa' },
-  atribuida:  { nome:'Atribuída',       cor:'#7C5CC4', desc:'passada pelo head comercial ou por um master' },
-  contato:    { nome:'Próximo contato', cor:'#2F7A56', desc:'data marcada na ficha do cliente' },
-  vencimento: { nome:'Vencimento',      cor:'#B3403A', desc:'alerta de vencimento na ficha do cliente' },
-  regua:      { nome:'Régua',           cor:'#8A6A18', desc:'contato previsto pela régua de relacionamento' },
+  manual:     { nome:'Minha',           cor:'#195AB4', corNoite:'#8FB8F2', desc:'criada pela própria pessoa' },
+  atribuida:  { nome:'Atribuída',       cor:'#7C5CC4', corNoite:'#BBA6EC', desc:'passada pelo head comercial ou por um master' },
+  contato:    { nome:'Próximo contato', cor:'#2F7A56', corNoite:'#7FD3A6', desc:'data marcada na ficha do cliente' },
+  vencimento: { nome:'Vencimento',      cor:'#B3403A', corNoite:'#F2A29C', desc:'alerta de vencimento na ficha do cliente' },
+  regua:      { nome:'Régua',           cor:'#8A6A18', corNoite:'#E1C27A', desc:'contato previsto pela régua de relacionamento' },
 };
 const AG_DIAS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 const AG_REPETE = [
@@ -11384,7 +11497,7 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
     : it.origem === 'contato' ? 'Registrar o contato' : 'Registrar o contato da régua';
 
   const selo = (origem) => { const o = AG_ORIGENS[origem];
-    return h('span', { className: 'ag-selo', style: { background: o.cor + '1A', color: o.cor } }, o.nome); };
+    return h('span', { className: 'ag-selo', style: { '--c': o.cor, '--cn': o.corNoite } }, o.nome); };
 
   const linha = (it, opcoes) => {
     const o = AG_ORIGENS[it.origem];
@@ -11672,7 +11785,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.06.2';
+const CRM_VERSAO = 'versão do CRM 2026.11.06.3';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -12451,6 +12564,8 @@ const MN_ICONES = {
   base:     'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12',
   equipe:   'M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z',
   noite:    'M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z',
+  dia:      'M12 17a5 5 0 100-10 5 5 0 000 10zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42',
+  sistema:  'M2 4h20v12H2zM8 20h8M12 16v4',
   sair:     'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9',
   recolher: 'M15 18l-6-6 6-6',
   abrir:    'M9 18l6-6-6-6',
@@ -12462,7 +12577,7 @@ function MenuItem({ icone, rotulo, ativo, cont, quente, onClick, title }){
     h('span', { className: 'mn-rot' }, rotulo),
     cont ? h('span', { className: 'mn-cont' + (quente ? ' quente' : '') }, cont) : null);
 }
-function MenuLateral({ curto, onCurto, noite, onNoite, currentUser, isAdmin, isAdminChrome, funil, setFunil,
+function MenuLateral({ curto, onCurto, aparencia, onAparencia, currentUser, isAdmin, isAdminChrome, funil, setFunil,
   view, setView, contGanhos, contPerdidos, contAgenda, rotuloGanhos, rotuloPerdidos, rotuloKpis,
   produtosVisiveis, negociosPorProduto, produtoFiltro, setProdutoFiltro, pendentesEquipe, onEquipe, onSair, contexto }){
   const papel = isAdmin ? 'head comercial' : currentUser.role === 'especialista' ? 'especialista' : 'assessor';
@@ -12505,11 +12620,17 @@ function MenuLateral({ curto, onCurto, noite, onNoite, currentUser, isAdmin, isA
       h(MenuItem, { icone: MN_ICONES.equipe, rotulo: 'Equipe', cont: pendentesEquipe ? String(pendentesEquipe) : '', quente: pendentesEquipe > 0,
         onClick: onEquipe, title: pendentesEquipe ? pendentesEquipe + ' conta(s) aguardando aprovação' : 'Equipe' })) : null,
     h('div', { className: 'mn-rodape' },
-      h('div', { className: 'mn-item mn-noite' },
-        h(Icon, { size: 18, path: MN_ICONES.noite }),
-        h('span', { className: 'mn-rot' }, 'Modo noite'),
-        h('button', { type: 'button', role: 'switch', 'aria-checked': noite ? 'true' : 'false', 'aria-label': 'Modo noite',
-          className: 'mn-chave' + (noite ? ' on' : ''), onClick: onNoite }, h('span', null))),
+      /* Aparência: Dia, Noite ou Sistema (acompanha o computador). Recolhido, um botão
+         só alterna entre as três. */
+      h('div', { className: 'mn-tema', role: 'radiogroup', 'aria-label': 'Aparência' },
+        [['dia', 'Dia', MN_ICONES.dia], ['noite', 'Noite', MN_ICONES.noite], ['sistema', 'Sistema', MN_ICONES.sistema]].map(([k, rot, ic]) =>
+          h('button', { key: k, type: 'button', role: 'radio', 'aria-checked': aparencia === k ? 'true' : 'false',
+            className: aparencia === k ? 'on' : '', onClick: () => onAparencia(k),
+            title: k === 'sistema' ? 'Sistema: segue o modo claro ou escuro do computador' : rot },
+            h(Icon, { size: 14, path: ic }), h('span', null, rot)))),
+      h('button', { type: 'button', className: 'mn-item mn-tema-curto', onClick: () => onAparencia(aparencia === 'dia' ? 'noite' : aparencia === 'noite' ? 'sistema' : 'dia'),
+        title: 'Aparência: ' + (aparencia === 'dia' ? 'Dia' : aparencia === 'noite' ? 'Noite' : 'Sistema') + ' (clique para trocar)', 'aria-label': 'Trocar aparência' },
+        h(Icon, { size: 18, path: aparencia === 'dia' ? MN_ICONES.dia : aparencia === 'noite' ? MN_ICONES.noite : MN_ICONES.sistema })),
       h('div', { className: 'mn-pessoa' },
         h('span', { className: 'avatar mn-avatar' }, initials(currentUser.nome)),
         h('span', { className: 'mn-pessoa-txt' },
@@ -12581,12 +12702,24 @@ function App(){
   /* Visual 2026: menu recolhido e modo noite ficam guardados no navegador.
      "aw_cor" é a mesma chave do Hub, para os dois andarem juntos. */
   const [menuCurto, setMenuCurto] = useState(() => { try{ return localStorage.getItem('aw_menu_curto') === '1'; }catch(e){ return false; } });
-  const [noite, setNoite] = useState(() => { try{ return localStorage.getItem('aw_cor') === 'noite'; }catch(e){ return false; } });
+  /* Tema: "dia", "noite" ou "sistema" (segue o computador: escuro à noite se ele estiver
+     assim). O que vale na tela é `noite`, resolvido a partir da escolha. */
+  const [aparencia, setAparencia] = useState(() => { try{ const c = localStorage.getItem('aw_cor'); return c === 'noite' || c === 'sistema' ? c : 'dia'; }catch(e){ return 'dia'; } });
+  const escuroDoSistema = () => !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [sistemaEscuro, setSistemaEscuro] = useState(escuroDoSistema);
+  useEffect(() => {
+    if(!window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const muda = () => setSistemaEscuro(mq.matches);
+    if(mq.addEventListener) mq.addEventListener('change', muda); else if(mq.addListener) mq.addListener(muda);
+    return () => { if(mq.removeEventListener) mq.removeEventListener('change', muda); else if(mq.removeListener) mq.removeListener(muda); };
+  }, []);
+  const noite = aparencia === 'noite' || (aparencia === 'sistema' && sistemaEscuro);
   useEffect(() => { try{ localStorage.setItem('aw_menu_curto', menuCurto ? '1' : '0'); }catch(e){} }, [menuCurto]);
   useEffect(() => {
     if(noite) document.documentElement.dataset.cor = 'noite'; else delete document.documentElement.dataset.cor;
-    try{ localStorage.setItem('aw_cor', noite ? 'noite' : 'dia'); }catch(e){}
   }, [noite]);
+  useEffect(() => { try{ localStorage.setItem('aw_cor', aparencia); }catch(e){} }, [aparencia]);
 
   /* Fila de avisos: toda mutação agora confirma o que aconteceu.
      Antes só o bloqueio de trajeto falava com o usuário. */
@@ -13516,7 +13649,7 @@ function App(){
   /* A fatia em negociação, separada do total. */
   const setValorNegociacaoPipe = (leadId, valor) => {
     const lead = leads.find(l => l.id === leadId);
-    if(!lead || !podeEditar(lead) || lead.ganho) return null;
+    if(!lead || !podeEditar(lead) || (lead.ganho && !captaNova(lead))) return null;
     return mutate(leadId, l => ({ ...l, valorEmNegociacao: valor }));
   };
 
@@ -13841,7 +13974,7 @@ function App(){
      mesmo numero em todas elas. */
   return h(CotacaoContext.Provider, { value: cotacao },
     h('div',{className:'casca'},
-      h(MenuLateral,{ curto:menuCurto, onCurto:()=>setMenuCurto(v => !v), noite, onNoite:()=>setNoite(v => !v),
+      h(MenuLateral,{ curto:menuCurto, onCurto:()=>setMenuCurto(v => !v), aparencia, onAparencia:setAparencia,
         currentUser, isAdmin, isAdminChrome, funil, setFunil, view, setView,
         contGanhos: wonLeads.length, contPerdidos: lostLeads.length, contAgenda,
         rotuloGanhos: rotuloDesfecho(funil, 'ganho'), rotuloPerdidos: rotuloDesfecho(funil, 'perdido'), rotuloKpis: rotuloIndicadores(isAdmin, funil),
@@ -13900,7 +14033,7 @@ function App(){
               overviewOpen ? 'Recolher visão geral' : 'Mostrar visão geral'
             )
           ) : null,
-          overviewOpen && filtered.length > 0 ? h(PipelineOverview,{ leads: filtered, onOpen:setOpenLead, funil }) : null,
+          overviewOpen && filtered.length > 0 ? h(PipelineOverview,{ leads: filtered, onOpen:setOpenLead, funil, users }) : null,
     
           /* Ações do quadro coladas ao quadro: filtrar e cadastrar são operações
              sobre os cards, não sobre a navegação do aplicativo. */

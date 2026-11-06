@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-store, max-age=0">
 <title id="tituloPagina">Consolidado de Carteiras</title>
-<script>try{if(localStorage.getItem("aw_cor")==="noite")document.documentElement.setAttribute("data-cor","noite");}catch(e){}</script>
+<script>try{var c=localStorage.getItem("aw_cor");if(c==="noite"||(c==="sistema"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.setAttribute("data-cor","noite");}catch(e){}</script>
 <style>
 :root{
   --navy:#1B3A5F; --navy-d:#132B47; --ink:#16324F; --ink-2:#3C4C60; --muted:#7A8698;
@@ -683,6 +683,44 @@ html[data-cor="noite"] .hb-hoje-box em{color:#F2A29C}
 }
 
 
+
+/* ===== 06/11/2026: menu do Hub encostado na borda e maior; seletor de aparência; Carteiras com
+   o "Hub Adami" sempre à vista (na régua fixa, e no celular a barra de cima acompanha a rolagem). ===== */
+@media screen and (min-width:901px){
+  .hb-casca{max-width:none;padding:16px 24px 16px 16px;gap:24px}
+  .hb-menu{width:290px;position:sticky;top:16px;height:calc(100vh - 32px);overflow-y:auto}
+  .hb-menu.curto{width:76px}
+  .hb-main{max-width:1560px}
+}
+.hb-tema{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--chip);margin:6px 0}
+.hb-tema button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;height:32px;border:0;border-radius:999px;background:transparent;
+  color:var(--tx2);font:600 12px Inter,"Segoe UI",sans-serif;cursor:pointer;padding:0 6px}
+.hb-tema button svg{width:14px;height:14px}
+.hb-tema button.on{background:var(--vd-forte);color:var(--tx);box-shadow:0 2px 8px rgba(5,19,42,.10)}
+.hb-tema-curto{display:none !important}
+.hb-menu.curto .hb-tema{display:none}
+.hb-menu.curto .hb-tema-curto{display:flex !important}
+@media (max-width:900px){.hb-tema span{display:none}.hb-tema button{width:36px;flex:none}}
+.rail-hub{display:flex !important;align-items:center;gap:6px;width:100%;margin:0 0 16px !important;padding:9px 12px !important;border-radius:999px !important;
+  background:rgba(255,255,255,.10) !important;border:1px solid rgba(255,255,255,.18) !important;color:#fff !important;font-weight:600;cursor:pointer}
+.rail-hub:hover{background:rgba(255,255,255,.18) !important}
+@media screen and (max-width:900px){
+  .topbar{position:sticky;top:0;z-index:50;background:rgba(233,238,244,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:10px 0;margin-top:-10px}
+}
+/* Menu do Hub compacto o bastante para caber inteiro numa tela de notebook (06/11/2026). */
+@media screen and (min-width:901px){
+  .hb-menu{gap:1px}
+  .hb-menu .hb-item{min-height:34px}
+  .hb-menu .hb-secao{padding:8px 12px 3px}
+  .hb-menu .hb-busca{height:38px}
+  .hb-menu .hb-topo{padding-bottom:8px}
+  .hb-menu .hb-rodape{padding-top:8px}
+}
+/* Contraste (auditoria de 06/11/2026). */
+.hb-link.perigo{color:#B3403A}
+html[data-cor="noite"] .hb-link.perigo{color:#F2A29C}
+html[data-cor="noite"] .eqx .eqsub.err{color:#F2A29C}
+@media screen{:root{--muted:#66748A}}
 /* ===== Equipe e Segurança no visual 2026 (06/11/2026). Funciona no modo dia e no modo noite:
    antes, à noite, os campos ficavam escuros dentro de uma janela branca. ===== */
 .eqv{background:rgba(5,19,42,.48);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -820,6 +858,7 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
 <body>
 
 <nav class="rail">
+  <button type="button" class="rail-hub" onclick="irParaHub()" title="Voltar ao Hub Adami">&#8592; Hub Adami</button>
   <div class="rail-brand" id="railBrand"><span>Consolidado de carteiras</span></div>
   <div class="rail-block">
     <div class="rail-label">Clientes</div>
@@ -1427,7 +1466,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.89";
+var VERSAO="versão 2.90";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3785,13 +3824,19 @@ function irParaHub(){
 var INICIO={estado:"vazio",em:0,agenda:null,tarefas:null,leads:[],rv:null,avisos:null,podePublicar:false,
   formAviso:false,erroAviso:""};
 var HB_CURTO=(function(){ try{ return localStorage.getItem("aw_menu_curto")==="1"; }catch(e){ return false; } })();
-function hbNoite(){ return document.documentElement.getAttribute("data-cor")==="noite"; }
-function hbAlternarNoite(){
-  var n=!hbNoite();
-  if(n) document.documentElement.setAttribute("data-cor","noite"); else document.documentElement.removeAttribute("data-cor");
-  try{ localStorage.setItem("aw_cor",n?"noite":"dia"); }catch(e){}
-  render(true);
+/* Aparência: "dia", "noite" ou "sistema" (acompanha o claro/escuro do computador).
+   Vale para o Hub e o CRM (mesma chave). Carteiras, dentro do Hub, fica sempre claro:
+   ele foi desenhado para o papel do relatório e não tem modo noite. */
+function hbAparencia(){ try{ var c=localStorage.getItem("aw_cor"); return c==="noite"||c==="sistema"?c:"dia"; }catch(e){ return "dia"; } }
+function hbEscuro(){ var a=hbAparencia(); return a==="noite"||(a==="sistema"&&!!(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)); }
+function hbAplicarAparencia(){
+  if(hbEscuro()&&!(SESSAO&&SESSAO.access_token&&S.app)) document.documentElement.setAttribute("data-cor","noite");
+  else document.documentElement.removeAttribute("data-cor");
 }
+function hbDefinirAparencia(v){ try{ localStorage.setItem("aw_cor",v); }catch(e){} render(true); }
+try{ var hbMq=window.matchMedia("(prefers-color-scheme: dark)");
+  var hbMuda=function(){ if(hbAparencia()==="sistema") render(true); };
+  if(hbMq.addEventListener) hbMq.addEventListener("change",hbMuda); else if(hbMq.addListener) hbMq.addListener(hbMuda); }catch(e){}
 function hbAlternarMenu(){
   HB_CURTO=!HB_CURTO;
   try{ localStorage.setItem("aw_menu_curto",HB_CURTO?"1":"0"); }catch(e){}
@@ -3802,6 +3847,8 @@ var HB_IC={
   recolher:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
   abrir:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
   noite:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+  dia:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>',
+  sistema:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v12H2zM8 20h8M12 16v4"/></svg>',
   equipe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20v-1.4A4.6 4.6 0 0 1 8.1 14h1.8a4.6 4.6 0 0 1 4.6 4.6V20"/><path d="M16.5 7.2a3 3 0 0 1 0 5.6"/><path d="M18 20v-1.6a4.3 4.3 0 0 0-2.3-3.8"/></svg>',
   cadeado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
   sair:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 3H5v18h7"/></svg>',
@@ -3947,8 +3994,13 @@ function hbMenu(){
   h+='<div class="hb-rodape">';
   if(EU.super) h+='<button type="button" class="hb-item" onclick="abrirEquipe()" title="Gerenciar equipe">'+HB_IC.equipe+'<span class="rot">Gerenciar equipe</span></button>';
   h+='<button type="button" class="hb-item" onclick="abrirSeguranca()" title="Segurança">'+HB_IC.cadeado+'<span class="rot">Segurança</span></button>'+
-    '<div class="hb-item" style="cursor:default">'+HB_IC.noite+'<span class="rot">Modo noite</span>'+
-      '<button type="button" role="switch" aria-checked="'+(hbNoite()?"true":"false")+'" aria-label="Modo noite" class="hb-chave'+(hbNoite()?" on":"")+'" onclick="hbAlternarNoite()"><span></span></button></div>'+
+    (function(){ var a=hbAparencia(), op=[["dia","Dia",HB_IC.dia],["noite","Noite",HB_IC.noite],["sistema","Sistema",HB_IC.sistema]];
+      var prox=a==="dia"?"noite":(a==="noite"?"sistema":"dia");
+      return '<div class="hb-tema" role="radiogroup" aria-label="Aparência">'+op.map(function(o){
+          return '<button type="button" role="radio" aria-checked="'+(a===o[0])+'" class="'+(a===o[0]?"on":"")+'" onclick="hbDefinirAparencia(\''+o[0]+'\')" title="'+(o[0]==="sistema"?"Sistema: segue o modo claro ou escuro do computador":o[1])+'">'+o[2]+'<span>'+o[1]+'</span></button>';
+        }).join("")+'</div>'+
+        '<button type="button" class="hb-item hb-tema-curto" onclick="hbDefinirAparencia(\''+prox+'\')" aria-label="Trocar aparência" title="Aparência: '+({dia:"Dia",noite:"Noite",sistema:"Sistema"})[a]+' (clique para trocar)">'+({dia:HB_IC.dia,noite:HB_IC.noite,sistema:HB_IC.sistema})[a]+'</button>';
+    })()+
     '<div class="hb-pessoa"><span class="hb-av">'+esc(ini||"?")+'</span>'+
       '<span class="hb-pessoa-txt"><strong>'+esc(nomeEu)+'</strong><span>'+papel+'</span></span>'+
       '<button type="button" class="hb-redondo" onclick="sair()" aria-label="Sair" title="Sair">'+HB_IC.sair+'</button></div>'+
@@ -3982,7 +4034,7 @@ function hbAvisosHtml(){
           :'<span class="hb-barra"><span style="width:'+pct+'%"></span></span><span>'+a.lidos+' de '+a.total+' leram</span>')+
         (a.autor?'<span>· '+esc(a.autor)+'</span>':'')+
         (!agendado&&!a.lido_por_mim?'<button type="button" class="hb-link" onclick="hbMarcarLido(\''+a.id+'\')">Marcar como lido</button>':'')+
-        (INICIO.podePublicar?'<button type="button" class="hb-link" style="color:#B3403A" onclick="hbApagarAviso(\''+a.id+'\')">Excluir</button>':'')+
+        (INICIO.podePublicar?'<button type="button" class="hb-link perigo" onclick="hbApagarAviso(\''+a.id+'\')">Excluir</button>':'')+
       '</div></div>';
   });
   return h;
@@ -4481,6 +4533,7 @@ function fazerLogin(){
 }
 function render(manterScroll){
   var scrollAntes=manterScroll?window.scrollY:0;
+  hbAplicarAparencia();
   var logado=!!(SESSAO&&SESSAO.access_token);
   document.querySelector(".rail").style.display=logado?"":"none";
   document.querySelector(".topbar").style.display=logado?"":"none";
