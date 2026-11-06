@@ -246,9 +246,10 @@ direta pela API).
   a regra antiga (fluxo e comissões só master).
 - **Valores iniciais** = o que valia antes, mais Comissões para Master e Financeiro. Rodar o arquivo
   de novo não desfaz o que foi marcado na tela.
-- Limite conhecido: as telas internas do CRM ainda seguem o papel do CRM (o banco já segue a
-  tabela). Ex.: tirar "ver todos os clientes" do Admin do CRM esvazia os dados, mas os menus de
-  admin continuam visíveis para ele.
+- **CRM (desde `2026.11.06.5`):** o "admin" da tela do CRM (`isAdmin`: Equipe, Atualizar base,
+  Offshore, faixa ADMIN, ver a equipe toda, atribuir tarefa) é a atribuição `crm.todos`, lida por
+  `minhas_permissoes` ao abrir o CRM. Sem a tabela no banco, volta ao papel do CRM. O papel
+  continua decidindo o funil do especialista e as listas de especialista.
 
 ### Convite e primeiro acesso
 
@@ -616,6 +617,8 @@ e-mail, revogar acesso (reversível), reativar e excluir (só quem não tem clie
 perfil Financeiro, ferramenta Comissões (em construção). Carteiras: "Puxar do BTG" e contas BTG do
 cliente (seção 23.8). Ver "Perfis e acessos" na seção 5, `permissoes.sql` e
 `btg_rentabilidade.sql`**.
+ · **CRM `2026.11.06.5` (06/11/2026): telas de admin do CRM seguem a tabela Perfis e acessos
+(`crm.todos`); "Atualizar do BTG" na Atualização da base (seção 23.9)**.
 
 ---
 
@@ -1588,4 +1591,24 @@ Rentabilidade vem em fração (0,0105 = 1,05%).
   quatro regras) ficou idêntico antes e depois.
 - Testes locais: arquivo de 7.200 produtos compactado, conta em latin1 com `;` e decimal com
   vírgula, link vencido, leitura por assessor dono e recusa para cliente de outro.
+
+### 23.9. Fase 2: Atualizar a base do CRM pelo BTG (`btg_crm.sql`, 06/11/2026)
+
+Botão **Atualizar do BTG** na tela Atualização da base do CRM, ao lado de "Escolher arquivo". A
+função `btg_base_crm()` (só para quem tem `crm.todos`) entrega a base que o BTG manda todo dia útil
+(`btg_base`, do account-base) com o assessor de cada conta (`btg_vinculos`, do account-link), no
+formato da planilha: Conta, Nome, Sob Gestão, Assessor, Código Assessor. O CRM passa isso pela
+mesma `reconciliarBaseBTG` e pela mesma prévia da planilha: mesmas regras da seção 7 (não exclui
+quem sumiu, saldo nunca vira movimentação, faixa de 0,5%, nada grava antes de aplicar).
+
+- **Código do assessor:** o BTG identifica o assessor pelo código dele no BTG (CGE). A coluna só é
+  usada se pelo menos um código da Equipe do Hub for igual a um CGE da base; senão é retirada e a
+  prévia avisa "assessor pelo nome" (só aviso, nunca transferência). Para o BTG trocar assessor e
+  cadastrar conta nova sozinho, o código de cada assessor na Equipe precisa ser o CGE dele.
+- A prévia mostra a data da base e avisa se ela tem mais de 3 dias. Sem base recebida, explica que
+  a integração precisa estar ligada.
+- E-mail, aniversário e tipo (PF/PJ) ainda não entram: vêm de outro relatório
+  (registration-data), cujas colunas só saberemos no primeiro arquivo real.
+- Testado: função no Postgres local (master lê, assessor recusado) e tela com Playwright (prévia,
+  base vazia, menus de admin por permissão nos dois sentidos).
 

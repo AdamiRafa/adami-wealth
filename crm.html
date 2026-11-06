@@ -5674,6 +5674,14 @@ async function apagarTarefaBanco(id){
 }
 /* Master (perfis.super) também atribui tarefa, mesmo sem ser admin do CRM.
    Só decide o que aparece na tela; quem barra de verdade é o banco. */
+/* Perfis e acessos do Hub (2.94): o que a tabela da Equipe libera para quem está logado.
+   null = banco sem a tabela (vale o papel do CRM, como antes). */
+async function fetchMinhasPermissoes(){
+  if(MODO_DEMO) return null;
+  const { data, error } = await sb.rpc('minhas_permissoes');
+  if(error || !data || !Array.isArray(data.permissoes)) return null;
+  return data.permissoes;
+}
 async function fetchSouMaster(){
   if(MODO_DEMO) return false;
   const { data, error } = await sb.rpc('eh_super');
@@ -9711,6 +9719,37 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
 
   const abrir = (k) => setAbertas(a => ({ ...a, [k]: !a[k] }));
 
+  /* Fase 2 da integração com o BTG: a mesma prévia, mas a base vem do banco (relatório
+     account-base que o BTG manda todo dia útil, com o assessor de cada conta do
+     account-link), sem planilha. O código do assessor só entra se pelo menos um código da
+     Equipe bater com o código do assessor no BTG (CGE); senão cada conta viraria "código
+     desconhecido" e a prévia ficaria ilegível. */
+  const doBtg = async () => {
+    setEstado('lendo'); setErro(''); setRes(null);
+    try {
+      if(MODO_DEMO) throw new Error('A atualização pelo BTG não funciona no modo demonstração.');
+      const { data, error } = await sb.rpc('btg_base_crm');
+      if(error){
+        const m = String(error.message || '');
+        throw new Error(/btg_base_crm|does not exist|404/.test(m) ? 'A atualização pelo BTG ainda não foi instalada no Supabase.' : m);
+      }
+      let linhas = (data && data.linhas) || [];
+      if(!linhas.length) throw new Error('O BTG ainda não mandou a base de contas. A integração precisa estar ligada (webhooks cadastrados); a base chega todo dia útil às 8h30.');
+      const codigosEquipe = new Set((users || []).map(u => chaveCodigo(u.codigo)).filter(Boolean));
+      const bate = linhas.some(l => codigosEquipe.has(chaveCodigo(l['Código Assessor'])));
+      if(!bate) linhas = linhas.map(l => { const c = { ...l }; delete c['Código Assessor']; return c; });
+      const quando = data.atualizado_em ? new Date(data.atualizado_em) : null;
+      const velho = quando && (Date.now() - quando.getTime()) > 3 * 864e5;
+      setArquivo('Base do BTG' + (quando ? ' de ' + quando.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '')
+        + (velho ? ' (atenção: tem mais de 3 dias)' : '')
+        + (bate ? '' : ' · assessor pelo nome: nenhum código da Equipe bate com o código do assessor no BTG'));
+      setRes(reconciliarBaseBTG(linhas, leads, users)); setEstado('previa');
+    } catch(e){
+      setErro(e && e.message ? e.message : 'Não foi possível ler a base do BTG.');
+      setEstado('vazio');
+    }
+  };
+
   const receber = async (file) => {
     if(!file) return;
     setEstado('lendo'); setErro(''); setRes(null); setArquivo(file.name);
@@ -9758,7 +9797,12 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
       + 'aviso; e cadastro, nesse caso, é manual.'),
     h('input',{ ref:inputRef, type:'file', accept:'.xlsx', id:'imp-file', className:'imp-file',
       onChange:(e)=>receber(e.target.files && e.target.files[0]) }),
-    h('label',{htmlFor:'imp-file', className:'btn btn-primary imp-botao'}, 'Escolher arquivo'),
+    h('div',{style:{display:'flex',gap:'10px',flexWrap:'wrap',justifyContent:'center'}},
+      h('label',{htmlFor:'imp-file', className:'btn btn-primary imp-botao'}, 'Escolher arquivo'),
+      h('button',{type:'button', className:'btn imp-botao', onClick:doBtg,
+        title:'Usa a base que o BTG manda todo dia útil, sem planilha. Mesma prévia, nada grava antes de você aplicar.'}, 'Atualizar do BTG')),
+    h('p',{style:{fontSize:'12.5px',marginTop:'10px'}}, '"Atualizar do BTG" faz a mesma comparação com a base que o próprio BTG manda todo dia útil (8h30), sem planilha. '
+      + 'Para o BTG trocar o assessor sozinho, o código de cada assessor na Equipe do Hub precisa ser o código dele no BTG.'),
     erro ? h('p',{className:'imp-erro'}, erro) : null
   );
 
@@ -11786,7 +11830,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.06.4';
+const CRM_VERSAO = 'versão do CRM 2026.11.06.5';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -12700,6 +12744,7 @@ function App(){
   const [tarefas, setTarefas] = useState([]);
   const [tarefasErro, setTarefasErro] = useState('');
   const [souMaster, setSouMaster] = useState(false);
+  const [permissoes, setPermissoes] = useState(null);
   /* Visual 2026: menu recolhido e modo noite ficam guardados no navegador.
      "aw_cor" é a mesma chave do Hub, para os dois andarem juntos. */
   const [menuCurto, setMenuCurto] = useState(() => { try{ return localStorage.getItem('aw_menu_curto') === '1'; }catch(e){ return false; } });
@@ -12747,6 +12792,7 @@ function App(){
     try{ setTarefas(await fetchTarefas()); setTarefasErro(''); }
     catch(e){ setTarefas([]); setTarefasErro(String((e && e.message) || e || 'erro')); }
     try{ setSouMaster(await fetchSouMaster()); }catch(e){ setSouMaster(false); }
+    try{ setPermissoes(await fetchMinhasPermissoes()); }catch(e){ setPermissoes(null); }
   };
 
   useEffect(() => {
@@ -12952,7 +12998,7 @@ function App(){
     setFiltrosAbertos(false);
     setView('kanban');
     if(!MODO_DEMO) await sb.auth.signOut();
-    setCurrentUser(null); setLeads([]); setTarefas([]); setSouMaster(false); setPhase('login');
+    setCurrentUser(null); setLeads([]); setTarefas([]); setSouMaster(false); setPermissoes(null); setPhase('login');
     setQuery(''); setVendorFilter('all'); setView('kanban');
   };
 
@@ -13087,7 +13133,10 @@ function App(){
       (alvo ? alvo.nome : 'Conta') + ' removido' + (destinoId ? ' e carteira transferida.' : '.'));
   };
 
-  const isAdmin = currentUser && currentUser.role === 'admin';
+  /* "Admin do CRM" na tela = a atribuição "Ver todos os clientes do CRM e os KPIs da casa"
+     da tabela Perfis e acessos (o banco já decide por ela: is_admin = crm.todos). Sem a
+     tabela no banco, vale o papel do CRM, como antes. */
+  const isAdmin = !!currentUser && (permissoes ? permissoes.indexOf('crm.todos') !== -1 : currentUser.role === 'admin');
   const pendentes = users.filter(u => u.status === 'pendente');
   /* Simular a visão do assessor: o admin escolhe alguém no seletor "Toda a
      equipe" (que já existia só para filtrar dado) e a navegação passa a
@@ -13696,7 +13745,7 @@ function App(){
   /* ---------- Agenda ----------
      Quem pode atribuir: head comercial (admin do CRM) e master. A tela só
      usa isso para mostrar os controles; quem barra é o banco. */
-  const podeAtribuir = !!currentUser && (currentUser.role === 'admin' || souMaster);
+  const podeAtribuir = !!currentUser && (isAdmin || souMaster);
   const erroTarefa = (e) => {
     const m = String((e && e.message) || e || '');
     if(/atribuída a você/.test(m)) return m;
