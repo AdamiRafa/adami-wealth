@@ -1461,3 +1461,17 @@ Decisão do Emil: **manter a Protego ativa por precaução**, sem interferir no 
 - Pedido aberto ao BTG (Resolve Aí) para identificar a Protego e liberar o domínio
   `ghxjqmjtmbqzvogwzylo.supabase.co` (exigência do formulário de webhook).
 
+### 23.6. Credencial própria do Hub e primeiro teste (06/11/2026)
+
+- No login da Bibiana, a tela Autorização dizia "As chaves ainda não foram geradas": a Protego
+  não usa chave gerada por esse usuário. O Emil gerou as chaves ali e cadastrou à mão em
+  Edge Functions > Secrets como `BTG_CLIENT_ID` e `BTG_CLIENT_SECRET` (o cadastro de segredo
+  pelo conector do Supabase estava pausado). As chaves nunca passaram pela conversa.
+- Teste com a função `btg-teste`: autorizador 200 com `access_token` no cabeçalho, e
+  `GET /iaas-account-advisor/api/v1/advisor/accounts` 200 com **883 contas** (o CRM tinha 884
+  leads no mesmo dia). Sem IP liberado nem outro cadastro: a chamada síncrona funciona direto
+  das Edge Functions. Depois do teste a função foi trocada por uma que responde 410 e exige
+  JWT.
+- Falta para os relatórios: o BTG liberar o domínio `ghxjqmjtmbqzvogwzylo.supabase.co`
+  (Resolve Aí) e o cadastro dos webhooks.
+
