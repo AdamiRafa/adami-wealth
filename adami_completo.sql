@@ -2167,6 +2167,14 @@ alter default privileges in schema public revoke execute on functions from publi
 revoke execute on function public.acesso_novo_codigo(uuid, uuid, text, text) from authenticated;
 revoke execute on function public.acesso_virada_do_dia() from authenticated;
 
+-- Funções de gatilho não são chamadas por ninguém: o gatilho roda sem precisar de EXECUTE
+-- (conferido). Também fixa o search_path da rv_touch (aviso do relatório de segurança do Supabase).
+revoke execute on function public.tarefas_carimbo(), public.auditoria_carimbo(), public.configuracoes_carimba(),
+  public.criar_perfil(), public.exige_convite(), public.handle_new_user(), public.perfil_novo_sem_privilegio(),
+  public.protege_responsavel(), public.proteger_privilegios(), public.rv_touch()
+  from public, anon, authenticated;
+alter function public.rv_touch() set search_path = public;
+
 -- ---------- 8. A regra que vale para tudo ----------
 --     Uma política "restritiva" em cada tabela com regra de linha: soma-se
 --     às que já existem (não substitui nenhuma) e exige a sessão liberada.

@@ -611,9 +611,16 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 - **Segurança:** tokens do GitHub e chaves do Supabase já foram expostos em conversa mais
   de uma vez e precisam de revogação confirmada. Não pedir nem aceitar credencial por
   chat: ela não funciona no ambiente de execução e fica registrada no histórico.
-- **Segurança 2.91 (seção 22):** instalar a função `codigo-acesso` (Verify JWT desligado),
-  colar de novo a `agenda-manha` e rodar `seguranca.sql`, nessa ordem. Opcional no painel:
-  senha mínima de 8 caracteres e bloqueio de senhas vazadas (Authentication).
+- **Segurança 2.91/2.92 instalada em 06/11/2026 (seção 22)** pelo conector do Supabase,
+  a pedido do Emil: função `codigo-acesso` (Verify JWT desligado), `agenda-manha` nova e
+  `seguranca.sql` (migrações `seguranca_2_91_verificacao_por_email` e
+  `seguranca_2_92_funcoes_de_gatilho`). Conferido no banco real: 22 tabelas + Storage com
+  `exige_verificacao`, nenhuma tabela ou função para `anon`, simulação com master (sem código: 0
+  leads; com código: 884; liberação de ontem: 0), ataques de visitante recusados. Falta no
+  painel: ligar a proteção contra senhas vazadas (Authentication) e, opcional, senha mínima 8.
+  Avisos que sobram no relatório de segurança do Supabase são esperados: tabelas `acesso_*`
+  sem política (ninguém lê pela API, de propósito) e funções `security definer` executáveis
+  por usuário logado (as RPCs do portal e as funções de permissão; todas conferem quem chama).
 
 ---
 
