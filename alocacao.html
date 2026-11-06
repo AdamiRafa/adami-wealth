@@ -265,7 +265,7 @@ function api(path,opts,jaTentou){
 <div id="msg"></div>
 
 <script>
-var VERSAO_ALOC="versão 1.8";
+var VERSAO_ALOC="versão 1.9";
 document.getElementById("selo").textContent=VERSAO_ALOC;
 
 var CHAVE="aw_alocacao";
@@ -950,10 +950,19 @@ function carregarScript(src){
     document.head.appendChild(sc);
   });
 }
-function nomeArquivoPdf(){
-  var mes=String(numeroDoMes(EST.mes)).padStart(2,'0'), ano=n(EST.ano)||new Date().getFullYear();
-  return ('Adami Captal - '+ano+'-'+mes+' - Politica de Alocacao').replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim()+'.pdf';
+/* "Política de Alocação Outubro-26": sempre o mês da política em tela e o ano com dois
+   dígitos. Barra não pode em nome de arquivo, por isso o hífen. */
+function nomeBasePdf(){
+  var ano=String(n(EST.ano)||new Date().getFullYear()).slice(-2);
+  return ('Política de Alocação '+(EST.mes||'')+'-'+ano).replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
 }
+function nomeArquivoPdf(){ return nomeBasePdf()+'.pdf'; }
+/* O "Imprimir" (Salvar como PDF do navegador) sugere o mesmo nome. */
+(function(){
+  var tituloOriginal=document.title;
+  window.addEventListener('beforeprint',function(){ try{ document.title=nomeBasePdf(); }catch(e){} });
+  window.addEventListener('afterprint',function(){ document.title=tituloOriginal; });
+})();
 function baixarPdf(){
   var b=document.getElementById('btnBaixarPdf');
   if(b.disabled) return;
