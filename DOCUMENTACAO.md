@@ -1475,3 +1475,31 @@ Decisão do Emil: **manter a Protego ativa por precaução**, sem interferir no 
 - Falta para os relatórios: o BTG liberar o domínio `ghxjqmjtmbqzvogwzylo.supabase.co`
   (Resolve Aí) e o cadastro dos webhooks.
 
+### 23.7. Fase 1 instalada: receber e guardar (06/11/2026)
+
+Instalado pelo conector (migração `btg_fase1_receber_e_guardar`, arquivo `btg.sql`, também no fim
+de `adami_completo.sql`) e funções `btg-webhook` e `btg-sync` (Verify JWT desligado nas duas).
+
+- **Banco:** `btg_config` (chave liga/desliga, começa **desligada**), `btg_token` (token do BTG,
+  15 min, ninguém lê pela API), `btg_pedidos` (cada pedido e a resposta do BTG), `btg_arquivos`
+  (cada aviso do webhook e o arquivo), `btg_vinculos` (conta → assessor, do account-link),
+  `btg_base` (base de contas, linha inteira em `dados`), `btg_linhas` (demais relatórios, linha a
+  linha). Só master lê (e com o código do dia); só a chave de serviço grava, pelas funções `btg_*`.
+  Arquivos originais no Storage privado `btg`.
+- **btg-webhook:** endereço `.../functions/v1/btg-webhook/<serviço>`, um por serviço. Exige a
+  senha `BTG_WEBHOOK_KEY` (Secrets) em algum cabeçalho; sem ela, 401, e sem o segredo
+  cadastrado responde 503. Só baixa de `https://invest-reports*.amazonaws.com`; aceita só os
+  serviços da lista (nenhum dos da Protego). Lê CSV com `,` ou `;`, BOM, latin1 e gzip; zip ainda
+  não (fica guardado e marcado como erro).
+- **btg-sync:** chamada pelo pg_cron (`btg-manha` 11h30 UTC, `btg-tarde` 18h30, `btg-noite`
+  23h30, dias úteis) com o token do Vault `btg_sync_token`, que nunca sai do banco. Não faz nada
+  com `btg_config.ligado = false`. Renova o token do BTG sozinha quando ele vence.
+- **Testes:** locais com BTG, S3 e Supabase falsos (senha errada, link fora do S3, serviço da
+  Protego, CSV com `;` e latin1, gzip, arquivo vazio, link expirado, erro do BTG, token vencido).
+  No ar: chamada real a `rm-reports/nnm` respondeu 404 "Webhook not registered for partner cnpj
+  [36000256000146], cge [5390761]", o esperado antes do cadastro.
+
+**Para ligar (depois que o BTG liberar o domínio):** criar a senha do webhook (Secrets >
+`BTG_WEBHOOK_KEY`, 20+ caracteres), cadastrar no portal um webhook por serviço com a mesma senha
+(API Key) e o endereço com o serviço no fim, e então `update btg_config set ligado = true`.
+

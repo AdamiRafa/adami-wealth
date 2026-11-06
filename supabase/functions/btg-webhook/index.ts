@@ -59,7 +59,7 @@ async function rpc(nome: string, args: Record<string, unknown>): Promise<unknown
 
 // ---------- CSV ----------
 export function lerCsv(texto: string): { colunas: string[]; linhas: Record<string, string>[] } {
-  texto = texto.replace(/^﻿/, "");
+  texto = texto.replace(/^\uFEFF/, "");
   const primeira = texto.split(/\r?\n/, 1)[0] ?? "";
   const contar = (c: string) => primeira.split(c).length - 1;
   const sep = [";", ",", "\t", "|"].sort((a, b) => contar(b) - contar(a))[0];
@@ -98,7 +98,7 @@ async function decodificar(bytes: Uint8Array): Promise<string> {
     throw new Error("o BTG mandou um arquivo .zip; falta o suporte a zip (o original ficou guardado no Storage)");
   }
   const utf8 = new TextDecoder("utf-8").decode(bytes);
-  return utf8.includes("�") ? new TextDecoder("windows-1252").decode(bytes) : utf8;
+  return utf8.includes("\uFFFD") ? new TextDecoder("windows-1252").decode(bytes) : utf8;
 }
 
 async function processar(id: number, servico: string, url: string): Promise<void> {
