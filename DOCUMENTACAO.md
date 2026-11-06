@@ -1382,3 +1382,24 @@ precisa entrar no `connect-src` do `.htaccess`.**
   `limparHtmlCarta`.
 - Senha nova: mínimo de 8 caracteres na tela.
 
+---
+
+## 23. Integração com a API do BTG (em levantamento, 06/11/2026)
+
+Regras de negócio já decididas: seção 14 e `CLAUDE.md`. Portal do BTG:
+`developer-partner.btgpactual.com` (login da Bibiana; CGE 5390761). Documentação recebida do
+Emil por prints; o que foi confirmado fica aqui.
+
+### 23.1. Autorizador (confirmado por print)
+
+- `POST https://api.btgpactual.com/iaas-auth/api/v1/authorization/oauth2/accesstoken`
+- Cabeçalhos: `Authorization: Basic base64(client_id:client_secret)`,
+  `x-id-partner-request: <UUID novo a cada chamada>`,
+  `Content-Type: application/x-www-form-urlencoded`.
+- Corpo: `grant_type=client_credentials`.
+- Resposta 200 **sem corpo**: o token vem no **cabeçalho** `access_token` (e o id da
+  requisição em `x-id-pactual`).
+- Token vale **15 minutos**: guardar e reaproveitar. Limite: 60 pedidos por minuto.
+- client_id e client_secret nunca passam pela conversa: entram como segredo das Edge Functions
+  (pedido pelo conector do Supabase, o Emil digita no painel).
+
