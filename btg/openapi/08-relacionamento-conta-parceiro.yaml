@@ -1,0 +1,334 @@
+# Copiado pelo Emil do portal do BTG (developer-partner.btgpactual.com, API 8, versão antiga
+# da documentação) em 06/11/2026. Não vai ao ar: a publicação só leva HTML, vendor/, img/,
+# estilo/ e comum/.
+openapi: 3.0.2
+info:
+  title: Informações de Relacionamento de Conta e Parceiro
+  description: API responsável por disponibilizar informações de visualização de acesso de contas por assessor ou parceiro.
+  version: 3.1.0.2
+servers:
+- url: https://api.btgpactual.com/iaas-account-advisor
+paths:
+  /api/v1/advisor/link/account:
+    get:
+      tags:
+      - get-accounts-by-advisor
+      summary: Endpoint que busca todas as contas e seus assessores
+      description: |
+        Endpoint responsável pela busca de todos os assessores e as contas que podem ser visualizadas pelo mesmo *(não contém a informação de hierarquia ou relacionamento direto de assessor-conta)*.
+
+        Pelo fato da chamada ser assíncrona, o retorno se dará via **Webhook**, que pode ser cadastrado pelo próprio portal do desenvolvedor em **Webhooks > Manutenção > Botão Cadastrar Webhook**, com nome de **Relacionamento de Conta por Assessor (account-advisor)**.
+
+        Após a requisição ser realizada com sucesso, os dados ficarão **estáticos por 1h**.
+
+        Sua documentação pode ser encontrada na página de Webhook.
+
+        Caso o webhook não esteja cadastrado, será emitido um erro de forma síncrona com a seguinte mensagem:
+
+        `Webhook not registered for partner cnpj [{CNPJ}], cge [{CGE}].`
+
+        ---
+        **Características:**
+
+        Tipo de chamada: Assíncrona
+
+        Limite de requisições: 60 por minuto
+
+        Frequência de atualização: Tempo real
+
+        Janela de dados: N/A *(Não se Aplica)*
+      operationId: getAdvisorAccountLink
+      parameters:
+        - name: x-id-partner-request
+          description: |
+            UUID gerado randômicamente, usado para identificador cada request efetuado.
+            Sempre utilizar um diferente para cada requisição, mesmo que sejam os mesmos parâmetros.
+
+            *Exemplo:* `5607cd68-3231-4eb7-a1f9-ed3ff854b1af`
+          schema:
+            type: string
+          in: header
+          required: true
+        - name: access_token
+          description: |
+            Token de acesso para a API, esse deve ser gerado usando OAuth2 e Grant Type do tipo Client Credentials.
+            As credenciais podem ser obtidas pelo portal do desenvolvedor.
+
+            *Exemplo:* `eyJ0eXAiOMNSBHDBDxhUnman9u.eyJ0abdhb2F1jkGfrnmkmGFj.eyJ0sadsadsadas`
+          schema:
+            type: string
+          in: header
+          required: true
+      responses:
+        "202":
+          description: Requisição enviada com sucesso.
+          headers:
+            x-id-pactual:
+              description: Id pactual da operação
+              style: simple
+              schema:
+                type: string
+        "400":
+          description: Erro no headers da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError'
+        "401":
+          description: Requisição não autorizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError'
+  /api/v1/advisor/accounts:
+    get:
+      tags:
+      - get-accounts-by-cge
+      summary: Busca todas as contas de um escritório por seu CGE
+      description: |
+        Endpoint responsável pela requisição de todas as contas de um escritório.
+
+        ---
+        **Características:**
+
+        Tipo de chamada: Síncrona
+
+        Limite de requisições: 60 por minuto
+
+        Frequência de atualização: Tempo real
+
+        Janela de dados: N/A *(Não se Aplica)*
+      operationId: getOfficeAccounts
+      parameters:
+        - name: x-id-partner-request
+          description: |
+            UUID gerado randômicamente, usado para identificador cada request efetuado.
+            Sempre utilizar um diferente para cada requisição, mesmo que sejam os mesmos parâmetros.
+
+            *Exemplo:* `5607cd68-3231-4eb7-a1f9-ed3ff854b1af`
+          schema:
+            type: string
+          in: header
+          required: true
+        - name: access_token
+          description: |
+            Token de acesso para a API, esse deve ser gerado usando OAuth2 e Grant Type do tipo Client Credentials.
+            As credenciais podem ser obtidas pelo portal do desenvolvedor.
+
+            *Exemplo:* `eyJ0eXAiOMNSBHDBDxhUnman9u.eyJ0abdhb2F1jkGfrnmkmGFj.eyJ0sadsadsadas`
+          schema:
+            type: string
+          in: header
+          required: true
+      responses:
+        "200":
+          description: Retorno com sucesso.
+          headers:
+            x-id-pactual:
+              description: Id pactual da operação
+              style: simple
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        "400":
+          description: Erro no headers da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError'
+        "401":
+          description: Requisição não autorizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError'
+  /api/v1/advisor/office-informations:
+    get:
+      tags:
+      - get-office-informations-by-partner
+      summary: Busca informações de cadastro, acessos e perfil de um escritório por seu CGE
+      description: |
+        Endpoint responsável pela buscar informações de cadastro, acessos e perfil de um escritório por parceiro.
+
+        Pelo fato da chamada ser assíncrona, o retorno se dará via **Webhook**, que pode ser cadastrado pelo próprio portal do desenvolvedor em **Webhooks > Manutenção > Botão Cadastrar Webhook**, com nome de **Informações do Escritório (office-informations-by-partner)**.
+
+        Sua documentação pode ser encontrada na página de Webhook.
+
+        Caso o webhook não esteja cadastrado, será emitido um erro de forma síncrona com a seguinte mensagem:
+
+        `Webhook not registered for partner cnpj [{CNPJ}], cge [{CGE}].`
+
+        ---
+        **Características:**
+
+        Tipo de chamada: Assíncrona
+
+        Limite de requisições: 60 por minuto
+
+        Frequência de atualização: Tempo real
+
+        Janela de dados: N/A *(Não se Aplica)*
+      operationId: getOfficeInformationsByPartner
+      parameters:
+        - name: x-id-partner-request
+          description: |
+            UUID gerado randômicamente, usado para identificador cada request efetuado.
+            Sempre utilizar um diferente para cada requisição, mesmo que sejam os mesmos parâmetros.
+
+            *Exemplo:* `5607cd68-3231-4eb7-a1f9-ed3ff854b1af`
+          schema:
+            type: string
+          in: header
+          required: true
+        - name: access_token
+          description: |
+            Token de acesso para a API, esse deve ser gerado usando OAuth2 e Grant Type do tipo Client Credentials.
+            As credenciais podem ser obtidas pelo portal do desenvolvedor.
+
+            *Exemplo:* `eyJ0eXAiOMNSBHDBDxhUnman9u.eyJ0abdhb2F1jkGfrnmkmGFj.eyJ0sadsadsadas`
+          schema:
+            type: string
+          in: header
+          required: true
+      responses:
+        "202":
+          description: Retorno com sucesso.
+          headers:
+            x-id-pactual:
+              description: Id pactual da operação
+              style: simple
+              schema:
+                type: string
+        "400":
+          description: Erro no headers da requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError'
+        "401":
+          description: Requisição não autorizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError'
+components:
+  schemas:
+    Response:
+      type: object
+      properties:
+        accounts:
+          type: array
+          example:
+          - '123456789'
+          - '000123456'
+          - '008765432'
+          - '999777666'
+          items:
+            $ref: '#/components/schemas/Account'
+    Account:
+      description: 'Lista de contas do assessor'
+      type: string
+      example: '123456789'
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    ErrorMetadata:
+      type: object
+      properties:
+        globalErrors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Error'
+        fieldErrors:
+          type: object
+          additionalProperties:
+            type: object
+    ResponseError:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        title:
+          type: string
+        meta:
+          $ref: '#/components/schemas/ErrorMetadata'
+    ExampleResponse:
+      title: Exemplo de Retorno - Webhook Informações do Escritório
+      description: |
+        Dicionário de dados - API de Relacionamento de Contas por Assessor
+
+        Este é o dicionário de dados com os possíveis valores de retorno.
+        O arquivo final terá formato .CSV com os seguintes campos:
+
+        ---
+      properties:
+        loginName:
+          description: Login
+          type: string
+          example: a1122334455
+        advisorName:
+          description: Nome do assessor
+          type: string
+          example: Maria José Silva
+        profileName:
+          description: Perfil
+          type: string
+          example:
+            - AA RESTRICTED
+            - AA MASTER
+            - AA DIGITAL Restrito (Agente Autonomo)
+            - SEM PERMISSAO
+            - SEM PERMISAO (AA)
+            - AA DIGITAL Master (Agente Autonomo)
+        advisorCgeCode:
+          description: Código interno (CGE) do assessor
+          type: string
+          example: 123456
+        active:
+          description: Flag indicando se está ativo
+          type: boolean
+          example: true
+        email:
+          description: E-mail
+          type: string
+          example: mariajose@email.com
+        phone:
+          description: Telefone
+          type: string
+          example: 1133224455
+        birthDate:
+          description: Data de nascimento
+          type: string
+          example: 2022-07-06T00:00:00Z
+        creationDateTime:
+          description: Data-hora de criação do registro
+          type: string
+          example: 2022-07-06T17:08:48Z
+        inactivationDateTime:
+          description: Data-hora de inativapção (se houver)
+          type: string
+          example: 2022-07-06T17:08:48Z
+        isDefault:
+          description: Flag indicando se é padrão
+          type: boolean
+          example: false
+        partnerCnpj:
+          description: CNPJ do escritório
+          type: string
+          example: 11122233000144
+        partnerName:
+          description: Nome fantasia do escritório
+          type: string
+          example: BGT Pactual
+        partnerCgeCode :
+          description: Código interno (CGE-Office) do escritório
+          type: string
+          example: 123456

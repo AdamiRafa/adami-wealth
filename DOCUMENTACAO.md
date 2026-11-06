@@ -1403,3 +1403,26 @@ Emil por prints; o que foi confirmado fica aqui.
 - client_id e client_secret nunca passam pela conversa: entram como segredo das Edge Functions
   (pedido pelo conector do Supabase, o Emil digita no painel).
 
+### 23.2. Relacionamento de Conta e Parceiro (API 8, arquivo em `btg/openapi/`)
+
+Especificação completa copiada do portal (versão antiga da documentação, aba Rede do Chrome,
+requisição com o número da API). Servidor `https://api.btgpactual.com/iaas-account-advisor`.
+Todas as chamadas levam os cabeçalhos `x-id-partner-request` (UUID novo) e `access_token`.
+
+- `GET /api/v1/advisor/accounts` (**síncrona**): devolve `{"accounts": ["123456789", ...]}`,
+  todas as contas do escritório. É a base para saber conta nova e conta que sumiu.
+- `GET /api/v1/advisor/link/account` (**assíncrona**): responde 202 e manda o resultado por
+  **webhook** "Relacionamento de Conta por Assessor (account-advisor)". Diz quais contas cada
+  assessor **enxerga**, não quem é o assessor responsável (o BTG avisa: "não contém a
+  informação de hierarquia"). Os dados ficam estáticos por 1 hora depois do pedido.
+- `GET /api/v1/advisor/office-informations` (**assíncrona**, webhook "Informações do
+  Escritório"): cadastro dos usuários do escritório em CSV: `loginName` (ex.: a1122334455),
+  `advisorName`, `profileName`, `advisorCgeCode`, `active`, `email` etc.
+- Sem o webhook cadastrado no portal (Webhooks > Manutenção > Cadastrar Webhook), as chamadas
+  assíncronas devolvem erro "Webhook not registered".
+
+**Consequência para o desenho:** o portal precisa de um endereço público que receba os
+webhooks do BTG (uma Edge Function, ex.: `btg-webhook`). Falta a documentação dos webhooks
+(formato, se vem arquivo CSV ou link, e como o BTG se identifica) e decidir qual campo do BTG
+casa com o código do assessor do Hub (`perfis.codigo`): `loginName` ou `advisorCgeCode`.
+
