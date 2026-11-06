@@ -546,6 +546,9 @@ celular** ·
 lateral, números do dia, "Hoje" e Avisos da casa; login e Carteiras no estilo de vidro;
 camada comum `estilo/adami-2026.css` nos 11 módulos; modo noite no Hub e no CRM. CRM
 `2026.11.05.7`: abas viram menu lateral recolhível** ·
+**2.89 (06/11/2026) tela de Equipe e Segurança redesenhada, legível no modo noite (antes os
+campos ficavam escuros numa janela branca). CRM `2026.11.06.2`: simulando um assessor, os
+contadores de Consórcio, Seguro e Agenda no menu passam a ser dele, não do escritório** ·
 **2.88 (06/11/2026) tela inicial do Hub limpa: ferramentas só no menu; no meio, o dia, o
 calendário e os avisos. CRM `2026.11.06.1`: arquivos na ficha do cliente (seção 21).
 Wealth Planning e Planos Patrimoniais com "Salvar no CRM"**.

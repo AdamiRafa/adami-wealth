@@ -682,6 +682,71 @@ html[data-cor="noite"] .hb-hoje-box em{color:#F2A29C}
   .hb-ola{padding:18px}
 }
 
+
+/* ===== Equipe e Segurança no visual 2026 (06/11/2026). Funciona no modo dia e no modo noite:
+   antes, à noite, os campos ficavam escuros dentro de uma janela branca. ===== */
+.eqv{background:rgba(5,19,42,.48);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.eqx{--m-bg:#fff;--m-tx:#0C1626;--m-tx2:#4E5D72;--m-tx3:#6B7889;--m-ln:#E2E6ED;--m-in:#fff;--m-chip:#F4F6F9;--m-hover:#F4F6F9;
+  background:var(--m-bg);color:var(--m-tx);border-radius:22px;box-shadow:0 30px 80px rgba(5,19,42,.35);padding:28px 30px;
+  color-scheme:light;font-family:Inter,"Segoe UI",system-ui,sans-serif}
+html[data-cor="noite"] .eqx{--m-bg:#111F35;--m-tx:#EEF2F8;--m-tx2:#B5C0D0;--m-tx3:#8D9AAE;--m-ln:rgba(255,255,255,.12);
+  --m-in:rgba(255,255,255,.06);--m-chip:rgba(255,255,255,.07);--m-hover:rgba(255,255,255,.05);color-scheme:dark;border:1px solid rgba(255,255,255,.08)}
+.eqx h2{font:600 24px Fraunces,Georgia,serif;color:var(--m-tx);margin:0 0 14px}
+.eqx .eqsub{color:var(--m-tx2);font-size:13px;line-height:1.55}
+.eqx .eqsub b{color:var(--m-tx)}
+.eqx .eqsub.err{color:#B3403A}
+.eqabas{border-bottom:1px solid var(--m-ln);gap:4px;margin-bottom:20px}
+.eqaba{color:var(--m-tx3);font:500 13.5px Inter,"Segoe UI",sans-serif;padding:10px 14px;margin-bottom:-1px}
+.eqaba:hover{color:var(--m-tx)}
+.eqaba.on{color:var(--m-tx);border-bottom-color:#C0A265;font-weight:600}
+.eqform{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 18px;align-items:start}
+.eqform label,.eqform .eqrot{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--m-tx3);font-weight:600}
+.eqform input,.eqform select,.eqx .eqsel,.eqx .eqcod{height:44px;padding:0 12px;border:1px solid var(--m-ln);border-radius:12px;
+  background:var(--m-in);color:var(--m-tx);font:14px Inter,"Segoe UI",sans-serif;box-sizing:border-box;width:100%}
+.eqx .eqsel{height:38px;font-size:13px;width:auto}
+.eqx .eqcod{height:36px;width:84px;font-family:"IBM Plex Mono",Consolas,monospace;font-size:13px}
+.eqform input:focus,.eqform select:focus,.eqx .eqsel:focus,.eqx .eqcod:focus{outline:0;border-color:#195AB4;box-shadow:0 0 0 3px rgba(25,90,180,.15)}
+.eqform select option,.eqx .eqsel option{background:var(--m-bg);color:var(--m-tx)}
+.eqchks{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.eqform .eqchk{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:1px solid var(--m-ln);border-radius:999px;
+  background:var(--m-chip);color:var(--m-tx);font:500 13.5px Inter,"Segoe UI",sans-serif;text-transform:none;letter-spacing:0;cursor:pointer}
+.eqform .eqchk input{width:18px;height:18px;margin:0;accent-color:#195AB4}
+.eqform .eqchk:has(input:checked){border-color:#195AB4;background:rgba(25,90,180,.10)}
+.eqx .btn{height:42px;padding:0 20px;border-radius:999px;border:1px solid var(--m-ln);background:var(--m-in);color:var(--m-tx);font:600 13.5px Inter,"Segoe UI",sans-serif;cursor:pointer}
+.eqx .btn:hover{border-color:var(--m-tx3)}
+.eqx .btn.pri{background:#05132A;border-color:#05132A;color:#fff}
+html[data-cor="noite"] .eqx .btn.pri{background:#EEF2F8;border-color:#EEF2F8;color:#05132A}
+.eqx .eqconvidar{grid-column:1/-1;height:46px;margin-top:4px}
+.eqx .eqtit{font:600 13px Inter,"Segoe UI",sans-serif;color:var(--m-tx);margin:26px 0 8px}
+.eqx table{font-size:13.5px}
+.eqx th{color:var(--m-tx3);border-bottom:1px solid var(--m-ln)}
+.eqx td{border-bottom:1px solid var(--m-ln);color:var(--m-tx)}
+.eqx tr:hover td{background:var(--m-hover)}
+.eqx .eqnome{color:var(--m-tx)}
+.eqx .eqmail{color:var(--m-tx3)}
+.eqx .eqpapel{font-size:12.5px;color:var(--m-tx2)}
+.eqx .eqacoes{text-align:right;white-space:nowrap}
+.eqbt{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--m-ln);background:var(--m-in);color:var(--m-tx);
+  font:600 12.5px Inter,"Segoe UI",sans-serif;cursor:pointer;margin-left:6px}
+.eqbt:hover{border-color:#195AB4;color:#195AB4}
+.eqbt.perigo{color:#B3403A}
+.eqbt.perigo:hover{border-color:#B3403A;background:rgba(179,64,58,.08);color:#B3403A}
+html[data-cor="noite"] .eqbt:hover{color:#7FB0F0;border-color:#7FB0F0}
+html[data-cor="noite"] .eqbt.perigo,html[data-cor="noite"] .eqbt.perigo:hover{color:#F2A29C;border-color:rgba(242,162,156,.5)}
+.eqsw{background:var(--m-ln)}
+.eqsw.on{background:#2F7A56}
+.eqtag{color:#8A6A18}
+.eqtag.eu{color:#195AB4;border-color:#195AB4}
+html[data-cor="noite"] .eqtag{color:#E1C27A}
+html[data-cor="noite"] .eqtag.eu{color:#7FB0F0;border-color:#7FB0F0}
+.eqchip{background:var(--m-chip);border-color:var(--m-ln);color:var(--m-tx)}
+.eqchip.on{background:rgba(192,162,101,.16);border-color:#C0A265;color:var(--m-tx)}
+.eqcopiar{color:var(--m-tx3)}
+.eqcopiar:hover{color:var(--m-tx)}
+.eqprodlbl{color:var(--m-tx3)}
+.eqmsg{color:var(--m-tx2)}
+.eqfoot{border-top:1px solid var(--m-ln);padding-top:16px;margin-top:22px}
+@media (max-width:640px){.eqx{padding:22px 18px;border-radius:18px}.eqform{grid-template-columns:1fr}.eqx table{display:block;overflow-x:auto}}
 /* Tela inicial limpa (06/11/2026): ferramentas só no menu; no meio, o dia, o calendário e os avisos. */
 .hb-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .hb-chip{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--chip);color:var(--tx2)}
@@ -1255,22 +1320,20 @@ function blocoConvite(){
         '<option value="vendedor">Assessor</option>'+
         '<option value="especialista">Especialista</option>'+
         '<option value="admin">Admin do CRM</option></select></div>'+
-      '<div class="eqc"><label>Acesso no portal</label>'+
+      '<div class="eqc"><span class="eqrot">Acesso no portal</span><div class="eqchks">'+
         '<label class="eqchk"><input type="checkbox" id="cvAdmin"> Administrador</label>'+
         '<label class="eqchk"><input type="checkbox" id="cvRv"> Mesa RV</label>'+
-        '<label class="eqchk"><input type="checkbox" id="cvMaster"> Master</label></div>'+
-      '<button class="btn" onclick="enviarConvite()">Convidar</button>'+
+        '<label class="eqchk"><input type="checkbox" id="cvMaster"> Master</label></div></div>'+
+      '<button class="btn pri eqconvidar" onclick="enviarConvite()">Convidar e enviar o e-mail</button>'+
     '</div>';
   if(CONVITES.length){
-    h+='<p class="eqsub" style="margin-top:18px">Convites aguardando primeiro acesso</p><table>';
+    h+='<h3 class="eqtit">Convites aguardando o primeiro acesso</h3><table class="eqconvites">';
     CONVITES.forEach(function(c){
       h+='<tr><td><div class="eqnome">'+esc(c.nome||"—")+'</div>'+
          '<div class="eqmail">'+esc(c.email)+'</div></td>'+
-         '<td>'+esc(c.role)+(c.master?" · master":"")+(c.admin?" · admin":"")+(c.mesa_rv?" · mesa RV":"")+'</td>'+
-         '<td class="c" style="white-space:nowrap"><button class="eqsw" onclick="reenviarConvite(\''+esc(c.email)+'\')" '+
-         'style="width:auto;padding:4px 10px;border-radius:6px;font-size:11px;margin-right:6px">reenviar e-mail</button>'+
-         '<button class="eqsw" onclick="revogar(\''+esc(c.email)+'\')" '+
-         'style="width:auto;padding:4px 10px;border-radius:6px;font-size:11px">revogar</button></td></tr>';
+         '<td><span class="eqpapel">'+esc(({vendedor:"Assessor",especialista:"Especialista",admin:"Admin do CRM"})[c.role]||c.role)+(c.master?" · master":"")+(c.admin?" · administrador":"")+(c.mesa_rv?" · Mesa RV":"")+'</span></td>'+
+         '<td class="eqacoes"><button class="eqbt" onclick="reenviarConvite(\''+esc(c.email)+'\')">Reenviar e-mail</button>'+
+         '<button class="eqbt perigo" onclick="revogar(\''+esc(c.email)+'\')">Revogar</button></td></tr>';
     });
     h+='</table>';
   }
@@ -1364,7 +1427,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.88";
+var VERSAO="versão 2.89";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
