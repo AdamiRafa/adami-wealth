@@ -679,6 +679,43 @@ html[data-cor="noite"] .hb-hoje-box em{color:#F2A29C}
 .hb-aviso-pe{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11.5px;color:var(--tx3);flex-wrap:wrap}
 .hb-barra{flex:1;min-width:60px;height:4px;border-radius:4px;background:var(--ln);overflow:hidden}
 .hb-barra span{display:block;height:100%;background:#195AB4;border-radius:4px}
+/* 2.96: números com tendência, abas e leitores dos avisos, registro de atividades */
+.hb-nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;min-width:0;width:100%}
+.hb-nums>.hb-num{min-width:0;width:100%;overflow-wrap:anywhere}
+.hb-num{appearance:none;-webkit-appearance:none;font:inherit;color:inherit;text-align:left;margin:0;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-radius:22px;cursor:pointer;min-height:112px;transition:transform .18s ease,box-shadow .18s ease}
+.hb-num:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(5,19,42,.12)}
+.hb-num:focus-visible{outline:2px solid #195AB4;outline-offset:2px}
+.hb-num-rot{font:600 11px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
+.hb-num b{font:500 clamp(22px,2.2vw,30px) Fraunces,Georgia,serif;color:var(--nv);font-variant-numeric:tabular-nums;line-height:1.1}
+.hb-num-tend{font:500 12px Inter,sans-serif;color:var(--tx2);display:flex;gap:6px;align-items:baseline;line-height:1.35}
+.hb-num-tend i{font-style:normal;font-size:9px;color:var(--tx3)}
+.hb-num-tend.sobe i{color:#1F8A55}.hb-num-tend.desce i{color:#C0392B}
+.hb-num.carregando{min-height:112px;opacity:.55}
+html[data-cor="noite"] .hb-num-tend.sobe i{color:#7FD3A6}
+html[data-cor="noite"] .hb-num-tend.desce i{color:#F2A29C}
+@media (max-width:1100px){.hb-nums{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.hb-num{padding:14px;min-height:100px}.hb-num b{font-size:22px}}
+.hb-abas{display:flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:18px;background:var(--chip);margin:0 0 12px;min-width:0}
+.hb-abas button{flex:1 1 auto;white-space:nowrap;border:0;background:transparent;border-radius:999px;height:30px;padding:0 10px;font:600 12px Inter,sans-serif;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.hb-abas button.on{background:var(--vd-forte);color:var(--tx);box-shadow:0 2px 8px rgba(5,19,42,.10)}
+.hb-abas button i{font-style:normal;font-size:10.5px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--ln);display:inline-flex;align-items:center;justify-content:center}
+.hb-leitores{margin-top:10px;padding-top:10px;border-top:1px solid var(--ln);display:grid;gap:8px;font-size:12px}
+.hb-leitores b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px}
+.hb-leitor{display:inline-flex;gap:5px;align-items:baseline;padding:3px 9px;border-radius:999px;background:var(--chip);margin:0 5px 5px 0;color:var(--tx2)}
+.hb-leitor.ok{background:rgba(47,122,86,.12);color:var(--tx)}
+.hb-leitor em{font-style:normal;font-size:10.5px;color:var(--tx3)}
+.reg-filtros{display:grid;grid-template-columns:repeat(3,minmax(0,170px)) minmax(0,1fr);gap:8px;margin:0 0 14px}
+.reg-filtros select,.reg-filtros input{height:38px;border-radius:12px;border:1px solid var(--m-ln);background:var(--m-in);color:var(--m-tx);padding:0 10px;font:500 13px Inter,sans-serif;min-width:0}
+.reg-lista{max-height:56vh;overflow:auto;border:1px solid var(--m-ln);border-radius:14px;padding:4px 12px}
+.reg-dia{position:sticky;top:0;background:var(--m-bg,#fff);font:700 11px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--m-tx3);padding:10px 0 6px;z-index:1}
+.reg-linha{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--m-ln)}
+.reg-dia+.reg-linha{border-top:0}
+.reg-av{width:30px;height:30px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font:700 11px Inter,sans-serif;background:#1B3A5F;color:#fff}
+.reg-txt{flex:1;min-width:0;font-size:13px;color:var(--m-tx);line-height:1.4}
+.reg-alvo{color:var(--m-tx2)}
+.reg-det{font-size:12px;color:var(--m-tx3);word-break:break-word}
+.reg-hora{font:500 12px "IBM Plex Mono",monospace;color:var(--m-tx3);flex:none}
+@media (max-width:700px){.reg-filtros{grid-template-columns:1fr 1fr}.reg-filtros input{grid-column:1/-1}}
 .hb-form{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
 .hb-form input,.hb-form textarea{width:100%;border:1px solid var(--ln);border-radius:10px;padding:9px 11px;background:var(--vd-forte);color:var(--tx);font:13.5px Inter,"Segoe UI",sans-serif;box-sizing:border-box}
 .hb-form textarea{min-height:70px;resize:vertical}
@@ -966,6 +1003,7 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
   <div id="view"><div class="card empty"><h2>Carregando…</h2></div></div>
 </main>
 
+<script src="comum/carteira.js"></script>
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script src="vendor/pdfjs-3.11.174.min.js"></script>
 <script>
@@ -1218,6 +1256,78 @@ function telaSeguranca(){
   h+='<div class="eqfoot"><button class="eqbt perigo" onclick="sairDeTodos()">Sair de todos os aparelhos</button>'+
      '<button class="btn" onclick="fecharSeguranca()">Fechar</button></div>';
   return h;
+}
+/* ===================== Registro de atividades (2.96, só master) =====================
+   A auditoria inteira com quem fez, o quê, onde e quando, com filtros e "carregar mais".
+   Quem lê é a função registro_atividades (exige master). */
+var REG={linhas:[],acoes:null,fim:false,carregando:false,erro:"",f:{periodo:"7",pessoa:"",acao:"",busca:""}};
+function abrirRegistro(){
+  if(!EU.super) return;
+  if(!document.getElementById("regv")){
+    var d=document.createElement("div"); d.id="regv"; d.className="eqv";
+    d.onclick=function(e){ if(e.target===d) fecharRegistro(); };
+    d.innerHTML='<div class="eqx largo" id="regx"></div>'; document.body.appendChild(d);
+  }
+  document.getElementById("regv").style.display="flex";
+  REG.linhas=[]; REG.fim=false; REG.erro="";
+  if(!EQUIPE.length) api("rpc/listar_equipe",{method:"POST",body:{}}).then(function(r){ EQUIPE=r||[]; pintarRegistro(); }).catch(function(){});
+  if(!REG.acoes) api("rpc/registro_acoes",{method:"POST",body:{}}).then(function(r){ REG.acoes=r||[]; pintarRegistro(); }).catch(function(){ REG.acoes=[]; });
+  carregarRegistro(true);
+}
+function fecharRegistro(){ var d=document.getElementById("regv"); if(d) d.style.display="none"; }
+function carregarRegistro(doZero){
+  if(REG.carregando) return;
+  REG.carregando=true; if(doZero){ REG.linhas=[]; REG.fim=false; }
+  pintarRegistro();
+  var f=REG.f, corpo={p_limite:100};
+  if(f.periodo){ corpo.p_de=new Date(Date.now()-Number(f.periodo)*864e5).toISOString(); }
+  if(f.pessoa) corpo.p_usuario=f.pessoa;
+  if(f.acao) corpo.p_acao=f.acao;
+  if(f.busca) corpo.p_busca=f.busca;
+  if(!doZero&&REG.linhas.length) corpo.p_antes=REG.linhas[REG.linhas.length-1].id;
+  api("rpc/registro_atividades",{method:"POST",body:corpo}).then(function(r){
+    r=r||[]; REG.linhas=REG.linhas.concat(r); REG.fim=r.length<100; REG.erro=""; REG.carregando=false; pintarRegistro();
+  }).catch(function(e){ REG.erro=String(e.message||e); REG.carregando=false; pintarRegistro(); });
+}
+function regFiltro(campo,valor){ REG.f[campo]=valor; carregarRegistro(true); }
+var REG_BUSCA_T=null;
+function regBusca(v){ clearTimeout(REG_BUSCA_T); REG_BUSCA_T=setTimeout(function(){ regFiltro("busca",v.trim()); },400); }
+function regCsv(){
+  var linhas=[["Quando","Quem","E-mail","Ação","Onde","Detalhe"]].concat(REG.linhas.map(function(x){
+    return [new Date(x.quando).toLocaleString("pt-BR"),x.nome||"",x.usuario||"",x.acao||"",x.alvo||"",x.detalhe||""]; }));
+  var csv="\uFEFF"+linhas.map(function(l){ return l.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(";"); }).join("\r\n");
+  var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download="Registro de atividades "+new Date().toLocaleDateString("pt-BR").replace(/\//g,"-")+".csv"; document.body.appendChild(a); a.click(); a.remove();
+}
+function pintarRegistro(){
+  var x=document.getElementById("regx"); if(!x) return;
+  var foco=document.activeElement&&document.activeElement.id==="regBusca", f=REG.f;
+  var pessoas=(EQUIPE||[]).map(function(p){ return '<option value="'+esc(p.email)+'"'+(f.pessoa===p.email?" selected":"")+'>'+esc(p.nome||p.email)+'</option>'; }).join("");
+  var acoes=(REG.acoes||[]).map(function(a){ return '<option value="'+esc(a.acao)+'"'+(f.acao===a.acao?" selected":"")+'>'+esc(a.acao)+' ('+a.qtd+')</option>'; }).join("");
+  var h='<h2>Registro de atividades</h2><p class="eqsub">Tudo o que foi feito no Hub e no CRM: quem, o quê, onde e quando. Só o master vê.</p>'+
+    '<div class="reg-filtros">'+
+      '<select onchange="regFiltro(\'periodo\',this.value)" aria-label="Período">'+[["1","Hoje e ontem"],["7","Últimos 7 dias"],["30","Últimos 30 dias"],["90","Últimos 90 dias"],["","Tudo"]].map(function(o){ return '<option value="'+o[0]+'"'+(f.periodo===o[0]?" selected":"")+'>'+o[1]+'</option>'; }).join("")+'</select>'+
+      '<select onchange="regFiltro(\'pessoa\',this.value)" aria-label="Pessoa"><option value="">Todas as pessoas</option>'+pessoas+'</select>'+
+      '<select onchange="regFiltro(\'acao\',this.value)" aria-label="Ação"><option value="">Todas as ações</option>'+acoes+'</select>'+
+      '<input id="regBusca" type="search" placeholder="Buscar (cliente, e-mail, detalhe)" value="'+esc(f.busca)+'" oninput="regBusca(this.value)">'+
+    '</div>';
+  if(REG.erro) h+='<p class="eqsub err">'+esc(REG.erro)+'</p>';
+  if(!REG.linhas.length) h+='<p class="eqsub">'+(REG.carregando?"Carregando…":"Nada no período e nos filtros escolhidos.")+'</p>';
+  else {
+    var diaAnt="";
+    h+='<div class="reg-lista">'+REG.linhas.map(function(r){
+      var d=new Date(r.quando), dia=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"}), sep="";
+      if(dia!==diaAnt){ diaAnt=dia; sep='<div class="reg-dia">'+esc(dia.charAt(0).toUpperCase()+dia.slice(1))+'</div>'; }
+      var ini=String(r.nome||r.usuario||"?").trim().split(/\s+/).map(function(p){ return p.charAt(0); }).slice(0,2).join("").toUpperCase();
+      return sep+'<div class="reg-linha"><span class="reg-av">'+esc(ini)+'</span><div class="reg-txt"><div><b>'+esc(r.nome||r.usuario||"?")+'</b> '+esc(r.acao||"")+(r.alvo?' <span class="reg-alvo">'+esc(r.alvo)+'</span>':'')+'</div>'+
+        (r.detalhe?'<div class="reg-det">'+esc(r.detalhe)+'</div>':'')+'</div><span class="reg-hora">'+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+'</span></div>';
+    }).join("")+'</div>';
+    if(!REG.fim) h+='<button type="button" class="eqbt" style="margin:12px 0 0" onclick="carregarRegistro(false)"'+(REG.carregando?" disabled":"")+'>'+(REG.carregando?"Carregando…":"Carregar mais")+'</button>';
+  }
+  h+='<div class="eqfoot"><span class="eqmsg">'+REG.linhas.length+' registro(s) na tela</span><div style="display:flex;gap:8px">'+
+    (REG.linhas.length?'<button class="eqbt" onclick="regCsv()">Baixar planilha</button>':'')+'<button class="btn" onclick="fecharRegistro()">Fechar</button></div></div>';
+  x.innerHTML=h;
+  if(foco){ var b=document.getElementById("regBusca"); if(b){ b.focus(); b.setSelectionRange(b.value.length,b.value.length); } }
 }
 function sairDeTodos(){
   if(!confirm("Sair do Hub em todos os aparelhos, inclusive neste? Você vai precisar entrar de novo, com senha e código.")) return;
@@ -1651,7 +1761,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.95";
+var VERSAO="versão 2.96";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -4178,7 +4288,7 @@ function irParaHub(){
    Avisos da casa. Os números vêm do banco depois que a tela já apareceu
    (carregarInicio), então a tela nunca espera por eles. */
 var INICIO={estado:"vazio",em:0,agenda:null,tarefas:null,leads:[],rv:null,avisos:null,podePublicar:false,
-  formAviso:false,erroAviso:""};
+  formAviso:false,erroAviso:"",nums:null,numsCasa:false,abaAviso:"todos",avisosTodos:false,leitores:{},abertoLeitores:null};
 var HB_CURTO=(function(){ try{ return localStorage.getItem("aw_menu_curto")==="1"; }catch(e){ return false; } })();
 /* Aparência: "dia", "noite" ou "sistema" (acompanha o claro/escuro do computador).
    Vale para o Hub e o CRM (mesma chave). Carteiras, dentro do Hub, fica sempre claro:
@@ -4300,7 +4410,15 @@ function carregarInicio(forcar){
   var pRv=api("rv_operacoes?select=id&status=eq.aberta").then(function(r){ return (r||[]).length; }).catch(function(){ return null; });
   var pAv=api("rpc/avisos_resumo",{method:"POST",body:{}}).catch(function(){ return null; });
   var pPode=api("rpc/pode_publicar_aviso",{method:"POST",body:{}}).catch(function(){ return false; });
-  Promise.all([pAgenda,pRv,pAv,pPode]).then(function(r){
+  /* Números da carteira (2.96): da casa para quem vê todos os clientes do CRM, senão da
+     própria carteira. Mesmas regras do CRM (comum/carteira.js). */
+  var casa=temPerm("crm.todos"); if(casa===null) casa=EU.admin;
+  var pNums=(podeFerramenta("crm")&&window.AWCarteira)?Promise.all([
+    api("leads?select=funil,esteira,perdido,ganho,ganho_em,criado_em,etapa_desde,saldo_inicial,valor_potencial,valor_fechado,valor_offshore,saldo_inicial_offshore,movimentacoes,excluido,responsavel_id&excluido=eq.false"+(casa?"":"&responsavel_id=eq."+EU.id)),
+    api("configuracoes?select=valor&chave=eq.usd_brl").catch(function(){ return []; })
+  ]).then(function(x){ var cot=x[1]&&x[1][0]?Number(x[1][0].valor):null; return window.AWCarteira.numeros(x[0],cot,new Date()); }).catch(function(){ return null; }):Promise.resolve(null);
+  Promise.all([pAgenda,pRv,pAv,pPode,pNums]).then(function(r){
+    INICIO.nums=r[4]; INICIO.numsCasa=!!casa;
     INICIO.tarefas=r[0]?(r[0][0]||[]):null; INICIO.leads=r[0]?(r[0][1]||[]):[];
     var hoje=hbIso(new Date());
     if(INICIO.tarefas){ var a=hbAgendaFaixa(INICIO.tarefas,INICIO.leads,hoje,hoje,hoje);
@@ -4349,6 +4467,7 @@ function hbMenu(){
   });
   h+='<div class="hb-rodape">';
   if(EU.super) h+='<button type="button" class="hb-item" onclick="abrirEquipe()" title="Gerenciar equipe">'+HB_IC.equipe+'<span class="rot">Gerenciar equipe</span></button>';
+  if(EU.super) h+='<button type="button" class="hb-item" onclick="abrirRegistro()" title="Registro de atividades">'+HB_IC.relatorio+'<span class="rot">Registro de atividades</span></button>';
   h+='<button type="button" class="hb-item" onclick="abrirSeguranca()" title="Segurança">'+HB_IC.cadeado+'<span class="rot">Segurança</span></button>'+
     (function(){ var a=hbAparencia(), op=[["dia","Dia",HB_IC.dia],["noite","Noite",HB_IC.noite],["sistema","Sistema",HB_IC.sistema]];
       var prox=a==="dia"?"noite":(a==="noite"?"sistema":"dia");
@@ -4379,7 +4498,23 @@ function hbAvisosHtml(){
   if(!av) return h+'<p class="hb-vazio">Carregando…</p>';
   if(!av.length) return h+'<p class="hb-vazio">Nenhum aviso por enquanto.</p>';
   var agora=Date.now();
-  av.slice(0,5).forEach(function(a){
+  var ehAgendado=function(a){ return new Date(a.publicar_em).getTime()>agora; };
+  var abas=[["todos","Todos",av.length],["naolidos","Não lidos",av.filter(function(a){ return !a.lido_por_mim&&!ehAgendado(a); }).length],
+    ["fixados","Fixados",av.filter(function(a){ return a.fixado; }).length]];
+  if(INICIO.podePublicar) abas.push(["agendados","Agendados",av.filter(ehAgendado).length]);
+  var aba=INICIO.abaAviso||"todos";
+  h+='<div class="hb-abas" role="tablist">'+abas.map(function(x){
+    return '<button type="button" role="tab" aria-selected="'+(aba===x[0])+'" class="'+(aba===x[0]?"on":"")+'" onclick="INICIO.abaAviso=\''+x[0]+'\';INICIO.avisosTodos=false;render(true)">'+x[1]+(x[2]?'<i>'+x[2]+'</i>':'')+'</button>';
+  }).join("")+'</div>';
+  var lista=av.filter(function(a){
+    if(aba==="naolidos") return !a.lido_por_mim&&!ehAgendado(a);
+    if(aba==="fixados") return a.fixado;
+    if(aba==="agendados") return ehAgendado(a);
+    return true;
+  });
+  if(!lista.length) return h+'<p class="hb-vazio">'+({naolidos:"Nada para ler. Tudo em dia.",fixados:"Nenhum aviso fixado.",agendados:"Nenhum aviso agendado."}[aba]||"Nenhum aviso.")+'</p>';
+  var mostrar=INICIO.avisosTodos?lista:lista.slice(0,5);
+  mostrar.forEach(function(a){
     var agendado=new Date(a.publicar_em).getTime()>agora;
     var pct=a.total?Math.round(a.lidos/a.total*100):0;
     var selo=agendado?'<span class="hb-delta">agendado</span>':(a.lido_por_mim?'':'<span class="hb-delta bom">novo</span>');
@@ -4390,10 +4525,34 @@ function hbAvisosHtml(){
           :'<span class="hb-barra"><span style="width:'+pct+'%"></span></span><span>'+a.lidos+' de '+a.total+' leram</span>')+
         (a.autor?'<span>· '+esc(a.autor)+'</span>':'')+
         (!agendado&&!a.lido_por_mim?'<button type="button" class="hb-link" onclick="hbMarcarLido(\''+a.id+'\')">Marcar como lido</button>':'')+
+        (INICIO.podePublicar&&!agendado?'<button type="button" class="hb-link" onclick="hbLeitores(\''+a.id+'\')">'+(INICIO.abertoLeitores===a.id?"Esconder quem leu":"Quem leu")+'</button>':'')+
+        (INICIO.podePublicar?'<button type="button" class="hb-link" onclick="hbFixarAviso(\''+a.id+'\','+(!a.fixado)+')">'+(a.fixado?"Desafixar":"Fixar no topo")+'</button>':'')+
         (INICIO.podePublicar?'<button type="button" class="hb-link perigo" onclick="hbApagarAviso(\''+a.id+'\')">Excluir</button>':'')+
-      '</div></div>';
+      '</div>'+(INICIO.abertoLeitores===a.id?hbLeitoresHtml(a.id):'')+'</div>';
   });
+  if(lista.length>5) h+='<button type="button" class="hb-link" style="margin-top:10px" onclick="INICIO.avisosTodos=!INICIO.avisosTodos;render(true)">'+(INICIO.avisosTodos?"Mostrar menos":"Ver todos os "+lista.length)+'</button>';
   return h;
+}
+function hbLeitores(id){
+  if(INICIO.abertoLeitores===id){ INICIO.abertoLeitores=null; render(true); return; }
+  INICIO.abertoLeitores=id; INICIO.leitores[id]=null; render(true);
+  api("rpc/aviso_leitores",{method:"POST",body:{p_aviso:id}})
+    .then(function(r){ INICIO.leitores[id]=r||[]; render(true); })
+    .catch(function(e){ INICIO.leitores[id]={erro:String(e.message||e)}; render(true); });
+}
+function hbLeitoresHtml(id){
+  var l=INICIO.leitores[id];
+  if(l===null||l===undefined) return '<div class="hb-leitores"><p class="hb-vazio">Carregando…</p></div>';
+  if(l.erro) return '<div class="hb-leitores"><p class="hb-erro">'+esc(l.erro)+'</p></div>';
+  var leram=l.filter(function(x){ return x.lido_em; }), faltam=l.filter(function(x){ return !x.lido_em; });
+  var nomes=function(xs,com){ return xs.map(function(x){ return '<span class="hb-leitor'+(com?" ok":"")+'">'+esc(x.nome)+(com?' <em>'+new Date(x.lido_em).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(",","")+'</em>':'')+'</span>'; }).join(""); };
+  return '<div class="hb-leitores"><div><b>Leram ('+leram.length+')</b>'+(leram.length?nomes(leram,true):'<span class="hb-vazio">ninguém ainda</span>')+'</div>'+
+    '<div><b>Ainda não leram ('+faltam.length+')</b>'+(faltam.length?nomes(faltam,false):'<span class="hb-vazio">todo mundo leu</span>')+'</div></div>';
+}
+function hbFixarAviso(id,fixar){
+  api("avisos?id=eq."+id,{method:"PATCH",body:{fixado:!!fixar}})
+    .then(function(){ registrar(fixar?"fixou aviso":"desafixou aviso",id,""); carregarInicio(true); })
+    .catch(function(e){ alert("Não foi possível "+(fixar?"fixar":"desafixar")+": "+e.message); });
 }
 function hbPublicarAviso(){
   var t=(document.getElementById("avTitulo").value||"").trim();
@@ -4422,6 +4581,41 @@ function hbLinhaItem(i,atrasada){
   return '<li class="hb-it'+(i.feita?" feita":"")+(atrasada?" atrasada":"")+'" style="--cor:'+i.cor+'">'+
     '<span class="hb-it-hora">'+(atrasada?'<em>atrasada</em>':(i.hora||"—"))+'</span>'+
     '<span class="hb-it-txt"><b>'+esc(i.titulo)+'</b><span>'+esc([i.sub,i.tipo,atrasada&&i.dia?"desde "+i.dia.slice(8,10)+"/"+i.dia.slice(5,7):""].filter(Boolean).join(" · "))+'</span></span></li>';
+}
+/* ---------- Números da carteira com tendência (2.96) ---------- */
+function hbMoeda(v){
+  var a=Math.abs(v||0), s=v<0?"-":"";
+  if(a>=1e9) return s+"R$ "+(a/1e9).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+" bi";
+  if(a>=1e6) return s+"R$ "+(a/1e6).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+" mi";
+  if(a>=1e3) return s+"R$ "+Math.round(a/1e3).toLocaleString("pt-BR")+" mil";
+  return s+"R$ "+Math.round(a).toLocaleString("pt-BR");
+}
+function hbTend(atual,antes,texto){
+  if(antes===null||antes===undefined) return '<span class="hb-num-tend">'+texto+'</span>';
+  var dif=atual-antes, cls=dif>0.5?"sobe":(dif<-0.5?"desce":""), seta=dif>0.5?"&#9650;":(dif<-0.5?"&#9660;":"&#9679;");
+  return '<span class="hb-num-tend '+cls+'"><i>'+seta+'</i>'+texto+'</span>';
+}
+function hbNumerosHtml(){
+  if(!podeFerramenta("crm")) return "";
+  var n=INICIO.nums;
+  if(!n) return INICIO.estado==="pronto"?"":'<section class="hb-nums" aria-label="Números"><div class="hb-num hb-vidro carregando"></div><div class="hb-num hb-vidro carregando"></div><div class="hb-num hb-vidro carregando"></div><div class="hb-num hb-vidro carregando"></div></section>';
+  var mesAnt=new Date(new Date().getFullYear(),new Date().getMonth()-1,1).toLocaleDateString("pt-BR",{month:"long"});
+  var pctSob=n.sobGestaoMesPassado>0?(n.sobGestao-n.sobGestaoMesPassado)/n.sobGestaoMesPassado*100:null;
+  var card=function(rot,valor,tend,titulo){
+    return '<button type="button" class="hb-num hb-vidro" onclick="location.href=\'crm.html\'" title="'+esc(titulo)+'"><span class="hb-num-rot">'+rot+'</span><b>'+valor+'</b>'+tend+'</button>';
+  };
+  return '<section class="hb-nums" aria-label="Números '+(INICIO.numsCasa?"da casa":"da sua carteira")+'">'+
+    card("Sob gestão"+(INICIO.numsCasa?" · casa":""), hbMoeda(n.sobGestao),
+      pctSob===null?hbTend(0,null,"sem base no fim de "+mesAnt):hbTend(n.sobGestao,n.sobGestaoMesPassado,(pctSob>=0?"+":"")+pctSob.toLocaleString("pt-BR",{maximumFractionDigits:1})+"% desde o fim de "+mesAnt),
+      "Patrimônio sob gestão hoje"+(n.comOffshore?", offshore convertido pela cotação do CRM":", só onshore (sem cotação do dólar no CRM)")+". Mesma conta do Dashboard do CRM.")+
+    card("Captação líquida do mês", hbMoeda(n.liquidoMes),
+      hbTend(n.liquidoMes,n.liquidoMesPassadoAteHoje,hbMoeda(n.liquidoMesPassadoAteHoje)+" no mesmo ponto de "+mesAnt),
+      "Clientes captados + aportes - resgates, deste mês até hoje. "+mesAnt.charAt(0).toUpperCase()+mesAnt.slice(1)+" inteiro: "+hbMoeda(n.liquidoMesPassado)+".")+
+    card("Clientes na carteira", n.clientes.toLocaleString("pt-BR"),
+      hbTend(n.captadosMes,0,"+"+n.captadosMes+" captado(s) no mês"), "Clientes com patrimônio sob gestão.")+
+    card("Captados no mês", n.captadosMes.toLocaleString("pt-BR"),
+      hbTend(n.captadosMes,n.captadosMesPassado,n.captadosMesPassado+" em "+mesAnt), "Clientes novos que entraram na carteira neste mês.")+
+  '</section>';
 }
 function viewHub(){
   carregarInicio(false);
@@ -4499,6 +4693,7 @@ function viewHub(){
         '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
           '<button type="button" class="hb-pil escura" onclick="irParaAgenda()">'+HB_IC.agenda+'Abrir a Agenda</button>'+
         '</div></section>'+
+      hbNumerosHtml()+
       '<div class="hb-dois">'+
         '<section class="hb-dia hb-cartao hb-vidro"><div class="hb-cartao-cab"><h2>'+esc(tituloDia)+'<small>da sua Agenda no CRM</small></h2>'+
           '<button type="button" class="hb-link" onclick="irParaAgenda()">Ver tudo</button></div>'+corpoDia+proximos+'</section>'+
