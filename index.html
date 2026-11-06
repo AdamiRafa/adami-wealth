@@ -717,6 +717,26 @@ html[data-cor="noite"] .hb-hoje-box em{color:#F2A29C}
 .hb-menu.curto .hb-tema{display:none}
 .hb-menu.curto .hb-tema-curto{display:flex !important}
 @media (max-width:900px){.hb-tema span{display:none}.hb-tema button{width:36px;flex:none}}
+/* Celular (06/11/2026): antes o menu escondia todas as ferramentas na tela pequena (a tela inicial
+   já não tem os cartões de sistema desde a 2.88), e no celular não havia como abrir nenhuma.
+   Agora: marca e ações numa linha, a busca, e as ferramentas em grade de 3 por linha, por grupo. */
+@media (max-width:900px){
+  .hb-menu,.hb-menu.curto{padding:14px;gap:8px}
+  .hb-menu .hb-topo{order:0;flex:1 1 auto;min-width:0}
+  .hb-menu .hb-rodape{order:1;flex:1 1 100%;gap:8px;justify-content:flex-start}
+  .hb-menu .hb-rodape>.hb-item{width:auto;flex:0 0 auto;min-height:34px;padding:0 12px;border-radius:999px;background:var(--chip);font-size:12.5px;gap:7px}
+  .hb-menu .hb-rodape>.hb-item svg{width:15px;height:15px}
+  .hb-menu .hb-rodape .hb-tema{margin:0}
+  .hb-menu .hb-pessoa{margin-left:auto;padding:0}
+  .hb-menu .hb-busca,.hb-menu.curto .hb-busca{display:flex;order:2}
+  .hb-menu .hb-secao,.hb-menu.curto .hb-secao{display:block;order:3;flex:1 1 100%;padding:8px 2px 0}
+  .hb-menu .hb-item.app-item{display:flex;order:3;position:relative;flex:0 0 calc((100% - 16px) / 3);width:auto;min-height:84px;
+    flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 6px;border-radius:16px;background:var(--chip);text-align:center}
+  .hb-menu .hb-item.app-item svg{width:22px;height:22px}
+  .hb-menu .hb-item.app-item .rot,.hb-menu.curto .hb-item.app-item .rot{display:block;flex:none;white-space:normal;overflow:visible;font-size:11.5px;line-height:1.25;color:var(--tx)}
+  .hb-menu .hb-item.app-item .hb-cont,.hb-menu.curto .hb-item.app-item .hb-cont{display:inline-flex;position:absolute;top:6px;right:6px}
+  .hb-menu.curto .hb-nome{display:flex}
+}
 .rail-hub{display:flex !important;align-items:center;gap:6px;width:100%;margin:0 0 16px !important;padding:9px 12px !important;border-radius:999px !important;
   background:rgba(255,255,255,.10) !important;border:1px solid rgba(255,255,255,.18) !important;color:#fff !important;font-weight:600;cursor:pointer}
 .rail-hub:hover{background:rgba(255,255,255,.18) !important}
@@ -1631,7 +1651,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.94";
+var VERSAO="versão 2.95";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];

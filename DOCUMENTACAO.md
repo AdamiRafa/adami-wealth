@@ -619,6 +619,10 @@ cliente (seção 23.8). Ver "Perfis e acessos" na seção 5, `permissoes.sql` e
 `btg_rentabilidade.sql`**.
  · **CRM `2026.11.06.5` (06/11/2026): telas de admin do CRM seguem a tabela Perfis e acessos
 (`crm.todos`); "Atualizar do BTG" na Atualização da base (seção 23.9)**.
+ · **2.95 (06/11/2026) Hub no celular: o menu escondia todas as ferramentas em telas até 900 px
+(desde que a tela inicial perdeu os cartões de sistema, na 2.88), e no celular não havia como abrir
+nenhuma; a busca também não as mostrava. Agora as ferramentas aparecem em grade de 3 por linha,
+por grupo, com a busca funcionando, e Equipe e Segurança viram botões compactos**.
 
 ---
 
