@@ -580,17 +580,14 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
   BTG"; conta nova vira cliente ligado ao assessor pelo código do BTG; conta que some vira
   encerrada, nunca apagada; troca de assessor só pelo código; trava se uma atualização
   mexer em mais de 5% do patrimônio da casa. Falta o BTG liberar a API de parceiros.
-- **Agenda (05/11/2026), falta instalar:** rodar `agenda.sql` no SQL Editor; criar as
-  funções `enviar-senha` e `agenda-manha` (Verify JWT desligado, as duas usam o
-  `SMTP_SENHA` que já existe). Ver seção 19.
-- **Instalar as novidades (06/11/2026):** rodar `instalar-novidades.sql` no SQL Editor (é a
-  soma de `agenda.sql`, `avisos.sql` e `anexos.sql`). Sem ele, Agenda, Avisos e Arquivos
-  avisam na tela que falta o arquivo; o resto funciona.
-- **Reset de senha ainda não chegava depois do SPF (05/11/2026).** SPF público conferido
-  com `a:br542.hostgator.com.br`. Suspeitas abertas: quarentena do Microsoft 365
-  (security.microsoft.com → Quarentena) e o "Roteamento de e-mail" do cPanel em "Local"
-  (a HostGator entregaria na caixa dela em vez de mandar para o Microsoft 365). A função
-  `enviar-senha` grava cada tentativa em `pedidos_senha` com a resposta do servidor.
+- **Reset de senha resolvido (06/11/2026).** Confirmado pelo Emil: o "Esqueci minha senha"
+  chega no Outlook. O que resolveu: SPF com `a:br542.hostgator.com.br` e o envio pela função
+  `enviar-senha` (caixa hub@). O roteamento de e-mail da HostGator já estava remoto: as caixas
+  antigas do domínio na HostGator (angela@, lucas.marsicano@ etc.) não recebem os e-mails do
+  Hub, conferido na caixa da angela@. Não apagar o hub@ da HostGator: é ele que envia.
+- **Instalado no Supabase (06/11/2026):** `instalar-novidades.sql` (agendamento "agenda-manha"
+  ativo) e as funções `enviar-senha` e `agenda-manha` com Verify JWT desligado (conferido
+  chamando as duas). O primeiro e-mail da manhã sai no dia útil seguinte, 6h50.
 - **Outlook na Agenda:** só leitura, decidido; depende de o administrador do Microsoft 365
   registrar um aplicativo (Microsoft Graph, permissão de leitura de calendário).
 - **Importador de extrato BTG** no Gerador de Planos Patrimoniais nunca foi calibrado

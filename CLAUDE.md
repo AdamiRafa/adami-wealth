@@ -159,6 +159,6 @@ execução e fica registrado no histórico.
 
 ## Pendências
 
-Ver `DOCUMENTACAO.md` seção 14. As mais quentes: instalar a Agenda no Supabase
-(`instalar-novidades.sql` e as funções `enviar-senha` e `agenda-manha`), o reset de senha que ainda não
-chega no Microsoft 365, e o acesso à API de parceiros do BTG (regras já decididas).
+Ver `DOCUMENTACAO.md` seção 14. As mais quentes: acesso à API de parceiros do BTG (regras já
+decididas) e a autorização do Microsoft 365 para o Outlook na Agenda. Agenda, Avisos, Arquivos e
+o reset de senha estão instalados e funcionando desde 06/11/2026.
