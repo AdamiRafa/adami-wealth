@@ -1426,3 +1426,14 @@ webhooks do BTG (uma Edge Function, ex.: `btg-webhook`). Falta a documentação 
 (formato, se vem arquivo CSV ou link, e como o BTG se identifica) e decidir qual campo do BTG
 casa com o código do assessor do Hub (`perfis.codigo`): `loginName` ou `advisorCgeCode`.
 
+### 23.3. Webhooks (resumo em `btg/webhooks.md`)
+
+Os dados grandes do BTG chegam por webhook: o BTG faz POST no nosso endereço com um **link
+assinado do S3** para um arquivo (CSV), que precisa ser baixado logo. Achado mais importante: a
+**API de Relatórios Gerenciais por Parceiro** (`rm-reports-*`) entrega pronto o que o Hub usa:
+base de contas com assessor e PL por classe (`rm-reports-account-base`), o **vínculo real
+conta-assessor** (`rm-reports-account-link`: `cge_officer` e `login`), posição, movimentação,
+NNM e, pela API de Rentabilidade Mensal, a TIR mensal por cliente, produto e estratégia, já com
+CDI, Ibovespa, IPCA e IMA-B. Falta: a especificação dessa API (endpoints e parâmetros) e a tela
+de cadastro de webhook (o que o BTG manda para o nosso endereço se identificar).
+
