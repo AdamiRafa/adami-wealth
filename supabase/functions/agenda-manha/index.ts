@@ -9,7 +9,8 @@
 //  - tarefas da tabela `tarefas` marcadas "Incluir no e-mail da manhã";
 //  - próximo contato marcado na ficha, vencimento (alerta aberto) e régua de relacionamento.
 //
-// Segurança: chamar esta função não dá acesso a nada. Ela não recebe parâmetro, só envia
+// Segurança: chamar esta função não dá acesso a nada. A resposta só traz contagens (o
+// detalhe por pessoa vai para os Logs da função). Ela não recebe parâmetro, só envia
 // entre 6h e 11h de Brasília em dia útil, e no máximo um e-mail por pessoa por dia (tabela
 // agenda_emails). A chave de serviço do Supabase (SUPABASE_SERVICE_ROLE_KEY) é preenchida
 // pelo próprio Supabase e só existe aqui dentro.
@@ -360,5 +361,10 @@ Deno.serve(async (_req: Request) => {
     await servico(`/rest/v1/agenda_emails?user_id=eq.${p.id}&dia=eq.${hoje}`, { method: "PATCH", body: JSON.stringify({ resultado: situacao }) });
     resultado[p.nome] = situacao;
   }
-  return resposta({ ok: true, dia: hoje, resultado });
+  // O detalhe por pessoa fica só no registro da função (Edge Functions > Logs): esta função
+  // não exige login, e a resposta não pode contar a ninguém quem é da equipe.
+  console.log("agenda-manha", hoje, JSON.stringify(resultado));
+  const enviados = Object.values(resultado).filter((v) => v === "enviado").length;
+  const falhas = Object.values(resultado).filter((v) => v.startsWith("falha")).length;
+  return resposta({ ok: true, dia: hoje, enviados, falhas });
 });

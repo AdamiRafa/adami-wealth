@@ -10,6 +10,8 @@
 #   Mesmo texto do redefinir-senha.html, com {{LINK}} e {{EMAIL}} trocados pela função.
 # - emails/agenda-manha.html: o e-mail da manhã da Agenda do CRM (função agenda-manha).
 #   {{CONTEUDO}} é a lista montada pela função; {{SAUDACAO}} e {{LINK}} também.
+# - emails/codigo-acesso.html: o código de 6 dígitos da verificação em duas etapas (função
+#   codigo-acesso). {{CODIGO}}, {{QUANDO}} e {{ORIGEM}} são trocados pela função.
 import os, json, re
 IMG = "https://adamicaptal.com.br/hub/img/"
 NAVY, NAVY_D, INK, INK2, MUTED, GOLD, PAPER, LINE = "#1B3A5F", "#132B47", "#16324F", "#3C4C60", "#7A8698", "#C0A265", "#EDF0F4", "#DCE2EA"
@@ -17,6 +19,16 @@ SANS = "Helvetica, Arial, sans-serif"
 SERIF = "Georgia, 'Times New Roman', serif"
 
 def email(titulo_aba, preheader, icone, titulo, corpo, botao, depois, link="{{ .ConfirmationURL }}"):
+    # botao=None: e-mail sem botão (ex.: o do código de acesso).
+    bloco_botao = "" if botao is None else f"""    <tr><td style="padding:20px 40px 8px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td align="center" bgcolor="{NAVY}" style="border-radius:6px;">
+          <a href="{link}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:{SANS};font-size:15px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:6px;">{botao}</a>
+        </td>
+      </tr></table>
+    </td></tr>"""
+    bloco_link = "" if botao is None else f"""      <p style="margin:20px 0 0;padding-top:16px;border-top:1px solid {LINE};font-size:12px;color:{MUTED};">Se o botão não funcionar, copie e cole este endereço no navegador:<br>
+      <a href="{link}" style="color:{NAVY};word-break:break-all;">{link}</a></p>"""
     return f"""<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -41,17 +53,10 @@ def email(titulo_aba, preheader, icone, titulo, corpo, botao, depois, link="{{ .
       <h1 style="margin:20px 0 12px;font-family:{SERIF};font-weight:normal;font-size:26px;line-height:1.25;color:{INK};">{titulo}</h1>
       {corpo}
     </td></tr>
-    <tr><td style="padding:20px 40px 8px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td align="center" bgcolor="{NAVY}" style="border-radius:6px;">
-          <a href="{link}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:{SANS};font-size:15px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:6px;">{botao}</a>
-        </td>
-      </tr></table>
-    </td></tr>
+{bloco_botao}
     <tr><td style="padding:20px 40px 32px;font-family:{SANS};font-size:13px;line-height:1.6;color:{INK2};">
       {depois}
-      <p style="margin:20px 0 0;padding-top:16px;border-top:1px solid {LINE};font-size:12px;color:{MUTED};">Se o botão não funcionar, copie e cole este endereço no navegador:<br>
-      <a href="{link}" style="color:{NAVY};word-break:break-all;">{link}</a></p>
+{bloco_link}
     </td></tr>
   </table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
@@ -114,6 +119,16 @@ modelos["agenda-manha.html"] = email(
     '<p style="margin:0;">Este resumo sai nos dias úteis, por volta das 7h. Para tirar uma tarefa daqui, desmarque "Incluir no e-mail da manhã" nela, na Agenda do CRM.</p>',
     link="{{LINK}}")
 
+CORPO_CODIGO = (f'<p style="{P}">Use o código abaixo para entrar no Hub Adami. Ele vale por <strong style="color:{INK};">10 minutos</strong> e só funciona uma vez.</p>'
+    f'<div style="margin:22px 0 8px;padding:18px 0;text-align:center;background:{PAPER};border:1px solid {LINE};border-radius:8px;'
+    f'font-family:{SANS};font-size:34px;font-weight:bold;letter-spacing:10px;color:{INK};">{{{{CODIGO}}}}</div>')
+DEPOIS_CODIGO = ('<p style="margin:0 0 10px;">Pedido feito em {{QUANDO}} (horário de Brasília), de {{ORIGEM}}.</p>'
+    '<p style="margin:0;"><strong>Não foi você?</strong> Alguém está tentando entrar com a sua senha. Troque a senha agora, na tela de login, em <strong>Esqueci minha senha</strong>, e avise um master. Nunca passe este código para ninguém: a Adami nunca vai pedir.</p>')
+modelos["codigo-acesso.html"] = email(
+    "Seu código de acesso",
+    "Seu código de acesso ao Hub Adami. Vale por 10 minutos.",
+    "icone-chave.png", "Seu código de acesso", CORPO_CODIGO, None, DEPOIS_CODIGO, link="")
+
 pasta = os.path.dirname(os.path.abspath(__file__))
 for nome, html in modelos.items():
     open(os.path.join(pasta, nome), "w").write(html)
@@ -156,12 +171,26 @@ Este resumo sai nos dias úteis, por volta das 7h.
 Hub Adami · Adami Captal
 """
 
+TEXTO_CODIGO = """Seu código de acesso ao Hub Adami:
+
+{{CODIGO}}
+
+Ele vale por 10 minutos e só funciona uma vez.
+Pedido feito em {{QUANDO}} (horário de Brasília), de {{ORIGEM}}.
+
+Não foi você? Alguém está tentando entrar com a sua senha. Troque a senha agora, na tela de login, em Esqueci minha senha, e avise um master. Nunca passe este código para ninguém: a Adami nunca vai pedir.
+
+Hub Adami · Adami Captal
+E-mail automático, não precisa responder.
+"""
+
 # Grava cada modelo dentro da sua função do Supabase, entre os marcadores.
 raiz = os.path.join(pasta, "..")
 for nome_funcao, html, texto in [
     ("enviar-convite", modelos["boas-vindas.html"], TEXTO_BOAS_VINDAS),
     ("enviar-senha", modelos["senha-funcao.html"], TEXTO_SENHA),
     ("agenda-manha", modelos["agenda-manha.html"], TEXTO_AGENDA),
+    ("codigo-acesso", modelos["codigo-acesso.html"], TEXTO_CODIGO),
 ]:
     funcao = os.path.join(raiz, "supabase", "functions", nome_funcao, "index.ts")
     ts = open(funcao).read()

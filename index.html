@@ -178,6 +178,22 @@ input,select,textarea{font-family:inherit;font-size:13px}
   font-weight:600;margin-bottom:12px}
 .mfa-status.on{background:#E6F1EC;color:#2F7A56}
 .mfa-status.off{background:#F4F6F9;color:#7D8A9B}
+/* Código de acesso por e-mail e tela Segurança (06/11/2026) */
+.auth-card input.cd-codigo{font-size:26px;letter-spacing:.42em;text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
+.seg-tit{font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#5C6B7F;margin:22px 0 10px}
+.seg-so{font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;color:#8A6D1F;background:#F7F0DC;border-radius:999px;padding:2px 8px;margin-left:6px}
+.seg-rolagem{max-height:260px;overflow:auto;border:1px solid #E2E6ED;border-radius:10px;padding:0 10px}
+.seg-rolagem table{font-size:12.5px}
+.seg-rolagem th{position:sticky;top:0;background:var(--m-bg,#fff);padding-top:8px}
+.seg-ruim{color:#B3403A;font-weight:600}
+.seg-ip{font-variant-numeric:tabular-nums;color:#5C6B7F}
+@media screen{
+  html[data-cor="noite"] .seg-tit{color:#AAB6C6}
+  html[data-cor="noite"] .seg-so{color:#E9CF8F;background:rgba(225,194,122,.12)}
+  html[data-cor="noite"] .seg-rolagem{border-color:rgba(255,255,255,.12)}
+  html[data-cor="noite"] .seg-ruim{color:#F2A29C}
+  html[data-cor="noite"] .seg-ip{color:#AAB6C6}
+}
 .hub-top .sai{background:transparent;border:1px solid #35516F;color:#C3D2E2;border-radius:3px;padding:8px 16px}
 .hub-top .sai:hover{background:#1B3A5F;color:#fff}
 .hub-body{max-width:1040px;margin:0 auto;padding:64px 40px 80px}
@@ -901,7 +917,6 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script src="vendor/pdfjs-3.11.174.min.js"></script>
-<script src="vendor/supabase-js-2.min.js"></script>
 <script>
 /* ============ conexão e sessão ============ */
 /* ============================================================
@@ -936,11 +951,29 @@ function payloadDoToken(tk){
 }
 function idDoToken(tk){ var p=payloadDoToken(tk); return (p&&p.sub)||null; }
 function guardarSessao(d){
-  SESSAO={access_token:d.access_token,refresh_token:d.refresh_token,
+  var ant=SESSAO||{};
+  var novo={access_token:d.access_token,refresh_token:d.refresh_token,
           email:(d.user&&d.user.email)||(payloadDoToken(d.access_token||"")||{}).email||"",
           id:(d.user&&d.user.id)||idDoToken(d.access_token||"")};
+  /* Renovar o token não apaga a marca de "código confirmado hoje". */
+  if(ant.id&&ant.id===novo.id){ novo.dia=ant.dia; novo.login_dia=ant.login_dia; }
+  SESSAO=novo;
   try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){}
 }
+/* ===================== Acesso do dia (06/11/2026) =====================
+   login_dia: o dia (Brasília) em que a senha foi digitada.
+   dia: o dia em que o código de 6 dígitos do e-mail foi confirmado.
+   O acesso vale até a meia-noite de Brasília. Quem protege os dados é o
+   banco (seguranca.sql); isto aqui só leva a pessoa para a tela certa. */
+function hojeBR(){
+  try{ return new Date().toLocaleDateString("en-CA",{timeZone:"America/Sao_Paulo"}); }
+  catch(e){ return new Date(Date.now()-3*3600*1000).toISOString().slice(0,10); }
+}
+function persistirSessao(){ try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){} }
+function sessaoLiberada(){ return !!(SESSAO&&SESSAO.access_token&&SESSAO.dia===hojeBR()); }
+function codigoPendente(){ return !!(SESSAO&&SESSAO.access_token&&SESSAO.dia!==hojeBR()&&SESSAO.login_dia===hojeBR()); }
+function novaSessaoPendente(){ if(!SESSAO) return; SESSAO.login_dia=hojeBR(); SESSAO.dia=null; persistirSessao(); }
+function marcarLiberado(){ if(!SESSAO) return; SESSAO.dia=hojeBR(); SESSAO.login_dia=SESSAO.login_dia||SESSAO.dia; persistirSessao(); }
 function limparSessao(){
   SESSAO=null;
   try{ localStorage.removeItem("aw_sessao"); }catch(e){}
@@ -960,7 +993,7 @@ function primeiroAcesso(email,senha){
         var m=(j&&(j.msg||j.error_description||j.message))||"Não foi possível criar o acesso.";
         if(/convidad/i.test(m)) m="Este e-mail não foi convidado. Peça o convite a um master.";
         else if(/already regist|already been/i.test(m)) m="Já existe conta com este e-mail. Use Entrar.";
-        else if(/password/i.test(m)) m="A senha precisa ter pelo menos 6 caracteres.";
+        else if(/password/i.test(m)) m="A senha precisa ter pelo menos 8 caracteres.";
         throw new Error(m);
       }
       return j;
@@ -1004,7 +1037,9 @@ function entrar(email,senha){
   }).then(function(res){
     return res.json().then(function(d){
       if(!res.ok) throw new Error(d.error_description||d.msg||d.message||"E-mail ou senha incorretos.");
+      SESSAO=null;
       guardarSessao(d);
+      novaSessaoPendente();
     });
   });
 }
@@ -1017,25 +1052,6 @@ function renovar(){
     if(!res.ok) throw new Error("sessão expirada");
     return res.json().then(guardarSessao);
   });
-}
-
-/* ===================== Verificação em duas etapas (MFA) =====================
-   O login em si continua pela API crua, como sempre (entrar()). A parte de MFA
-   é a única que usa o SDK supabase-js: o protocolo de enroll/challenge/verify
-   tem detalhe demais (QR code, id de desafio) para reimplementar na mão sem
-   arriscar um bug de segurança. persistSession:false porque este cliente é só
-   uma ferramenta para chamar o auth — a sessão de verdade continua vivendo em
-   aw_sessao, do jeito que o resto do app já espera. */
-var SB_MFA=null;
-function sbAuth(){
-  if(!SB_MFA) SB_MFA=window.supabase.createClient(SB_URL,SB_KEY,
-    {auth:{persistSession:false,autoRefreshToken:false}});
-  return SB_MFA;
-}
-function sbComSessao(){
-  var sb=sbAuth();
-  return sb.auth.setSession({access_token:SESSAO.access_token,refresh_token:SESSAO.refresh_token})
-    .then(function(){ return sb; });
 }
 
 /* ===================== EQUIPE (somente o supremo) =====================
@@ -1086,11 +1102,12 @@ function pintarEquipe(aviso){
     '<button class="btn" onclick="fecharEquipe()">Fechar</button></div>');
 }
 
-/* ===================== Segurança (verificação em duas etapas) =====================
-   Autoatendimento: cada pessoa liga e desliga a própria, ninguém liga para
-   outra. Fica de fora da tela de Equipe de propósito — Equipe é sobre quem
-   tem conta, isto é sobre a conta de quem está olhando. */
-var MFA_FATORES=null, MFA_ENROLANDO=null, MFA_ERRO="";
+/* ===================== Segurança (06/11/2026) =====================
+   A verificação em duas etapas agora é por e-mail e vale para todos (não se
+   liga nem desliga). Aqui a pessoa vê os próprios acessos e pode sair de todos
+   os aparelhos; o master vê também os acessos da equipe. A verificação por
+   aplicativo (TOTP) saiu: ela só existia na tela, o banco nunca a exigia. */
+var SEG={meus:null,equipe:null,erro:""};
 function abrirSeguranca(){
   if(!document.getElementById("segv")){
     var d=document.createElement("div");
@@ -1100,104 +1117,66 @@ function abrirSeguranca(){
     document.body.appendChild(d);
   }
   document.getElementById("segv").style.display="flex";
-  MFA_FATORES=null; MFA_ENROLANDO=null; MFA_ERRO="";
+  SEG={meus:null,equipe:null,erro:""};
   pintarSeguranca('<h2>Segurança</h2><p class="eqsub">Carregando…</p>');
-  sbComSessao().then(function(sb){ return sb.auth.mfa.listFactors(); }).then(function(r){
-    if(r.error) throw r.error;
-    MFA_FATORES=r.data.totp||[];
-    pintarSeguranca(telaSeguranca());
-  }).catch(function(err){
-    pintarSeguranca('<h2>Segurança</h2><p class="eqsub err">'+esc(err.message||String(err))+'</p>'+
-      '<div class="eqfoot"><span></span><button class="btn" onclick="fecharSeguranca()">Fechar</button></div>');
-  });
+  Promise.all([
+    api("rpc/meus_acessos",{method:"POST",body:{}}).catch(function(e){ SEG.erro=String(e.message||e); return null; }),
+    EU.super?api("rpc/acessos_equipe",{method:"POST",body:{}}).catch(function(){ return null; }):Promise.resolve(null)
+  ]).then(function(r){ SEG.meus=r[0]; SEG.equipe=r[1]; pintarSeguranca(telaSeguranca()); });
 }
-function fecharSeguranca(){
-  var pendente=MFA_ENROLANDO;
-  var d=document.getElementById("segv"); if(d) d.style.display="none";
-  MFA_ENROLANDO=null; MFA_ERRO="";
-  /* Sair sem confirmar o código não deixa fator pela metade pendurado na conta. */
-  if(pendente) sbComSessao().then(function(sb){ return sb.auth.mfa.unenroll({factorId:pendente.factorId}); }).catch(function(){});
-}
+function fecharSeguranca(){ var d=document.getElementById("segv"); if(d) d.style.display="none"; }
 function pintarSeguranca(html){ var x=document.getElementById("segx"); if(x) x.innerHTML=html; }
-
+var SEG_EVENTOS={entrou:"Entrou",codigo_enviado:"Código enviado",codigo_errado:"Código errado",bloqueado:"Bloqueado por erros",saiu_de_todos:"Saiu de todos os aparelhos"};
+function segAparelho(ua){
+  ua=String(ua||"");
+  var nav=/Edg\//.test(ua)?"Edge":/OPR\//.test(ua)?"Opera":/Firefox\//.test(ua)?"Firefox":/Chrome\//.test(ua)?"Chrome":/Safari\//.test(ua)?"Safari":"";
+  var so=/iPhone/.test(ua)?"iPhone":/iPad/.test(ua)?"iPad":/Android/.test(ua)?"Android":/Mac OS X|Macintosh/.test(ua)?"Mac":/Windows/.test(ua)?"Windows":/Linux/.test(ua)?"Linux":"";
+  return nav&&so?nav+" no "+so:(nav||so||"—");
+}
+function segQuando(t){
+  try{ return new Date(t).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(",",""); }
+  catch(e){ return String(t||""); }
+}
+function segLinhas(lista,comNome){
+  if(!lista||!lista.length) return '<p class="eqsub">Nenhum acesso registrado ainda.</p>';
+  return '<div class="seg-rolagem"><table><thead><tr><th>Quando</th>'+(comNome?'<th>Quem</th>':'')+'<th>O quê</th><th>Aparelho</th><th>IP</th></tr></thead><tbody>'+
+    lista.map(function(a){
+      var ruim=a.evento==="codigo_errado"||a.evento==="bloqueado";
+      return '<tr><td>'+esc(segQuando(a.em))+'</td>'+
+        (comNome?'<td>'+esc(a.nome||a.email||"—")+'</td>':'')+
+        '<td'+(ruim?' class="seg-ruim"':'')+'>'+esc(SEG_EVENTOS[a.evento]||a.evento)+'</td>'+
+        '<td>'+esc(segAparelho(a.navegador))+'</td><td class="seg-ip">'+esc(a.ip||"—")+'</td></tr>';
+    }).join("")+'</tbody></table></div>';
+}
 function telaSeguranca(){
-  var ativo=(MFA_FATORES||[]).filter(function(f){ return f.status==='verified'; })[0];
   var h='<h2>Segurança</h2>'+
-    '<p class="eqsub">Verificação em duas etapas: além da senha, um código de 6 números gerado '+
-    'no aplicativo autenticador do seu celular a cada login.</p>';
-  if(MFA_ERRO) h+='<p class="eqsub err">'+esc(MFA_ERRO)+'</p>';
-
-  if(MFA_ENROLANDO){
-    h+='<div class="mfa-qr">'+
-        '<img src="'+MFA_ENROLANDO.qrCode+'" alt="QR code para o aplicativo autenticador" width="176" height="176">'+
-        '<div class="mfa-secreto"><span>Não consegue escanear? Digite manualmente no aplicativo:</span>'+
-          '<code>'+esc(MFA_ENROLANDO.secret)+'</code></div>'+
-      '</div>'+
-      '<label for="mfaAtivarCodigo">Código do aplicativo</label>'+
-      '<div class="campo"><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" '+
-        'id="mfaAtivarCodigo" placeholder="000000" onkeydown="if(event.key===\'Enter\')confirmarEnrolamento()"></div>'+
-      '<div class="eqfoot"><span class="eqmsg" id="eqmsg"></span>'+
-        '<span><button class="btn" onclick="cancelarEnrolamento()">Cancelar</button> '+
-        '<button class="btn" onclick="confirmarEnrolamento()">Ativar</button></span></div>';
-  } else if(ativo){
-    h+='<div class="mfa-status on">Ativada</div><br>'+
-      '<div class="eqfoot"><span class="eqmsg" id="eqmsg"></span>'+
-        '<span><button class="btn" onclick="desativarMfa(\''+ativo.id+'\')">Desativar</button> '+
-        '<button class="btn" onclick="fecharSeguranca()">Fechar</button></span></div>';
-  } else {
-    h+='<div class="mfa-status off">Desativada</div><br>'+
-      '<div class="eqfoot"><span class="eqmsg" id="eqmsg"></span>'+
-        '<span><button class="btn" onclick="iniciarEnrolamento()">Ativar</button> '+
-        '<button class="btn" onclick="fecharSeguranca()">Fechar</button></span></div>';
+    '<div class="mfa-status on">Verificação em duas etapas ativa</div>'+
+    '<p class="eqsub" style="margin-top:12px">Toda entrada no Hub pede, depois da senha, um código de 6 números enviado para o seu e-mail. '+
+    'O acesso vale até a meia-noite: no dia seguinte, todo mundo entra de novo.</p>'+
+    '<h3 class="seg-tit">Seus últimos acessos</h3>';
+  if(SEG.meus===null) h+='<p class="eqsub err">Não foi possível carregar os acessos.'+(SEG.erro?' '+esc(SEG.erro):'')+'</p>';
+  else h+=segLinhas(SEG.meus,false);
+  h+='<p class="eqsub" style="margin-top:12px">Não reconhece algum acesso? Troque a senha (tela de login, <b>Esqueci minha senha</b>) e clique em <b>Sair de todos os aparelhos</b>.</p>';
+  if(EU.super){
+    h+='<h3 class="seg-tit">Acessos da equipe <span class="seg-so">só master vê</span></h3>';
+    h+=SEG.equipe===null?'<p class="eqsub err">Não foi possível carregar.</p>':segLinhas(SEG.equipe,true);
   }
+  h+='<div class="eqfoot"><button class="eqbt perigo" onclick="sairDeTodos()">Sair de todos os aparelhos</button>'+
+     '<button class="btn" onclick="fecharSeguranca()">Fechar</button></div>';
   return h;
 }
-
-function iniciarEnrolamento(){
-  MFA_ERRO="";
-  sbComSessao().then(function(sb){ return sb.auth.mfa.enroll({factorType:'totp'}); }).then(function(r){
-    if(r.error) throw r.error;
-    MFA_ENROLANDO={ factorId:r.data.id, qrCode:r.data.totp.qr_code, secret:r.data.totp.secret };
-    pintarSeguranca(telaSeguranca());
-    setTimeout(function(){ var i=document.getElementById("mfaAtivarCodigo"); if(i) i.focus(); },0);
-  }).catch(function(err){
-    MFA_ERRO=err.message||String(err);
-    pintarSeguranca(telaSeguranca());
-  });
-}
-function cancelarEnrolamento(){
-  var pendente=MFA_ENROLANDO;
-  MFA_ENROLANDO=null; MFA_ERRO="";
-  if(pendente) sbComSessao().then(function(sb){ return sb.auth.mfa.unenroll({factorId:pendente.factorId}); }).catch(function(){});
-  pintarSeguranca(telaSeguranca());
-}
-function confirmarEnrolamento(){
-  if(!MFA_ENROLANDO) return;
-  var codigo=(document.getElementById("mfaAtivarCodigo").value||"").trim();
-  if(codigo.length!==6){ MFA_ERRO="Digite os 6 números do aplicativo."; pintarSeguranca(telaSeguranca()); return; }
-  var factorId=MFA_ENROLANDO.factorId;
-  sbComSessao().then(function(sb){
-    return sb.auth.mfa.challenge({factorId:factorId}).then(function(ch){
-      if(ch.error) throw ch.error;
-      return sb.auth.mfa.verify({factorId:factorId,challengeId:ch.data.id,code:codigo});
-    });
-  }).then(function(v){
-    if(v.error) throw v.error;
-    MFA_ENROLANDO=null; MFA_ERRO="";
-    abrirSeguranca();
-  }).catch(function(err){
-    MFA_ERRO="Código inválido ou expirado. Tente de novo.";
-    pintarSeguranca(telaSeguranca());
-  });
-}
-function desativarMfa(factorId){
-  if(!confirm("Desativar a verificação em duas etapas?")) return;
-  sbComSessao().then(function(sb){ return sb.auth.mfa.unenroll({factorId:factorId}); }).then(function(r){
-    if(r.error) throw r.error;
-    abrirSeguranca();
-  }).catch(function(err){
-    MFA_ERRO=err.message||String(err);
-    pintarSeguranca(telaSeguranca());
+function sairDeTodos(){
+  if(!confirm("Sair do Hub em todos os aparelhos, inclusive neste? Você vai precisar entrar de novo, com senha e código.")) return;
+  var tk=SESSAO&&SESSAO.access_token;
+  api("rpc/registrar_saida_geral",{method:"POST",body:{}}).catch(function(){}).then(function(){
+    return tk?fetch(SB_URL+"/auth/v1/logout?scope=global",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk}}).catch(function(){}):null;
+  }).then(function(){
+    fecharSeguranca();
+    limparSessao();
+    db={clientes:[],dados:{},cartas:{}}; S.cliente=null; S.rasc=null; S.app=null;
+    try{ localStorage.removeItem("aw_app"); }catch(e){}
+    render();
+    document.getElementById("view").innerHTML=viewLogin("Você saiu de todos os aparelhos.",true);
   });
 }
 
@@ -1371,8 +1350,8 @@ function blocoConvite(){
       h+='<tr><td><div class="eqnome">'+esc(c.nome||"—")+'</div>'+
          '<div class="eqmail">'+esc(c.email)+'</div></td>'+
          '<td><span class="eqpapel">'+esc(({vendedor:"Assessor",especialista:"Especialista",admin:"Admin do CRM"})[c.role]||c.role)+(c.master?" · master":"")+(c.admin?" · administrador":"")+(c.mesa_rv?" · Mesa RV":"")+'</span></td>'+
-         '<td class="eqacoes"><button class="eqbt" onclick="reenviarConvite(\''+esc(c.email)+'\')">Reenviar e-mail</button>'+
-         '<button class="eqbt perigo" onclick="revogar(\''+esc(c.email)+'\')">Revogar</button></td></tr>';
+         '<td class="eqacoes"><button class="eqbt" onclick="reenviarConvite('+jsStr(c.email)+')">Reenviar e-mail</button>'+
+         '<button class="eqbt perigo" onclick="revogar('+jsStr(c.email)+')">Revogar</button></td></tr>';
     });
     h+='</table>';
   }
@@ -1466,7 +1445,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.90";
+var VERSAO="versão 2.91";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2447,9 +2426,44 @@ function importarAtivosPdf(input){
   fr.readAsArrayBuffer(f);
 }
 
+/* Carta do mês: o editor grava HTML, e esse HTML aparece no relatório de todo
+   mundo. Sem esta limpeza, um texto com código escondido (ex.: <img onerror>) rodaria
+   na tela de quem abrisse o relatório e poderia roubar a sessão (varredura de
+   06/11/2026). Fica só a formatação que o editor produz. */
+var CARTA_TAGS={P:1,BR:1,B:1,STRONG:1,I:1,EM:1,U:1,H1:1,H2:1,H3:1,H4:1,UL:1,OL:1,LI:1,DIV:1,SPAN:1,BLOCKQUOTE:1,IMG:1,FONT:1,SUB:1,SUP:1,HR:1};
+var CARTA_FORA={SCRIPT:1,STYLE:1,IFRAME:1,OBJECT:1,EMBED:1,SVG:1,MATH:1,LINK:1,META:1,TEMPLATE:1,NOSCRIPT:1,FORM:1,INPUT:1,BUTTON:1,TEXTAREA:1,SELECT:1,VIDEO:1,AUDIO:1,CANVAS:1,FRAME:1,FRAMESET:1,BASE:1};
+function limparHtmlCarta(html){
+  if(!html) return "";
+  var doc;
+  try{ doc=new DOMParser().parseFromString('<div id="cartaRaiz">'+html+'</div>',"text/html"); }catch(e){ return esc(html); }
+  var raiz=doc.getElementById("cartaRaiz"); if(!raiz) return "";
+  (function limpa(no){
+    [].slice.call(no.childNodes).forEach(function(f){
+      if(f.nodeType===3) return;
+      if(f.nodeType!==1){ no.removeChild(f); return; }
+      var t=f.tagName.toUpperCase();
+      if(CARTA_FORA[t]){ no.removeChild(f); return; }
+      if(!CARTA_TAGS[t]){ limpa(f); while(f.firstChild) no.insertBefore(f.firstChild,f); no.removeChild(f); return; }
+      [].slice.call(f.attributes).forEach(function(a){
+        var n=a.name.toLowerCase(), v=String(a.value||"");
+        var ok=(n==="style"&&!/url\s*\(|expression|javascript:|behavior|@import|-moz-binding/i.test(v))||
+          (t==="IMG"&&n==="src"&&/^(data:image\/(png|jpe?g|gif|webp);base64,|https:\/\/)/i.test(v.trim()))||
+          (t==="IMG"&&(n==="width"||n==="height"||n==="alt"))||
+          (t==="FONT"&&(n==="size"||n==="color"||n==="face"))||
+          n==="align";
+        if(!ok) f.removeAttribute(a.name);
+      });
+      if(t==="IMG"&&!f.getAttribute("src")){ no.removeChild(f); return; }
+      limpa(f);
+    });
+  })(raiz);
+  return raiz.innerHTML;
+}
+/* Texto dentro de onclick="f(...)": vira literal de JS seguro (aspas, barra, quebra de linha). */
+function jsStr(v){ return esc(JSON.stringify(String(v==null?"":v))); }
 function salvarCarta(){
   var ed=document.getElementById("edCarta"); if(!ed) return;
-  var conteudo=ed.innerHTML.trim();
+  var conteudo=limparHtmlCarta(ed.innerHTML.trim());
   var b=document.getElementById("btnCarta"); if(b){b.disabled=true;b.textContent="Salvando…";}
   status("wait","Salvando…");
   api("cartas?on_conflict=mes,ano",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
@@ -2856,7 +2870,7 @@ function viewCarta(){
      '<input type="file" id="imgCarta" accept="image/*" style="display:none" onchange="inserirImagem(this)">'+
      '<button onclick="cmd(\'removeFormat\')" title="Limpar formatação">Limpar</button>'+
      '</div>'+
-     '<div class="ed" id="edCarta" contenteditable="true" data-ph="Caros clientes e amigos, ...">'+atual+'</div>'+
+     '<div class="ed" id="edCarta" contenteditable="true" data-ph="Caros clientes e amigos, ...">'+limparHtmlCarta(atual)+'</div>'+
      '<div style="display:flex;gap:12px;align-items:center;margin-top:16px;flex-wrap:wrap">'+
      '<button class="btn pri" id="btnCarta" onclick="salvarCarta()">Salvar comentários</button>'+
      '<span class="salvo">'+(atual?"Já existem comentários salvos para este mês.":"Nenhum comentário salvo para este mês ainda.")+'</span>'+
@@ -2866,7 +2880,7 @@ function viewCarta(){
 var HIST={log:null,backups:null,carregando:false};
 function viewHistorico(){
   var h='<div class="card"><div class="sec-title">Registro de alterações</div>'+
-        '<div class="sec-sub">Quem fez o quê, com data e hora. Os registros não podem ser editados nem apagados por ninguém, nem por dentro do sistema.</div>';
+        '<div class="sec-sub">Quem fez o quê, com data e hora. O nome de quem fez é gravado pelo banco, ninguém edita um registro, e só um master pode apagar.</div>';
   if(HIST.log===null){
     h+='<p style="color:var(--muted);font-size:13px">Carregando…</p>';
   }else if(HIST.log===false){
@@ -2879,9 +2893,9 @@ function viewHistorico(){
          var rot=quandoBR(l.quando)+" · "+l.acao+(l.alvo?" · "+l.alvo:"");
          return '<tr><td style="white-space:nowrap">'+quandoBR(l.quando)+'</td><td>'+esc((l.usuario||"").split("@")[0])+'</td>'+
          '<td>'+esc(l.acao)+'</td><td>'+esc(l.alvo||"—")+'</td><td style="color:var(--muted)">'+esc(l.detalhe||"")+'</td>'+
-         '<td style="text-align:right"><button class="xbtn" title="Apagar registro" onclick="apagarRegistro('+l.id+',\''+esc(rot).replace(/'/g,"")+'\')">&times;</button></td></tr>';
+         '<td style="text-align:right">'+(EU.super?'<button class="xbtn" title="Apagar registro" onclick="apagarRegistro('+l.id+','+jsStr(rot)+')">&times;</button>':'')+'</td></tr>';
        }).join("")+'</tbody></table></div>'+
-       '<div style="margin-top:14px"><button class="btn" onclick="limparHistorico()">Apagar todo o histórico</button></div>';
+       (EU.super?'<div style="margin-top:14px"><button class="btn" onclick="limparHistorico()">Apagar todo o histórico</button></div>':'');
   }
   h+='</div>';
 
@@ -3357,7 +3371,7 @@ function viewRelatorio(){
   var s12=serieHist(c.id,S.mes,S.ano,"BRL",12), sIni=serieHist(c.id,S.mes,S.ano,"BRL",0);
   var a12=agregado(s12), aIni=agregado(sIni);
   var desdeQuando=sIni.length?(MESES_C[sIni[0].mes-1]+"/"+String(sIni[0].ano).slice(2)):"";
-  var carta=(cartaDoMes(S.mes,S.ano)||"").trim();
+  var carta=limparHtmlCarta((cartaDoMes(S.mes,S.ano)||"").trim());
   if(!carta && (r.ind.carta||"").trim()){
     carta="<p>"+esc(r.ind.carta.trim()).split(/\n\s*\n/).join("</p><p>").replace(/\n/g,"<br>")+"</p>";
   }
@@ -4196,7 +4210,7 @@ function viewLogin(erro,sucesso){
       '<label for="lgSenha">'+(MODO_LOGIN==="novo"?"Crie uma senha":"Senha")+'</label>'+
       '<div class="campo"><input type="password" id="lgSenha" autocomplete="'+(MODO_LOGIN==="novo"?"new-password":"current-password")+'" placeholder="••••••••" onkeydown="if(event.key===\'Enter\')enviarLogin()">'+
         '<button type="button" class="olho" id="lgOlho" onclick="verSenha()" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
-      (MODO_LOGIN==="novo"?'<p class="hint" style="margin:-6px 0 14px">Mínimo de 6 caracteres.</p>':'')+
+      (MODO_LOGIN==="novo"?'<p class="hint" style="margin:-6px 0 14px">Mínimo de 8 caracteres.</p>':'')+
       '<button class="entrar" id="lgBtn" onclick="'+(MODO_LOGIN==="novo"?"criarAcesso()":"fazerLogin()")+'">'+
         (MODO_LOGIN==="novo"?"Criar meu acesso":"Entrar")+'</button>'+
       '<div class="pe-links">'+
@@ -4208,7 +4222,9 @@ function viewLogin(erro,sucesso){
     '</div></div>'+
   '</div>';
 }
-function viewCodigoMfa(erro){
+var CODIGO_EMAIL="", CODIGO_ESTADO="";
+function viewCodigoEmail(msg,tipo){
+  var para=CODIGO_EMAIL?'<b>'+esc(CODIGO_EMAIL)+'</b>':'o seu e-mail';
   return '<div class="auth">'+
     '<div class="auth-side">'+
       '<img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">'+
@@ -4221,18 +4237,33 @@ function viewCodigoMfa(erro){
     '</div>'+
     '<div class="auth-form"><div class="auth-card">'+
       '<div class="rule"></div>'+
-      '<h1>Verificação em duas etapas</h1>'+
-      '<p class="hint">Abra o aplicativo autenticador e digite o código de 6 números.</p>'+
-      (erro?'<div class="erro">'+esc(erro)+'</div>':'')+
-      '<label for="mfaCodigo">Código</label>'+
-      '<div class="campo"><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" '+
-        'id="mfaCodigo" placeholder="000000" onkeydown="if(event.key===\'Enter\')confirmarCodigoMfa()"></div>'+
-      '<button class="entrar" id="mfaBtn" onclick="confirmarCodigoMfa()">Confirmar</button>'+
+      '<h1>Confirme que é você</h1>'+
+      (CODIGO_ESTADO==="enviando"
+        ?'<p class="hint">Mandando um código de 6 números para '+para+'…</p>'
+        :'<p class="hint">Mandamos um código de 6 números para '+para+'. Ele vale por 10 minutos.</p>')+
+      (msg?'<div class="erro'+(tipo==="ok"?' ok':'')+'" role="'+(tipo==="ok"?'status':'alert')+'">'+esc(msg)+'</div>':'')+
+      '<label for="cdCodigo">Código do e-mail</label>'+
+      '<div class="campo"><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" '+
+        'id="cdCodigo" class="cd-codigo" placeholder="000000" oninput="codigoDigitado(this)" onkeydown="if(event.key===\'Enter\')confirmarCodigoEmail()"></div>'+
+      '<button class="entrar" id="cdBtn" onclick="confirmarCodigoEmail()"'+(CODIGO_ESTADO==="enviando"?' disabled':'')+'>Entrar</button>'+
+      '<p class="hint" style="margin:14px 0 0">Não chegou? Confira a caixa de spam ou lixo eletrônico. O remetente é hub@adamicaptal.com.br.</p>'+
       '<div class="pe-links">'+
-        '<button type="button" class="link" onclick="cancelarMfaLogin()">Cancelar e trocar de conta</button>'+
+        '<button type="button" class="link" onclick="reenviarCodigo()">Mandar outro código</button>'+
+        '<button type="button" class="link" onclick="cancelarCodigo()">Voltar e trocar de conta</button>'+
       '</div>'+
     '</div></div>'+
   '</div>';
+}
+function mostrarAuth(html){
+  document.querySelector(".rail").style.display="none";
+  document.querySelector(".topbar").style.display="none";
+  document.querySelector(".main").style.margin="0";
+  document.querySelector(".main").style.padding="0";
+  document.getElementById("view").innerHTML=html;
+}
+function mostrarCodigo(msg,tipo){
+  mostrarAuth(viewCodigoEmail(msg,tipo));
+  setTimeout(function(){ var i=document.getElementById("cdCodigo"); if(i) i.focus(); },30);
 }
 var MODO_LOGIN="entrar";
 /* E-mail que chega pelo link do e-mail de boas-vindas (?primeiro=...): abre o
@@ -4248,17 +4279,13 @@ function criarAcesso(){
   var e=document.getElementById("lgEmail").value.trim().toLowerCase();
   var p=document.getElementById("lgSenha").value;
   if(!e||!p){ document.getElementById("view").innerHTML=viewLogin("Preencha e-mail e senha."); MODO_LOGIN="novo"; return; }
-  if(p.length<6){ document.getElementById("view").innerHTML=viewLogin("A senha precisa ter pelo menos 6 caracteres."); MODO_LOGIN="novo"; return; }
+  if(p.length<8){ document.getElementById("view").innerHTML=viewLogin("A senha precisa ter pelo menos 8 caracteres."); MODO_LOGIN="novo"; return; }
   var b=document.getElementById("lgBtn"); if(b){ b.disabled=true; b.textContent="Criando…"; }
   primeiroAcesso(e,p)
     .then(function(){ return entrar(e,p); })
     .then(function(){
       MODO_LOGIN="entrar";
-      return carregar().then(function(){
-        if(db.clientes.length) S.cliente=db.clientes[0].id;
-        S.app=null; S.tab="preencher"; montarRascunho(); render();
-        registrar("primeiro acesso","","");
-      });
+      return segundaEtapa();
     })
     .catch(function(err){
       MODO_LOGIN="novo";
@@ -4406,7 +4433,7 @@ function viewRedefinirSenha(erro){
       '<label for="rsSenha2">Confirme a senha</label>'+
       '<div class="campo"><input type="password" id="rsSenha2" autocomplete="new-password" placeholder="••••••••">'+
         '<button type="button" class="olho" id="rsOlho2" onclick="verSenha(\'rsSenha2\',\'rsOlho2\')" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
-      '<p class="hint" style="margin:-6px 0 14px">Mínimo de 6 caracteres.</p>'+
+      '<p class="hint" style="margin:-6px 0 14px">Mínimo de 8 caracteres.</p>'+
       '<button class="entrar" id="rsBtn" onclick="salvarNovaSenha()">Salvar nova senha</button>'+
       '<div class="pe-links">'+
         '<button type="button" class="link" onclick="cancelarRedefinicao()">Cancelar e voltar para o login</button>'+
@@ -4442,7 +4469,7 @@ function salvarNovaSenha(){
   var p1=document.getElementById("rsSenha1").value;
   var p2=document.getElementById("rsSenha2").value;
   if(!p1||!p2){ document.getElementById("view").innerHTML=viewRedefinirSenha("Preencha os dois campos de senha."); return; }
-  if(p1.length<6){ document.getElementById("view").innerHTML=viewRedefinirSenha("A senha precisa ter pelo menos 6 caracteres."); return; }
+  if(p1.length<8){ document.getElementById("view").innerHTML=viewRedefinirSenha("A senha precisa ter pelo menos 8 caracteres."); return; }
   if(p1!==p2){ document.getElementById("view").innerHTML=viewRedefinirSenha("As senhas digitadas são diferentes."); return; }
   var b=document.getElementById("rsBtn"); if(b){ b.disabled=true; b.textContent="Salvando…"; }
   sessaoDoLinkDeSenha().then(function(){ return fetch(SB_URL+"/auth/v1/user",{
@@ -4463,8 +4490,10 @@ function salvarNovaSenha(){
   }).then(function(){
     var tk=TOKEN_RECUPERACAO;
     TOKEN_RECUPERACAO=null;
+    SESSAO=null;
     guardarSessao(tk);
-    return prosseguirLogin();
+    novaSessaoPendente();
+    return segundaEtapa();
   }).catch(function(err){
     document.getElementById("view").innerHTML=viewRedefinirSenha(String(err.message||err));
   });
@@ -4477,56 +4506,92 @@ function prosseguirLogin(){
     backupAutomatico();
   });
 }
-/* Depois da senha, confere se a conta tem verificação em duas etapas ligada
-   antes de liberar a entrada. Quem nunca ativou passa direto, sem notar
-   diferença — é a mesma troca que MODO_DEMO fazia parecer opcional pra quem
-   não configurou nada. */
-var MFA_FATOR_LOGIN=null;
-function verificarSegundaEtapa(){
-  return sbComSessao().then(function(sb){ return sb.auth.mfa.listFactors(); }).then(function(r){
-    if(r.error) throw r.error;
-    var fator=(r.data.totp||[]).filter(function(f){ return f.status==='verified'; })[0];
-    if(!fator) return false;
-    MFA_FATOR_LOGIN=fator.id;
-    document.getElementById("view").innerHTML=viewCodigoMfa();
-    setTimeout(function(){ var i=document.getElementById("mfaCodigo"); if(i) i.focus(); },0);
-    return true;
+/* Segunda etapa (06/11/2026). Depois da senha: se o banco já tem o seguranca.sql,
+   manda o código por e-mail (função codigo-acesso) e só libera depois que o banco
+   confere o código (verificar_codigo). Sem o seguranca.sql instalado, entra como
+   antes: o banco ainda não exige nada. */
+function segundaEtapa(){
+  CODIGO_ESTADO="enviando"; mostrarCodigo(null);
+  return api("rpc/estado_acesso",{method:"POST",body:{}}).then(function(st){
+    if(st&&st.liberado){ marcarLiberado(); return prosseguirLogin(); }
+    return enviarCodigo();
+  },function(err){
+    if(/PGRST202|estado_acesso|could not find the function/i.test(String(err&&err.message))){
+      marcarLiberado(); return prosseguirLogin();
+    }
+    if(!SESSAO){ render(); return; }
+    CODIGO_ESTADO=""; mostrarCodigo("Não foi possível falar com o servidor. Tente de novo em instantes.","erro");
   });
 }
-function confirmarCodigoMfa(){
-  var codigo=(document.getElementById("mfaCodigo").value||"").trim();
-  if(codigo.length!==6){ document.getElementById("view").innerHTML=viewCodigoMfa("Digite os 6 números do aplicativo autenticador."); return; }
-  var b=document.getElementById("mfaBtn"); if(b){ b.disabled=true; b.textContent="Confirmando…"; }
-  var sb=sbAuth();
-  sb.auth.mfa.challenge({factorId:MFA_FATOR_LOGIN}).then(function(ch){
-    if(ch.error) throw ch.error;
-    return sb.auth.mfa.verify({factorId:MFA_FATOR_LOGIN,challengeId:ch.data.id,code:codigo});
-  }).then(function(v){
-    if(v.error) throw v.error;
-    return sb.auth.getSession();
-  }).then(function(s){
-    if(!s.data.session) throw new Error("Não foi possível confirmar a sessão.");
-    guardarSessao(s.data.session);
-    MFA_FATOR_LOGIN=null;
-    return prosseguirLogin();
-  }).catch(function(){
-    document.getElementById("view").innerHTML=viewCodigoMfa("Código inválido ou expirado. Tente de novo.");
+function enviarCodigo(){
+  CODIGO_ESTADO="enviando"; mostrarCodigo(null);
+  var tk=SESSAO&&SESSAO.access_token;
+  if(!tk){ render(); return Promise.resolve(); }
+  return fetch(SB_URL+"/functions/v1/codigo-acesso",{method:"POST",
+    headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk,"Content-Type":"application/json"},body:"{}"})
+  .then(function(res){
+    return res.text().then(function(t){
+      var j=null; try{ j=t?JSON.parse(t):null; }catch(e){}
+      if(!res.ok){
+        var m=(j&&j.erro)||"";
+        if(res.status===404) m="A função codigo-acesso ainda não foi instalada no Supabase. Avise um master.";
+        else if(res.status===401) m=m||"Sua sessão expirou. Volte e entre de novo.";
+        throw new Error(m||("Não foi possível mandar o código (erro "+res.status+")."));
+      }
+      CODIGO_EMAIL=(j&&j.email)||CODIGO_EMAIL;
+      CODIGO_ESTADO="enviado"; mostrarCodigo(null);
+    });
+  }).catch(function(e){
+    CODIGO_ESTADO="erro"; mostrarCodigo(String(e.message||e),"erro");
   });
 }
-function cancelarMfaLogin(){
-  MFA_FATOR_LOGIN=null; limparSessao();
+function reenviarCodigo(){ enviarCodigo(); }
+function codigoDigitado(el){
+  var v=el.value.replace(/\D/g,"").slice(0,6);
+  if(el.value!==v) el.value=v;
+  if(v.length===6&&!codigoDigitado.indo){ codigoDigitado.indo=true; setTimeout(function(){ codigoDigitado.indo=false; confirmarCodigoEmail(); },120); }
+}
+function confirmarCodigoEmail(){
+  var el=document.getElementById("cdCodigo"); if(!el) return;
+  var c=(el.value||"").replace(/\D/g,"");
+  if(c.length!==6){ mostrarCodigo("Digite os 6 números que chegaram no e-mail.","erro"); return; }
+  var b=document.getElementById("cdBtn"); if(b){ if(b.disabled) return; b.disabled=true; b.textContent="Conferindo…"; }
+  api("rpc/verificar_codigo",{method:"POST",body:{p_codigo:c}}).then(function(r){
+    if(r&&r.ok){ marcarLiberado(); CODIGO_EMAIL=""; CODIGO_ESTADO=""; return prosseguirLogin(); }
+    mostrarCodigo((r&&r.msg)||"Código não confere.","erro");
+  }).catch(function(e){
+    if(!SESSAO){ render(); return; }
+    mostrarCodigo(String(e.message||e),"erro");
+  });
+}
+function cancelarCodigo(){
+  var tk=SESSAO&&SESSAO.access_token;
+  limparSessao(); CODIGO_EMAIL=""; CODIGO_ESTADO="";
+  if(tk) fetch(SB_URL+"/auth/v1/logout",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk}}).catch(function(){});
   MODO_LOGIN="entrar";
-  document.getElementById("view").innerHTML=viewLogin();
+  render();
 }
+/* Virada do dia: o acesso de ontem acabou. */
+function encerrarPorVirada(){
+  var tk=SESSAO&&SESSAO.access_token;
+  limparSessao();
+  if(tk) fetch(SB_URL+"/auth/v1/logout",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk}}).catch(function(){});
+  db={clientes:[],dados:{},cartas:{}}; S.cliente=null; S.rasc=null; S.app=null;
+  MODO_LOGIN="entrar";
+  render();
+  document.getElementById("view").innerHTML=viewLogin("Por segurança, o acesso ao Hub vale até a meia-noite. Entre de novo com e-mail, senha e o código do e-mail.",true);
+}
+setInterval(function(){ if(SESSAO&&SESSAO.dia&&SESSAO.dia!==hojeBR()) encerrarPorVirada(); },60000);
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="visible"&&SESSAO&&SESSAO.dia&&SESSAO.dia!==hojeBR()) encerrarPorVirada();
+});
 function fazerLogin(){
   var e=document.getElementById("lgEmail").value.trim();
   var p=document.getElementById("lgSenha").value;
   if(!e||!p){ document.getElementById("view").innerHTML=viewLogin("Preencha e-mail e senha."); return; }
   var b=document.getElementById("lgBtn"); b.disabled=true; b.textContent="Entrando…";
   entrar(e,p).then(function(){
-    return verificarSegundaEtapa();
-  }).then(function(pendente){
-    if(!pendente) return prosseguirLogin();
+    return segundaEtapa();
   }).catch(function(err){
     document.getElementById("view").innerHTML=viewLogin(err.message);
   });
@@ -4534,7 +4599,9 @@ function fazerLogin(){
 function render(manterScroll){
   var scrollAntes=manterScroll?window.scrollY:0;
   hbAplicarAparencia();
-  var logado=!!(SESSAO&&SESSAO.access_token);
+  var logado=sessaoLiberada();
+  if(!logado&&codigoPendente()){ mostrarCodigo(null); return; }
+  if(!logado&&SESSAO&&SESSAO.access_token){ limparSessao(); }
   document.querySelector(".rail").style.display=logado?"":"none";
   document.querySelector(".topbar").style.display=logado?"":"none";
   if(!logado){
@@ -4607,6 +4674,11 @@ if(TOKEN_RECUPERACAO){
   history.replaceState(null,"",location.pathname+location.search);
   render();
   document.getElementById("view").innerHTML=viewLogin(ERRO_LINK_EMAIL);
+}else if(SESSAO&&SESSAO.access_token&&!sessaoLiberada()){
+  /* Senha digitada hoje, código ainda não: volta para a tela do código.
+     Login de ontem: acabou, entra de novo. */
+  if(ERRO_LINK_EMAIL) history.replaceState(null,"",location.pathname+location.search);
+  if(codigoPendente()) segundaEtapa(); else encerrarPorVirada();
 }else if(SESSAO&&SESSAO.access_token){
   if(ERRO_LINK_EMAIL) history.replaceState(null,"",location.pathname+location.search);
   carregar().then(function(){

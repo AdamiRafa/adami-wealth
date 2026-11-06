@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<script src="comum/sessao.js"></script>
 <title>CRM Comercial</title>
 <style>
   /* As fontes vem do Google como melhoria: se a rede bloquear, o CRM
@@ -11785,7 +11786,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.06.3';
+const CRM_VERSAO = 'versão do CRM 2026.11.06.4';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -13953,6 +13954,9 @@ function App(){
   }
 
   if(phase === 'login'){
+    /* O login é só no Hub, que pede o código de 6 dígitos por e-mail (06/11/2026). A tela
+       de login própria do CRM pularia o código; fica só para o modo demonstração. */
+    if(!MODO_DEMO){ window.location.replace('index.html'); return null; }
     return h(LoginScreen,{ onLogin:handleLogin, onRegister:handleRegister, onReset:handleReset,
       demo: MODO_DEMO ? demoStore.profiles.filter(p => p.status === 'ativo') : null, onEntrarDemo:entrarDemo });
   }

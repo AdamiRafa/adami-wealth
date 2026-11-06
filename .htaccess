@@ -18,3 +18,21 @@
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </IfModule>
+
+# Cabeçalhos de segurança (06/11/2026, varredura de segurança).
+# - HSTS: o navegador passa a usar só https neste endereço, mesmo se alguém digitar http.
+# - nosniff, Referrer-Policy e Permissions-Policy: o básico recomendado.
+# - X-Frame-Options e frame-ancestors: nenhum outro site consegue abrir o Hub dentro de
+#   uma moldura para enganar o clique (clickjacking).
+# - Content-Security-Policy: o navegador só aceita script do próprio Hub e só conversa
+#   com o Supabase (e o Banco Central, para a PTAX). Um código injetado não consegue
+#   carregar nada de fora nem mandar dados para outro servidor.
+#   Se um módulo novo precisar de outro endereço, ele entra aqui.
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=15552000"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "same-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://ghxjqmjtmbqzvogwzylo.supabase.co wss://ghxjqmjtmbqzvogwzylo.supabase.co https://olinda.bcb.gov.br; worker-src 'self' blob:; frame-src 'self' blob:; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+</IfModule>

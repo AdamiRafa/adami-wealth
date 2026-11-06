@@ -549,6 +549,12 @@ camada comum `estilo/adami-2026.css` nos 11 módulos; modo noite no Hub e no CRM
 **2.89 (06/11/2026) tela de Equipe e Segurança redesenhada, legível no modo noite (antes os
 campos ficavam escuros numa janela branca). CRM `2026.11.06.2`: simulando um assessor, os
 contadores de Consórcio, Seguro e Agenda no menu passam a ser dele, não do escritório** ·
+**2.91 (06/11/2026) segurança (seção 22): verificação em duas etapas por e-mail para todos
+(código de 6 dígitos depois da senha), acesso que vence à meia-noite de Brasília, tela Segurança
+com o registro de acessos, correções da varredura (Política de Alocação gravável sem login,
+códigos de assessor expostos, Carta do mês com HTML perigoso, código BTG trocável pelo próprio
+assessor, auditoria forjável) e cabeçalhos de segurança no servidor. CRM `2026.11.06.4`: login
+só pelo Hub** ·
 **2.90 (06/11/2026) menu lateral encostado na borda e mais largo (Hub e CRM); tema Dia, Noite
 ou Sistema (segue o modo escuro do computador); Carteiras sempre clara, com o botão "← Hub
 Adami" fixo no topo ao rolar. CRM `2026.11.06.3`: todas as fichas e a lista de clientes com
@@ -605,6 +611,9 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 - **Segurança:** tokens do GitHub e chaves do Supabase já foram expostos em conversa mais
   de uma vez e precisam de revogação confirmada. Não pedir nem aceitar credencial por
   chat: ela não funciona no ambiente de execução e fica registrada no histórico.
+- **Segurança 2.91 (seção 22):** instalar a função `codigo-acesso` (Verify JWT desligado),
+  colar de novo a `agenda-manha` e rodar `seguranca.sql`, nessa ordem. Opcional no painel:
+  senha mínima de 8 caracteres e bloqueio de senhas vazadas (Authentication).
 
 ---
 
@@ -1277,4 +1286,92 @@ sessão do portal e renova o token se ele venceu.
   texto grande) em todas as abas do CRM nos três perfis (admin, assessor, SDR) e no Hub,
   Equipe, Segurança e Carteiras, dia e noite: zero pendências. `--ink-faint` passou de
   `#95A1B0` para `#6B7889`. PDF dos KPIs conferido de novo: 5 páginas, mesmas margens.
+
+---
+
+## 22. Segurança (06/11/2026, versão 2.91)
+
+Pedido do Emil antes da integração com o BTG: verificação em duas etapas por e-mail, acesso
+que vence todo dia e uma varredura de vulnerabilidades no código e no banco.
+
+### 22.1. Varredura: o que foi achado e corrigido
+
+Testes feitos de fora, sem login, só com a chave publicável (que está no código da página):
+
+| Gravidade | Achado | Correção |
+|---|---|---|
+| Crítica | `politica_alocacao_salvar` executava para qualquer visitante: dava para gravar por cima da Política de Alocação de qualquer mês sem login (conferido com mês inválido, nada foi gravado). | A função exige login confirmado; visitante sem login não executa mais nenhuma função. |
+| Alta | O Supabase dá EXECUTE de toda função nova ao papel `anon` (visitante), além do `authenticated`. `revoke ... from public` não tira isso. `codigos_assessores` devolvia os 11 assessores com o código BTG para qualquer um. | `revoke` de tudo do `anon` (tabelas, sequências, funções) e `alter default privileges` para as próximas. `codigos_assessores` exige usuário ativo. |
+| Alta | Carta do mês é HTML gravado pelo editor e mostrado no relatório de todos: um texto com `<img onerror>` rodaria na tela de quem abrisse e poderia roubar a sessão (que fica no `localStorage`). | `limparHtmlCarta` (index.html) deixa só a formatação do editor, ao gravar e ao mostrar. Testado com 12 ataques conhecidos. |
+| Alta | `perfis`: a permissão de coluna (só `nome`) tinha sido desfeita por um `grant update` posterior; o assessor conseguia trocar o próprio `codigo` pela API, e é o código que autoriza levar carteira na importação do BTG. | Só `nome` de novo, e o gatilho `proteger_privilegios` também barra `codigo` para quem não é master. |
+| Média | Auditoria forjável: qualquer usuário gravava registro em nome de outro; administrador apagava. | Gatilho `auditoria_carimbo` grava o e-mail do token; sem UPDATE; só master apaga (o botão some para os demais). |
+| Média | A verificação por aplicativo (TOTP) só existia na tela: o banco nunca exigia. E o CRM tinha login próprio. | Substituída pela verificação por e-mail, exigida pelo banco. CRM sem sessão manda para o Hub. |
+| Média | Servidor sem cabeçalhos de segurança (clickjacking, política de conteúdo). | `.htaccess`: HSTS, nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy e Content-Security-Policy. |
+| Baixa | `agenda-manha` (sem login, de propósito) respondia com os nomes da equipe; `configuracoes` sem `enable row level security` no arquivo; nomes vindos da planilha do BTG dentro de `onclick` com aspas frágeis (fluxo.html). | Resposta só com contagens (detalhe nos Logs); RLS ligada; `jsArg`/`jsStr` (JSON.stringify + esc). |
+
+Sem achado: nenhuma tabela entrega linha para visitante; histórico do git sem segredo; `.sql`,
+`.md` e `error_log` não são servidos; bucket `anexos` privado; `enviar-senha` já tinha limite
+e resposta igual para conta existente ou não.
+
+### 22.2. Verificação em duas etapas por e-mail
+
+1. Senha no Hub (`/auth/v1/token`). A sessão fica marcada `login_dia` = hoje, `dia` = vazio.
+2. `rpc/estado_acesso`: se a sessão já está liberada, entra. Se a função não existe (banco
+   sem o `seguranca.sql`), entra como antes.
+3. Função `codigo-acesso` (Edge Function, Verify JWT desligado): confere o token em
+   `/auth/v1/user`, chama `acesso_novo_codigo` com a chave de serviço (só ela executa) e manda
+   o e-mail pela caixa hub@. O código nunca volta ao navegador. Limites no banco: 1 código a
+   cada 30 s, 8 por hora; código vale 10 minutos; 5 erros invalidam o código; 10 erros em
+   30 minutos bloqueiam a conta por 30 minutos. Só o hash (SHA-256 com a sessão) é guardado.
+4. A pessoa digita; `rpc/verificar_codigo` confere e grava `acesso_sessoes` (sessão do token,
+   `session_id` do JWT, válida só no dia de Brasília). O Hub grava `dia` = hoje em `aw_sessao`.
+
+**Quem protege é o banco**, não a tela: `acesso_liberado()` entra como política
+**restritiva** `exige_verificacao` em todas as tabelas com RLS (soma-se às políticas que já
+existiam, não troca nenhuma) e em `storage.objects`; e as funções de permissão (`eh_super`,
+`eh_admin`, `is_admin`, `is_ativo`, `pode_editar_rv`) passaram a exigir a sessão liberada, o que
+cobre as funções `security definer` que não passam pela RLS. Um token roubado de outra sessão,
+outro aparelho ou de ontem não lê nada. Testado no Postgres local com o banco inteiro.
+
+**Saída de emergência** (e-mail fora do ar, ninguém entra): no SQL Editor,
+`update public.acesso_config set exigir_codigo = false;` e depois `= true`.
+
+### 22.3. Acesso que vence todo dia
+
+- O agendamento `acesso-virada` (pg_cron, 3h01 UTC = 0h01 de Brasília) apaga as sessões de
+  login (`auth.sessions`, o que invalida os tokens de renovação), as liberações do dia anterior
+  e os códigos velhos. O registro de acessos fica 400 dias.
+- Mesmo sem o agendamento, a liberação só vale no dia em que foi feita.
+- Na tela: `comum/sessao.js`, no `<head>` de todo módulo, manda para o Hub quem não tem o
+  código de hoje, a cada minuto e ao voltar para a aba. O Hub mostra "Por segurança, o acesso
+  ao Hub vale até a meia-noite". Quem recarrega a página antes de digitar o código volta para a
+  tela do código.
+- `guardarSessao` dos módulos (alocacao, fluxo, rv) e do Hub preserva `dia` e `login_dia`
+  quando o token é renovado: sem isso, a primeira renovação mandaria a pessoa para o login.
+
+### 22.4. Tela Segurança (menu do Hub)
+
+Mostra a verificação ativa, os últimos 40 acessos da pessoa (`meus_acessos`: entrou, código
+enviado, código errado, bloqueado, com aparelho e IP), o botão **Sair de todos os aparelhos**
+(`/auth/v1/logout?scope=global`, registrado) e, para master, os acessos da equipe
+(`acessos_equipe`, últimos 300).
+
+### 22.5. Política de conteúdo (Content-Security-Policy)
+
+Script só do próprio Hub (`'unsafe-inline'` continua porque o portal usa `onclick` em HTML
+gerado por texto), conexões só com o Supabase (https e wss) e com o Banco Central (PTAX),
+nenhuma moldura de outro site. Conferido com Playwright, servindo os cabeçalhos do
+`.htaccess`: os 13 módulos abrem sem bloqueio, e Baixar PDF (Política), PPTX (Imobiliário),
+modelo xlsx e docx (Patrimonial) geram o arquivo. **Módulo novo que chame outro endereço
+precisa entrar no `connect-src` do `.htaccess`.**
+
+### 22.6. Regras daqui para frente
+
+- **Tabela nova com RLS:** criar também a política restritiva `exige_verificacao` (o bloco 8 do
+  `seguranca.sql` pode ser rodado de novo e cobre todas).
+- **Função nova que devolve ou grava dado:** checar `acesso_liberado()` (ou usar uma das
+  funções de permissão, que já checam). Nunca deixar executável para `anon`.
+- **HTML vindo do banco** só entra na tela por `esc()` ou, se for texto formatado, por
+  `limparHtmlCarta`.
+- Senha nova: mínimo de 8 caracteres na tela.
 

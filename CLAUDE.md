@@ -52,7 +52,8 @@ lado:
 Backend: Supabase (`ghxjqmjtmbqzvogwzylo.supabase.co`), Postgres com RLS.
 E-mail: caixa `hub@adamicaptal.com.br` (HostGator), remetente "Hub Adami". O de boas-vindas
 sai pela Edge Function `supabase/functions/enviar-convite` (colada à mão no Supabase); o de
-redefinir senha pela `enviar-senha` e o e-mail da manhã da Agenda pela `agenda-manha`. Os
+redefinir senha pela `enviar-senha`, o e-mail da manhã da Agenda pela `agenda-manha` e o código
+de acesso de 6 dígitos pela `codigo-acesso`. Os
 modelos são gerados por `emails/_base.py`, que grava cada um dentro da sua função.
 Agenda do CRM: tabela `tarefas` (`agenda.sql`); detalhes na seção 19 da documentação.
 Visual 2026 (seção 20): vidro, menu lateral e modo noite; camada comum dos módulos em
@@ -129,6 +130,13 @@ execução e fica registrado no histórico.
   escrita; ver `DOCUMENTACAO.md` seção 5.
 - **Filtrar no navegador não é segurança.** Restrição de acesso se resolve no banco, com
   política.
+- **Verificação em duas etapas por e-mail e acesso que vence à meia-noite (2.91, seção 22).**
+  Toda tabela com RLS tem a política restritiva `exige_verificacao`; tabela nova também precisa
+  ter. Função nova que devolve ou grava dado checa `acesso_liberado()` (as funções de permissão
+  já checam) e nunca fica executável para `anon`: o Supabase dá EXECUTE ao `anon` por padrão,
+  e `revoke ... from public` não tira. Todo módulo carrega `comum/sessao.js` no `<head>`.
+- **HTML vindo do banco** entra na tela só por `esc()` ou `limparHtmlCarta`. Endereço externo
+  novo precisa entrar na Content-Security-Policy do `.htaccess`.
 - **A importação do BTG não cria, não exclui e não transfere carteira pelo nome.** Só o
   código do assessor autoriza transferência. Ver `DOCUMENTACAO.md` seções 6 e 7.
   A integração pela API (decidida em 05/11/2026, aguardando o BTG) grava direto e cria
@@ -161,4 +169,5 @@ execução e fica registrado no histórico.
 
 Ver `DOCUMENTACAO.md` seção 14. As mais quentes: acesso à API de parceiros do BTG (regras já
 decididas) e a autorização do Microsoft 365 para o Outlook na Agenda. Agenda, Avisos, Arquivos e
-o reset de senha estão instalados e funcionando desde 06/11/2026.
+o reset de senha estão instalados e funcionando desde 06/11/2026. A verificação em duas etapas
+(2.91) depende de o Emil instalar a função `codigo-acesso` e rodar `seguranca.sql`.

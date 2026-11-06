@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="comum/sessao.js"></script>
 <title>Fluxo e Captação — Adami Captal</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -108,7 +109,9 @@ if(!SESSAO||!SESSAO.access_token){ location.replace("index.html"); }
    index.html já resolve com renovar()+retry; replicado aqui no mesmo
    formato, pra essa tela não travar depois de uma hora. */
 function guardarSessao(d){
-  SESSAO={access_token:d.access_token, refresh_token:d.refresh_token||(SESSAO&&SESSAO.refresh_token), email:SESSAO&&SESSAO.email, id:SESSAO&&SESSAO.id};
+  var ant=SESSAO||{};
+  /* dia e login_dia: a marca de "código confirmado hoje" (seguranca.sql); renovar o token não pode apagar. */
+  SESSAO={dia:ant.dia, login_dia:ant.login_dia, access_token:d.access_token, refresh_token:d.refresh_token||(SESSAO&&SESSAO.refresh_token), email:SESSAO&&SESSAO.email, id:SESSAO&&SESSAO.id};
   try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){}
 }
 function renovar(){
@@ -476,7 +479,7 @@ function renderDrillAplicacoes(r){
     '<table><thead><tr><th>'+esc(campo)+'</th><th class="num">Aplicado</th><th class="num">Resgatado</th><th class="num">Net</th><th class="num">Contas</th></tr></thead><tbody>';
   grupos.slice(0,20).forEach(function(g){
     var aberto=ESTADO.drillGrupo===g.grupo;
-    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarGrupoAplicacao(\''+g.grupo.replace(/'/g,"\\'")+'\')"><td>'+(aberto?"▾ ":"▸ ")+esc(g.grupo)+'</td><td class="num">'+brl(g.aplicado)+'</td><td class="num">'+brl(g.resgatado)+'</td><td class="num '+sinalClasse(g.net)+'">'+brl(g.net)+'</td><td class="num">'+g.qtdContas+'</td></tr>';
+    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarGrupoAplicacao('+jsArg(g.grupo)+')"><td>'+(aberto?"▾ ":"▸ ")+esc(g.grupo)+'</td><td class="num">'+brl(g.aplicado)+'</td><td class="num">'+brl(g.resgatado)+'</td><td class="num '+sinalClasse(g.net)+'">'+brl(g.net)+'</td><td class="num">'+g.qtdContas+'</td></tr>';
     if(aberto && classe==="rendaFixa"){
       var titulos=titulosRFDoGrupo(r.linhas, g.grupo);
       h+='<tr><td colspan="5" style="padding:4px 10px 10px;background:#F9FAFC">'+
@@ -550,7 +553,7 @@ function renderDrillPassiva(r){
     '<table><thead><tr><th>Origem</th><th class="num">Total</th><th class="num">Lançamentos</th><th class="num">Contas</th></tr></thead><tbody>';
   origens.forEach(function(g){
     var aberto=ESTADO.drillPassivaOrigem===g.origem;
-    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarOrigemPassiva(\''+g.origem.replace(/'/g,"\\'")+'\')"><td>'+(aberto?"▾ ":"▸ ")+esc(g.origem)+'</td><td class="num">'+brl(g.total)+'</td><td class="num">'+g.qtd+'</td><td class="num">'+g.qtdContas+'</td></tr>';
+    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarOrigemPassiva('+jsArg(g.origem)+')"><td>'+(aberto?"▾ ":"▸ ")+esc(g.origem)+'</td><td class="num">'+brl(g.total)+'</td><td class="num">'+g.qtd+'</td><td class="num">'+g.qtdContas+'</td></tr>';
     if(aberto){
       var detalhes=linhasOrigemRendaPassiva(r.linhas, g.origem);
       h+='<tr><td colspan="4" style="padding:4px 10px 10px;background:#F9FAFC">'+
@@ -914,6 +917,8 @@ function linhaApRe(nome,ap,re){
   var net=ap-re;
   return '<tr><td>'+nome+'</td><td class="num">'+brl(ap)+'</td><td class="num">'+brl(re)+'</td><td class="num '+sinalClasse(net)+'">'+brl(net)+'</td></tr>';
 }
+/* Texto dentro de onclick="f(...)": literal de JS seguro mesmo com aspas no nome (vem da planilha do BTG). */
+function jsArg(v){ return esc(JSON.stringify(String(v==null?"":v))); }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
 
 function renderAuditoria(){
@@ -925,8 +930,8 @@ function renderAuditoria(){
       var chave=p.saida.id+"|"+p.entrada.id;
       var desmarcado=!!ESTADO.paresDesmarcados[chave];
       return '<tr class="'+(desmarcado?"desmarcado":"")+'"><td>'+p.saida.data+'</td><td class="num">'+brl(p.saida.valor)+'</td>'+
-        '<td>'+p.saida.conta+'</td><td>'+p.entrada.conta+'</td>'+
-        '<td><button class="linkmini" onclick="alternarPar(\''+chave.replace(/'/g,"\\'")+'\')">'+(desmarcado?"recolocar":"desmarcar")+'</button></td></tr>';
+        '<td>'+esc(p.saida.conta)+'</td><td>'+esc(p.entrada.conta)+'</td>'+
+        '<td><button class="linkmini" onclick="alternarPar('+jsArg(chave)+')">'+(desmarcado?"recolocar":"desmarcar")+'</button></td></tr>';
     }).join("")+
     '</tbody></table></div>'+
     '<div class="secao"><h2>Maiores movimentações de conta corrente (não pareadas)</h2>'+
@@ -1084,7 +1089,7 @@ function renderDrillSecundarioMes(linhas){
   '<table><thead><tr><th>Fundo</th><th class="num">Compra</th><th class="num">Venda</th><th class="num">Líquido</th><th class="num">Contas</th></tr></thead><tbody>';
   secundarioPorFundo(linhas).slice(0,20).forEach(function(g){
     var abertoFundo=ESTADO.drillDistGrupo===g.fundo;
-    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarGrupoDistribuicao(\''+g.fundo.replace(/'/g,"\\'")+'\')"><td>'+(abertoFundo?"▾ ":"▸ ")+esc(g.fundo)+'</td><td class="num">'+brl(g.compra)+'</td><td class="num">'+brl(g.venda)+'</td><td class="num '+sinalClasse(g.liquido)+'">'+brl(g.liquido)+'</td><td class="num">'+g.qtdContas+'</td></tr>';
+    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarGrupoDistribuicao('+jsArg(g.fundo)+')"><td>'+(abertoFundo?"▾ ":"▸ ")+esc(g.fundo)+'</td><td class="num">'+brl(g.compra)+'</td><td class="num">'+brl(g.venda)+'</td><td class="num '+sinalClasse(g.liquido)+'">'+brl(g.liquido)+'</td><td class="num">'+g.qtdContas+'</td></tr>';
     if(abertoFundo){
       h+='<tr><td colspan="5" style="padding:4px 10px 10px">'+
         '<table><thead><tr><th>Conta</th><th>Nome</th><th>Tipo</th><th>Direta</th><th>Data</th><th class="num">Valor</th></tr></thead><tbody>'+
@@ -1140,7 +1145,7 @@ function renderDrillOfertaDashboardMes(linhas){
     '<table><thead><tr><th>Oferta</th><th>Ativo</th><th class="num">Reservado</th><th class="num">Obtido</th><th class="num">Contas</th></tr></thead><tbody>';
   ofertasPorNome(linhas).forEach(function(g){
     var aberto=ESTADO.drillDistGrupo===g.oferta;
-    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarGrupoDistribuicao(\''+g.oferta.replace(/'/g,"\\'")+'\')"><td>'+(aberto?"▾ ":"▸ ")+esc(g.oferta)+'</td><td>'+esc(g.ativo||"")+'</td><td class="num">'+brl(g.reservado)+'</td><td class="num">'+brl(g.obtido)+'</td><td class="num">'+g.qtdContas+'</td></tr>';
+    h+='<tr class="linkmini" style="cursor:pointer" onclick="focarGrupoDistribuicao('+jsArg(g.oferta)+')"><td>'+(aberto?"▾ ":"▸ ")+esc(g.oferta)+'</td><td>'+esc(g.ativo||"")+'</td><td class="num">'+brl(g.reservado)+'</td><td class="num">'+brl(g.obtido)+'</td><td class="num">'+g.qtdContas+'</td></tr>';
     if(aberto){
       h+='<tr><td colspan="5" style="padding:4px 10px 10px">'+
         '<table><thead><tr><th>Conta</th><th>Nome</th><th>Assessor</th><th class="num">Reservado</th><th class="num">Obtido</th></tr></thead><tbody>'+

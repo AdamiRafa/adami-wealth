@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="comum/sessao.js"></script>
 <title>Mesa RV — recomendações e histórico</title>
 <style>
   :root{
@@ -308,7 +309,9 @@ if(!SESSAO||!SESSAO.access_token) location.replace("index.html");
 var PODE_EDITAR=false, CLIENTES=[], OPS=[], carregando=true, erroCarga=null;
 
 function guardarSessao(d){
-  SESSAO={access_token:d.access_token,refresh_token:d.refresh_token,
+  var ant=SESSAO||{};
+  /* dia e login_dia: a marca de "código confirmado hoje" (seguranca.sql); renovar o token não pode apagar. */
+  SESSAO={dia:ant.dia, login_dia:ant.login_dia, access_token:d.access_token,refresh_token:d.refresh_token,
           email:(d.user&&d.user.email)||(SESSAO&&SESSAO.email),
           id:(d.user&&d.user.id)||(SESSAO&&SESSAO.id)};
   try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){}
