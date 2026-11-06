@@ -102,6 +102,7 @@
     box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
   #awVoltar:hover{background:#132B47;opacity:1}
 </style>
+<script src="comum/anexos.js"></script>
 <link rel="stylesheet" href="estilo/adami-2026.css">
 </head>
 <body>
@@ -194,6 +195,8 @@
       <p class="cap">Os cálculos são refeitos no momento da geração.</p>
       <button class="btn gold larga" onclick="gerarPlano()">Plano Patrimonial (.docx)</button>
       <button class="btn gold larga" onclick="gerarEnquadramento()">Análise de Enquadramento (.docx)</button>
+      <button class="btn larga" onclick="salvarPlanosNoCRM()">Salvar no CRM do cliente</button>
+      <p class="cap" style="margin-top:8px">Guarda os documentos na ficha do cliente no CRM, com a data de envio.</p>
     </div>
     <div class="pane"><h2>Consistência</h2>
       <p class="cap">Erro bloqueia a geração; aviso apenas sinaliza.</p>
@@ -1271,12 +1274,29 @@ function docPlano(){
 }
 
 /* ---------- geração ---------- */
+function docxBlob(montador){
+  recalcular();
+  var m=montador();
+  var buf=montarDocx(m.corpo,m.imagens);
+  return new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+}
+/* Salvar no CRM (06/11/2026): gera os .docx e grava na ficha do cliente escolhido
+   (comum/anexos.js). A regra de erro que trava o download vale aqui também. */
+function salvarPlanosNoCRM(){
+  if(travadoPorErro()) return;
+  if(!window.AdamiCRM){ alert("Não foi possível carregar a ligação com o CRM. Recarregue a página."); return; }
+  window.AdamiCRM.abrir({
+    titulo:"Salvar no CRM do cliente",
+    cliente:DADOS.cliente.nome||"",
+    opcoes:[
+      {rotulo:"Plano Patrimonial (.docx)",gerar:function(){ return Promise.resolve({blob:docxBlob(docPlano),nome:"Plano_Patrimonial_"+nomeBase()+".docx",origem:"plano_patrimonial"}); }},
+      {rotulo:"Análise de Enquadramento (.docx)",gerar:function(){ return Promise.resolve({blob:docxBlob(docEnquadramento),nome:"Enquadramento_"+nomeBase()+".docx",origem:"enquadramento"}); }}
+    ]
+  });
+}
 function baixarDocx(nomeArquivo, montador){
   try{
-    recalcular();
-    var m=montador();
-    var buf=montarDocx(m.corpo,m.imagens);
-    var b=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+    var b=docxBlob(montador);
     var a=document.createElement("a");
     a.href=URL.createObjectURL(b); a.download=nomeArquivo; a.click();
     URL.revokeObjectURL(a.href);

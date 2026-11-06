@@ -545,7 +545,10 @@ celular** ·
 **2.87 (05/11/2026) visual 2026 em tudo (seção 20): tela inicial nova do Hub com menu
 lateral, números do dia, "Hoje" e Avisos da casa; login e Carteiras no estilo de vidro;
 camada comum `estilo/adami-2026.css` nos 11 módulos; modo noite no Hub e no CRM. CRM
-`2026.11.05.7`: abas viram menu lateral recolhível**.
+`2026.11.05.7`: abas viram menu lateral recolhível** ·
+**2.88 (06/11/2026) tela inicial do Hub limpa: ferramentas só no menu; no meio, o dia, o
+calendário e os avisos. CRM `2026.11.06.1`: arquivos na ficha do cliente (seção 21).
+Wealth Planning e Planos Patrimoniais com "Salvar no CRM"**.
 
 ---
 
@@ -580,8 +583,9 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 - **Agenda (05/11/2026), falta instalar:** rodar `agenda.sql` no SQL Editor; criar as
   funções `enviar-senha` e `agenda-manha` (Verify JWT desligado, as duas usam o
   `SMTP_SENHA` que já existe). Ver seção 19.
-- **Avisos da casa (05/11/2026), falta instalar:** rodar `avisos.sql` no SQL Editor. Sem
-  ele, o cartão de avisos do Hub diz que falta rodar o arquivo; o resto da tela funciona.
+- **Instalar as novidades (06/11/2026):** rodar `instalar-novidades.sql` no SQL Editor (é a
+  soma de `agenda.sql`, `avisos.sql` e `anexos.sql`). Sem ele, Agenda, Avisos e Arquivos
+  avisam na tela que falta o arquivo; o resto funciona.
 - **Reset de senha ainda não chegava depois do SPF (05/11/2026).** SPF público conferido
   com `a:br542.hostgator.com.br`. Suspeitas abertas: quarentena do Microsoft 365
   (security.microsoft.com → Quarentena) e o "Roteamento de e-mail" do cPanel em "Local"
@@ -1198,4 +1202,44 @@ cartão que cada um já usa (`.cartao`, `.bloco`, `.card`, `.pane`, `.secao`...)
 valendo. Páginas de relatório (`.pagina`) ficam de fora. Os módulos não têm modo noite.
 Planos Patrimoniais já rolava 26 px para o lado em 1366 px antes desta mudança (conferido
 na versão anterior); não foi mexido.
+
+**Revisão de 06/11/2026 (2.88): tela inicial limpa.** O Emil achou a tela inicial poluída: os
+sistemas apareciam no menu e de novo em cartões no meio. Agora as ferramentas ficam só no
+menu lateral (com a busca), e o meio tem a saudação com o resumo do dia em pílulas, o dia
+(atrasadas, itens com horário, "Próximos dias"), um calendário do mês com pontinhos nos dias
+que têm algo (clique no dia mostra a lista dele) e os Avisos da casa. Os quatro números e os
+cartões de sistema saíram. Tudo calculado por `hbAgendaFaixa` com as mesmas regras da Agenda
+do CRM.
+
+---
+
+## 21. Arquivos do cliente e "Salvar no CRM" (06/11/2026)
+
+**Arquivos na ficha** (`ArquivosCliente` no `crm.html`, coluna da direita da ficha, acima de
+"Atividades e histórico"). Foto, PDF, Word, Excel, PowerPoint, texto; até 25 MB cada; arrastar
+ou "+ Anexar"; miniatura para foto; abrir gera link temporário de 5 minutos; excluir só quem
+enviou ou o head comercial. Banco (`anexos.sql`, seção 8.9 do `adami_completo.sql`): tabela
+`anexos` (cliente, nome, caminho, tamanho, tipo, origem, observação, quem e quando), bucket
+privado `anexos` no Storage com limite de 25 MB e lista de tipos, pasta por cliente.
+`pode_ver_lead()` repete a regra de leitura de `leads` e vale para a tabela e para os
+arquivos: quem vê o cliente vê os arquivos. O registro só aceita caminho dentro da pasta do
+próprio cliente. Testado num Postgres local (7 casos) e na tela em modo demonstração (envio,
+miniatura, recusa de 26 MB e de .exe, exclusão).
+
+**Salvar no CRM** (`comum/anexos.js`, publicado junto: a publicação copia `comum/`). Janela
+própria: escolhe o cliente (lista da própria carteira, já marcando o cliente com o mesmo nome
+do documento), o que salvar e uma observação ("Enviado ao cliente em dd/mm/aaaa"). Grava o
+arquivo no Storage e a linha em `anexos` com a origem. Fala direto com a API do Supabase com a
+sessão do portal e renova o token se ele venceu.
+- **Planos Patrimoniais:** "Salvar no CRM do cliente" gera os dois .docx (Plano Patrimonial e
+  Análise de Enquadramento, origens `plano_patrimonial` e `enquadramento`). A trava de erro de
+  consistência vale aqui também.
+- **Wealth Planning:** "Salvar no CRM" gera um PDF do relatório da tela (html2canvas
+  `vendor/html2canvas-1.4.1.min.js` + jsPDF, carregados só no clique). Cada bloco vira imagem;
+  bloco que abre página na impressão abre página no PDF; bloco maior que a folha é cortado.
+  Na cópia usada para a imagem, cada gráfico SVG vira `<img>` com o tamanho da tela (SVG com
+  `width:100%` saía em branco). O "Imprimir / Exportar PDF" continua igual.
+- **Correção no Wealth Planning:** a rosca de uma fatia só (100%, ex.: só investimentos) não
+  aparecia nem na tela: arco de 360 graus começa e termina no mesmo ponto. Agora fecha a
+  0,003 rad da volta inteira.
 

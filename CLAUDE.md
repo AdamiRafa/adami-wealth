@@ -57,6 +57,8 @@ modelos são gerados por `emails/_base.py`, que grava cada um dentro da sua fun�
 Agenda do CRM: tabela `tarefas` (`agenda.sql`); detalhes na seção 19 da documentação.
 Visual 2026 (seção 20): vidro, menu lateral e modo noite; camada comum dos módulos em
 `estilo/adami-2026.css`. Tudo que é visual fica em `@media screen`: a impressão não pode mudar.
+Arquivos do cliente: Storage `anexos` + tabela `anexos` (`anexos.sql`); as ferramentas gravam
+na ficha por `comum/anexos.js` (seção 21).
 A chave *publishable* fica no código do navegador, o que é correto: a proteção está na
 RLS. A *service_role* **nunca** entra em arquivo servido ao navegador.
 
@@ -158,5 +160,5 @@ execução e fica registrado no histórico.
 ## Pendências
 
 Ver `DOCUMENTACAO.md` seção 14. As mais quentes: instalar a Agenda no Supabase
-(`agenda.sql`, `avisos.sql` e as funções `enviar-senha` e `agenda-manha`), o reset de senha que ainda não
+(`instalar-novidades.sql` e as funções `enviar-senha` e `agenda-manha`), o reset de senha que ainda não
 chega no Microsoft 365, e o acesso à API de parceiros do BTG (regras já decididas).

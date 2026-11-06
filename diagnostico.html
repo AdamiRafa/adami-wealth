@@ -317,6 +317,7 @@
 #awVoltar:hover{background:#132B47;opacity:1}
 @media print{#awVoltar{display:none!important}}
 </style>
+<script src="comum/anexos.js"></script>
 <link rel="stylesheet" href="estilo/adami-2026.css">
 </head>
 <body>
@@ -539,6 +540,7 @@
 
     <div class="toolbar">
       <button class="btn btn-secondary" onclick="if(confirm('Limpar todos os campos?')) location.reload()">Limpar</button>
+      <button class="btn btn-secondary" onclick="salvarWPnoCRM()">Salvar no CRM</button>
       <button class="btn btn-primary" onclick="window.print()">Imprimir / Exportar PDF</button>
     </div>
   </div>
@@ -1100,7 +1102,9 @@ function renderDonut(parts, centerLabel, centerValue) {
   let paths = '', labels = '';
 
   visible.forEach(p => {
-    const sweep = (p.pct/total) * Math.PI * 2;
+    /* Uma fatia só (100%): arco de volta inteira começa e termina no mesmo ponto e o
+       SVG não desenha nada. Um fio abaixo de 360 graus fecha o anel. */
+    const sweep = Math.min((p.pct/total) * Math.PI * 2, Math.PI * 2 - 0.003);
     const end = angle + sweep;
     const large = sweep > Math.PI ? 1 : 0;
     const x1 = cx + rOuter*Math.cos(angle), y1 = cy + rOuter*Math.sin(angle);
@@ -1745,5 +1749,75 @@ document.getElementById('selo').textContent = VERSAO_DIAG;
 </script>
 
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Hub Adami</button>
+
+<script>
+/* ===== Salvar no CRM (06/11/2026) =====
+   Gera o PDF do plano a partir do que está na tela (html2canvas + jsPDF, carregados só
+   quando o botão é usado) e grava na ficha do cliente escolhido no CRM
+   (comum/anexos.js). Cada bloco do relatório vira uma imagem; bloco que começa página
+   na impressão (page-break) começa página aqui também; bloco maior que uma folha é
+   cortado entre páginas. O "Imprimir / Exportar PDF" continua igual. */
+function wpCarregar(src){
+  return new Promise(function(ok,erro){
+    if(document.querySelector('script[data-wp="'+src+'"]')) return ok();
+    var s=document.createElement('script'); s.src=src; s.setAttribute('data-wp',src);
+    s.onload=function(){ ok(); }; s.onerror=function(){ erro(new Error('Não foi possível carregar '+src)); };
+    document.head.appendChild(s);
+  });
+}
+async function wpGerarPdf(){
+  await wpCarregar('vendor/jspdf-2.5.1.umd.min.js');
+  await wpCarregar('vendor/html2canvas-1.4.1.min.js');
+  var pane=document.getElementById('reportPane');
+  var blocos=[].filter.call(pane.children,function(e){ return e.offsetHeight>0; });
+  var nome=(document.getElementById('nome').value||'').trim();
+  if(!nome||blocos.length<2) throw new Error('Preencha os dados do cliente: o plano ainda está vazio.');
+  var pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4'});
+  var M=12, W=186, H=273, y=M, primeira=true;
+  for(var i=0;i<blocos.length;i++){
+    var el=blocos[i];
+    var forca=el.classList.contains('page-break')||el.classList.contains('disclaimer-page');
+    /* Gráfico em SVG com width:100% sai em branco no html2canvas: na cópia usada para
+       a imagem, cada SVG vira uma <img> com o tamanho que ele tem na tela. */
+    var tam=[].map.call(el.querySelectorAll('svg'),function(sv,k){ sv.setAttribute('data-wpi',k); var r=sv.getBoundingClientRect(); return [Math.round(r.width),Math.round(r.height)]; });
+    var cv=await window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',logging:false,onclone:function(doc){
+      [].forEach.call(doc.querySelectorAll('svg[data-wpi]'),function(sv){
+        var t=tam[+sv.getAttribute('data-wpi')]; if(!t||!t[0]||!t[1]) return;
+        var c=sv.cloneNode(true); c.setAttribute('width',t[0]); c.setAttribute('height',t[1]);
+        c.setAttribute('xmlns','http://www.w3.org/2000/svg'); c.removeAttribute('style');
+        var img=doc.createElement('img');
+        img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(c));
+        img.style.cssText='display:block;margin:0 auto;width:'+t[0]+'px;height:'+t[1]+'px';
+        sv.parentNode.replaceChild(img,sv);
+      });
+    }});
+    [].forEach.call(el.querySelectorAll('svg[data-wpi]'),function(sv){ sv.removeAttribute('data-wpi'); });
+    var alt=cv.height*W/cv.width;
+    if(!primeira&&((forca&&y>M)||(y+alt>M+H&&y>M))){ pdf.addPage(); y=M; }
+    if(alt<=H-(y-M)){
+      pdf.addImage(cv.toDataURL('image/jpeg',0.9),'JPEG',M,y,W,alt); y+=alt+4;
+    } else {
+      var pxmm=cv.width/W, feito=0;
+      while(feito<cv.height){
+        var fatia=Math.min(Math.floor((M+H-y)*pxmm),cv.height-feito);
+        var c2=document.createElement('canvas'); c2.width=cv.width; c2.height=fatia;
+        c2.getContext('2d').drawImage(cv,0,feito,cv.width,fatia,0,0,cv.width,fatia);
+        pdf.addImage(c2.toDataURL('image/jpeg',0.9),'JPEG',M,y,W,fatia/pxmm);
+        feito+=fatia; y+=fatia/pxmm;
+        if(feito<cv.height){ pdf.addPage(); y=M; }
+      }
+      y+=4;
+    }
+    primeira=false;
+  }
+  var d=new Date(), dd=String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();
+  return { blob:pdf.output('blob'), nome:'Wealth_Planning_'+nome.replace(/[^\wÀ-ÿ .-]/g,'').replace(/\s+/g,'_')+'_'+dd+'.pdf', origem:'wealth_planning' };
+}
+function salvarWPnoCRM(){
+  if(!window.AdamiCRM){ alert('Não foi possível carregar a ligação com o CRM. Recarregue a página.'); return; }
+  window.AdamiCRM.abrir({ titulo:'Salvar Wealth Planning no CRM', cliente:(document.getElementById('nome').value||'').trim(),
+    opcoes:[{ rotulo:'Wealth Planning (PDF)', gerar:wpGerarPdf }] });
+}
+</script>
 </body>
 </html>

@@ -643,7 +643,7 @@ html[data-cor="noite"] .hb-app .ic{color:#E1C27A}
 .hb-cartao{padding:18px}
 .hb-cartao-cab{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
 .hb-cartao-cab h2{margin:0;font-size:15px;font-weight:600}
-.hb-cartao-cab small{display:block;font-size:12px;color:var(--tx3);font-weight:400}
+.hb-cartao-cab small{display:block;font:400 12px Inter,"Segoe UI",sans-serif;color:var(--tx3);margin-top:2px}
 .hb-link{border:0;background:none;padding:0;color:var(--az);font:600 12.5px Inter,sans-serif;cursor:pointer}
 .hb-hoje{display:flex;flex-direction:column;gap:8px}
 .hb-hoje-it{display:flex;gap:12px;align-items:stretch}
@@ -681,6 +681,49 @@ html[data-cor="noite"] .hb-hoje-box em{color:#F2A29C}
   .hb-menu .hb-pessoa-txt{display:none}
   .hb-ola{padding:18px}
 }
+
+/* Tela inicial limpa (06/11/2026): ferramentas só no menu; no meio, o dia, o calendário e os avisos. */
+.hb-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.hb-chip{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--chip);color:var(--tx2)}
+.hb-chip.ruim{background:rgba(179,64,58,.12);color:#9B342E}
+.hb-chip.bom{background:rgba(47,122,86,.13);color:#1F6B47}
+html[data-cor="noite"] .hb-chip.ruim{color:#F2A29C}
+html[data-cor="noite"] .hb-chip.bom{color:#7FD3A6}
+.hb-dia{flex:999 1 480px;min-width:0;padding:22px 24px}
+.hb-dia .hb-cartao-cab h2{font:600 22px Fraunces,Georgia,serif;color:var(--nv)}
+.hb-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.hb-it{display:flex;gap:14px;align-items:stretch}
+.hb-it-hora{width:62px;flex-shrink:0;font:500 13px "IBM Plex Mono",Consolas,monospace;color:var(--tx3);padding-top:12px;text-align:right}
+.hb-it-hora em{font:600 11px Inter,sans-serif;font-style:normal;color:#B3403A}
+html[data-cor="noite"] .hb-it-hora em{color:#F2A29C}
+.hb-it-txt{flex:1;min-width:0;border-radius:14px;padding:11px 14px;background:var(--vd-forte);border:1px solid var(--vd-borda);border-left:4px solid var(--cor)}
+.hb-it.atrasada .hb-it-txt{background:rgba(179,64,58,.07)}
+.hb-it.feita .hb-it-txt b{text-decoration:line-through;color:var(--tx3)}
+.hb-it-txt b{display:block;font-size:14px}
+.hb-it-txt span{display:block;font-size:12px;color:var(--tx3);margin-top:3px}
+.hb-prox-lista{margin-top:22px;padding-top:16px;border-top:1px solid var(--ln)}
+.hb-prox-lista h3{margin:0 0 10px;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3)}
+.hb-prox{display:grid;grid-template-columns:110px 70px minmax(0,1fr);gap:10px;align-items:center;width:100%;border:0;background:none;padding:8px 6px;border-radius:10px;
+  font:13px Inter,"Segoe UI",sans-serif;color:var(--tx);cursor:pointer;text-align:left}
+.hb-prox:hover{background:var(--chip)}
+.hb-prox span{color:var(--tx2)}
+.hb-prox em{font-style:normal;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb-lado{flex:1 1 320px;max-width:420px}
+.hb-cal-cab{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.hb-cal-cab h2{margin:0;font:600 17px Fraunces,Georgia,serif;color:var(--nv)}
+.hb-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.hb-cal-sem{text-align:center;font-size:11px;font-weight:600;color:var(--tx3);padding:2px 0 6px}
+.hb-cal-dia{position:relative;height:44px;border:0;border-radius:12px;background:transparent;color:var(--tx);font:500 13.5px Inter,sans-serif;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0}
+.hb-cal-dia:hover{background:var(--chip)}
+.hb-cal-dia.fora{color:var(--tx3);opacity:.55}
+.hb-cal-dia.hoje{font-weight:700;color:var(--az);box-shadow:inset 0 0 0 1.5px var(--az)}
+.hb-cal-dia.on{background:#05132A;color:#fff;box-shadow:none}
+html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
+.hb-cal-dia i{display:flex;gap:2px;height:4px}
+.hb-cal-dia i span{width:4px;height:4px;border-radius:50%;background:#C0A265}
+.hb-cal-dia.on i span{background:#C0A265}
+@media (max-width:900px){.hb-lado{max-width:none}.hb-it-hora{width:48px}.hb-prox{grid-template-columns:90px 60px minmax(0,1fr)}}
 
 /* ===== Visual 2026: login e o módulo Carteiras (dentro do Hub), só na tela ===== */
 @media screen{
@@ -1321,7 +1364,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.87";
+var VERSAO="versão 2.88";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3676,7 +3719,7 @@ function irParaHub(){
    (Agenda, Carteiras, Mesa RV, Avisos), os sistemas em cartões, "Hoje" e
    Avisos da casa. Os números vêm do banco depois que a tela já apareceu
    (carregarInicio), então a tela nunca espera por eles. */
-var INICIO={estado:"vazio",em:0,agenda:null,relatorios:null,rv:null,avisos:null,podePublicar:false,
+var INICIO={estado:"vazio",em:0,agenda:null,tarefas:null,leads:[],rv:null,avisos:null,podePublicar:false,
   formAviso:false,erroAviso:""};
 var HB_CURTO=(function(){ try{ return localStorage.getItem("aw_menu_curto")==="1"; }catch(e){ return false; } })();
 function hbNoite(){ return document.documentElement.getAttribute("data-cor")==="noite"; }
@@ -3723,69 +3766,94 @@ function hbCai(t,dia){
 }
 var HB_REGUA={Private:[["relacionamento",8,"Relacionamento"],["performance",3,"Acompanhamento"],["revisao",1,"Revisão de carteira"]],
   Exclusive:[["relacionamento",4,"Relacionamento"],["performance",1,"Acompanhamento"],["revisao",1,"Revisão de carteira"]]};
-function hbAgenda(tarefas,leads,hoje){
-  var hojeItens=[],atrasadas=[];
+/* Itens de um dia para a própria pessoa: tarefas, próximo contato, vencimento e régua
+   (mesma regra da aba Agenda do CRM). "atrasadas" só faz sentido olhando de hoje. */
+function hbNomeLead(l){ if(!l) return ""; var n=(l.cliente||"").trim(),c=(l.conta||"").trim(); return !c?n:(!n?c:(n.slice(-c.length)===c?n:n+" · "+c)); }
+function hbAgendaFaixa(tarefas,leads,de,ate,hoje){
+  var dias={}, atrasadas=[];
   var porLead={}; leads.forEach(function(l){ porLead[l.id]=l; });
-  var nomeL=function(l){ if(!l) return ""; var n=(l.cliente||"").trim(),c=(l.conta||"").trim(); return !c?n:(!n?c:(n.slice(-c.length)===c?n:n+" · "+c)); };
+  var poe=function(dia,it){ (dias[dia]=dias[dia]||[]).push(it); };
   tarefas.forEach(function(t){
     var feitas=t.concluidas||[];
-    var item={hora:(t.hora||"").slice(0,5),titulo:t.titulo,sub:nomeL(porLead[t.lead_id]),cor:t.criado_por&&t.criado_por!==t.dono_id?"#7C5CC4":"#195AB4"};
-    if(hbCai(t,hoje)&&feitas.indexOf(hoje)===-1) hojeItens.push(item);
+    var base={hora:(t.hora||"").slice(0,5),titulo:t.titulo,sub:hbNomeLead(porLead[t.lead_id]),
+      cor:t.criado_por&&t.criado_por!==t.dono_id?"#7C5CC4":"#195AB4",tipo:t.criado_por&&t.criado_por!==t.dono_id?"Atribuída":"Tarefa"};
+    for(var d=t.data>de?t.data:de; d<=ate; d=hbSoma(d,1)){
+      if(hbCai(t,d)) poe(d,Object.assign({feita:feitas.indexOf(d)!==-1},base));
+    }
     if(t.data<hoje){
       var dia=null;
       if(t.repeticao==="nao") dia=t.data;
-      else if(!hbCai(t,hoje)){ for(var d=hbSoma(hoje,-1);d>=t.data&&d>=hbSoma(hoje,-31);d=hbSoma(d,-1)){ if(hbCai(t,d)){ dia=d; break; } } }
-      if(dia&&feitas.indexOf(dia)===-1) atrasadas.push(item);
+      else if(!hbCai(t,hoje)){ for(var x=hbSoma(hoje,-1);x>=t.data&&x>=hbSoma(hoje,-31);x=hbSoma(x,-1)){ if(hbCai(t,x)){ dia=x; break; } } }
+      if(dia&&feitas.indexOf(dia)===-1) atrasadas.push(Object.assign({dia:dia},base));
     }
   });
   leads.forEach(function(l){
     if(l.perdido||((l.funil||"assessor")==="especialista"&&l.ganho)) return;
-    var cli=nomeL(l), pus=function(dia,it){ if(dia<hoje) atrasadas.push(it); else if(dia===hoje) hojeItens.push(it); };
-    if(l.proximo_contato) pus(l.proximo_contato,{hora:"",titulo:"Contato agendado",sub:cli,cor:"#2F7A56"});
-    (l.alertas||[]).forEach(function(a){ if(a.tipo==="vencimento"&&a.data&&!a.resolvido) pus(a.data,{hora:"",titulo:a.texto?"Vencimento · "+a.texto:"Vencimento",sub:cli,cor:"#B3403A"}); });
+    var cli=hbNomeLead(l);
+    var pus=function(dia,it){ it.sub=cli; if(dia<hoje){ it.dia=dia; atrasadas.push(it); } if(dia>=de&&dia<=ate) poe(dia,it); };
+    if(l.proximo_contato) pus(l.proximo_contato,{hora:"",titulo:"Contato agendado",cor:"#2F7A56",tipo:"Próximo contato"});
+    (l.alertas||[]).forEach(function(a){ if(a.tipo==="vencimento"&&a.data&&!a.resolvido) pus(a.data,{hora:"",titulo:a.texto?"Vencimento · "+a.texto:"Vencimento",cor:"#B3403A",tipo:"Vencimento"}); });
     var naCarteira=(l.funil||"assessor")!=="especialista"&&!l.perdido&&((l.esteira||"novo")==="base"||l.ganho);
     if(naCarteira) (HB_REGUA[l.segmento]||[]).forEach(function(r){
       var datas=(l.atividades||[]).filter(function(x){ return x.tipo===r[0]&&x.data; }).map(function(x){ return x.data; }).sort();
       var base=datas.length?datas[datas.length-1]:(l.criado_em?hbIso(new Date(l.criado_em)):hoje);
-      pus(hbSoma(base,Math.round(365/r[1])),{hora:"",titulo:r[2]+" (régua)",sub:cli,cor:"#8A6A18"});
+      pus(hbSoma(base,Math.round(365/r[1])),{hora:"",titulo:r[2]+" (régua)",cor:"#8A6A18",tipo:"Régua"});
     });
   });
-  hojeItens.sort(function(a,b){ return (a.hora||"99").localeCompare(b.hora||"99"); });
-  return {hoje:hojeItens,atrasadas:atrasadas};
+  Object.keys(dias).forEach(function(d){ dias[d].sort(function(a,b){ return (a.hora||"99").localeCompare(b.hora||"99"); }); });
+  atrasadas.sort(function(a,b){ return a.dia.localeCompare(b.dia); });
+  return {dias:dias,atrasadas:atrasadas};
 }
+var HB_MES=null, HB_DIA=null;
+function hbAgendaAtual(){
+  if(!INICIO.tarefas) return null;
+  var hoje=hbIso(new Date());
+  if(!HB_MES) HB_MES=hoje.slice(0,8)+"01";
+  if(!HB_DIA) HB_DIA=hoje;
+  var ini=hbSoma(HB_MES,1-hbDiaSemana(HB_MES));
+  var d=new Date(HB_MES+"T12:00:00"), fimMes=hbIso(new Date(d.getFullYear(),d.getMonth()+1,0));
+  var fim=hbSoma(fimMes,7-hbDiaSemana(fimMes));
+  var de=ini<hoje?ini:hoje, ate=hbSoma(hoje,7)>fim?hbSoma(hoje,7):fim;
+  return hbAgendaFaixa(INICIO.tarefas,INICIO.leads,de,ate,hoje);
+}
+function hbMesTroca(delta){
+  var d=new Date(HB_MES+"T12:00:00"); d.setMonth(d.getMonth()+delta); d.setDate(1);
+  HB_MES=hbIso(d); render(true);
+}
+function hbEscolherDia(dia){ HB_DIA=dia; render(true); }
 
 function carregarInicio(forcar){
   if(!SESSAO||!EU.id) return;
   if(INICIO.estado==="carregando") return;
   if(!forcar&&INICIO.estado==="pronto"&&Date.now()-INICIO.em<60000) return;
   INICIO.estado="carregando";
-  var hoje=hbIso(new Date());
-  var mesRel=new Date(); mesRel.setDate(1); mesRel.setMonth(mesRel.getMonth()-1);
   var pAgenda=Promise.all([
     api("tarefas?select=*&dono_id=eq."+EU.id),
     api("leads?select=id,cliente,conta,proximo_contato,alertas,atividades,segmento,funil,esteira,perdido,ganho,criado_em&excluido=eq.false&responsavel_id=eq."+EU.id)
-  ]).then(function(r){ return hbAgenda(r[0]||[],r[1]||[],hoje); }).catch(function(){ return null; });
+  ]).catch(function(){ return null; });
   var pRv=api("rv_operacoes?select=id&status=eq.aberta").then(function(r){ return (r||[]).length; }).catch(function(){ return null; });
   var pAv=api("rpc/avisos_resumo",{method:"POST",body:{}}).catch(function(){ return null; });
   var pPode=api("rpc/pode_publicar_aviso",{method:"POST",body:{}}).catch(function(){ return false; });
   Promise.all([pAgenda,pRv,pAv,pPode]).then(function(r){
-    var m=mesRel.getMonth()+1, a=mesRel.getFullYear();
-    var feitos=db.clientes.filter(function(c){ return !!db.dados[chave(c.id,m,a)]; }).length;
-    INICIO.relatorios={feitos:feitos,total:db.clientes.length,mes:m,ano:a};
-    INICIO.agenda=r[0]; INICIO.rv=r[1]; INICIO.avisos=r[2]; INICIO.podePublicar=r[3]===true;
+    INICIO.tarefas=r[0]?(r[0][0]||[]):null; INICIO.leads=r[0]?(r[0][1]||[]):[];
+    var hoje=hbIso(new Date());
+    if(INICIO.tarefas){ var a=hbAgendaFaixa(INICIO.tarefas,INICIO.leads,hoje,hoje,hoje);
+      INICIO.agenda={hoje:(a.dias[hoje]||[]).filter(function(i){ return !i.feita; }),atrasadas:a.atrasadas}; }
+    else INICIO.agenda=null;
+    INICIO.rv=r[1]; INICIO.avisos=r[2]; INICIO.podePublicar=r[3]===true;
     INICIO.estado="pronto"; INICIO.em=Date.now();
     if(!S.app&&SESSAO) render(true);
   });
 }
 function hbFiltrar(txt){
-  var q=String(txt||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-  document.querySelectorAll("[data-busca]").forEach(function(el){
-    var alvo=el.getAttribute("data-busca");
-    el.style.display=!q||alvo.indexOf(q)!==-1?"":"none";
+  var q=hbSemAcento(txt);
+  document.querySelectorAll(".hb-menu [data-busca]").forEach(function(el){
+    el.style.display=!q||el.getAttribute("data-busca").indexOf(q)!==-1?"":"none";
   });
-  document.querySelectorAll(".hb-grupo").forEach(function(g){
-    var algum=[].some.call(g.querySelectorAll(".hb-app"),function(a){ return a.style.display!=="none"; });
-    g.style.display=algum?"":"none";
+  document.querySelectorAll(".hb-menu .hb-secao").forEach(function(sec){
+    var n=sec.nextElementSibling, algum=false;
+    while(n&&!n.classList.contains("hb-secao")&&!n.classList.contains("hb-rodape")){ if(n.hasAttribute("data-busca")&&n.style.display!=="none") algum=true; n=n.nextElementSibling; }
+    sec.style.display=algum?"":"none";
   });
 }
 function hbSemAcento(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
@@ -3823,12 +3891,6 @@ function hbMenu(){
       '<button type="button" class="hb-redondo" onclick="sair()" aria-label="Sair" title="Sair">'+HB_IC.sair+'</button></div>'+
     '</div></aside>';
   return h;
-}
-function hbNumero(o){
-  return '<button type="button" class="hb-num hb-vidro" onclick="'+o.acao+'">'+
-    '<span class="hb-num-top"><span class="hb-ic">'+o.ic+'</span>'+(o.delta?'<span class="hb-delta '+(o.tom||"")+'">'+esc(o.delta)+'</span>':'')+'</span>'+
-    '<span class="hb-grande">'+esc(o.valor)+'</span>'+
-    '<span><span class="hb-rot" style="display:block">'+esc(o.rotulo)+'</span><span class="hb-sub" style="display:block">'+esc(o.sub)+'</span></span></button>';
 }
 function hbAvisosHtml(){
   var av=INICIO.avisos, h='';
@@ -3885,69 +3947,91 @@ function hbApagarAviso(id){
   api("avisos?id=eq."+id,{method:"DELETE"}).then(function(){ carregarInicio(true); })
     .catch(function(e){ alert("Não foi possível excluir: "+e.message); });
 }
+function hbLinhaItem(i,atrasada){
+  return '<li class="hb-it'+(i.feita?" feita":"")+(atrasada?" atrasada":"")+'" style="--cor:'+i.cor+'">'+
+    '<span class="hb-it-hora">'+(atrasada?'<em>atrasada</em>':(i.hora||"—"))+'</span>'+
+    '<span class="hb-it-txt"><b>'+esc(i.titulo)+'</b><span>'+esc([i.sub,i.tipo,atrasada&&i.dia?"desde "+i.dia.slice(8,10)+"/"+i.dia.slice(5,7):""].filter(Boolean).join(" · "))+'</span></span></li>';
+}
 function viewHub(){
   carregarInicio(false);
   var nome=String(EU.nome||((SESSAO&&SESSAO.email)||"").split("@")[0].split(/[._-]/)[0]).trim().split(/\s+/)[0];
   nome=nome?nome.charAt(0).toUpperCase()+nome.slice(1):"";
-  var hora=new Date().getHours();
+  var agora=new Date(), hora=agora.getHours();
   var saud=hora<12?"Bom dia":(hora<18?"Boa tarde":"Boa noite");
-  var dataLonga=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+  var hoje=hbIso(agora);
+  var dataLonga=agora.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
   dataLonga=dataLonga.charAt(0).toUpperCase()+dataLonga.slice(1);
-  var ag=INICIO.agenda, rel=INICIO.relatorios, av=INICIO.avisos;
+  var ag=hbAgendaAtual(), av=INICIO.avisos;
   var naoLidos=av?av.filter(function(a){ return !a.lido_por_mim&&new Date(a.publicar_em).getTime()<=Date.now(); }).length:0;
-  var atencao=(ag?ag.atrasadas.length:0)+naoLidos;
-  var frase=INICIO.estado!=="pronto"?"carregando o seu dia…":
-    (atencao?'<strong>'+atencao+(atencao===1?" coisa pede":" coisas pedem")+' sua atenção</strong>':"nada atrasado por aqui");
-  var proxima=null;
-  if(ag){ var hhmm=String(hora).padStart(2,"0")+":"+String(new Date().getMinutes()).padStart(2,"0");
-    ag.hoje.forEach(function(i){ if(i.hora&&i.hora>=hhmm&&(!proxima||i.hora<proxima)) proxima=i.hora; }); }
-  var nums=[
-    {ic:HB_IC.agenda,rotulo:"Agenda de hoje",acao:"irParaAgenda()",
-      valor:ag?(ag.hoje.length+(ag.hoje.length===1?" tarefa":" tarefas")):"—",
-      sub:ag?(proxima?"próxima às "+proxima:"no CRM"):"abre a Agenda do CRM",
-      delta:ag&&ag.atrasadas.length?ag.atrasadas.length+(ag.atrasadas.length===1?" atrasada":" atrasadas"):(ag?"em dia":""),tom:ag&&ag.atrasadas.length?"ruim":"bom"},
-    {ic:HB_IC.relatorio,rotulo:"Relatórios do mês",acao:"irParaApp('carteiras')",
-      valor:rel&&rel.total?rel.feitos+" de "+rel.total:"—",
-      sub:rel?"carteiras de "+MESES[rel.mes-1].toLowerCase()+" lançadas":"Carteiras",
-      delta:rel&&rel.total?Math.round(rel.feitos/rel.total*100)+"%":"",tom:rel&&rel.total&&rel.feitos===rel.total?"bom":""},
-    {ic:HB_IC.rv,rotulo:"Mesa RV",acao:"irParaApp('rv')",
-      valor:INICIO.rv===null?"—":(INICIO.rv+(INICIO.rv===1?" aberta":" abertas")),sub:"operações em andamento",delta:"",tom:""},
-    {ic:HB_IC.aviso,rotulo:"Avisos da casa",acao:"document.getElementById('hbAvisos').scrollIntoView({behavior:'smooth'})",
-      valor:av?(naoLidos+(naoLidos===1?" novo":" novos")):"—",sub:av?(av.length+(av.length===1?" aviso publicado":" avisos publicados")):"recados para a equipe",
-      delta:naoLidos?"para ler":"",tom:naoLidos?"bom":""}
-  ];
-  var hojeHtml;
-  if(!ag) hojeHtml='<p class="hb-vazio">'+(INICIO.estado==="pronto"?"A Agenda aparece aqui quando o CRM estiver ligado à sua conta.":"Carregando…")+'</p>';
-  else if(!ag.hoje.length&&!ag.atrasadas.length) hojeHtml='<p class="hb-vazio">Nada marcado para hoje.</p>';
-  else hojeHtml='<div class="hb-hoje">'+ag.atrasadas.slice(0,3).map(function(i){
-      return '<div class="hb-hoje-it"><span class="hb-hora">—</span><div class="hb-hoje-box atrasada" style="border-left-color:'+i.cor+'"><b>'+esc(i.titulo)+'</b><span><em>atrasada</em>'+(i.sub?' · '+esc(i.sub):'')+'</span></div></div>';
-    }).join("")+ag.hoje.slice(0,6).map(function(i){
-      return '<div class="hb-hoje-it"><span class="hb-hora">'+(i.hora||"—")+'</span><div class="hb-hoje-box" style="border-left-color:'+i.cor+'"><b>'+esc(i.titulo)+'</b>'+(i.sub?'<span>'+esc(i.sub)+'</span>':'')+'</div></div>';
-    }).join("")+'</div>';
-  var grupos=GRUPOS.map(function(gr){
-    var lista=hbAppsDoGrupo(gr); if(!lista.length) return "";
-    return '<section class="hb-grupo" id="sec-'+gr.id+'"><h2>'+esc(gr.nome)+'</h2><p>'+esc(gr.desc)+'</p><div class="hb-apps">'+
-      lista.map(function(a){
-        var c=hbContApp(a);
-        var selo=c?'<span class="hb-delta'+(c.quente?" ruim":"")+'">'+c.n+(a.id==="crm"?" hoje":" abertas")+'</span>':(a.restritoMaster?'<span class="hb-delta">master</span>':'');
-        return '<button type="button" class="hb-app hb-vidro'+(a.ativo?"":" off")+'" data-busca="'+esc(hbSemAcento(a.nome+" "+a.desc))+'"'+(a.ativo?' onclick="irParaApp(\''+a.id+'\')"':' disabled')+'>'+
-          '<span class="hb-app-top"><span class="ic">'+a.ic+'</span>'+selo+'</span>'+
-          '<b>'+esc(a.nome)+'</b><span class="d">'+esc(a.desc)+'</span></button>';
-      }).join("")+'</div></section>';
-  }).join("");
+  var doDiaHoje=ag?(ag.dias[hoje]||[]).filter(function(i){ return !i.feita; }):[];
+  var hhmm=String(hora).padStart(2,"0")+":"+String(agora.getMinutes()).padStart(2,"0");
+  var proxima=doDiaHoje.filter(function(i){ return i.hora&&i.hora>=hhmm; })[0];
+  var chips=[];
+  if(INICIO.estado!=="pronto") chips.push('<span class="hb-chip">carregando o seu dia…</span>');
+  else {
+    if(ag) chips.push('<span class="hb-chip">'+doDiaHoje.length+(doDiaHoje.length===1?" tarefa hoje":" tarefas hoje")+'</span>');
+    if(ag&&ag.atrasadas.length) chips.push('<span class="hb-chip ruim">'+ag.atrasadas.length+(ag.atrasadas.length===1?" atrasada":" atrasadas")+'</span>');
+    if(proxima) chips.push('<span class="hb-chip">próxima às '+proxima.hora+'</span>');
+    if(naoLidos) chips.push('<span class="hb-chip bom">'+naoLidos+(naoLidos===1?" aviso novo":" avisos novos")+'</span>');
+    if(ag&&!doDiaHoje.length&&!ag.atrasadas.length&&!naoLidos) chips.push('<span class="hb-chip bom">tudo em dia</span>');
+  }
+
+  /* ---- coluna do dia ---- */
+  var dia=HB_DIA||hoje, ehHoje=dia===hoje;
+  var tituloDia=ehHoje?"Hoje":new Date(dia+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+  tituloDia=tituloDia.charAt(0).toUpperCase()+tituloDia.slice(1);
+  var corpoDia;
+  if(!ag) corpoDia='<p class="hb-vazio">'+(INICIO.estado==="pronto"?"A agenda aparece aqui quando o CRM estiver ligado à sua conta.":"Carregando…")+'</p>';
+  else {
+    var itensDia=ag.dias[dia]||[];
+    var atr=ehHoje?ag.atrasadas:[];
+    corpoDia=(atr.length||itensDia.length)
+      ? '<ul class="hb-lista">'+atr.slice(0,5).map(function(i){ return hbLinhaItem(i,true); }).join("")+itensDia.map(function(i){ return hbLinhaItem(i,false); }).join("")+'</ul>'+
+        (atr.length>5?'<p class="hb-vazio" style="margin-top:8px">e mais '+(atr.length-5)+' atrasada(s) na Agenda</p>':'')
+      : '<p class="hb-vazio">'+(ehHoje?"Nada marcado para hoje.":"Nada marcado neste dia.")+'</p>';
+  }
+  var proximos='';
+  if(ag&&ehHoje){
+    var lin=[];
+    for(var k=1;k<=6;k++){ var dk=hbSoma(hoje,k), its=(ag.dias[dk]||[]).filter(function(i){ return !i.feita; });
+      if(its.length) lin.push('<button type="button" class="hb-prox" onclick="hbEscolherDia(\''+dk+'\')"><span>'+
+        (k===1?"Amanhã":new Date(dk+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"}))+
+        '</span><b>'+its.length+(its.length===1?" item":" itens")+'</b><em>'+esc(its[0].titulo)+'</em></button>'); }
+    proximos='<div class="hb-prox-lista"><h3>Próximos dias</h3>'+(lin.length?lin.join(""):'<p class="hb-vazio">Nada marcado na próxima semana.</p>')+'</div>';
+  }
+
+  /* ---- calendário ---- */
+  var cal='';
+  if(HB_MES||(HB_MES=hoje.slice(0,8)+"01")){
+    var ini=hbSoma(HB_MES,1-hbDiaSemana(HB_MES)), mes=HB_MES.slice(0,7);
+    var nomeMes=new Date(HB_MES+"T12:00:00").toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+    var celulas='';
+    for(var c=0;c<42;c++){
+      var dc=hbSoma(ini,c); if(c===35&&dc.slice(0,7)!==mes) break;
+      var n=ag?(ag.dias[dc]||[]).filter(function(i){ return !i.feita; }).length:0;
+      celulas+='<button type="button" class="hb-cal-dia'+(dc.slice(0,7)!==mes?" fora":"")+(dc===hoje?" hoje":"")+(dc===dia?" on":"")+'" onclick="hbEscolherDia(\''+dc+'\')" aria-label="'+dc.slice(8,10)+'/'+dc.slice(5,7)+(n?": "+n+" itens":"")+'">'+
+        Number(dc.slice(8,10))+(n?'<i>'+(n>3?'<span></span><span></span><span></span>':new Array(n+1).join('<span></span>'))+'</i>':'')+'</button>';
+    }
+    cal='<section class="hb-cartao hb-vidro"><div class="hb-cal-cab">'+
+      '<button type="button" class="hb-redondo" onclick="hbMesTroca(-1)" aria-label="Mês anterior">'+HB_IC.recolher+'</button>'+
+      '<h2>'+nomeMes.charAt(0).toUpperCase()+nomeMes.slice(1)+'</h2>'+
+      '<button type="button" class="hb-redondo" onclick="hbMesTroca(1)" aria-label="Próximo mês">'+HB_IC.abrir+'</button></div>'+
+      '<div class="hb-cal">'+["S","T","Q","Q","S","S","D"].map(function(x){ return '<span class="hb-cal-sem">'+x+'</span>'; }).join("")+celulas+'</div>'+
+      (dia!==hoje||HB_MES.slice(0,7)!==hoje.slice(0,7)?'<button type="button" class="hb-link" style="margin-top:10px" onclick="HB_DIA=null;HB_MES=null;render(true)">Voltar para hoje</button>':'')+
+      '</section>';
+  }
+
   return '<div class="hb"><div class="hb-luz" aria-hidden="true"></div><div class="hb-casca">'+hbMenu()+
     '<main class="hb-main">'+
       '<section class="hb-ola hb-vidro"><div><h1>'+saud+(nome?", "+esc(nome):"")+'</h1>'+
-        '<p>'+dataLonga+' · '+frase+'</p></div>'+
+        '<p>'+dataLonga+'</p><div class="hb-chips">'+chips.join("")+'</div></div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-          '<button type="button" class="hb-pil" onclick="irParaAgenda()">'+HB_IC.agenda+'Abrir a Agenda</button>'+
-          (EU.super?'<button type="button" class="hb-pil escura" onclick="abrirEquipe()">'+HB_IC.mais+'Convidar pessoa</button>':'')+
+          '<button type="button" class="hb-pil escura" onclick="irParaAgenda()">'+HB_IC.agenda+'Abrir a Agenda</button>'+
         '</div></section>'+
-      '<div class="hb-nums">'+nums.map(hbNumero).join("")+'</div>'+
-      '<div class="hb-dois"><div class="hb-sistemas">'+grupos+'</div>'+
-        '<aside class="hb-lado">'+
-          '<section class="hb-cartao hb-vidro"><div class="hb-cartao-cab"><h2>Hoje<small>da sua Agenda no CRM</small></h2>'+
-            '<button type="button" class="hb-link" onclick="irParaAgenda()">Abrir a Agenda</button></div>'+hojeHtml+'</section>'+
+      '<div class="hb-dois">'+
+        '<section class="hb-dia hb-cartao hb-vidro"><div class="hb-cartao-cab"><h2>'+esc(tituloDia)+'<small>da sua Agenda no CRM</small></h2>'+
+          '<button type="button" class="hb-link" onclick="irParaAgenda()">Ver tudo</button></div>'+corpoDia+proximos+'</section>'+
+        '<aside class="hb-lado">'+cal+
           '<section class="hb-cartao hb-vidro" id="hbAvisos"><div class="hb-cartao-cab"><h2>Avisos da casa</h2>'+
             (INICIO.podePublicar&&!INICIO.formAviso?'<button type="button" class="hb-pil escura" style="height:34px;padding:0 12px;font-size:12.5px" onclick="INICIO.formAviso=true;render(true)">'+HB_IC.mais+'Novo aviso</button>':'')+
           '</div>'+hbAvisosHtml()+'</section>'+
