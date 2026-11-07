@@ -649,6 +649,9 @@ encerrados (seção 7)**.
  · **2.97 (07/11/2026) Comissões (seção 25): regras de repasse, lançamentos (BTG, seguro,
 consórcio, estorno, ajuste), fechamento que trava e leva saldo negativo, e-mail a cada pessoa com o
 Excel, pagamentos com dados bancários. Dados de pagamento também na ficha da Equipe**.
+ · **Comissões 1.1 (07/11/2026): menu lateral no lugar do botão flutuante "Hub Adami" (que tampava
+o título), três cartões (Receita total do mês, A pagar à equipe, Faturamento do escritório) e
+"Subir planilha (Excel)" com tabela de conferência antes de gravar (seção 25)**.
 
 ---
 
@@ -1677,9 +1680,21 @@ depois do fechamento cada pessoa recebe e-mail com o valor e a planilha. Começa
 - **Lançamentos** (`comissao_lancamentos`): o banco calcula e guarda o rateio
   (`[{user_id, papel, valor}]`), então mudar a regra depois não mexe no passado. BTG aceita os
   valores do relatório (receita, BTG, escritório, repasse). Estorno sai negativo. Ajuste é valor
-  com sinal e motivo. "Colar do Excel" (BTG): Código do assessor, Cliente, Conta, Produto, Receita,
-  Parte BTG, Parte escritório, Repasse; o código é o da Equipe. **Os 6 relatórios do BTG ainda
-  não chegaram: quando chegarem, fazer a importação própria.**
+  com sinal e motivo.
+- **Subir planilha (Comissões 1.1)**: o jeito principal de lançar. A Sarah escolhe o .xlsx/.xls/.csv;
+  o navegador lê a primeira aba, acha a linha de cabeçalho (até a 15ª linha, com pelo menos dois
+  nomes conhecidos) e casa cada coluna pelo nome, sem acento e sem espaço (lista em `CAMPOS_IMP`).
+  A tela mostra de que coluna veio cada campo (dá para trocar) e a tabela de conferência: situação
+  de cada linha, pessoa reconhecida, receita e divisão. Só grava no "Importar N linhas", pela
+  `comissao_lancamentos_lote`; linha com problema fica de fora e aparece em vermelho.
+  - Com coluna de **repasse** é formato BTG: os valores da planilha valem (origem `btg`).
+  - Sem repasse é formato **por regra**: casa pela coluna "Regra" (nome) ou por Empresa + Produto
+    entre as regras vigentes; o banco recalcula a divisão (a prévia é só conferência).
+  - Receita (ou repasse) negativa vira estorno. Pessoa casa por código da Equipe, e-mail, nome
+    completo ou primeiro nome (se for único).
+  - "Baixar modelo" gera as planilhas-modelo BTG e Seguro/consórcio.
+  **Os 6 relatórios do BTG ainda não chegaram: quando chegarem, conferir se os nomes das colunas
+  batem com `CAMPOS_IMP` e acrescentar sinônimos se preciso.**
 - **Fechamento** (`comissao_fechar`): trava o mês, cria `comissao_pagamentos` para quem fica
   positivo e leva o negativo como "saldo anterior" para o mês seguinte. `comissao_reabrir` exige
   motivo, recusa se houver pagamento marcado e desfaz o saldo levado.
