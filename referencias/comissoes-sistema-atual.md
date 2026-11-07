@@ -262,3 +262,16 @@ Anotação de leitura, nada decidido.
   demonstrativo no Hub, dá para marcar quando ele abriu.
 - **Acordos contratuais** na ficha da Equipe: remuneração mínima, salário, escada de comissão por
   ano. São dados sensíveis e precisam ficar só com Financeiro/master, como os dados bancários.
+
+---
+
+## Lote 5 (2 prints): Configurações gerais
+- Itens: Profissionais · Equipes · **CNPJs e Filiais** · Dados pessoais · Dados e parâmetros do
+  escritório · Permissões de acesso · **Acesso espelhado** (um profissional vê dados de outro em
+  BI, Financeiro e Comissionamento) · Identidade visual.
+- **CNPJs cadastrados**, todos ativos:
+  - Adami Captal Wealth Planning Ltda, 55.503.633/0001-04;
+  - Adami Captal Assessores de Investimentos S/S, 36.000.256/0001-46;
+  - Adami Partners Consultoria Comercial Ltda, 32.191.808/0001-90.
+- Para o nosso módulo: um **cadastro de empresas pagadoras** (as 3 PJs), usado como "PJ
+  pagadora" de cada pessoa e como a coluna da folha de pagamentos.
