@@ -143,3 +143,60 @@ Anotação de leitura; o desenho só será decidido no comando do Emil.
 - **Impostos, Ajustes Manuais e Mínimo Garantido:** abas próprias, ainda não mostradas.
 - Chave **"Fechamento disponível para profissionais"**: cada assessor passa a ver o próprio
   fechamento.
+
+---
+
+## Lote 3 (5 prints)
+
+### Regras (continuação)
+- Mais regras de consórcio, uma por cliente. Uma delas é de **produto CARTA CONTEMPLADA** com
+  outra divisão: 25% para um sócio, 23% para o especialista e o restante para o escritório. Ou
+  seja, a divisão muda conforme o **produto** do consórcio, e não só conforme a administradora.
+- **"Repasse padrão"** é a última regra, a de menor prioridade, e vale quando nenhuma de cima pegou:
+  - linhas 1 e 2: quando o profissional é uma sócia específica, ela fica com 58% e o restante vai
+    para o ESCRITORIO;
+  - linhas 3 e 4: para qualquer outro profissional, **$PROFISSIONAL fica com 50%** e o restante vai
+    para o ESCRITORIO.
+  - Isso confirma o padrão que o Emil já tinha dito: 50% para o assessor. A exceção da sócia (58%)
+    mostra que dá para ter um padrão diferente por pessoa.
+
+### Ajustes Manuais
+- Filtro por profissional, pesquisa e "+ Adicionar Ajuste". Os ajustes ficam em **grupos com
+  nome** (ex.: "Pagamento Dayler", "Liderança comercial").
+- Colunas de cada linha: **Profissional · Debitar de · Descrição · Valor Bruto · % do escritório ·
+  Origem · % de imposto · Data Início · Data Fim · Categoria**.
+- "Debitar de" = ESCRITORIO nos exemplos, ou seja, o escritório paga um valor fixo ao
+  profissional. Exemplos: valores fixos de R$ 1.200 e R$ 5.000 descritos como função
+  (FINANCEIRO, SEGUROS, CONSÓRCIOS, LIDERANÇA COMERCIAL, CEO, BackOffice).
+- **Data Início / Data Fim** indicam que o ajuste é **recorrente**: repete todo mês dentro do
+  período, sem precisar lançar de novo. Hoje o nosso "Ajuste" vale só para um mês.
+
+### Mínimo Garantido
+- Filtro por profissional e "Adicionar Mínimo Garantido". Neste mês não havia nenhum ("Nenhum
+  mínimo garantido cadastrado para este fechamento").
+- Conceito (a confirmar com o Emil): se a comissão do mês ficar abaixo de um piso, o escritório
+  completa até o mínimo.
+
+### Troca de Campos (detalhe)
+- Mesma lógica das regras: **grupos com prioridade** (1º, 2º…), cada um com linhas de condição
+  **Cliente · Profissional · Origem · Categoria · Produto** e a ação **Substituir campo** (ex.:
+  PROFISSIONAL) **por** um valor.
+- Exemplos:
+  - "Ajuste profissional": nome comprido da planilha → nome do cadastro (vários assessores), e
+    ex-assessores → ESCRITORIO;
+  - "Assessoria digital" → ESCRITORIO;
+  - "Ajuste prev externa": o CNPJ/razão social da própria Adami como profissional → ESCRITORIO;
+  - "Profissional Alexandre" → ESCRITORIO.
+- Uso prático: **ensinar uma vez** que "nome X na planilha = pessoa Y" e, para quem saiu da casa,
+  mandar a comissão para o escritório.
+
+### Cadastro de profissionais (outro módulo do mesmo sistema)
+- Filtros: Filial/Segmento, Equipe, Senioridade, Ratoio, Plano de carreira.
+- "Editar profissionais em lote", "Enviar convites em lote" e "Adicionar Profissional".
+- A opção "Profissionais Inativos" mostra **Motivo da saída · Data da saída · Multa · Saída
+  carteira**.
+- Cada profissional aparece com **nome curto e nome completo** (ex.: "Karan Paiva" / "KARAN
+  MENIERY PAIVA"). O nome completo é o que a planilha traz.
+- Para o nosso Hub: guardar na Equipe um **"nome como aparece no BTG"** (ou vários apelidos)
+  resolve boa parte da Troca de Campos. Para quem sai, marcar "comissão vai para o escritório"
+  a partir da data de saída.
