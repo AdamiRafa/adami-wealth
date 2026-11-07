@@ -1760,3 +1760,6 @@ arredondamento é só nos totais. As comparações ignoram acento, maiúscula e 
 - **Falta (pedido do Emil, para depois):**
   - remessa CNAB 240 ou lote PIX: precisa do banco das PJs;
   - conferir a planilha real de cada uma das 6 origens: os nomes de coluna novos entram em `CAMPOS`.
+- Instalado em 07/11/2026 (migração `comissoes_2_0_hub_2_98`). Conferido em produção: só a regra
+  Repasse padrão, 6 origens, 3 empresas, 12 políticas `exige_verificacao`, nenhuma função para
+  `anon` e o motor respondendo (escritório e nome desconhecido).
