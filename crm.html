@@ -4364,6 +4364,15 @@ const BTG_FAIXA_RENDIMENTO = 0.005; /* 0,5% por importação semanal. O CDI roda
 /* Quanto o CRM acha que o cliente tem hoje, na mesma régua do arquivo.
    Quem já está na carteira compara pelo saldo administrado; quem ainda não
    entrou (prospect em captação) só tem o potencial declarado para comparar. */
+/* A faixa cresce com o tempo desde a última atualização (07/11/2026): 0,5% por semana, nunca
+   menos que 0,5%. Antes era 0,5% fixo, pensado para a importação semanal; a de 07/10 veio quase
+   um mês depois da anterior e acendeu 497 alertas que eram só rendimento do mês. A data da
+   última atualização de cada tipo fica em configuracoes ("btg_ultima_onshore" etc., em ms). */
+function faixaBTG(ultimaMs, agoraMs){
+  if(!ultimaMs || !isFinite(ultimaMs)) return { faixa: BTG_FAIXA_RENDIMENTO, dias: null };
+  const dias = Math.max(0, ((agoraMs || Date.now()) - ultimaMs) / DIA_MS);
+  return { faixa: Math.max(BTG_FAIXA_RENDIMENTO, BTG_FAIXA_RENDIMENTO * dias / 7), dias: Math.round(dias) };
+}
 function btgSaldoAtual(lead){
   if(valorInicialEmCarteira(lead) === null) return parseValor(lead.valorPotencial) || 0;
   return valorEmCarteira(lead);
@@ -4461,7 +4470,9 @@ function tipoPessoaDoArquivo(s){
 /* Compara o arquivo com a base e devolve o que mudou, sem gravar nada.
    Pura de propósito: a prévia mostra exatamente o que a aplicação vai fazer,
    porque é o mesmo resultado. */
-function reconciliarBaseBTG(linhas, leads, users){
+function reconciliarBaseBTG(linhas, leads, users, opc){
+  opc = opc || {};
+  const faixa = opc.faixa || BTG_FAIXA_RENDIMENTO;
   const norm = (s) => String(s == null ? '' : s).trim();
   const porConta = mapaPorConta(leads);
   const nomeDoUsuario = (id) => {
@@ -4525,12 +4536,22 @@ function reconciliarBaseBTG(linhas, leads, users){
     /* A faixa mede sobre o maior dos dois: evita divisão por zero e trata
        igual quem cresceu e quem encolheu. */
     const base = Math.max(saldoAtual, saldoBTG);
-    const limiar = base * BTG_FAIXA_RENDIMENTO;
+    const limiar = base * faixa;
     /* As movimentações já estão dentro de saldoAtual, então `delta` é o que
        sobra DEPOIS de descontar o que o assessor lançou. Não há segunda
        subtração a fazer: um aporte de 300k lançado na semana deixa aqui só o
-       rendimento dos dias entre o lançamento e o export. */
-    const dentroDaFaixa = Math.abs(delta) <= limiar;
+       rendimento dos dias entre o lançamento e o export.
+
+       Pela API (Atualizar do BTG), as aplicações e resgates que o próprio BTG informa desde a
+       última atualização também explicam a diferença: desconta-se o que o BTG viu e o assessor
+       ainda não lançou (o que ele já lançou está em saldoAtual e não pode contar duas vezes). */
+    let movBtg = 0;
+    if(opc.movs && opc.movs.has(chaveConta(conta))){
+      const doBtg = opc.movs.get(chaveConta(conta)) || 0;
+      const lancadoDesde = opc.desdeISO ? saldoMovimentacoes(lead) - saldoMovimentacoes(lead, opc.desdeISO) : 0;
+      movBtg = Math.round((doBtg - lancadoDesde) * 100) / 100;
+    }
+    const dentroDaFaixa = Math.abs(delta - movBtg) <= limiar;
     const mudouSaldo = Math.abs(delta) >= 0.01;
 
     /* `campos` é o que a prévia mostra; `patch` é o que a gravação aplica.
@@ -4611,6 +4632,8 @@ function reconciliarBaseBTG(linhas, leads, users){
         /* Fora da faixa e sem lançamento que explique: é isto que vira alerta
            no card e entra no resumo do admin. */
         alerta: mudouSaldo && !dentroDaFaixa,
+        explicadoPeloBtg: mudouSaldo && !(Math.abs(delta) <= limiar) && dentroDaFaixa && movBtg !== 0,
+        movBtg,
         segmento: segmentoNovo,
         campoValor: btgCampoValor(lead),
         valorAlvo: btgValorAlvo(lead, saldoBTG),
@@ -4641,6 +4664,8 @@ function reconciliarBaseBTG(linhas, leads, users){
       conciliadas: vistas.size - novas.length,
       alteradas: atualizacoes.length,
       alertas: comAlerta.length,
+      explicadasPeloBtg: atualizacoes.filter(a => a.explicadoPeloBtg).length,
+      faixa, diasDesde: opc.dias == null ? null : opc.dias,
       novas: novas.length,
       novasComCodigo: novas.filter(n => n.donoPorCodigo).length,
       ausentes: ausentes.length,
@@ -4690,7 +4715,8 @@ const dataDoExcel = (v) => {
   return new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 864e5).toISOString().slice(0, 10);
 };
 
-function reconciliarOffshoreBTG(linhas, leads){
+function reconciliarOffshoreBTG(linhas, leads, opc){
+  const faixa = (opc && opc.faixa) || BTG_FAIXA_RENDIMENTO;
   const norm = (s) => String(s == null ? '' : s).trim();
   const r2 = (n) => Math.round(n * 100) / 100;
   const porConta = mapaPorConta(leads);
@@ -4761,7 +4787,7 @@ function reconciliarOffshoreBTG(linhas, leads){
     const saldoAtual = btgSaldoOffshoreAtual(lead);
     const delta = r2(saldoBTG - saldoAtual);
     const base = Math.max(saldoAtual, saldoBTG);
-    const limiar = base * BTG_FAIXA_RENDIMENTO;
+    const limiar = base * faixa;
     const dentroDaFaixa = Math.abs(delta) <= limiar;
     const mudouSaldo = Math.abs(delta) >= 0.01;
 
@@ -4794,7 +4820,7 @@ function reconciliarOffshoreBTG(linhas, leads){
   return {
     tipo: 'offshore',
     atualizacoes, novas, ausentes, trocaAssessor: [], conflitos, semConta,
-    resumo: {
+    resumo: { faixa, diasDesde: (opc && opc.dias != null) ? opc.dias : null,
       linhas: lidas,
       conciliadas: vistos.size,
       alteradas: atualizacoes.length,
@@ -4821,7 +4847,8 @@ function reconciliarOffshoreBTG(linhas, leads){
    Por isso "vínculo" aqui não é "conta que a importação ligou agora": é o
    campo de saldo que nunca foi escrito. Sair de vazio para o valor do
    arquivo é o começo do registro, não divergência — mesma regra do AuC. */
-function reconciliarPershing(linhas, leads){
+function reconciliarPershing(linhas, leads, opc){
+  const faixa = (opc && opc.faixa) || BTG_FAIXA_RENDIMENTO;
   const norm = (s) => String(s == null ? '' : s).trim();
   const r2 = (n) => Math.round(n * 100) / 100;
 
@@ -4869,7 +4896,7 @@ function reconciliarPershing(linhas, leads){
     const saldoAtual = btgSaldoOffshoreAtual(lead);
     const delta = r2(saldoBTG - saldoAtual);
     const base = Math.max(saldoAtual, saldoBTG);
-    const limiar = base * BTG_FAIXA_RENDIMENTO;
+    const limiar = base * faixa;
     const dentroDaFaixa = Math.abs(delta) <= limiar;
     const mudouSaldo = Math.abs(delta) >= 0.01;
 
@@ -4894,7 +4921,7 @@ function reconciliarPershing(linhas, leads){
   return {
     tipo: 'pershing',
     atualizacoes, novas, ausentes, trocaAssessor: [], conflitos: [], semConta: [],
-    resumo: {
+    resumo: { faixa, diasDesde: (opc && opc.dias != null) ? opc.dias : null,
       linhas: lidas,
       conciliadas: vistos.size,
       alteradas: atualizacoes.length,
@@ -9724,6 +9751,14 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
      account-link), sem planilha. O código do assessor só entra se pelo menos um código da
      Equipe bater com o código do assessor no BTG (CGE); senão cada conta viraria "código
      desconhecido" e a prévia ficaria ilegível. */
+  /* Faixa de rendimento pelo tempo desde a última atualização deste tipo (faixaBTG). */
+  const opcoesFaixa = async (tipo) => {
+    let ultima = null;
+    try { const c = await fetchConfig('btg_ultima_' + tipo); ultima = c && isFinite(c.valor) ? c.valor : null; } catch(e){ ultima = null; }
+    const f = faixaBTG(ultima, Date.now());
+    return { faixa: f.faixa, dias: f.dias, ultima };
+  };
+
   const doBtg = async () => {
     setEstado('lendo'); setErro(''); setRes(null);
     try {
@@ -9743,7 +9778,18 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
       setArquivo('Base do BTG' + (quando ? ' de ' + quando.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '')
         + (velho ? ' (atenção: tem mais de 3 dias)' : '')
         + (bate ? '' : ' · assessor pelo nome: nenhum código da Equipe bate com o código do assessor no BTG'));
-      setRes(reconciliarBaseBTG(linhas, leads, users)); setEstado('previa');
+      /* Aplicações e resgates que o BTG informou desde a última atualização explicam diferença
+         de saldo (btg_movimentos_crm). Sem a função ou sem dado, segue só com a faixa. */
+      const opc = await opcoesFaixa('onshore');
+      const desde = opc.ultima ? new Date(opc.ultima) : new Date(Date.now() - 7 * DIA_MS);
+      opc.desdeISO = desde.toISOString().slice(0, 10);
+      try {
+        const mv = await sb.rpc('btg_movimentos_crm', { p_desde: opc.desdeISO });
+        if(!mv.error && mv.data && mv.data.contas){
+          opc.movs = new Map(Object.entries(mv.data.contas).map(([c, v]) => [chaveConta(c), Number(v) || 0]));
+        }
+      } catch(e){ /* sem movimentações: só a faixa */ }
+      setRes(reconciliarBaseBTG(linhas, leads, users, opc)); setEstado('previa');
     } catch(e){
       setErro(e && e.message ? e.message : 'Não foi possível ler a base do BTG.');
       setEstado('vazio');
@@ -9756,9 +9802,11 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
     try {
       const linhas = await lerXlsx(await file.arrayBuffer());
       const tipoArquivo = identificarExport(linhas);
-      const r = tipoArquivo === 'offshore' ? reconciliarOffshoreBTG(linhas, leads)
-        : tipoArquivo === 'pershing' ? reconciliarPershing(linhas, leads)
-        : reconciliarBaseBTG(linhas, leads, users);
+      const tipoChave = tipoArquivo === 'offshore' || tipoArquivo === 'pershing' ? tipoArquivo : 'onshore';
+      const opc = await opcoesFaixa(tipoChave);
+      const r = tipoArquivo === 'offshore' ? reconciliarOffshoreBTG(linhas, leads, opc)
+        : tipoArquivo === 'pershing' ? reconciliarPershing(linhas, leads, opc)
+        : reconciliarBaseBTG(linhas, leads, users, opc);
       setRes(r); setEstado('previa');
     } catch(e){
       setErro(e && e.message ? e.message : 'Não foi possível ler o arquivo.');
@@ -9892,7 +9940,10 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
           h('h2',null, off ? 'Prévia da atualização offshore' : pershing ? 'Prévia da atualização Pershing' : 'Prévia da atualização'),
           h('p',{className:'sub'}, arquivo, ' · ', R.linhas, ' linhas lidas · ',
             R.conciliadas, off ? ' ligadas pela conta onshore' : pershing ? ' ligadas pela conta Pershing' : ' conciliadas pela conta',
-            R.dataPosicao ? ' · posição de ' + R.dataPosicao.split('-').reverse().join('/') : '')),
+            R.dataPosicao ? ' · posição de ' + R.dataPosicao.split('-').reverse().join('/') : '',
+            R.faixa ? ' · faixa de rendimento ' + (R.faixa * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%'
+              + (R.diasDesde != null ? ' (' + R.diasDesde + ' dia' + (R.diasDesde === 1 ? '' : 's') + ' desde a última atualização)' : '') : '',
+            R.explicadasPeloBtg ? ' · ' + R.explicadasPeloBtg + ' explicada(s) por aplicação ou resgate informado pelo BTG' : '')),
         h('div',{className:'imp-acoes'},
           h('button',{className:'btn', onClick:descartar}, 'Descartar'),
           h('button',{className:'btn btn-primary', disabled: estado==='aplicando' || !totalAplicar,
@@ -9927,7 +9978,7 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
         : null,
 
       secao('alertas', 'Divergências de saldo', comAlerta, linhaSaldo,
-        'Variação acima de 0,5% sem movimentação lançada que a explique. O saldo é atualizado assim mesmo, e cada um destes ganha um alerta no card do cliente para o assessor responder.',
+        'Variação acima da faixa de rendimento (0,5% por semana desde a última atualização) sem movimentação que a explique. O saldo é atualizado assim mesmo, e cada um destes ganha um alerta no card do cliente para o assessor responder.',
         'grave'),
 
       secao('vinculos', off ? 'Contas offshore vinculadas agora' : 'Contas Pershing vinculadas agora', vinculos, linhaSaldo,
@@ -9936,7 +9987,7 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
           : 'Primeira vez que o saldo destas contas é gravado, depois de alguém ligar o número na ficha do cliente. O saldo entra como ponto de partida, sem alerta — sair do zero não é divergência, é o começo do registro. Cada vínculo fica no histórico do cliente.'),
 
       secao('ok', 'Atualizações dentro do esperado', semAlerta, linhaSaldo,
-        'Rendimento dentro da faixa de 0,5%, ou variação já explicada por movimentação lançada na semana. Atualiza o saldo em silêncio: sem alerta e sem entrada no histórico, que senão viraria extrato de rendimento semanal. Mudança de cadastro, essa sim, fica registrada.'
+        'Rendimento dentro da faixa (0,5% por semana desde a última atualização), ou variação já explicada por movimentação lançada ou informada pelo BTG. Atualiza o saldo em silêncio: sem alerta e sem entrada no histórico, que senão viraria extrato de rendimento semanal. Mudança de cadastro, essa sim, fica registrada.'
           + (dolar ? ' Saldos abaixo de US$ ' + OFFSHORE_PISO_USD + ' são resíduo e nunca geram alerta.' : '')),
 
       secao('novascriar', 'Contas novas — card automático', novasCriar,
@@ -11830,7 +11881,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.06.5';
+const CRM_VERSAO = 'versão do CRM 2026.11.07.1';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -13473,13 +13524,16 @@ function App(){
       })));
     });
 
-    if(!novos.length && !criados.length) return;
+    /* Data desta atualização: a próxima mede a faixa de rendimento a partir dela (faixaBTG). */
+    const marcarAtualizacao = () => upsertConfig('btg_ultima_' + (res.tipo || 'onshore'), Date.now()).catch(() => {});
+    if(!novos.length && !criados.length){ await marcarAtualizacao(); return; }
     const porId = new Map(novos.map(l => [l.id, l]));
     setLeads(prev => [...prev.map(l => porId.has(l.id) ? porId.get(l.id) : l), ...criados]);
     setSaveStatus('saving');
     try {
       await upsertLeads([...novos, ...criados]);
       setSaveStatus(pendentesSalvar.current.size ? 'error' : 'idle');
+      await marcarAtualizacao();
     } catch(e){
       console.error('Falha ao gravar a atualização da base', e);
       setSaveStatus('error');

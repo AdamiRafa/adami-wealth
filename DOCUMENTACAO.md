@@ -410,6 +410,22 @@ somam por cima e seriam contadas duas vezes.
 Nada é gravado antes da prévia. A prévia não é cortesia, é o único ponto em que alguém
 confere centenas de linhas antes de elas mexerem na carteira.
 
+**Faixa proporcional ao tempo (07/11/2026, CRM `2026.11.07.1`).** A faixa de 0,5% era por
+importação semanal e não olhava o intervalo: a atualização de 07/10 veio quase um mês depois da
+anterior e acendeu 497 alertas em 452 clientes que eram só rendimento do mês. Agora a faixa é
+0,5% por semana desde a última atualização daquele tipo (nunca menos que 0,5%); a data fica em
+`configuracoes` (`btg_ultima_onshore`, `btg_ultima_offshore`, `btg_ultima_pershing`, em ms) e é
+gravada ao aplicar. A prévia mostra a faixa usada e os dias desde a última. Os 497 alertas de
+07/10 foram marcados como resolvidos em 07/11 (`limpeza_alertas_0711.sql`, com nota no histórico
+de cada cliente e na auditoria); o alerta de 21/09 ficou aberto.
+
+**Movimentações do BTG explicam a diferença (Atualizar do BTG).** `btg_movimentos_crm(desde)`
+(`btg_movimentos.sql`) soma, por conta, as linhas de `rm-reports-movement` com `flag_nnm` desde
+a última atualização (`vl_captacao`, ou `vl_bruto` com sinal pelo tipo; linhas repetidas entre
+arquivos contam uma vez). O CRM desconta disso o que o assessor já lançou no mesmo período (está
+no saldo e não pode contar duas vezes) e só alerta o que sobra fora da faixa. Colunas a conferir
+no primeiro arquivo real.
+
 ---
 
 ## 8. Impressão
@@ -626,6 +642,10 @@ por grupo, com a busca funcionando, e Equipe e Segurança viram botões compacto
  · **2.96 (07/11/2026) tela inicial com 4 números e tendência (sob gestão, captação líquida do
 mês, clientes, captados; mesma conta do CRM, em `comum/carteira.js`), Avisos com abas, fixar e
 "quem leu", e Registro de atividades para o master (`painel_inicio.sql`)**.
+ · **CRM `2026.11.07.1` (07/11/2026): faixa do alerta de saldo do BTG passa a crescer com o
+tempo desde a última atualização (0,5% por semana, mínimo 0,5%) e, na "Atualizar do BTG", as
+aplicações e resgates informados pelo BTG explicam a diferença. Os 497 alertas de 07/10 foram
+encerrados (seção 7)**.
 
 ---
 
