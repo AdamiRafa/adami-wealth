@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="comum/sessao.js"></script>
+<meta http-equiv="Cache-Control" content="no-store, max-age=0">
+<title>Minha comissão — Adami Captal</title>
+<!-- Minha comissão (Hub 2.98, 07/11/2026). Cada pessoa vê só o próprio fechamento, e só nos meses que o
+     Financeiro liberou (Comissões > Fechamento e envio). Quem decide o que aparece é o banco
+     (comissao_minha, em comissoes.sql); abrir a página marca "visualizado" na folha. -->
+<style>
+:root{--navy:#1B3A5F;--ink:#16324F;--ink2:#3C4C60;--muted:#7A8698;--gold:#C0A265;--line:#DCE2EA;--line2:#EDF1F5;--verde:#1F7A4D;--verde-c:#E6F1EC;--verm:#B3403A;--verm-c:#FBEDE9}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:14px;line-height:1.5;padding:20px 16px 60px}
+.wrap{max-width:1100px;margin:0 auto}
+.voltar{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink2);font:600 13px Inter,sans-serif;text-decoration:none;margin:0 0 18px}
+.voltar:hover{border-color:#195AB4;color:#195AB4}
+.topo{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+.eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);font-weight:700}
+h1{font-family:Georgia,serif;font-size:30px;color:var(--navy);margin:4px 0 2px;font-weight:500}
+.sub{color:var(--muted);font-size:13px}
+select{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.num{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.num span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.num b{display:block;font:500 24px Georgia,serif;color:var(--navy);margin-top:4px;font-variant-numeric:tabular-nums}
+.num.destaque{background:var(--verde-c);border-color:#CFE5D9}.num.destaque b{color:var(--verde)}
+.cartao{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin:0 0 16px}
+.cartao h2{font:500 19px Georgia,serif;color:var(--navy);margin:0 0 4px}
+.linha-topo{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.radios{display:flex;gap:16px;font-size:13px}.radios label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+.bt{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 14px;font:600 13px Inter,sans-serif;cursor:pointer}
+.bt:hover{border-color:#195AB4;color:#195AB4}
+.tab-rol{overflow-x:auto;border:1px solid var(--line2);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:10px;border-bottom:1px solid var(--line);background:#FAFBFD;white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line2);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}td.neg{color:var(--verm)}
+tr.clica{cursor:pointer}tr.clica:hover td{background:#F5F8FC}tr.total td{font-weight:700;background:#FAFBFD}
+td.sublista{background:#FAFBFD;padding:6px 10px}td.sublista table{font-size:12.5px}
+.vazio{color:var(--muted);font-size:13px;padding:14px 4px}
+.aviso{border-radius:12px;padding:12px 14px;margin:0 0 14px;font-size:13.5px;background:#EEF3FA;color:#28466B}.aviso.erro{background:var(--verm-c);color:var(--verm)}
+@media screen and (max-width:760px){.nums{grid-template-columns:1fr 1fr}}
+@media screen and (max-width:420px){.nums{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="estilo/adami-2026.css">
+<script src="vendor/xlsx-0.18.5.full.min.js"></script>
+</head>
+<body>
+<div class="wrap"><a class="voltar" href="index.html">&#8592; Hub Adami</a><div id="app"><p class="vazio">Carregando…</p></div></div>
+<script>
+var VERSAO="Minha comissão 1.0";
+var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
+var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
+var SESSAO=null;
+try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
+if(!SESSAO||!SESSAO.access_token){ location.replace("index.html"); }
+function renovar(){
+  return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({refresh_token:SESSAO.refresh_token})}).then(function(res){
+      if(!res.ok) throw new Error("sessão expirada");
+      return res.json().then(function(d){ SESSAO.access_token=d.access_token; if(d.refresh_token) SESSAO.refresh_token=d.refresh_token; try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){} });
+    });
+}
+function rpc(nome,args,jaTentou){
+  return fetch(SB_URL+"/rest/v1/rpc/"+nome,{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SESSAO.access_token,"Content-Type":"application/json"},body:JSON.stringify(args||{})})
+    .then(function(res){
+      if(res.status===401&&!jaTentou) return renovar().then(function(){ return rpc(nome,args,true); }).catch(function(){ location.replace("index.html"); throw new Error("sessão expirada"); });
+      return res.text().then(function(t){ if(!res.ok){ var m=t; try{ m=JSON.parse(t).message||t; }catch(e){} throw new Error(m); } return t?JSON.parse(t):null; });
+    });
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function n(v){ var x=Number(v); return isFinite(x)?x:0; }
+function brl(v){ return (n(v)<0?"-":"")+"R$ "+Math.abs(n(v)).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function pc(v){ return n(v).toLocaleString("pt-BR",{maximumFractionDigits:2})+"%"; }
+var MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+function nomeMes(iso){ var p=String(iso).slice(0,7).split("-"); var m=MESES[Number(p[1])-1]; return m.charAt(0).toUpperCase()+m.slice(1)+"/"+p[0]; }
+function mesSeguinte(iso){ var d=new Date(iso.slice(0,7)+"-01T12:00:00"); d.setMonth(d.getMonth()+1); return d.toISOString().slice(0,7)+"-01"; }
+var TIPOS={receita:"Comissão",ajuste:"Ajuste",fixo:"Ajuste fixo",minimo:"Mínimo garantido",saldo_anterior:"Saldo anterior"};
+
+var D=null, VISAO="categoria", ABERTOS={}, ORDEM=[];
+function carregar(comp){
+  return rpc("comissao_minha",{p_competencia:comp||null}).then(function(d){ D=d; ABERTOS={}; pintar(); })
+    .catch(function(e){ document.getElementById("app").innerHTML='<div class="aviso erro">'+esc(e.message||e)+'</div>'; });
+}
+function pintar(){
+  var h='<div class="topo"><div><div class="eyebrow">Financeiro</div><h1>Minha comissão</h1><div class="sub">'+esc(D.nome||"")+'</div></div>';
+  if(!D.competencia){
+    document.getElementById("app").innerHTML=h+'</div><div class="aviso">Nenhum fechamento liberado ainda. Quando o Financeiro fechar o mês e liberar, ele aparece aqui.</div><p class="sub">'+esc(VERSAO)+'</p>';
+    return;
+  }
+  h+='<div><select aria-label="Mês" onchange="carregar(this.value)">'+(D.meses||[]).map(function(m){ return '<option value="'+m+'"'+(m===D.competencia?" selected":"")+'>'+esc(nomeMes(m))+'</option>'; }).join("")+'</select></div></div>';
+  var pg=D.pagamento, ls=D.linhas||[];
+  if(!pg&&!ls.length){
+    document.getElementById("app").innerHTML=h+'<div class="aviso">Você não tem comissão em '+esc(nomeMes(D.competencia))+'.</div><p class="sub">'+esc(VERSAO)+'</p>';
+    return;
+  }
+  var bruto=pg?n(pg.bruto):ls.reduce(function(a,l){ return a+n(l.parte); },0);
+  h+='<div class="nums"><div class="num"><span>Comissão bruta</span><b>'+brl(bruto)+'</b></div>'+
+    '<div class="num"><span>Imposto'+(pg&&n(pg.pct_imposto)?' ('+pc(pg.pct_imposto)+')':'')+'</span><b>'+brl(pg?-n(pg.imposto):0)+'</b></div>'+
+    '<div class="num destaque"><span>Comissão líquida</span><b>'+brl(pg?pg.valor:bruto)+'</b></div>'+
+    '<div class="num"><span>Pagamento</span><b style="font-size:17px">'+(pg&&pg.pago_em?"Pago em "+pg.pago_em.split("-").reverse().join("/"):(pg?"Em "+esc(nomeMes(mesSeguinte(D.competencia))):(bruto<0?"Saldo negativo: passa para o mês seguinte":"—")))+'</b>'+
+      (pg&&pg.empresa?'<div class="sub">por '+esc(pg.empresa)+'</div>':'')+'</div></div>';
+  var grupos={}; ORDEM=[];
+  ls.forEach(function(l){ var k=VISAO==="cliente"?(l.cliente||TIPOS[l.tipo]||"—"):(l.categoria||"(sem categoria)");
+    if(!grupos[k]){ grupos[k]={g:0,p:0,ls:[]}; ORDEM.push(k); } grupos[k].ls.push(l); grupos[k].p+=n(l.parte); if(l.tipo==="receita") grupos[k].g+=n(l.gerada); });
+  ORDEM.sort(function(a,b){ return Math.abs(grupos[b].p)-Math.abs(grupos[a].p); });
+  h+='<div class="cartao"><div class="linha-topo"><h2>Detalhe de '+esc(nomeMes(D.competencia))+'</h2><div class="radios">'+
+    '<label><input type="radio" name="vs" '+(VISAO==="categoria"?"checked":"")+' onchange="VISAO=\'categoria\';ABERTOS={};pintar()"> Por categoria</label>'+
+    '<label><input type="radio" name="vs" '+(VISAO==="cliente"?"checked":"")+' onchange="VISAO=\'cliente\';ABERTOS={};pintar()"> Por cliente</label>'+
+    '<button class="bt" onclick="baixar()">Baixar Excel</button></div></div>'+
+    '<div class="tab-rol"><table><thead><tr><th>'+(VISAO==="cliente"?"Cliente":"Categoria")+'</th><th class="n">Linhas</th><th class="n">Comissão gerada</th><th class="n">Sua parte</th><th></th></tr></thead><tbody>';
+  ORDEM.forEach(function(k,i){ var g=grupos[k], ab=!!ABERTOS[k];
+    h+='<tr class="clica" onclick="ABERTOS[ORDEM['+i+']]=!ABERTOS[ORDEM['+i+']];pintar()"><td><b>'+esc(k)+'</b></td><td class="n">'+g.ls.length+'</td><td class="n">'+brl(g.g)+'</td><td class="n'+(g.p<0?" neg":"")+'"><b>'+brl(g.p)+'</b></td><td class="n">'+(ab?"&#9650;":"&#9660;")+'</td></tr>';
+    if(ab) h+='<tr><td colspan="5" class="sublista"><table><thead><tr><th>Origem</th><th>Cliente</th><th>Conta</th><th>Categoria · produto</th><th>Descrição</th><th class="n">Comissão</th><th class="n">Sua parte</th></tr></thead><tbody>'+
+      g.ls.slice(0,500).map(function(l){ return '<tr><td>'+esc(l.origem||TIPOS[l.tipo])+'</td><td>'+esc(l.cliente||"—")+'</td><td>'+esc(l.conta||"")+'</td><td>'+esc([l.categoria,l.produto].filter(Boolean).join(" · "))+'</td><td>'+esc(l.descricao||"")+'</td>'+
+        '<td class="n">'+(l.tipo==="receita"?brl(l.gerada):"—")+'</td><td class="n'+(n(l.parte)<0?" neg":"")+'">'+brl(l.parte)+'</td></tr>'; }).join("")+'</tbody></table></td></tr>';
+  });
+  h+='<tr class="total"><td>Total</td><td></td><td></td><td class="n">'+brl(bruto)+'</td><td></td></tr></tbody></table></div></div><p class="sub">'+esc(VERSAO)+'</p>';
+  document.getElementById("app").innerHTML=h;
+}
+function baixar(){
+  var pg=D.pagamento||{}, rows=[["Adami Captal · Comissão de "+nomeMes(D.competencia)],[(D.nome||"")+" · pagamento em "+nomeMes(mesSeguinte(D.competencia))],[],
+    ["Tipo","Origem","Cliente","Conta","Categoria","Produto","Descrição","Comissão gerada (R$)","Sua parte (R$)"]];
+  (D.linhas||[]).forEach(function(l){ rows.push([TIPOS[l.tipo]||l.tipo,l.origem||"",l.cliente,l.conta,l.categoria,l.produto,l.descricao,l.tipo==="receita"?Math.round(n(l.gerada)*100)/100:"",Math.round(n(l.parte)*100)/100]); });
+  rows.push([]); rows.push(["","","","","","","","Comissão bruta",n(pg.bruto)]); rows.push(["","","","","","","","Imposto",-n(pg.imposto)]); rows.push(["","","","","","","","Comissão líquida",n(pg.valor)]);
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Comissão");
+  var dados=XLSX.write(wb,{bookType:"xlsx",type:"array"}), a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([dados],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  a.download="Minha comissão "+nomeMes(D.competencia).replace("/","-")+".xlsx"; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
+}
+carregar(null);
+</script>
+</body>
+</html>

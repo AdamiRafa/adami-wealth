@@ -652,6 +652,13 @@ Excel, pagamentos com dados bancários. Dados de pagamento também na ficha da E
  · **Comissões 1.1 (07/11/2026): menu lateral no lugar do botão flutuante "Hub Adami" (que tampava
 o título), três cartões (Receita total do mês, A pagar à equipe, Faturamento do escritório) e
 "Subir planilha (Excel)" com tabela de conferência antes de gravar (seção 25)**.
+ · **2.98 / Comissões 2.0 (07/11/2026): refeito a partir dos prints do sistema que a Adami usa hoje.
+Planilhas por origem (6 origens, grade do ano, assistente em 3 passos com aba, colunas e linhas,
+conferência antes de gravar, excluir, recalcular e importar de novo), regras com prioridade e
+condições (cliente/lista, assessor, origem, categoria, produto) e divisão em % ou "o restante",
+troca de nomes, listas de clientes, ajustes fixos recorrentes, mínimo garantido, imposto por empresa
+pagadora (as 3 PJs), acordos contratuais, folha por empresa e "Minha comissão" para cada assessor
+ver o próprio fechamento quando o Financeiro libera (seção 25)**.
 
 ---
 
@@ -1663,50 +1670,93 @@ quem sumiu, saldo nunca vira movimentação, faixa de 0,5%, nada grava antes de 
 - Instalado pelo conector em 07/11/2026 (migração `hub_2_96_avisos_registro`). Conferido no banco
   real com o master: 12 pessoas ativas na conta dos avisos, registro e ações respondendo.
 
-## 25. Comissões (07/11/2026, Hub 2.97, `comissoes.sql`, `comissoes.html`, função `comissoes-enviar`)
+## 25. Comissões 2.0 (07/11/2026, Hub 2.98, `comissoes.sql`, `comissoes.html`, `minha-comissao.html`, função `comissoes-enviar`)
 
-Decisões do Emil (07/11): competência = mês do negócio, pagamento no mês seguinte; BTG por padrão
-50% BTG / 50% escritório e, desses, 50% ao assessor; seguro e consórcio com regra por empresa e
-tipo (ex.: especialista 30%, assessor 30%, escritório 40%); imposto preenchido por eles; estorno no
-mês em que acontece; saldo negativo passa para o mês seguinte; só a Sarah (Financeiro) opera, o
-master vê e, no começo, também opera (depois desmarca em Perfis e acessos); assessor não acessa;
-depois do fechamento cada pessoa recebe e-mail com o valor e a planilha. Começa em outubro/2026.
+A versão 1 (Hub 2.97) ficou no ar algumas horas e nunca recebeu lançamento. Em 07/11 o Emil mandou
+prints do sistema de comissões que a Adami usa hoje (descritos em `referencias/comissoes-sistema-atual.md`,
+sem as imagens porque têm nomes de clientes) e a versão 2.0 segue a mesma lógica. O `comissoes.sql`
+troca as tabelas da versão 1 sozinho (só se ainda forem as antigas) e pode rodar de novo.
 
-- **Permissões:** atribuições `comissoes.operar` e `comissoes.ver` (master e financeiro marcados
-  na instalação). Tabelas `comissao_*` fechadas (RLS sem política); tudo pelas funções.
-- **Regras** (`comissao_regras`): origem, empresa, produto, imposto (%, sai antes de dividir),
-  divisão BTG/escritório/assessor/especialista (soma 100, conferida no banco), vigência. Regra já
-  usada não se apaga, desativa. Instalada a "BTG padrão" 50/25/25.
-- **Lançamentos** (`comissao_lancamentos`): o banco calcula e guarda o rateio
-  (`[{user_id, papel, valor}]`), então mudar a regra depois não mexe no passado. BTG aceita os
-  valores do relatório (receita, BTG, escritório, repasse). Estorno sai negativo. Ajuste é valor
-  com sinal e motivo.
-- **Subir planilha (Comissões 1.1)**: o jeito principal de lançar. A Sarah escolhe o .xlsx/.xls/.csv;
-  o navegador lê a primeira aba, acha a linha de cabeçalho (até a 15ª linha, com pelo menos dois
-  nomes conhecidos) e casa cada coluna pelo nome, sem acento e sem espaço (lista em `CAMPOS_IMP`).
-  A tela mostra de que coluna veio cada campo (dá para trocar) e a tabela de conferência: situação
-  de cada linha, pessoa reconhecida, receita e divisão. Só grava no "Importar N linhas", pela
-  `comissao_lancamentos_lote`; linha com problema fica de fora e aparece em vermelho.
-  - Com coluna de **repasse** é formato BTG: os valores da planilha valem (origem `btg`).
-  - Sem repasse é formato **por regra**: casa pela coluna "Regra" (nome) ou por Empresa + Produto
-    entre as regras vigentes; o banco recalcula a divisão (a prévia é só conferência).
-  - Receita (ou repasse) negativa vira estorno. Pessoa casa por código da Equipe, e-mail, nome
-    completo ou primeiro nome (se for único).
-  - "Baixar modelo" gera as planilhas-modelo BTG e Seguro/consórcio.
-  **Os 6 relatórios do BTG ainda não chegaram: quando chegarem, conferir se os nomes das colunas
-  batem com `CAMPOS_IMP` e acrescentar sinônimos se preciso.**
-- **Fechamento** (`comissao_fechar`): trava o mês, cria `comissao_pagamentos` para quem fica
-  positivo e leva o negativo como "saldo anterior" para o mês seguinte. `comissao_reabrir` exige
-  motivo, recusa se houver pagamento marcado e desfaz o saldo levado.
-- **E-mail** (`comissoes-enviar`, Verify JWT desligado, SMTP hub@): a tela gera o Excel de cada
-  pessoa (só as linhas dela e o valor dela, sem percentuais) e manda; a função pergunta ao banco,
-  com a sessão de quem clicou, quem pode, o e-mail e o total (`comissao_envio_lista`). Registro em
-  `comissao_pagamentos.enviado_em` e na auditoria. Testada com SMTP falso: anexo abre no Excel.
-- **Dados de pagamento** (`comissao_dados_pagto`): CPF/CNPJ, PIX, banco, agência, conta, titular.
-  Editáveis na aba Pessoas (Financeiro) e na ficha da pessoa em Gerenciar equipe (master).
-- **Pagamentos:** data de pagamento por pessoa; "Baixar planilha (contabilidade)" com totais por
-  pessoa e todos os lançamentos.
-- Instalado em 07/11/2026 (migração `comissoes_2_97` e função `comissoes-enviar` v1). Conferido
-  com o master: painel responde, 12 pessoas, regra BTG padrão, outubro aberto. Ninguém tinha a
-  chave Financeiro ligada na instalação.
+Decisões do Emil:
+- Competência é o mês do negócio; o pagamento sai no mês seguinte.
+- O repasse padrão é 50% do assessor e o restante do escritório. A comissão da planilha já é a
+  parte da casa, o BTG já tirou a dele.
+- Só a Sarah (Financeiro) opera. O master vê e, no começo, também opera.
+- O assessor vê só o próprio fechamento, quando o Financeiro libera o mês.
+- Regras: a mesma lógica do sistema atual, mais simples (lista de clientes no lugar de uma regra
+  por cliente, frase legível, botão de testar). A Sarah recadastra as regras.
+- Imposto é por empresa pagadora.
+- Dólar é convertido pela cotação que a Sarah informa ao subir a planilha.
+- Remessa bancária (CNAB) fica para depois; por enquanto a folha sai em Excel.
+- Mínimo garantido e acordos contratuais entram agora.
+- Sem acesso espelhado.
 
+**O motor (`com_calcular`, um só para conferir e para gravar).** Cada linha passa por quatro
+passos:
+1. **Troca de nomes** (`comissao_trocas`). Para cada campo vale a primeira troca que bate.
+2. **Quem é o profissional** (`com_pessoa`). A busca vai nesta ordem:
+   1. código da Equipe;
+   2. "nomes nas planilhas" da pessoa;
+   3. nome;
+   4. nome completo dos dados de pagamento;
+   5. e-mail.
+
+   "ESCRITORIO" vira o escritório.
+3. **A regra.** É a primeira regra ligada e vigente pela `prioridade` (número menor primeiro)
+   cujas condições batem. Condição vazia vale para qualquer valor. Cliente compara nome e conta,
+   e a lista de clientes também.
+4. **A divisão** (`divisao` jsonb). Cada parte vai para `profissional` (o assessor da linha), para
+   `escritorio` ou para um user_id, em % ou `null` (= o restante). Uma parte marcada "não vale
+   para valor negativo" fica de fora quando a linha é negativa.
+
+O que sobra sem dono fica com o escritório. Os valores ficam guardados com 6 casas; o
+arredondamento é só nos totais. As comparações ignoram acento, maiúscula e espaço (`com_norm`).
+
+- **Planilhas** (`comissao_planilhas`, uma por origem e mês). As 6 origens estão em
+  `comissao_origens` (BTG Offshore e Pershing em US$).
+  - **Assistente na tela:**
+    1. Escolher a origem; a cotação é pedida se a origem for em dólar.
+    2. A tela escolhe sozinha a aba com mais cabeçalhos conhecidos (a do BTG é "Detalhe", não
+       "Resumo"), as colunas pelo nome do cabeçalho (`CAMPOS` no html) e a linha de início e de
+       fim (corta título e "Total"). Tudo pode ser trocado na mão.
+    3. Conferência via `comissao_simular`, em lotes de 2.500 linhas, sem gravar.
+  - **Ao gravar** (`comissao_planilha_salvar`): as linhas cruas ficam em `itens`, e a aba e as
+    colunas ficam em `comissao_origens.config`, para o próximo mês.
+  - **Linha com problema** (nome desconhecido, sem regra) não entra na conta, mas fica guardada.
+    O botão "Dizer quem é" cria a troca e recalcula.
+  - **Outras ações:** Recalcular (`comissao_recalcular`, uma planilha por chamada por causa do
+    limite de 8 s do Supabase), Excluir planilha (pedido do Emil), Importar novamente e Baixar as
+    linhas lidas.
+  - **Velocidade:** 3.000 linhas calculam em cerca de 2 s no Postgres local.
+- **Ajustes fixos** (`comissao_fixos`): grupo, pessoa, descrição, valor, início e fim. Entram
+  sozinhos em todo mês aberto do período (`com_aplicar_fixos`, chamado ao abrir o painel e ao
+  salvar). O escritório paga (`valor_escritorio` negativo). Ajuste avulso do mês e comissão ou
+  estorno avulso ficam em `comissao_lancamento_salvar`.
+- **Mínimo garantido:** o piso fica em `comissao_acordos.remuneracao_minima`. No fechamento,
+  `comissao_fechar` lança o complemento (tipo `minimo`), que o escritório paga.
+- **Imposto:** % por empresa pagadora (`comissao_empresas`, as 3 PJs com CNPJ). A empresa de cada
+  pessoa fica em `comissao_dados_pagto.empresa_id`. Bruta é a soma das partes; líquida é bruta
+  menos imposto (`com_totais`). Só incide sobre bruta positiva.
+- **Fechamento:**
+  - Aplica os fixos e lança os mínimos.
+  - Grava `comissao_pagamentos` (bruto, imposto, líquido, empresa).
+  - Leva o saldo negativo para o mês seguinte e trava o mês.
+  - `comissao_reabrir` desfaz tudo isso e recolhe a liberação.
+  - `comissao_liberar` é a chave "Fechamento disponível para os profissionais".
+- **Minha comissão** (`minha-comissao.html`, card no Hub liberado para todos):
+  - `comissao_minha` devolve só as linhas e o pagamento de quem chama, e só de mês liberado.
+  - Marca `visualizado_em`, que aparece na folha.
+- **Folha:** colunas por empresa pagadora, situação (paga / a pagar, visualizado), "marcar
+  selecionados como pagos hoje" e Excel com uma aba por empresa.
+- **E-mail:** a função `comissoes-enviar` continua igual. O total vem de `comissao_envio_lista`,
+  que agora devolve o líquido. O Excel de cada pessoa traz as linhas, a parte dela, a bruta, o
+  imposto e a líquida.
+- **Acordos contratuais** (`comissao_acordos`): função, salário, mínimo, luvas, bonificação, custo
+  fixo, carteira, ROA, contratação, segmento, senioridade, conversão e comissão do ano 1 ao 4.
+  Ficam na aba Pessoas e acordos (Financeiro).
+- **Segurança:** as 12 tabelas `comissao_*` não têm política e têm `exige_verificacao`. Todas as
+  funções conferem `com_pode_operar`/`com_pode_ver` e nenhuma é executável por `anon`. As
+  internas `com_*` não são executáveis nem por `authenticated`.
+- **Falta (pedido do Emil, para depois):**
+  - remessa CNAB 240 ou lote PIX: precisa do banco das PJs;
+  - conferir a planilha real de cada uma das 6 origens: os nomes de coluna novos entram em `CAMPOS`.
