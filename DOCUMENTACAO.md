@@ -623,6 +623,9 @@ cliente (seção 23.8). Ver "Perfis e acessos" na seção 5, `permissoes.sql` e
 (desde que a tela inicial perdeu os cartões de sistema, na 2.88), e no celular não havia como abrir
 nenhuma; a busca também não as mostrava. Agora as ferramentas aparecem em grade de 3 por linha,
 por grupo, com a busca funcionando, e Equipe e Segurança viram botões compactos**.
+ · **2.96 (07/11/2026) tela inicial com 4 números e tendência (sob gestão, captação líquida do
+mês, clientes, captados; mesma conta do CRM, em `comum/carteira.js`), Avisos com abas, fixar e
+"quem leu", e Registro de atividades para o master (`painel_inicio.sql`)**.
 
 ---
 
@@ -1615,4 +1618,22 @@ quem sumiu, saldo nunca vira movimentação, faixa de 0,5%, nada grava antes de 
   (registration-data), cujas colunas só saberemos no primeiro arquivo real.
 - Testado: função no Postgres local (master lê, assessor recusado) e tela com Playwright (prévia,
   base vazia, menus de admin por permissão nos dois sentidos).
+
+## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)
+
+- **Números:** 4 cartões abaixo da saudação, para quem tem a ferramenta CRM. Da casa para quem tem
+  `crm.todos`, senão da própria carteira (`responsavel_id`). `comum/carteira.js` é cópia fiel das
+  regras do CRM (valorEmCarteira, naCarteira, entradaNaCarteira e a captação líquida de
+  computeAssessoriaStats, com offshore convertido pela cotação `usd_brl` de `configuracoes`).
+  Conferido contra o CRM com os dados de demonstração: sob gestão, captação do mês e clientes
+  iguais. **Mudou a regra no CRM, muda neste arquivo.** Tendência: sob gestão contra o fim do mês
+  anterior; captação contra o mesmo dia do mês anterior; captados contra o mês anterior inteiro.
+- **Avisos:** abas Todos, Não lidos, Fixados e Agendados (só quem publica), Fixar/Desafixar,
+  "Quem leu" (`aviso_leitores`, só quem publica), "Ver todos" acima de 5. `avisos_resumo` passou a
+  contar como equipe só quem não está revogado e devolve até 100 avisos.
+- **Registro de atividades:** item do menu só para master. `registro_atividades` (filtros de
+  período, pessoa, ação e busca; páginas de 100 por `p_antes`) e `registro_acoes` (ações dos
+  últimos 90 dias). Baixa CSV com o que está na tela.
+- Instalado pelo conector em 07/11/2026 (migração `hub_2_96_avisos_registro`). Conferido no banco
+  real com o master: 12 pessoas ativas na conta dos avisos, registro e ações respondendo.
 
