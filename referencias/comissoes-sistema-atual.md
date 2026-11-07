@@ -200,3 +200,65 @@ Anotação de leitura; o desenho só será decidido no comando do Emil.
 - Para o nosso Hub: guardar na Equipe um **"nome como aparece no BTG"** (ou vários apelidos)
   resolve boa parte da Troca de Campos. Para quem sai, marcar "comissão vai para o escritório"
   a partir da data de saída.
+
+---
+
+## Lote 4 (5 prints)
+
+### Pagamentos: "Folha de Pagamentos" do mês
+- Filtros Profissionais e Status, mais pesquisa.
+- Tabela com seleção por linha (caixinha) e as colunas **Status · Profissional · Código ·
+  CPF/CNPJ · Total**, mais **uma coluna por empresa pagadora**:
+  - "Adami Captal Assessores de Investimentos S/S";
+  - "Adami Captal Wealth Planning Ltda".
+  - Cada pessoa recebe por uma das duas PJs, ou dividido entre as duas. O ESCRITORIO também
+    aparece como linha, com o que sobra para a casa.
+  - Linha de **Total** por coluna. No exemplo, a folha do mês era de ~R$ 129 mil, dividida entre
+    as duas PJs (~R$ 99,7 mil + ~R$ 29,5 mil).
+- **Status do profissional**: "Não visualizado" / "Visualizado", ou seja, se o assessor já abriu o
+  próprio demonstrativo.
+- Menu do botão **"Exportar remessa"**: Atualizar profissionais, Editar dados em lote, Importar
+  Histórico, Baixar Excel.
+- **Exportar Remessa** (painel lateral):
+  - Data de referência (mês) e Data de pagamento.
+  - Formato: AAWZ, OMIE, Kamino ou **Remessa Bancária (CNAB 240)**.
+  - Grupo de pagamento (obrigatório no CNAB) e **PJ pagadora (conta de origem)**.
+  - Forma de lançamento: **PIX, DOC/TED ou Crédito em conta**.
+  - Total da remessa e o botão Exportar.
+  - Ou seja: gera o **arquivo do banco** para pagar todo mundo de uma vez.
+
+### Cadastro do profissional: aba "Acordos contratuais"
+- Abas da ficha: Dados pessoais · Dados bancários · Participações Societárias · **Acordos
+  contratuais** · Clientes atrelados · Churn.
+- Campos dos acordos contratuais:
+  - Função; Luvas por ano (R$) e anos de luvas; Bonificação;
+  - Custo fixo (% da receita); Salário; **Remuneração mínima**; Tamanho da carteira;
+  - ROA líquido (%); data da contratação; Segmento; Senioridade;
+  - **Expectativa de conversão** e **Comissões** para o ano 1, ano 2, ano 3 e ano 4 em diante, em
+    %. É uma escada de repasse por tempo de casa.
+- A "Remuneração mínima" é o que alimenta o Mínimo Garantido. Salário e luvas podem virar ajustes
+  recorrentes.
+
+### Menu geral do sistema
+- Grupos do menu:
+  - Gestão operacional: CRM, Compliance, Financial Planning;
+  - Gestão de escritórios: **Comissões**;
+  - Gestão de pessoas: **Profissionais**;
+  - Ferramentas: Drive, Intelligence;
+  - Jornada de Configuração; Configurações.
+- As Configurações têm Gerais, Financeiro, Partnership, Estratégia e Performance, CRM, BI e
+  Consolidador/Asset Allocation, Financial Planning.
+- **Configurações gerais** concentram os parâmetros do escritório: permissões, CNPJs e
+  profissionais.
+
+### O que isso indica para o nosso módulo
+Anotação de leitura, nada decidido.
+
+- O pagamento precisa saber **qual PJ paga cada pessoa**. Isso entra no cadastro de dados de
+  pagamento na Equipe. O nosso já tem PIX e banco, mas ainda não tem a PJ pagadora.
+- **Remessa CNAB 240 / lote PIX** para o banco é um passo à frente do "marcar como pago" que temos.
+  Precisa saber qual banco a Adami usa para pagar.
+- **"Visualizado"**: hoje mandamos o Excel por e-mail. Se depois o assessor puder ver o próprio
+  demonstrativo no Hub, dá para marcar quando ele abriu.
+- **Acordos contratuais** na ficha da Equipe: remuneração mínima, salário, escada de comissão por
+  ano. São dados sensíveis e precisam ficar só com Financeiro/master, como os dados bancários.
