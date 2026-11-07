@@ -646,6 +646,9 @@ mês, clientes, captados; mesma conta do CRM, em `comum/carteira.js`), Avisos co
 tempo desde a última atualização (0,5% por semana, mínimo 0,5%) e, na "Atualizar do BTG", as
 aplicações e resgates informados pelo BTG explicam a diferença. Os 497 alertas de 07/10 foram
 encerrados (seção 7)**.
+ · **2.97 (07/11/2026) Comissões (seção 25): regras de repasse, lançamentos (BTG, seguro,
+consórcio, estorno, ajuste), fechamento que trava e leva saldo negativo, e-mail a cada pessoa com o
+Excel, pagamentos com dados bancários. Dados de pagamento também na ficha da Equipe**.
 
 ---
 
@@ -1656,4 +1659,39 @@ quem sumiu, saldo nunca vira movimentação, faixa de 0,5%, nada grava antes de 
   últimos 90 dias). Baixa CSV com o que está na tela.
 - Instalado pelo conector em 07/11/2026 (migração `hub_2_96_avisos_registro`). Conferido no banco
   real com o master: 12 pessoas ativas na conta dos avisos, registro e ações respondendo.
+
+## 25. Comissões (07/11/2026, Hub 2.97, `comissoes.sql`, `comissoes.html`, função `comissoes-enviar`)
+
+Decisões do Emil (07/11): competência = mês do negócio, pagamento no mês seguinte; BTG por padrão
+50% BTG / 50% escritório e, desses, 50% ao assessor; seguro e consórcio com regra por empresa e
+tipo (ex.: especialista 30%, assessor 30%, escritório 40%); imposto preenchido por eles; estorno no
+mês em que acontece; saldo negativo passa para o mês seguinte; só a Sarah (Financeiro) opera, o
+master vê e, no começo, também opera (depois desmarca em Perfis e acessos); assessor não acessa;
+depois do fechamento cada pessoa recebe e-mail com o valor e a planilha. Começa em outubro/2026.
+
+- **Permissões:** atribuições `comissoes.operar` e `comissoes.ver` (master e financeiro marcados
+  na instalação). Tabelas `comissao_*` fechadas (RLS sem política); tudo pelas funções.
+- **Regras** (`comissao_regras`): origem, empresa, produto, imposto (%, sai antes de dividir),
+  divisão BTG/escritório/assessor/especialista (soma 100, conferida no banco), vigência. Regra já
+  usada não se apaga, desativa. Instalada a "BTG padrão" 50/25/25.
+- **Lançamentos** (`comissao_lancamentos`): o banco calcula e guarda o rateio
+  (`[{user_id, papel, valor}]`), então mudar a regra depois não mexe no passado. BTG aceita os
+  valores do relatório (receita, BTG, escritório, repasse). Estorno sai negativo. Ajuste é valor
+  com sinal e motivo. "Colar do Excel" (BTG): Código do assessor, Cliente, Conta, Produto, Receita,
+  Parte BTG, Parte escritório, Repasse; o código é o da Equipe. **Os 6 relatórios do BTG ainda
+  não chegaram: quando chegarem, fazer a importação própria.**
+- **Fechamento** (`comissao_fechar`): trava o mês, cria `comissao_pagamentos` para quem fica
+  positivo e leva o negativo como "saldo anterior" para o mês seguinte. `comissao_reabrir` exige
+  motivo, recusa se houver pagamento marcado e desfaz o saldo levado.
+- **E-mail** (`comissoes-enviar`, Verify JWT desligado, SMTP hub@): a tela gera o Excel de cada
+  pessoa (só as linhas dela e o valor dela, sem percentuais) e manda; a função pergunta ao banco,
+  com a sessão de quem clicou, quem pode, o e-mail e o total (`comissao_envio_lista`). Registro em
+  `comissao_pagamentos.enviado_em` e na auditoria. Testada com SMTP falso: anexo abre no Excel.
+- **Dados de pagamento** (`comissao_dados_pagto`): CPF/CNPJ, PIX, banco, agência, conta, titular.
+  Editáveis na aba Pessoas (Financeiro) e na ficha da pessoa em Gerenciar equipe (master).
+- **Pagamentos:** data de pagamento por pessoa; "Baixar planilha (contabilidade)" com totais por
+  pessoa e todos os lançamentos.
+- Instalado em 07/11/2026 (migração `comissoes_2_97` e função `comissoes-enviar` v1). Conferido
+  com o master: painel responde, 12 pessoas, regra BTG padrão, outubro aberto. Ninguém tinha a
+  chave Financeiro ligada na instalação.
 

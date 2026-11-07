@@ -6,34 +6,545 @@
 <script src="comum/sessao.js"></script>
 <meta http-equiv="Cache-Control" content="no-store, max-age=0">
 <title>Comissões — Adami Captal</title>
-<!-- Comissões (em construção, 06/11/2026). Por enquanto só a casca: a ferramenta já
-     existe no menu e na tabela Perfis e acessos (ferramenta.comissoes, nasce liberada
-     para Master e Financeiro), para o código entrar depois sem mexer em permissão. -->
+<!-- Comissões (Hub 2.97, 07/11/2026). Quem opera é o Financeiro (comissoes.operar); o master vê e,
+     no começo, também opera. Todas as contas são feitas no banco (comissoes.sql): a tela só mostra e
+     manda. Competência = mês do negócio; pagamento no mês seguinte. -->
 <style>
-:root{--navy:#1B3A5F;--ink:#16324F;--muted:#7A8698;--gold:#C0A265;--line:#DCE2EA}
+:root{--navy:#1B3A5F;--navy-d:#05132A;--ink:#16324F;--ink2:#3C4C60;--muted:#7A8698;--gold:#C0A265;--line:#DCE2EA;--line2:#EDF1F5;
+  --verde:#1F7A4D;--verde-c:#E6F1EC;--verm:#B3403A;--verm-c:#FBEDE9;--amar:#8A6D1F;--amar-c:#F7F0DC;--surface:#fff}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);
-  font-size:14px;line-height:1.55;padding:90px 20px 80px}
-.wrap{max-width:720px;margin:0 auto}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:14px;line-height:1.5;padding:96px 20px 80px}
+.wrap{max-width:1240px;margin:0 auto}
+.topo{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
 .eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);font-weight:700}
-h1{font-family:Georgia,serif;font-size:30px;color:var(--navy);margin:6px 0 14px}
-.cartao{background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px 26px}
-.cartao p{color:#3C4C60;margin-bottom:10px}
-.cartao p:last-child{margin-bottom:0}
-.selo{display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;background:#F7F0DC;color:#8A6D1F;margin-bottom:14px}
+h1{font-family:Georgia,serif;font-size:30px;color:var(--navy);margin:4px 0 2px;font-weight:500}
+.sub{color:var(--muted);font-size:13px}
+.mesbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+select,input,textarea{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+select:focus,input:focus,textarea:focus{outline:2px solid #195AB4;outline-offset:0;border-color:#195AB4}
+.selo{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px}
+.selo.aberto{background:var(--amar-c);color:var(--amar)}.selo.fechado{background:var(--verde-c);color:var(--verde)}
+.aviso{border-radius:12px;padding:10px 14px;margin:0 0 14px;font-size:13px}
+.aviso.info{background:#EEF3FA;color:#28466B}.aviso.erro{background:var(--verm-c);color:var(--verm)}.aviso.ok{background:var(--verde-c);color:var(--verde)}
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.num{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.num span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.num b{display:block;font:500 24px Georgia,serif;color:var(--navy);margin-top:4px;font-variant-numeric:tabular-nums}
+.abas{display:flex;gap:4px;padding:4px;background:#E7ECF3;border-radius:14px;margin:0 0 16px;flex-wrap:wrap}
+.abas button{flex:1 1 auto;border:0;background:transparent;border-radius:10px;padding:9px 14px;font:600 13px Inter,sans-serif;color:var(--ink2);cursor:pointer}
+.abas button.on{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(5,19,42,.10)}
+.cartao{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin:0 0 16px}
+.cartao h2{font:500 19px Georgia,serif;color:var(--navy);margin:0 0 4px}
+.cartao .sub{margin:0 0 12px}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.bt{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 14px;font:600 13px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.bt:hover{border-color:#195AB4;color:#195AB4}
+.bt.pri{background:var(--navy-d);border-color:var(--navy-d);color:#fff}.bt.pri:hover{background:#1B3A5F;color:#fff}
+.bt.perigo{color:var(--verm)}.bt.perigo:hover{border-color:var(--verm);background:var(--verm-c)}
+.bt:disabled{opacity:.5;cursor:not-allowed}
+.link{border:0;background:none;color:#195AB4;font:600 12.5px Inter,sans-serif;cursor:pointer;padding:0}
+.link.perigo{color:var(--verm)}
+.tab-rol{overflow-x:auto;border:1px solid var(--line2);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:10px 10px;border-bottom:1px solid var(--line);background:#FAFBFD;white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line2);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.neg{color:var(--verm)}
+tr.total td{font-weight:700;background:#FAFBFD}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EEF1F5;color:var(--ink2);white-space:nowrap}
+.chip.btg{background:#E8EEF8;color:#1B3A5F}.chip.seguro{background:#EAF4EE;color:#1F6B47}.chip.consorcio{background:#F6EFE0;color:#7A5A12}
+.chip.estorno{background:var(--verm-c);color:var(--verm)}.chip.ajuste{background:#F1ECF8;color:#5B3E8C}.chip.saldo{background:#F4F4F4;color:#555}
+.rateio div{white-space:nowrap}
+.vazio{color:var(--muted);font-size:13px;padding:14px 4px}
+.form{border:1px solid #CBD7E8;background:#F7FAFE;border-radius:16px;padding:16px;margin:0 0 16px}
+.form h3{font:700 14px Inter,sans-serif;color:var(--navy);margin:0 0 12px}
+.grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.grade .larga{grid-column:span 2}.grade .toda{grid-column:1/-1}
+label.c{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+label.c input,label.c select,label.c textarea{text-transform:none;letter-spacing:0;font-weight:500;font-size:13.5px}
+.previa{margin-top:12px;font-size:13px;color:var(--ink2);background:#fff;border:1px dashed #CBD7E8;border-radius:12px;padding:10px 12px}
+.soma{font-weight:700}.soma.ruim{color:var(--verm)}.soma.bom{color:var(--verde)}
+.linha-acoes{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.status-env{font-size:12px}.status-env.ok{color:var(--verde)}.status-env.erro{color:var(--verm)}
+.falta{color:var(--amar);font-size:12px;font-weight:600}
+@media screen and (max-width:820px){.nums{grid-template-columns:repeat(2,minmax(0,1fr))}.grade{grid-template-columns:1fr 1fr}.grade .larga{grid-column:1/-1}}
+@media screen and (max-width:480px){body{padding:70px 12px 60px}.grade{grid-template-columns:1fr}}
 </style>
 <link rel="stylesheet" href="estilo/adami-2026.css">
+<script src="vendor/xlsx-0.18.5.full.min.js"></script>
 </head>
 <body>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Hub Adami</button>
-<div class="wrap">
-  <div class="eyebrow">Financeiro</div>
-  <h1>Comissões</h1>
-  <div class="cartao">
-    <span class="selo">Em construção</span>
-    <p>Aqui vai ficar o cálculo e o controle das comissões da equipe, mês a mês.</p>
-    <p>Quem abre esta tela é definido em <b>Gerenciar equipe &gt; Perfis e acessos</b>, na linha "Comissões". Hoje: Master e Financeiro.</p>
-  </div>
-</div>
+<div class="wrap" id="app"><p class="vazio">Carregando…</p></div>
+<script>
+var VERSAO="Comissões 1.0";
+var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
+var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
+var SESSAO=null;
+try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
+if(!SESSAO||!SESSAO.access_token){ location.replace("index.html"); }
+function guardarSessao(d){
+  var ant=SESSAO||{};
+  SESSAO={dia:ant.dia, login_dia:ant.login_dia, access_token:d.access_token, refresh_token:d.refresh_token||(SESSAO&&SESSAO.refresh_token), email:SESSAO&&SESSAO.email, id:SESSAO&&SESSAO.id};
+  try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){}
+}
+function renovar(){
+  if(!SESSAO||!SESSAO.refresh_token) return Promise.reject(new Error("sem sessão"));
+  return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({refresh_token:SESSAO.refresh_token})}).then(function(res){
+      if(!res.ok) throw new Error("sessão expirada"); return res.json().then(guardarSessao); });
+}
+function erroTexto(t){ try{ var j=JSON.parse(t); return j.message||j.erro||t; }catch(e){ return t; } }
+function api(path,opts,jaTentou){
+  opts=opts||{};
+  var h={"apikey":SB_KEY,"Authorization":"Bearer "+((SESSAO&&SESSAO.access_token)||SB_KEY),"Content-Type":"application/json"};
+  return fetch(SB_URL+"/rest/v1/"+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined})
+    .then(function(res){
+      if(res.status===401&&SESSAO&&!jaTentou) return renovar().then(function(){ return api(path,opts,true); })
+        .catch(function(){ alert("Sua sessão expirou. Entre de novo no Hub."); location.replace("index.html"); throw new Error("sessão expirada"); });
+      return res.text().then(function(t){ if(!res.ok) throw new Error(erroTexto(t)||("Erro "+res.status)); return t?JSON.parse(t):null; });
+    });
+}
+function rpc(nome,args){ return api("rpc/"+nome,{method:"POST",body:args||{}}); }
+
+/* ---------- utilidades ---------- */
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function n(v){ var x=Number(v); return isFinite(x)?x:0; }
+function brl(v){ return (n(v)<0?"-":"")+"R$ "+Math.abs(n(v)).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function pc(v){ return n(v).toLocaleString("pt-BR",{maximumFractionDigits:2})+"%"; }
+function lerValor(s){ s=String(s==null?"":s).trim().replace(/[R$\s]/g,""); if(!s) return 0;
+  if(/,\d{1,2}$/.test(s)) s=s.replace(/\./g,"").replace(",","."); else if(/^\-?[\d.]+$/.test(s)&&/\.\d{3}(\.|$)/.test(s)) s=s.replace(/\./g,"");
+  var x=parseFloat(s); return isFinite(x)?x:0; }
+var MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+function nomeMes(iso){ var p=String(iso).slice(0,7).split("-"); var m=MESES[Number(p[1])-1]; return m.charAt(0).toUpperCase()+m.slice(1)+"/"+p[0]; }
+function mesSeguinte(iso){ var d=new Date(iso.slice(0,7)+"-01T12:00:00"); d.setMonth(d.getMonth()+1); return d.toISOString().slice(0,7)+"-01"; }
+function mesAnterior(){ var d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-1); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01"; }
+var ORIGENS={btg:"BTG",seguro:"Seguro",consorcio:"Consórcio",outro:"Outro",ajuste:"Ajuste",saldo:"Saldo"};
+var TIPOS={receita:"Receita",estorno:"Estorno",ajuste:"Ajuste",saldo_anterior:"Saldo anterior"};
+
+/* ---------- estado ---------- */
+var P=null, COMP=(function(){ try{ return localStorage.getItem("aw_com_comp")||mesAnterior(); }catch(e){ return mesAnterior(); } })();
+if(COMP<"2026-10-01") COMP="2026-10-01";
+var ABA="lanc", FORM=null, MSG=null, BUSCA="";
+function pessoa(id){ for(var i=0;i<(P?P.pessoas:[]).length;i++) if(P.pessoas[i].user_id===id) return P.pessoas[i]; return null; }
+function nomeP(id){ var p=pessoa(id); return p?p.nome:"(pessoa removida)"; }
+function aberto(){ return !P||!P.mes||P.mes.status!=="fechado"; }
+function opera(){ return !!(P&&P.pode_operar); }
+function mostrar(texto,tipo){ MSG={texto:texto,tipo:tipo||"ok"}; pintar(); if(tipo!=="erro") setTimeout(function(){ if(MSG&&MSG.texto===texto){ MSG=null; pintar(); } },6000); }
+function falhou(e){ mostrar(String(e&&e.message||e),"erro"); }
+
+function carregar(){
+  return rpc("comissoes_painel",{p_competencia:COMP}).then(function(d){ P=d; pintar(); })
+    .catch(function(e){ document.getElementById("app").innerHTML='<div class="aviso erro">'+esc(e.message||e)+'</div><p class="vazio">Se o erro falar de "comissoes_painel", falta instalar o comissoes.sql no Supabase.</p>'; });
+}
+function trocarMes(v){ COMP=v; FORM=null; try{ localStorage.setItem("aw_com_comp",v); }catch(e){} carregar(); }
+function aba(a){ ABA=a; FORM=null; pintar(); }
+
+/* ---------- cálculo da prévia (o valor que vale é o do banco) ---------- */
+function regraPorId(id){ for(var i=0;i<P.regras.length;i++) if(P.regras[i].id===id) return P.regras[i]; return null; }
+function regrasVigentes(origens){
+  return P.regras.filter(function(r){ return r.ativo && origens.indexOf(r.origem)>=0 && r.vigencia_inicio<=mesSeguinte(COMP) && (!r.vigencia_fim||r.vigencia_fim>=COMP); });
+}
+function previaRegra(r,receita){
+  if(!r||!receita) return "";
+  var imp=receita*n(r.pct_imposto)/100, liq=receita-imp;
+  var partes=[];
+  if(n(r.pct_imposto)) partes.push("imposto "+brl(imp));
+  if(n(r.pct_btg)) partes.push("BTG "+brl(liq*n(r.pct_btg)/100));
+  if(n(r.pct_escritorio)) partes.push("escritório "+brl(liq*n(r.pct_escritorio)/100));
+  if(n(r.pct_assessor)) partes.push("assessor "+brl(liq*n(r.pct_assessor)/100));
+  if(n(r.pct_especialista)) partes.push("especialista "+brl(liq*n(r.pct_especialista)/100));
+  return partes.join(" · ");
+}
+
+/* ---------- tela ---------- */
+function pintar(){
+  if(!P) return;
+  var mesesOpc=[], vistos={};
+  var lista=(P.meses||[]).map(function(m){ return m.competencia; });
+  lista.push(COMP); lista.push(mesAnterior());
+  var d=new Date(); lista.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01");
+  lista.sort().reverse().forEach(function(c){ if(!vistos[c]&&c>="2026-10-01"){ vistos[c]=1; mesesOpc.push(c); } });
+  var st=P.mes&&P.mes.status==="fechado"?"fechado":"aberto";
+  var lanc=P.lancamentos||[], tot=P.totais||[];
+  var receita=lanc.reduce(function(a,l){ return a+(l.tipo==="receita"||l.tipo==="estorno"?n(l.receita):0); },0);
+  var aPagar=tot.reduce(function(a,t){ return a+Math.max(0,n(t.total)); },0);
+  var escrit=lanc.reduce(function(a,l){ return a+n(l.valor_escritorio); },0);
+  var h='<div class="topo"><div><div class="eyebrow">Financeiro</div><h1>Comissões</h1>'+
+    '<div class="sub">Competência '+esc(nomeMes(COMP))+' &middot; pagamento em '+esc(nomeMes(mesSeguinte(COMP)))+'</div></div>'+
+    '<div class="mesbox"><select aria-label="Mês" onchange="trocarMes(this.value)">'+mesesOpc.map(function(c){ return '<option value="'+c+'"'+(c===COMP?" selected":"")+'>'+esc(nomeMes(c))+'</option>'; }).join("")+'</select>'+
+    '<span class="selo '+st+'">'+(st==="fechado"?"Fechado":"Aberto")+'</span></div></div>';
+  if(!opera()) h+='<div class="aviso info">Você vê as comissões só para leitura. Quem lança, fecha e paga é o Financeiro.</div>';
+  if(MSG) h+='<div class="aviso '+(MSG.tipo==="erro"?"erro":"ok")+'" role="status">'+esc(MSG.texto)+'</div>';
+  h+='<div class="nums"><div class="num"><span>Receita do mês</span><b>'+brl(receita)+'</b></div>'+
+    '<div class="num"><span>A pagar à equipe</span><b>'+brl(aPagar)+'</b></div>'+
+    '<div class="num"><span>Fica com o escritório</span><b>'+brl(escrit)+'</b></div>'+
+    '<div class="num"><span>Lançamentos</span><b>'+lanc.length+'</b></div></div>';
+  var abas=[["lanc","Lançamentos"],["regras","Regras de repasse"],["pessoas","Pessoas e dados bancários"],["fech","Fechamento e envio"],["pag","Pagamentos"]];
+  h+='<div class="abas" role="tablist">'+abas.map(function(a){ return '<button type="button" role="tab" aria-selected="'+(ABA===a[0])+'" class="'+(ABA===a[0]?"on":"")+'" onclick="aba(\''+a[0]+'\')">'+a[1]+'</button>'; }).join("")+'</div>';
+  h+= ABA==="regras"?telaRegras(): ABA==="pessoas"?telaPessoas(): ABA==="fech"?telaFechamento(): ABA==="pag"?telaPagamentos(): telaLancamentos();
+  h+='<p class="sub" style="margin-top:18px">'+esc(VERSAO)+'</p>';
+  document.getElementById("app").innerHTML=h;
+}
+
+/* ===== Lançamentos ===== */
+function opcoesPessoas(sel,filtro){
+  return '<option value="">Escolha…</option>'+P.pessoas.filter(function(p){ return !p.revogado&&(!filtro||filtro(p)); }).map(function(p){
+    return '<option value="'+p.user_id+'"'+(p.user_id===sel?" selected":"")+'>'+esc(p.nome)+(p.codigo?" ("+esc(p.codigo)+")":"")+'</option>'; }).join("");
+}
+function telaLancamentos(){
+  var h='';
+  if(opera()&&aberto()){
+    h+='<div class="acoes">'+
+      '<button class="bt pri" onclick="abrirForm(\'regra\')">+ Seguro ou consórcio</button>'+
+      '<button class="bt" onclick="abrirForm(\'btg\')">+ Receita BTG</button>'+
+      '<button class="bt" onclick="abrirForm(\'estorno\')">+ Estorno</button>'+
+      '<button class="bt" onclick="abrirForm(\'ajuste\')">+ Ajuste</button>'+
+      '<button class="bt" onclick="abrirForm(\'colar\')">Colar do Excel (BTG)</button></div>';
+  } else if(opera()) h+='<div class="aviso info">Mês fechado. Para mudar algo, reabra na aba Fechamento e envio.</div>';
+  if(FORM) h+=formLancamento();
+  var lanc=(P.lancamentos||[]).slice().reverse();
+  if(BUSCA){ var q=BUSCA.toLowerCase(); lanc=lanc.filter(function(l){ return (l.cliente+" "+l.descricao+" "+l.empresa+" "+l.produto+" "+(l.rateio||[]).map(function(r){ return nomeP(r.user_id); }).join(" ")).toLowerCase().indexOf(q)>=0; }); }
+  h+='<div class="cartao"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><h2>Lançamentos de '+esc(nomeMes(COMP))+'</h2>'+
+    '<input type="search" placeholder="Buscar cliente, pessoa, empresa" value="'+esc(BUSCA)+'" oninput="BUSCA=this.value;clearTimeout(window.__bt);window.__bt=setTimeout(pintar,250)" style="width:260px"></div>';
+  if(!lanc.length) h+='<p class="vazio">Nenhum lançamento ainda.</p>';
+  else {
+    h+='<div class="tab-rol"><table><thead><tr><th>Tipo</th><th>Cliente / descrição</th><th>Empresa · produto</th><th class="n">Receita</th><th class="n">Imposto</th><th>Para quem</th><th class="n">Escritório</th><th></th></tr></thead><tbody>';
+    lanc.forEach(function(l){
+      var cls=l.tipo==="estorno"?"estorno":l.tipo==="ajuste"?"ajuste":l.tipo==="saldo_anterior"?"saldo":l.origem;
+      h+='<tr><td><span class="chip '+cls+'">'+esc(l.tipo==="receita"?ORIGENS[l.origem]||l.origem:TIPOS[l.tipo])+'</span>'+(l.regra_nome?'<div class="sub" style="font-size:11.5px">'+esc(l.regra_nome)+'</div>':'')+'</td>'+
+        '<td>'+esc(l.cliente||l.descricao||"—")+(l.conta?'<div class="sub" style="font-size:11.5px">conta '+esc(l.conta)+'</div>':'')+(l.cliente&&l.descricao?'<div class="sub" style="font-size:11.5px">'+esc(l.descricao)+'</div>':'')+'</td>'+
+        '<td>'+esc([l.empresa,l.produto].filter(Boolean).join(" · ")||"—")+'</td>'+
+        '<td class="n'+(n(l.receita)<0?" neg":"")+'">'+(n(l.receita)?brl(l.receita):"—")+'</td>'+
+        '<td class="n">'+(n(l.imposto)?brl(l.imposto):"—")+'</td>'+
+        '<td class="rateio">'+(l.rateio||[]).map(function(r){ return '<div>'+esc(nomeP(r.user_id))+' <span class="sub">('+esc(r.papel)+')</span> <b class="'+(n(r.valor)<0?"neg":"")+'">'+brl(r.valor)+'</b></div>'; }).join("")+'</td>'+
+        '<td class="n'+(n(l.valor_escritorio)<0?" neg":"")+'">'+(n(l.valor_escritorio)?brl(l.valor_escritorio):"—")+'</td>'+
+        '<td>'+(opera()&&aberto()&&!l.gerado_por_fechamento?'<button class="link perigo" onclick="excluirLanc(\''+l.id+'\')">Excluir</button>':'')+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  return h+'</div>';
+}
+function abrirForm(t){ FORM={tipo:t}; pintar(); if(document.getElementById("fPrevia")) atualizarPrevia(); var el=document.querySelector(".form input,.form select,.form textarea"); if(el) el.focus(); }
+function fecharForm(){ FORM=null; pintar(); }
+function v(id){ var e=document.getElementById(id); return e?e.value:""; }
+function formLancamento(){
+  var t=FORM.tipo, h='<div class="form">';
+  if(t==="regra"||t==="estorno"){
+    var regras=regrasVigentes(t==="estorno"?["seguro","consorcio","outro","btg"]:["seguro","consorcio","outro"]);
+    h+='<h3>'+(t==="estorno"?"Estorno (cancelamento ou devolução)":"Seguro, consórcio ou outra receita com regra")+'</h3>';
+    if(!regras.length) return h+'<p class="vazio">Não há regra cadastrada'+(t==="estorno"?"":" de seguro ou consórcio")+'. Crie em <b>Regras de repasse</b> primeiro.</p><div class="linha-acoes"><button class="bt" onclick="fecharForm()">Fechar</button><button class="bt pri" onclick="aba(\'regras\')">Ir para Regras</button></div></div>';
+    h+='<div class="grade">'+
+      '<label class="c larga">Regra de repasse<select id="fRegra" onchange="atualizarPrevia()">'+'<option value="">Escolha…</option>'+regras.map(function(r){ return '<option value="'+r.id+'">'+esc(r.nome)+(r.empresa?" · "+esc(r.empresa):"")+'</option>'; }).join("")+'</select></label>'+
+      '<label class="c">Cliente<input id="fCliente" maxlength="120"></label>'+
+      '<label class="c">Conta (opcional)<input id="fConta" maxlength="30"></label>'+
+      '<label class="c">'+(t==="estorno"?"Valor estornado (R$)":"Valor recebido (R$)")+'<input id="fReceita" inputmode="decimal" oninput="atualizarPrevia()"></label>'+
+      '<label class="c">Assessor<select id="fAss">'+opcoesPessoas("")+'</select></label>'+
+      '<label class="c">Especialista<select id="fEsp">'+opcoesPessoas("")+'</select></label>'+
+      '<label class="c">Observação<input id="fDesc" maxlength="200"></label>'+
+      '</div><div class="previa" id="fPrevia">Escolha a regra e o valor para ver a divisão.</div>';
+  } else if(t==="btg"){
+    h+='<h3>Receita do BTG (valores do relatório)</h3><div class="grade">'+
+      '<label class="c">Assessor<select id="fAss">'+opcoesPessoas("")+'</select></label>'+
+      '<label class="c">Cliente<input id="fCliente" maxlength="120"></label>'+
+      '<label class="c">Conta<input id="fConta" maxlength="30"></label>'+
+      '<label class="c">Produto (opcional)<input id="fProduto" maxlength="80"></label>'+
+      '<label class="c">Receita total (R$)<input id="fReceita" inputmode="decimal" oninput="sugerirBtg()"></label>'+
+      '<label class="c">Parte do BTG (R$)<input id="fBtg" inputmode="decimal"></label>'+
+      '<label class="c">Parte do escritório (R$)<input id="fEsc" inputmode="decimal"></label>'+
+      '<label class="c">Repasse do assessor (R$)<input id="fVa" inputmode="decimal"></label>'+
+      '</div><div class="previa">Digite a receita total e o Hub sugere a divisão pela regra "BTG padrão". Se o relatório trouxer outros valores, use os do relatório.</div>';
+  } else if(t==="ajuste"){
+    h+='<h3>Ajuste (adiantamento, bônus, correção)</h3><div class="grade">'+
+      '<label class="c">Pessoa<select id="fPessoa">'+opcoesPessoas("")+'</select></label>'+
+      '<label class="c">Valor (R$, negativo para descontar)<input id="fValor" inputmode="decimal" placeholder="-500,00"></label>'+
+      '<label class="c larga">Motivo<input id="fDesc" maxlength="200" placeholder="Ex.: adiantamento de outubro"></label></div>';
+  } else if(t==="colar"){
+    h+='<h3>Colar do Excel (receita do BTG)</h3><p class="sub" style="margin-bottom:8px">Copie as linhas no Excel (sem o cabeçalho) e cole abaixo. Colunas, nesta ordem: '+
+      '<b>Código do assessor</b> · Cliente · Conta · Produto · Receita total · Parte BTG · Parte escritório · <b>Repasse assessor</b>. O código é o da Equipe do Hub.</p>'+
+      '<textarea id="fColar" rows="8" style="width:100%;font-family:ui-monospace,Consolas,monospace;font-size:12px" placeholder="A007&#9;Maria Silva&#9;001234567&#9;Fundos&#9;4.000,00&#9;2.000,00&#9;1.000,00&#9;1.000,00"></textarea>';
+  }
+  h+='<div class="linha-acoes"><button class="bt" onclick="fecharForm()">Cancelar</button><button class="bt pri" id="fSalvar" onclick="salvarLanc()">'+(t==="colar"?"Importar linhas":"Lançar")+'</button></div></div>';
+  return h;
+}
+function atualizarPrevia(){
+  var r=regraPorId(v("fRegra")), rec=lerValor(v("fReceita")), el=document.getElementById("fPrevia"); if(!el) return;
+  var esp=document.getElementById("fEsp"); if(esp) esp.parentNode.style.display=(r&&n(r.pct_especialista)>0)?"":"none";
+  var as=document.getElementById("fAss"); if(as) as.parentNode.style.display=(!r||n(r.pct_assessor)>0)?"":"none";
+  el.textContent=r?("Divisão: "+(previaRegra(r,rec)||"digite o valor")+(FORM&&FORM.tipo==="estorno"?" (sai negativo de cada um)":"")):"Escolha a regra e o valor para ver a divisão.";
+}
+function sugerirBtg(){
+  var rec=lerValor(v("fReceita")), r=P.regras.filter(function(x){ return x.origem==="btg"&&x.ativo; })[0]; if(!r||!rec) return;
+  var liq=rec*(1-n(r.pct_imposto)/100), f=function(x){ return (Math.round(x*100)/100).toLocaleString("pt-BR",{minimumFractionDigits:2}); };
+  document.getElementById("fBtg").value=f(liq*n(r.pct_btg)/100);
+  document.getElementById("fEsc").value=f(liq*n(r.pct_escritorio)/100);
+  document.getElementById("fVa").value=f(liq*n(r.pct_assessor)/100);
+}
+function salvarLanc(){
+  var t=FORM.tipo, corpo={competencia:COMP}, b=document.getElementById("fSalvar");
+  if(t==="colar") return colar();
+  if(t==="regra"||t==="estorno"){
+    var r=regraPorId(v("fRegra")); if(!r) return mostrar("Escolha a regra de repasse.","erro");
+    corpo.tipo=t==="estorno"?"estorno":"receita"; corpo.regra_id=r.id; corpo.origem=r.origem; corpo.empresa=r.empresa; corpo.produto=r.produto;
+    corpo.cliente=v("fCliente"); corpo.conta=v("fConta"); corpo.receita=lerValor(v("fReceita")); corpo.descricao=v("fDesc");
+    corpo.assessor_id=v("fAss")||null; corpo.especialista_id=n(r.pct_especialista)>0?(v("fEsp")||null):null;
+  } else if(t==="btg"){
+    corpo.tipo="receita"; corpo.origem="btg"; corpo.assessor_id=v("fAss")||null; corpo.cliente=v("fCliente"); corpo.conta=v("fConta"); corpo.produto=v("fProduto");
+    corpo.receita=lerValor(v("fReceita")); corpo.valor_btg=lerValor(v("fBtg")); corpo.valor_escritorio=lerValor(v("fEsc")); corpo.valor_assessor=lerValor(v("fVa"));
+    if(!corpo.valor_assessor) return mostrar("Informe o repasse do assessor.","erro");
+  } else if(t==="ajuste"){
+    corpo.tipo="ajuste"; corpo.pessoa_id=v("fPessoa")||null; corpo.valor=lerValor(v("fValor")); corpo.descricao=v("fDesc");
+  }
+  if(b){ b.disabled=true; b.textContent="Gravando…"; }
+  rpc("comissao_lancamento_salvar",{p:corpo}).then(function(){ FORM=null; MSG={texto:"Lançado.",tipo:"ok"}; return carregar(); })
+    .catch(function(e){ if(b){ b.disabled=false; b.textContent="Lançar"; } falhou(e); });
+}
+function colar(){
+  var linhas=v("fColar").split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean), itens=[];
+  linhas.forEach(function(l){
+    var c=l.split(/\t|;/).map(function(x){ return x.trim(); });
+    if(c.length<8) return itens.push({erroLocal:"linha com menos de 8 colunas: "+l.slice(0,60)});
+    itens.push({tipo:"receita",origem:"btg",codigo:c[0],cliente:c[1],conta:c[2],produto:c[3],receita:lerValor(c[4]),valor_btg:lerValor(c[5]),valor_escritorio:lerValor(c[6]),valor_assessor:lerValor(c[7])});
+  });
+  var ruins=itens.filter(function(i){ return i.erroLocal; });
+  if(!itens.length) return mostrar("Cole ao menos uma linha.","erro");
+  if(ruins.length) return mostrar(ruins.length+" linha(s) com colunas faltando. "+ruins[0].erroLocal,"erro");
+  var b=document.getElementById("fSalvar"); if(b){ b.disabled=true; b.textContent="Importando…"; }
+  rpc("comissao_lancamentos_lote",{p_competencia:COMP,p_itens:itens}).then(function(r){
+    FORM=null;
+    MSG={texto:r.gravados+" linha(s) importada(s)."+(r.erros&&r.erros.length?" "+r.erros.length+" com erro: "+r.erros.slice(0,3).map(function(e){ return "linha "+e.linha+" ("+e.erro+")"; }).join("; "):""),tipo:r.erros&&r.erros.length?"erro":"ok"};
+    return carregar();
+  }).catch(function(e){ if(b){ b.disabled=false; b.textContent="Importar linhas"; } falhou(e); });
+}
+function excluirLanc(id){
+  if(!confirm("Excluir este lançamento?")) return;
+  rpc("comissao_lancamento_excluir",{p_id:id}).then(function(){ MSG={texto:"Lançamento excluído.",tipo:"ok"}; return carregar(); }).catch(falhou);
+}
+
+/* ===== Regras ===== */
+var REGRA_EDIT=null;
+function telaRegras(){
+  var h='<div class="cartao"><h2>Regras de repasse</h2><p class="sub">Como cada receita se divide. A divisão soma 100%; o imposto sai antes de dividir. '+
+    'Mudar uma regra vale para os lançamentos novos: o que já foi lançado fica como estava.</p>';
+  if(opera()) h+='<div class="acoes"><button class="bt pri" onclick="editarRegra(null)">+ Nova regra</button></div>';
+  if(REGRA_EDIT) h+=formRegra();
+  if(!P.regras.length) h+='<p class="vazio">Nenhuma regra ainda.</p>';
+  else {
+    h+='<div class="tab-rol"><table><thead><tr><th>Regra</th><th>Origem</th><th>Empresa · produto</th><th class="n">Imposto</th><th class="n">BTG</th><th class="n">Escritório</th><th class="n">Assessor</th><th class="n">Especialista</th><th>Vale de</th><th></th></tr></thead><tbody>';
+    P.regras.forEach(function(r,i){
+      h+='<tr'+(r.ativo?'':' style="opacity:.55"')+'><td><b>'+esc(r.nome)+'</b>'+(r.ativo?'':' <span class="chip">desativada</span>')+(r.obs?'<div class="sub" style="font-size:11.5px">'+esc(r.obs)+'</div>':'')+'</td>'+
+        '<td><span class="chip '+r.origem+'">'+esc(ORIGENS[r.origem])+'</span></td><td>'+esc([r.empresa,r.produto].filter(Boolean).join(" · ")||"—")+'</td>'+
+        '<td class="n">'+pc(r.pct_imposto)+'</td><td class="n">'+pc(r.pct_btg)+'</td><td class="n">'+pc(r.pct_escritorio)+'</td><td class="n">'+pc(r.pct_assessor)+'</td><td class="n">'+pc(r.pct_especialista)+'</td>'+
+        '<td>'+esc(r.vigencia_inicio.split("-").reverse().join("/"))+(r.vigencia_fim?" a "+esc(r.vigencia_fim.split("-").reverse().join("/")):"")+'</td>'+
+        '<td>'+(opera()?'<button class="link" onclick="editarRegra('+i+')">Editar</button> <button class="link perigo" onclick="excluirRegra('+i+')">Excluir</button>':'')+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  return h+'</div>';
+}
+function editarRegra(i){ REGRA_EDIT=i===null?{novo:true,origem:"consorcio",pct_imposto:0,pct_btg:0,pct_escritorio:40,pct_assessor:30,pct_especialista:30,vigencia_inicio:COMP,ativo:true}:JSON.parse(JSON.stringify(P.regras[i])); pintar(); somaRegra(); }
+function formRegra(){
+  var r=REGRA_EDIT, num=function(id,rot,val){ return '<label class="c">'+rot+'<input id="'+id+'" inputmode="decimal" value="'+esc(String(n(val)).replace(".",","))+'" oninput="somaRegra()"></label>'; };
+  return '<div class="form"><h3>'+(r.novo?"Nova regra":"Editar regra")+'</h3><div class="grade">'+
+    '<label class="c larga">Nome<input id="rNome" maxlength="120" value="'+esc(r.nome||"")+'" placeholder="Ex.: Consórcio Imóvel, Administradora X"></label>'+
+    '<label class="c">Origem<select id="rOrigem">'+["seguro","consorcio","btg","outro"].map(function(o){ return '<option value="'+o+'"'+(r.origem===o?" selected":"")+'>'+ORIGENS[o]+'</option>'; }).join("")+'</select></label>'+
+    '<label class="c">Ativa<select id="rAtivo"><option value="true"'+(r.ativo?" selected":"")+'>Sim</option><option value="false"'+(!r.ativo?" selected":"")+'>Não</option></select></label>'+
+    '<label class="c">Empresa<input id="rEmpresa" maxlength="80" value="'+esc(r.empresa||"")+'" placeholder="Seguradora ou administradora"></label>'+
+    '<label class="c">Produto / tipo<input id="rProduto" maxlength="80" value="'+esc(r.produto||"")+'" placeholder="Ex.: Imóvel, Auto, Vida"></label>'+
+    '<label class="c">Vale a partir de<input id="rIni" type="date" value="'+esc(r.vigencia_inicio||"")+'"></label>'+
+    '<label class="c">Até (opcional)<input id="rFim" type="date" value="'+esc(r.vigencia_fim||"")+'"></label>'+
+    num("rImp","Imposto (%)",r.pct_imposto)+num("rBtg","BTG (%)",r.pct_btg)+num("rEsc","Escritório (%)",r.pct_escritorio)+num("rAss","Assessor (%)",r.pct_assessor)+num("rEsp","Especialista (%)",r.pct_especialista)+
+    '<label class="c larga">Observação<input id="rObs" maxlength="300" value="'+esc(r.obs||"")+'"></label>'+
+    '</div><div class="previa">Divisão (sem o imposto): <span class="soma" id="rSoma"></span> &middot; precisa dar 100%. Exemplo com R$ 10.000,00: <span id="rEx"></span></div>'+
+    '<div class="linha-acoes"><button class="bt" onclick="REGRA_EDIT=null;pintar()">Cancelar</button><button class="bt pri" id="rSalvar" onclick="salvarRegra()">Salvar regra</button></div></div>';
+}
+function regraDoForm(){
+  return {id:REGRA_EDIT.novo?null:REGRA_EDIT.id,nome:v("rNome"),origem:v("rOrigem"),ativo:v("rAtivo")==="true",empresa:v("rEmpresa"),produto:v("rProduto"),
+    vigencia_inicio:v("rIni"),vigencia_fim:v("rFim")||null,pct_imposto:lerValor(v("rImp")),pct_btg:lerValor(v("rBtg")),pct_escritorio:lerValor(v("rEsc")),
+    pct_assessor:lerValor(v("rAss")),pct_especialista:lerValor(v("rEsp")),obs:v("rObs")};
+}
+function somaRegra(){
+  var r=regraDoForm(), s=r.pct_btg+r.pct_escritorio+r.pct_assessor+r.pct_especialista, el=document.getElementById("rSoma");
+  if(el){ el.textContent=pc(s); el.className="soma "+(Math.abs(s-100)<0.01?"bom":"ruim"); }
+  var ex=document.getElementById("rEx"); if(ex) ex.textContent=previaRegra(r,10000)||"—";
+}
+function salvarRegra(){
+  var r=regraDoForm(), s=r.pct_btg+r.pct_escritorio+r.pct_assessor+r.pct_especialista;
+  if(!r.nome.trim()) return mostrar("Dê um nome à regra.","erro");
+  if(Math.abs(s-100)>=0.01) return mostrar("A divisão precisa somar 100%. Hoje soma "+pc(s)+".","erro");
+  var b=document.getElementById("rSalvar"); if(b){ b.disabled=true; b.textContent="Salvando…"; }
+  rpc("comissao_regra_salvar",{p:r}).then(function(){ REGRA_EDIT=null; MSG={texto:"Regra salva.",tipo:"ok"}; return carregar(); })
+    .catch(function(e){ if(b){ b.disabled=false; b.textContent="Salvar regra"; } falhou(e); });
+}
+function excluirRegra(i){
+  var r=P.regras[i]; if(!confirm("Excluir a regra \""+r.nome+"\"? Se ela já foi usada em lançamentos, ela só é desativada.")) return;
+  rpc("comissao_regra_excluir",{p_id:r.id}).then(function(x){ MSG={texto:x==="desativada"?"A regra já tinha lançamentos: foi desativada.":"Regra excluída.",tipo:"ok"}; return carregar(); }).catch(falhou);
+}
+
+/* ===== Pessoas e dados bancários ===== */
+var PESSOA_EDIT=null;
+function pagtoCompleto(d){ return !!(d&&d.cpf_cnpj&&(d.pix_chave||(d.banco&&d.agencia&&d.conta))); }
+function telaPessoas(){
+  var h='<div class="cartao"><h2>Pessoas e dados bancários</h2><p class="sub">Para onde vai o pagamento de cada um. O código é o da Equipe do Hub (o mesmo do relatório do BTG).</p>';
+  if(PESSOA_EDIT) h+=formPessoa();
+  h+='<div class="tab-rol"><table><thead><tr><th>Pessoa</th><th>Código</th><th>CPF/CNPJ</th><th>PIX</th><th>Banco · agência · conta</th><th></th></tr></thead><tbody>';
+  P.pessoas.filter(function(p){ return !p.revogado; }).forEach(function(p){
+    var d=p.pagto||{};
+    h+='<tr><td><b>'+esc(p.nome)+'</b><div class="sub" style="font-size:11.5px">'+esc(p.email)+'</div>'+(pagtoCompleto(d)?'':'<div class="falta">faltam dados para pagar</div>')+'</td>'+
+      '<td>'+esc(p.codigo||"—")+'</td><td>'+esc(d.cpf_cnpj||"—")+'</td><td>'+esc(d.pix_chave?(d.pix_tipo?d.pix_tipo+": ":"")+d.pix_chave:"—")+'</td>'+
+      '<td>'+esc([d.banco,d.agencia,d.conta].filter(Boolean).join(" · ")||"—")+'</td>'+
+      '<td>'+(opera()?'<button class="link" onclick="editarPessoa(\''+p.user_id+'\')">Editar</button>':'')+'</td></tr>';
+  });
+  return h+'</tbody></table></div></div>';
+}
+function editarPessoa(id){ PESSOA_EDIT=id; pintar(); window.scrollTo(0,0); }
+function formPessoa(){
+  var p=pessoa(PESSOA_EDIT), d=(p&&p.pagto)||{};
+  var cp=function(id,rot,val,ph){ return '<label class="c">'+rot+'<input id="'+id+'" maxlength="160" value="'+esc(val||"")+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+'></label>'; };
+  return '<div class="form"><h3>Dados de pagamento · '+esc(p?p.nome:"")+'</h3><div class="grade">'+
+    cp("pNome","Nome completo",d.nome_completo)+cp("pDoc","CPF ou CNPJ",d.cpf_cnpj)+cp("pTit","Titular da conta",d.titular,"se for outra pessoa ou a empresa")+
+    '<label class="c">Tipo de PIX<select id="pPixT">'+["","CPF","CNPJ","E-mail","Celular","Aleatória"].map(function(o){ return '<option'+(d.pix_tipo===o?" selected":"")+'>'+o+'</option>'; }).join("")+'</select></label>'+
+    cp("pPix","Chave PIX",d.pix_chave)+cp("pBanco","Banco",d.banco)+cp("pAg","Agência",d.agencia)+cp("pConta","Conta",d.conta)+
+    '<label class="c">Tipo de conta<select id="pTipoC">'+["","Corrente","Poupança","Pagamento"].map(function(o){ return '<option'+(d.tipo_conta===o?" selected":"")+'>'+o+'</option>'; }).join("")+'</select></label>'+
+    '<label class="c larga">Observação<input id="pObs" maxlength="300" value="'+esc(d.observacao||"")+'"></label></div>'+
+    '<div class="linha-acoes"><button class="bt" onclick="PESSOA_EDIT=null;pintar()">Cancelar</button><button class="bt pri" id="pSalvar" onclick="salvarPessoa()">Salvar</button></div></div>';
+}
+function salvarPessoa(){
+  var b=document.getElementById("pSalvar"); if(b){ b.disabled=true; b.textContent="Salvando…"; }
+  rpc("comissao_dados_pagto_salvar",{p_user:PESSOA_EDIT,p:{nome_completo:v("pNome"),cpf_cnpj:v("pDoc"),titular:v("pTit"),pix_tipo:v("pPixT"),pix_chave:v("pPix"),
+    banco:v("pBanco"),agencia:v("pAg"),conta:v("pConta"),tipo_conta:v("pTipoC"),observacao:v("pObs")}})
+    .then(function(){ PESSOA_EDIT=null; MSG={texto:"Dados salvos.",tipo:"ok"}; return carregar(); })
+    .catch(function(e){ if(b){ b.disabled=false; b.textContent="Salvar"; } falhou(e); });
+}
+
+/* ===== Fechamento e envio ===== */
+function totaisOrdenados(){ return (P.totais||[]).slice().sort(function(a,b){ return nomeP(a.user_id).localeCompare(nomeP(b.user_id)); }); }
+function pagamento(id){ for(var i=0;i<(P.pagamentos||[]).length;i++) if(P.pagamentos[i].user_id===id) return P.pagamentos[i]; return null; }
+function telaFechamento(){
+  var tot=totaisOrdenados(), fechado=!aberto();
+  var h='<div class="cartao"><h2>'+(fechado?"Mês fechado":"Conferência antes de fechar")+'</h2>';
+  if(fechado) h+='<p class="sub">Fechado em '+esc(new Date(P.mes.fechado_em).toLocaleString("pt-BR"))+' por '+esc(P.mes.fechado_por||"")+'. Os valores estão travados.</p>';
+  else h+='<p class="sub">Confira o total de cada pessoa. Ao fechar, o mês trava, os saldos negativos passam para '+esc(nomeMes(mesSeguinte(COMP)))+' e os e-mails ficam liberados.</p>';
+  var semDados=tot.filter(function(t){ var p=pessoa(t.user_id); return n(t.total)>0&&!pagtoCompleto(p&&p.pagto); });
+  if(semDados.length) h+='<div class="aviso info">'+semDados.length+' pessoa(s) a receber sem dados bancários completos: '+esc(semDados.map(function(t){ return nomeP(t.user_id); }).join(", "))+'. Preencha em Pessoas e dados bancários.</div>';
+  if(!tot.length) h+='<p class="vazio">Nenhum valor no mês.</p>';
+  else {
+    h+='<div class="tab-rol"><table><thead><tr><th>Pessoa</th><th class="n">Linhas</th><th class="n">Total</th>'+(fechado?'<th>E-mail</th>':'')+'<th></th></tr></thead><tbody>';
+    var soma=0;
+    tot.forEach(function(t){
+      soma+=n(t.total); var pg=pagamento(t.user_id), st='';
+      if(fechado) st=pg&&pg.enviado_em?'<span class="status-env ok">enviado '+esc(new Date(pg.enviado_em).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}))+'</span>':(pg&&pg.envio_erro?'<span class="status-env erro">'+esc(pg.envio_erro)+'</span>':'<span class="sub">não enviado</span>');
+      h+='<tr><td>'+esc(nomeP(t.user_id))+(n(t.total)<0?' <span class="chip estorno">passa para o mês seguinte</span>':'')+'</td><td class="n">'+t.linhas+'</td><td class="n'+(n(t.total)<0?" neg":"")+'"><b>'+brl(t.total)+'</b></td>'+
+        (fechado?'<td>'+st+'</td>':'')+
+        '<td style="white-space:nowrap"><button class="link" onclick="baixarPessoa(\''+t.user_id+'\')">Baixar Excel</button>'+(fechado&&opera()?' &nbsp; <button class="link" onclick="enviar([\''+t.user_id+'\'])">'+(pg&&pg.enviado_em?"Reenviar":"Enviar")+'</button>':'')+'</td></tr>';
+    });
+    h+='<tr class="total"><td>Total</td><td></td><td class="n">'+brl(soma)+'</td>'+(fechado?'<td></td>':'')+'<td></td></tr></tbody></table></div>';
+  }
+  h+='<div class="linha-acoes"><button class="bt" onclick="baixarGeral()"'+(tot.length?'':' disabled')+'>Baixar planilha geral</button>';
+  if(opera()){
+    if(!fechado) h+='<button class="bt pri" onclick="fecharMes()"'+(tot.length?'':' disabled')+'>Fechar '+esc(nomeMes(COMP))+'</button>';
+    else h+='<button class="bt perigo" onclick="reabrirMes()">Reabrir</button><button class="bt pri" id="btEnviar" onclick="enviar(null)">Enviar e-mails a todos</button>';
+  }
+  return h+'</div></div>';
+}
+function fecharMes(){
+  if(!confirm("Fechar "+nomeMes(COMP)+"? Os valores travam e os e-mails ficam liberados para envio.")) return;
+  rpc("comissao_fechar",{p_competencia:COMP}).then(function(r){ MSG={texto:"Mês fechado. "+r.a_pagar+" pessoa(s) a receber"+(r.negativos?", "+r.negativos+" saldo(s) negativo(s) levado(s) para o mês seguinte":"")+".",tipo:"ok"}; return carregar(); }).catch(falhou);
+}
+function reabrirMes(){
+  var m=prompt("Motivo para reabrir "+nomeMes(COMP)+":"); if(m===null) return;
+  rpc("comissao_reabrir",{p_competencia:COMP,p_motivo:m}).then(function(){ MSG={texto:"Mês reaberto.",tipo:"ok"}; return carregar(); }).catch(falhou);
+}
+
+/* Planilha de uma pessoa: as linhas dela, só com o valor dela (sem percentuais). */
+function linhasPessoa(uid){
+  var out=[];
+  (P.lancamentos||[]).forEach(function(l){ (l.rateio||[]).forEach(function(r){ if(r.user_id===uid) out.push({l:l,r:r}); }); });
+  return out;
+}
+function planilhaPessoa(uid){
+  var p=pessoa(uid), rows=[["Adami Captal · Comissão de "+nomeMes(COMP)],[(p?p.nome:"")+" · pagamento em "+nomeMes(mesSeguinte(COMP))],[],
+    ["Tipo","Origem","Cliente","Conta","Empresa","Produto","Descrição","Valor (R$)"]], tot=0;
+  linhasPessoa(uid).forEach(function(x){ var l=x.l; tot+=n(x.r.valor);
+    rows.push([TIPOS[l.tipo]||l.tipo,ORIGENS[l.origem]||l.origem,l.cliente,l.conta,l.empresa,l.produto,l.descricao||(x.r.papel==="saldo anterior"?"Saldo do mês anterior":""),Math.round(n(x.r.valor)*100)/100]); });
+  rows.push([]); rows.push(["","","","","","","Total",Math.round(tot*100)/100]);
+  var ws=XLSX.utils.aoa_to_sheet(rows); ws["!cols"]=[{wch:14},{wch:11},{wch:28},{wch:12},{wch:18},{wch:16},{wch:30},{wch:14}];
+  for(var i=4;i<=rows.length;i++){ var c=ws["H"+i]; if(c&&typeof c.v==="number") c.z="#,##0.00"; }
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Comissão");
+  return {wb:wb,nome:"Comissão "+nomeMes(COMP).replace("/","-")+" - "+(p?p.nome:"")+".xlsx",total:tot};
+}
+/* Baixa pelo próprio navegador, com o nome certo (o writeFile do SheetJS perde o nome com acento em alguns navegadores). */
+function baixarWb(wb,nome){
+  var dados=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([dados],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  a.download=nome; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
+}
+function baixarPessoa(uid){ var x=planilhaPessoa(uid); baixarWb(x.wb,x.nome); }
+function baixarGeral(){
+  var rows=[["Pessoa","E-mail","Total (R$)","CPF/CNPJ","PIX","Banco","Agência","Conta","Enviado em","Pago em"]];
+  totaisOrdenados().forEach(function(t){ var p=pessoa(t.user_id)||{}, d=p.pagto||{}, pg=pagamento(t.user_id)||{};
+    rows.push([p.nome,p.email,Math.round(n(t.total)*100)/100,d.cpf_cnpj||"",(d.pix_tipo?d.pix_tipo+": ":"")+(d.pix_chave||""),d.banco||"",d.agencia||"",d.conta||"",pg.enviado_em?new Date(pg.enviado_em).toLocaleString("pt-BR"):"",pg.pago_em?pg.pago_em.split("-").reverse().join("/"):""]); });
+  var det=[["Tipo","Origem","Regra","Cliente","Conta","Empresa","Produto","Descrição","Receita","Imposto","BTG","Escritório","Pessoa","Papel","Valor da pessoa"]];
+  (P.lancamentos||[]).forEach(function(l){ (l.rateio&&l.rateio.length?l.rateio:[{}]).forEach(function(r){
+    det.push([TIPOS[l.tipo],ORIGENS[l.origem],l.regra_nome,l.cliente,l.conta,l.empresa,l.produto,l.descricao,n(l.receita),n(l.imposto),n(l.valor_btg),n(l.valor_escritorio),r.user_id?nomeP(r.user_id):"",r.papel||"",n(r.valor)]); }); });
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Por pessoa");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(det),"Lançamentos");
+  baixarWb(wb,"Comissões "+nomeMes(COMP).replace("/","-")+" - geral.xlsx");
+}
+
+/* E-mail: a função comissoes-enviar confere no banco quem pode enviar, o e-mail e o total de cada
+   pessoa; a tela só manda a planilha. */
+function enviar(ids){
+  var alvo=ids||totaisOrdenados().map(function(t){ return t.user_id; });
+  if(!ids&&!confirm("Enviar o e-mail com o valor e a planilha para "+alvo.length+" pessoa(s)?")) return;
+  var b=document.getElementById("btEnviar"); if(b){ b.disabled=true; }
+  var ok=0, erros=[], i=0;
+  function proximo(){
+    if(i>=alvo.length){ MSG={texto:ok+" e-mail(s) enviado(s)."+(erros.length?" Falharam: "+erros.join("; "):""),tipo:erros.length?"erro":"ok"}; return carregar(); }
+    var uid=alvo[i++], x=planilhaPessoa(uid);
+    if(b) b.textContent="Enviando "+i+" de "+alvo.length+"…";
+    var arquivo=XLSX.write(x.wb,{bookType:"xlsx",type:"base64"});
+    return enviarUm(uid,x.nome,arquivo,false).then(function(r){ if(r&&r.ok) ok++; else erros.push(nomeP(uid)+": "+(r&&r.erro||"erro")); })
+      .catch(function(e){ erros.push(nomeP(uid)+": "+(e.message||e)); }).then(proximo);
+  }
+  proximo();
+}
+function enviarUm(uid,nome,arquivo,jaTentou){
+  return fetch(SB_URL+"/functions/v1/comissoes-enviar",{method:"POST",
+    headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SESSAO.access_token,"Content-Type":"application/json"},
+    body:JSON.stringify({competencia:COMP,user_id:uid,nome_arquivo:nome,arquivo_base64:arquivo})})
+    .then(function(res){
+      if(res.status===401&&!jaTentou) return renovar().then(function(){ return enviarUm(uid,nome,arquivo,true); });
+      if(res.status===404) return {erro:"a função de envio (comissoes-enviar) ainda não foi instalada no Supabase"};
+      return res.text().then(function(t){ var j={}; try{ j=JSON.parse(t); }catch(e){ j={erro:t}; } return j; });
+    });
+}
+
+/* ===== Pagamentos ===== */
+function telaPagamentos(){
+  if(aberto()) return '<div class="cartao"><h2>Pagamentos</h2><p class="vazio">Os pagamentos aparecem depois que o mês for fechado (aba Fechamento e envio).</p></div>';
+  var pags=(P.pagamentos||[]).slice().sort(function(a,b){ return nomeP(a.user_id).localeCompare(nomeP(b.user_id)); });
+  var h='<div class="cartao"><h2>Pagamentos de '+esc(nomeMes(COMP))+'</h2><p class="sub">Faça as transferências em '+esc(nomeMes(mesSeguinte(COMP)))+' e marque a data de cada uma.</p>';
+  if(!pags.length) return h+'<p class="vazio">Ninguém a receber neste mês.</p></div>';
+  var soma=0, pago=0;
+  h+='<div class="tab-rol"><table><thead><tr><th>Pessoa</th><th class="n">Valor</th><th>PIX</th><th>Banco · agência · conta</th><th>CPF/CNPJ</th><th>Pago em</th></tr></thead><tbody>';
+  pags.forEach(function(pg){
+    var p=pessoa(pg.user_id)||{}, d=p.pagto||{}; soma+=n(pg.valor); if(pg.pago_em) pago+=n(pg.valor);
+    h+='<tr><td><b>'+esc(nomeP(pg.user_id))+'</b>'+(d.titular?'<div class="sub" style="font-size:11.5px">titular: '+esc(d.titular)+'</div>':'')+(pagtoCompleto(d)?'':'<div class="falta">faltam dados</div>')+'</td>'+
+      '<td class="n"><b>'+brl(pg.valor)+'</b></td><td>'+esc(d.pix_chave?(d.pix_tipo?d.pix_tipo+": ":"")+d.pix_chave:"—")+'</td>'+
+      '<td>'+esc([d.banco,d.agencia,d.conta,d.tipo_conta].filter(Boolean).join(" · ")||"—")+'</td><td>'+esc(d.cpf_cnpj||"—")+'</td>'+
+      '<td>'+(opera()?'<input type="date" value="'+esc(pg.pago_em||"")+'" onchange="marcarPago(\''+pg.user_id+'\',this.value)" aria-label="Data do pagamento">':esc(pg.pago_em?pg.pago_em.split("-").reverse().join("/"):"—"))+'</td></tr>';
+  });
+  h+='<tr class="total"><td>Total</td><td class="n">'+brl(soma)+'</td><td colspan="4">pago: '+brl(pago)+' &middot; falta: '+brl(soma-pago)+'</td></tr></tbody></table></div>';
+  return h+'<div class="linha-acoes"><button class="bt" onclick="baixarGeral()">Baixar planilha (contabilidade)</button></div></div>';
+}
+function marcarPago(uid,data){
+  rpc("comissao_marcar_pago",{p_competencia:COMP,p_user:uid,p_data:data||null}).then(function(){ MSG={texto:data?"Pagamento marcado.":"Pagamento desmarcado.",tipo:"ok"}; return carregar(); }).catch(falhou);
+}
+
+carregar();
+</script>
 </body>
 </html>

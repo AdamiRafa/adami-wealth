@@ -1457,7 +1457,39 @@ function blocoAcessosDaPessoa(p){
    (equipe.sql). Excluir só vale para quem não tem cliente: apagar a pessoa
    deixaria os clientes do CRM sem responsável. */
 var PESSOA_ID=null;
-function abrirPessoa(i){ var p=EQUIPE[i]; if(!p) return; PESSOA_ID=p.user_id; ABA_EQ="pessoa"; pintarEquipe(); }
+function abrirPessoa(i){ var p=EQUIPE[i]; if(!p) return; PESSOA_ID=p.user_id; ABA_EQ="pessoa"; pintarEquipe(); carregarPagto(p.user_id); }
+/* Dados de pagamento (Comissões, 2.97): CPF/CNPJ, PIX e conta para a transferência da comissão.
+   Ficam em comissao_dados_pagto; o master e quem opera comissões leem e gravam (comissoes.sql). */
+var PAGTO={};
+function carregarPagto(uid,aviso){
+  if(!aviso) PAGTO[uid]={carregando:true};
+  api("rpc/comissao_dados_pagto_ler",{method:"POST",body:{p_user:uid}})
+    .then(function(d){ PAGTO[uid]=d||{}; if(PESSOA_ID===uid&&ABA_EQ==="pessoa"){ pintarEquipe(); if(aviso) msgEq(aviso); } })
+    .catch(function(e){ PAGTO[uid]={erro:String(e.message||e)}; if(PESSOA_ID===uid&&ABA_EQ==="pessoa") pintarEquipe(); });
+}
+function blocoPagto(uid){
+  var d=PAGTO[uid];
+  var h='<h3 class="eqtit">Dados para pagamento da comissão</h3>';
+  if(!d||d.carregando) return h+'<p class="eqsub">Carregando…</p>';
+  if(d.erro) return h+'<p class="eqsub">'+(/comissao_dados_pagto/.test(d.erro)?"Ainda não instalado no Supabase (comissoes.sql).":esc(d.erro))+'</p>';
+  var cp=function(id,rot,val,ph){ return '<div class="eqc"><label for="'+id+'">'+rot+'</label><input id="'+id+'" maxlength="160" value="'+esc(val||"")+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+'></div>'; };
+  var sel=function(id,rot,val,ops){ return '<div class="eqc"><label for="'+id+'">'+rot+'</label><select id="'+id+'">'+ops.map(function(o){ return '<option'+(val===o?" selected":"")+'>'+o+'</option>'; }).join("")+'</select></div>'; };
+  return h+'<p class="eqsub">Usados pelo Financeiro para transferir a comissão. Só o master e o Financeiro veem.</p><div class="eqform">'+
+    cp("pgNome","Nome completo",d.nome_completo)+cp("pgDoc","CPF ou CNPJ",d.cpf_cnpj)+
+    sel("pgPixT","Tipo de PIX",d.pix_tipo||"",["","CPF","CNPJ","E-mail","Celular","Aleatória"])+cp("pgPix","Chave PIX",d.pix_chave)+
+    cp("pgBanco","Banco",d.banco)+cp("pgAg","Agência",d.agencia)+cp("pgConta","Conta",d.conta)+
+    sel("pgTipoC","Tipo de conta",d.tipo_conta||"",["","Corrente","Poupança","Pagamento"])+
+    cp("pgTit","Titular da conta",d.titular,"se for outra pessoa ou a empresa")+cp("pgObs","Observação",d.observacao)+
+    '<button class="btn pri eqconvidar" onclick="salvarPagto()">Salvar dados de pagamento</button></div>';
+}
+function salvarPagto(){
+  var uid=PESSOA_ID, g=function(id){ var e=document.getElementById(id); return e?e.value:""; };
+  msgEq("Salvando…");
+  api("rpc/comissao_dados_pagto_salvar",{method:"POST",body:{p_user:uid,p:{nome_completo:g("pgNome"),cpf_cnpj:g("pgDoc"),pix_tipo:g("pgPixT"),pix_chave:g("pgPix"),
+    banco:g("pgBanco"),agencia:g("pgAg"),conta:g("pgConta"),tipo_conta:g("pgTipoC"),titular:g("pgTit"),observacao:g("pgObs")}}})
+    .then(function(){ carregarPagto(uid,"Dados de pagamento salvos."); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
+}
 function pessoaAtual(){ for(var i=0;i<EQUIPE.length;i++) if(EQUIPE[i].user_id===PESSOA_ID) return EQUIPE[i]; return null; }
 function quandoCurto(t){
   if(!t) return "nunca";
@@ -1489,6 +1521,7 @@ function blocoPessoa(){
     h+='<p class="eqsub">Revogar bloqueia o login na hora, derruba a sessão aberta e tira a pessoa do CRM. Os clientes e o histórico continuam. Dá para reativar depois.</p>'+
        (eu?'<p class="eqsub">Você não pode revogar o seu próprio acesso.</p>':'<button class="eqbt perigo" onclick="revogarPessoa()">Revogar acesso</button>');
   }
+  h+=blocoPagto(p.user_id);
   h+='<h3 class="eqtit">Excluir da equipe</h3>';
   if(eu) h+='<p class="eqsub">Você não pode excluir a si mesmo.</p>';
   else if(temClientes) h+='<p class="eqsub">Para excluir, transfira antes '+(p.qtd_leads||0)+' cliente(s) do CRM e '+(p.qtd_carteiras||0)+
@@ -1761,7 +1794,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.96";
+var VERSAO="versão 2.97";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
