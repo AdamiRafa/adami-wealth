@@ -1595,6 +1595,18 @@ de `adami_completo.sql`) e funções `btg-webhook` e `btg-sync` (Verify JWT desl
   No ar: chamada real a `rm-reports/nnm` respondeu 404 "Webhook not registered for partner cnpj
   [36000256000146], cge [5390761]", o esperado antes do cadastro.
 
+**BTG recusou o domínio do Supabase (09/11/2026, caso Resolve Aí 29262925).** Exigências do BTG para
+o endereço do webhook: domínio registrado em nome do parceiro, com SSL, que não seja de "sistema
+aberto" (Ngrok, Webhook.site, Make), sem IP, criado há 30 dias ou mais. `*.supabase.co` falhou no
+primeiro e no terceiro. Solução: repasse no domínio da Adami, `webhook/btg.php` (publicado junto com
+o Hub; regra no `.htaccess`), que recebe em `https://adamicaptal.com.br/hub/webhook/btg/<serviço>` e
+passa o aviso com todos os cabeçalhos para `btg-webhook/<serviço>` no Supabase, devolvendo a
+resposta igual. Só POST, serviço só com `[a-z0-9-]`, aviso até 1 MB, destino fixo. A senha continua
+sendo conferida no Supabase. Testado localmente (senha passa, 401 sem senha, 405 em GET, 404 em
+serviço inválido) e no ar. **No cadastro dos webhooks, usar o endereço da Adami, não o do Supabase.**
+Pendente: o Emil confirmar no registro.br que `adamicaptal.com.br` está em nome da Adami (CNPJ do
+parceiro, 36.000.256/0001-46) e reabrir o pedido.
+
 **Para ligar (depois que o BTG liberar o domínio):** criar a senha do webhook (Secrets >
 `BTG_WEBHOOK_KEY`, 20+ caracteres), cadastrar no portal um webhook por serviço com a mesma senha
 (API Key) e o endereço com o serviço no fim, e então `update btg_config set ligado = true`.

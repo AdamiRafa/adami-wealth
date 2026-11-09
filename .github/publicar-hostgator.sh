@@ -18,8 +18,9 @@ for v in FTP_SERVIDOR FTP_USUARIO FTP_SENHA; do
   if [ -z "${!v:-}" ]; then echo "::error::Falta o segredo $v."; exit 1; fi
 done
 
-# 1. Monta a pasta que vai ao ar. Lista positiva: só HTML, vendor/, img/, estilo/, comum/ e .htaccess.
+# 1. Monta a pasta que vai ao ar. Lista positiva: só HTML, vendor/, img/, estilo/, comum/, webhook/ e .htaccess.
 #    comum/ guarda o script "Salvar no CRM" das ferramentas (comum/anexos.js).
+#    webhook/ guarda o repasse dos avisos do BTG para o Supabase (webhook/btg.php).
 #    estilo/ guarda a camada visual comum dos módulos (visual 2026).
 #    img/ guarda o logo e os ícones que os e-mails do Supabase carregam pelo endereço.
 #    SQL, documentação e qualquer arquivo novo ficam de fora até alguém incluir aqui.
@@ -31,6 +32,7 @@ cp -R "$ORIGEM"/vendor "$SITE"/vendor
 cp -R "$ORIGEM"/img "$SITE"/img
 cp -R "$ORIGEM"/estilo "$SITE"/estilo
 cp -R "$ORIGEM"/comum "$SITE"/comum
+cp -R "$ORIGEM"/webhook "$SITE"/webhook
 printf 'Portal Adami Captal. Esta pasta e substituida inteira a cada publicacao pelo GitHub.\nNao guarde nada aqui.\n' > "$SITE/$MARCADOR"
 
 # 2. Conexão. Criptografia obrigatória e certificado conferido (padrão do lftp).

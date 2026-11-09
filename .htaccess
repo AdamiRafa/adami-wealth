@@ -17,6 +17,9 @@
   RewriteCond %{HTTPS} off
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  # Webhook do BTG (09/11/2026): o BTG só aceita endereço no domínio da Adami; webhook/btg.php
+  # passa o aviso para a função btg-webhook do Supabase. Ex.: /hub/webhook/btg/rm-reports-nnm
+  RewriteRule ^webhook/btg/([a-z0-9][a-z0-9-]{2,79})/?$ webhook/btg.php?servico=$1 [L,QSA]
 </IfModule>
 
 # Cabeçalhos de segurança (06/11/2026, varredura de segurança).
