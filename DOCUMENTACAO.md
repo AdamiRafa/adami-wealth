@@ -1604,8 +1604,10 @@ passa o aviso com todos os cabeçalhos para `btg-webhook/<serviço>` no Supabase
 resposta igual. Só POST, serviço só com `[a-z0-9-]`, aviso até 1 MB, destino fixo. A senha continua
 sendo conferida no Supabase. Testado localmente (senha passa, 401 sem senha, 405 em GET, 404 em
 serviço inválido) e no ar. **No cadastro dos webhooks, usar o endereço da Adami, não o do Supabase.**
-Pendente: o Emil confirmar no registro.br que `adamicaptal.com.br` está em nome da Adami (CNPJ do
-parceiro, 36.000.256/0001-46) e reabrir o pedido.
+Conferido no registro.br (09/11/2026): `adamicaptal.com.br` está no CPF do Rafael Trindade Adami
+(sócio principal), criado em 04/07/2022, DNS na HostGator. Como o BTG pede "em nome do parceiro", a
+recomendação foi passar a titularidade para o CNPJ 36.000.256/0001-46 no registro.br antes de reabrir
+o pedido (a data de criação não muda). A Protego deve ser a Quantum, fornecedor usado antes.
 
 **Para ligar (depois que o BTG liberar o domínio):** criar a senha do webhook (Secrets >
 `BTG_WEBHOOK_KEY`, 20+ caracteres), cadastrar no portal um webhook por serviço com a mesma senha
