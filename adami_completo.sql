@@ -3090,7 +3090,11 @@ begin
   on conflict (email) do update
     set nome=excluded.nome, role=excluded.role, produtos=excluded.produtos,
         master=excluded.master, admin=excluded.admin, mesa_rv=excluded.mesa_rv,
-        financeiro=excluded.financeiro, convidado_por=excluded.convidado_por, criado_em=now();
+        financeiro=excluded.financeiro, convidado_por=excluded.convidado_por, criado_em=now(),
+        -- 10/11/2026: convidar de novo reabre o convite. Antes ficava marcado como usado
+        -- (pessoa que já teve conta e foi excluída): o e-mail era recusado e o cadastro também.
+        -- Quem ainda tem conta não chega aqui (o "Ja existe conta" acima barra).
+        consumido_em=null;
 
   insert into public.auditoria(usuario, acao, alvo, detalhe)
   values (coalesce(auth.jwt() ->> 'email','?'), 'convite', lower(p_email),

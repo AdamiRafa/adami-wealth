@@ -698,6 +698,13 @@ token já trocado e, passados 10 s, pode derrubar a sessão inteira. Testado no 
 agenda com a equipe" no topo da própria Agenda. Ligado, qualquer pessoa ativa do CRM escolhe o nome dela em "Agenda
 de" e vê as tarefas, só para ler. Head comercial e master continuam vendo todas. Banco: `agenda_compartilhar.sql`
 (seção 19), instalado como migração `agenda_compartilhada`**.
+ · **10/11/2026 (só banco): convite que "não mandava e-mail". Não tinha a ver com marcar ou não os acessos do
+portal. O Enzo já tinha tido convite usado em 17/09 e a conta dele não existe mais; convidar de novo atualizava o
+convite mas o deixava marcado como usado (`consumido_em`), então a função `enviar-convite` respondia 403 ("não há
+convite pendente") e o cadastro pelo "Primeiro acesso" também seria recusado. A segunda tentativa, com
+Administrador marcado, foi para enzo@adamicaptal.com.nr (digitado errado), por isso "funcionou". Agora `convidar`
+reabre o convite (`consumido_em = null`); quem ainda tem conta continua barrado antes. Migração
+`convidar_reabre_convite`; `permissoes.sql` e `adami_completo.sql` atualizados**.
 
 ---
 
