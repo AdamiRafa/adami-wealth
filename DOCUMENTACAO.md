@@ -659,6 +659,9 @@ condições (cliente/lista, assessor, origem, categoria, produto) e divisão em 
 troca de nomes, listas de clientes, ajustes fixos recorrentes, mínimo garantido, imposto por empresa
 pagadora (as 3 PJs), acordos contratuais, folha por empresa e "Minha comissão" para cada assessor
 ver o próprio fechamento quando o Financeiro libera (seção 25)**.
+ · **Comissões 2.1 (10/11/2026): repasse "só na 1ª parcela" em cada recebedor da regra (pedido do Emil:
+o especialista de seguro e consórcio recebe só a parcela do mês em que fechou o negócio), coluna
+Parcela na planilha (seção 25)**.
 
 ---
 
@@ -1742,6 +1745,18 @@ arredondamento é só nos totais. As comparações ignoram acento, maiúscula e 
     limite de 8 s do Supabase), Excluir planilha (pedido do Emil), Importar novamente e Baixar as
     linhas lidas.
   - **Velocidade:** 3.000 linhas calculam em cerca de 2 s no Postgres local.
+- **Só na 1ª parcela (2.1, 10/11/2026):** cada recebedor da divisão tem `so_primeira`. Pedido do Emil: o
+  especialista de seguro e consórcio recebe só a 1ª parcela (o mês em que fechou o negócio); se são 5
+  parcelas, recebe só a primeira. Nas parcelas seguintes a parte dele não sai e fica com quem tem "o
+  restante" (sem restante, com o escritório). O assessor continua recebendo em todas, a menos que a
+  caixa dele também seja marcada.
+  - Número da parcela: coluna "Parcela" da planilha (aceita "1", "1/5", "Parcela 2 de 5": vale o
+    primeiro número), guardado em `comissao_lancamentos.parcela`.
+  - Sem a coluna: é 1ª parcela se o mesmo cliente + conta + produto ainda não apareceu, na mesma
+    origem, em mês anterior no Hub. Contrato fechado antes de outubro/2026 que aparece pela primeira
+    vez no Hub seria tratado como 1ª parcela: por isso a tela avisa e pede a coluna de parcela.
+  - Na tela: caixa "só na 1ª parcela" na divisão, a frase da regra mostra, campo Parcela no
+    assistente, no teste e no avulso; a conferência mostra "parcela N".
 - **Ajustes fixos** (`comissao_fixos`): grupo, pessoa, descrição, valor, início e fim. Entram
   sozinhos em todo mês aberto do período (`com_aplicar_fixos`, chamado ao abrir o painel e ao
   salvar). O escritório paga (`valor_escritorio` negativo). Ajuste avulso do mês e comissão ou

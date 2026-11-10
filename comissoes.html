@@ -149,7 +149,7 @@ textarea{width:100%}.chip.ok{background:var(--verde-c);color:var(--verde)}
 <body>
 <div id="app"><p class="vazio">Carregando…</p></div>
 <script>
-var VERSAO="Comissões 2.0";
+var VERSAO="Comissões 2.1";
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
 var SESSAO=null;
@@ -373,7 +373,7 @@ function resumoPessoa(uid){
     h+='<tr class="clica" onclick="abrirGrupo('+i+')"><td><b>'+esc(k)+'</b></td><td class="n">'+g.ls.length+'</td><td class="n">'+brl(g.g)+'</td><td class="n'+(g.p<0?" neg":"")+'"><b>'+brl(g.p)+'</b></td><td class="n">'+(ab?"&#9650;":"&#9660;")+'</td></tr>';
     if(ab){
       h+='<tr><td colspan="5" class="sublista"><table><thead><tr><th>Origem</th><th>Cliente</th><th>Conta</th><th>Categoria · produto</th><th>Regra ou descrição</th><th class="n">Comissão</th><th class="n">Parte</th></tr></thead><tbody>'+
-        g.ls.slice(0,400).map(function(l){ return '<tr><td>'+esc(l.origem_nome||TIPOS[l.tipo])+'</td><td>'+esc(l.cliente||"—")+'</td><td>'+esc(l.conta||"")+'</td><td>'+esc([l.categoria,l.produto].filter(Boolean).join(" · "))+'</td>'+
+        g.ls.slice(0,400).map(function(l){ return '<tr><td>'+esc(l.origem_nome||TIPOS[l.tipo])+'</td><td>'+esc(l.cliente||"—")+'</td><td>'+esc(l.conta||"")+'</td><td>'+esc([l.categoria,l.produto,l.parcela?"parcela "+l.parcela:""].filter(Boolean).join(" · "))+'</td>'+
           '<td>'+esc(l.regra_nome||l.descricao||"")+'</td><td class="n">'+(l.tipo==="receita"?brl(l.valor):"—")+'</td><td class="n'+(parte(l,uid)<0?" neg":"")+'">'+brl(parte(l,uid))+'</td></tr>'; }).join("")+
         (g.ls.length>400?'<tr><td colspan="7" class="sub">… e mais '+(g.ls.length-400)+' linha(s). Use os filtros ou baixe o Excel.</td></tr>':'')+'</tbody></table></td></tr>';
     }
@@ -502,8 +502,8 @@ function excluirPlanilha(){
 }
 function baixarOriginal(id){
   rpc("comissao_planilha_itens",{p_id:id}).then(function(d){
-    var rows=[["Linha","Cliente","Conta","Profissional","Categoria","Produto","Comissão"]];
-    (d.itens||[]).forEach(function(i){ rows.push([i.linha,i.cliente,i.conta,i.profissional,i.categoria,i.produto,n(i.valor)]); });
+    var rows=[["Linha","Cliente","Conta","Profissional","Categoria","Produto","Parcela","Comissão"]];
+    (d.itens||[]).forEach(function(i){ rows.push([i.linha,i.cliente,i.conta,i.profissional,i.categoria,i.produto,i.parcela||"",n(i.valor)]); });
     var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Linhas");
     baixarWb(wb,"Linhas lidas - "+String(d.arquivo||"planilha").replace(/\.\w+$/,"")+".xlsx");
   }).catch(falhou);
@@ -512,10 +512,11 @@ function baixarOriginal(id){
 /* ----- Subir planilha: 1) origem e arquivo  2) aba e colunas  3) conferência ----- */
 var CAMPOS=[
   ["cliente","Cliente",["cliente","nomecliente","nomedocliente","titular","nomedotitular"]],
-  ["conta","Conta",["conta","contacliente","numerodaconta","numeroconta","nconta","codcliente","codigocliente","codigodocliente"]],
+  ["conta","Conta",["conta","cota","contrato","grupocota","contacliente","numerodaconta","numeroconta","nconta","codcliente","codigocliente","codigodocliente"]],
   ["profissional","Profissional (assessor)",["profissional","assessor","nomeassessor","nomedoassessor","assessorresponsavel","codigoassessor","codassessor","codigodoassessor","cge","cgeassessor"]],
   ["categoria","Categoria",["categoria","mercado","linhadereceita","tipodereceita","classe","tipo"]],
   ["produto","Produto",["produto","subproduto","descricaoproduto","nomedoproduto","ativo","administradora","seguradora"]],
+  ["parcela","Parcela",["parcela","nparcela","numparcela","numerodaparcela","noparcela","parcelaatual","parcelapaga","parcelaprazo","parcelas"]],
   ["valor","Comissão (valor)",["comissao","comissaoescritorio","valorcomissao","comissaoliquida","receitaescritorio","receitaliquida","receita","valor","valorrecebido","valorliquido"]]
 ];
 function novaPlanilha(oid){
@@ -606,7 +607,7 @@ function wizItens(){
     if(!val){ if(row.some(function(x){ return celTexto(x)!==""; })) ign++; continue; }
     out.push({linha:lin,cliente:m.cliente>=0?celTexto(row[m.cliente]):"",conta:m.conta>=0?celTexto(row[m.conta]):"",
       profissional:m.profissional>=0?celTexto(row[m.profissional]):"",categoria:m.categoria>=0?celTexto(row[m.categoria]):"",
-      produto:m.produto>=0?celTexto(row[m.produto]):"",valor:val});
+      produto:m.produto>=0?celTexto(row[m.produto]):"",parcela:m.parcela>=0?celTexto(row[m.parcela]):"",valor:val});
   }
   WIZ.ignoradas=ign; return out;
 }
@@ -620,10 +621,12 @@ function wiz2(){
     '<label class="c">Linha onde terminam<input type="number" min="1" value="'+WIZ.fim+'" onchange="WIZ.fim=Math.max(WIZ.ini,parseInt(this.value,10)||WIZ.ini);pintar()"></label></div>';
   h+='<div class="grade campos">'+CAMPOS.map(function(c){ return '<label class="c">'+esc(c[1])+(c[0]==="valor"?" *":"")+'<select onchange="WIZ.mapa[\''+c[0]+'\']=parseInt(this.value,10);'+(c[0]==="valor"?"wizLimites();":"")+'pintar()">'+opc(WIZ.mapa[c[0]])+'</select></label>'; }).join("")+'</div>';
   if(WIZ.mapa.valor<0) h+='<div class="aviso erro">Diga em qual coluna está o valor da comissão.</div>';
+  if(WIZ.mapa.parcela<0&&(P.regras||[]).some(function(g){ return (g.divisao||[]).some(function(x){ return x.so_primeira; }); }))
+    h+='<div class="aviso info">Há regra que paga alguém só na 1ª parcela, e esta planilha não tem coluna de parcela. Sem ela, o Hub considera 1ª parcela a primeira vez que o mesmo cliente, conta e produto aparecem no Hub. Se a planilha tiver a parcela, escolha a coluna acima.</div>';
   var amostra=itens.length<=8?itens:itens.slice(0,4).concat([null]).concat(itens.slice(-3));
   h+='<p class="sub">'+itens.length.toLocaleString("pt-BR")+' linha(s) com valor entre a linha '+WIZ.ini+' e a '+WIZ.fim+(WIZ.ignoradas?' &middot; '+WIZ.ignoradas+' ignorada(s) (total ou sem valor)':'')+'. Primeiras e últimas:</p>'+
     '<div class="tab-rol"><table><thead><tr><th>Linha</th>'+CAMPOS.map(function(c){ return '<th'+(c[0]==="valor"?' class="n"':'')+'>'+esc(c[1])+'</th>'; }).join("")+'</tr></thead><tbody>'+
-    (amostra.length?amostra.map(function(i){ return i?'<tr><td>'+i.linha+'</td><td>'+esc(i.cliente)+'</td><td>'+esc(i.conta)+'</td><td>'+esc(i.profissional)+'</td><td>'+esc(i.categoria)+'</td><td>'+esc(i.produto)+'</td><td class="n">'+n(i.valor).toLocaleString("pt-BR",{maximumFractionDigits:6})+'</td></tr>':'<tr><td colspan="7" class="sub">…</td></tr>'; }).join(""):'<tr><td colspan="7" class="vazio">Nenhuma linha com valor. Confira a aba, a coluna da comissão e as linhas.</td></tr>')+'</tbody></table></div>';
+    (amostra.length?amostra.map(function(i){ return i?'<tr><td>'+i.linha+'</td>'+CAMPOS.map(function(c){ return c[0]==="valor"?'<td class="n">'+n(i.valor).toLocaleString("pt-BR",{maximumFractionDigits:6})+'</td>':'<td>'+esc(i[c[0]])+'</td>'; }).join("")+'</tr>':'<tr><td colspan="'+(CAMPOS.length+1)+'" class="sub">…</td></tr>'; }).join(""):'<tr><td colspan="'+(CAMPOS.length+1)+'" class="vazio">Nenhuma linha com valor. Confira a aba, a coluna da comissão e as linhas.</td></tr>')+'</tbody></table></div>';
   return h+'<div class="linha-acoes"><button class="bt" onclick="WIZ.passo=1;pintar()">Voltar</button><button class="bt pri" id="wConf" onclick="wizConferir()"'+(itens.length&&WIZ.mapa.valor>=0?'':' disabled')+'>Conferir o cálculo de '+itens.length.toLocaleString("pt-BR")+' linha(s)</button></div>';
 }
 function wizConferir(){
@@ -658,7 +661,7 @@ function wiz3(){
       var prof=x.prof_escritorio?"Escritório":(x.profissional_id?nomeP(x.profissional_id):(x.profissional_txt||"—"));
       var div=(x.rateio||[]).map(function(r){ return esc(nomeP(r.user_id))+' '+brl(r.valor); }).concat(n(x.valor_escritorio)?['Escritório '+brl(x.valor_escritorio)]:[]).join("<br>");
       return '<tr'+(x.erro?' class="ruim"':'')+'><td>'+x.linha+'</td><td>'+(x.erro?'<span class="imp-erro">'+esc(erroCurto(x.erro))+'</span>':'<span class="imp-ok">ok</span>'+((x.avisos||[]).length?'<div class="sub" style="font-size:11px">'+esc(trocaLegivel(x.avisos.join("; ")))+'</div>':''))+'</td>'+
-        '<td>'+esc(x.cliente||"")+'</td><td>'+esc(prof)+'</td><td>'+esc([x.categoria,x.produto].filter(Boolean).join(" · "))+'</td><td class="n">'+brl(x.valor)+'</td><td>'+esc(x.regra_nome||"")+'</td><td class="rateio">'+(div||"—")+'</td></tr>';
+        '<td>'+esc(x.cliente||"")+'</td><td>'+esc(prof)+'</td><td>'+esc([x.categoria,x.produto,x.parcela?"parcela "+x.parcela:""].filter(Boolean).join(" · "))+'</td><td class="n">'+brl(x.valor)+'</td><td>'+esc(x.regra_nome||"")+'</td><td class="rateio">'+(div||"—")+'</td></tr>';
     }).join("")+(mostrar0.length>500?'<tr><td colspan="8" class="sub">… e mais '+(mostrar0.length-500)+' linha(s).</td></tr>':'')+'</tbody></table></div>';
   return h+'<div class="linha-acoes"><button class="bt" onclick="WIZ.passo=2;pintar()">Voltar</button><button class="bt pri" id="wSalvar" onclick="wizSalvar()"'+(sim.length?'':' disabled')+'>Gravar a planilha ('+ok.length.toLocaleString("pt-BR")+' linha(s) prontas)</button></div>'+
     (ruins.length?'<p class="sub" style="text-align:right">As '+ruins.length+' linha(s) com problema ficam guardadas na planilha: depois de resolver, é só recalcular.</p>':'');
@@ -736,7 +739,7 @@ function formAjuste(){
       '<label class="c larga">Origem (opcional)<select id="eOrig"><option value="">Nenhuma</option>'+(P.origens||[]).map(function(o){ return '<option value="'+o.id+'">'+esc(o.nome)+'</option>'; }).join("")+'</select></label>'+
       '<label class="c larga">Cliente<input id="eCli"></label><label class="c">Conta<input id="eConta"></label>'+
       '<label class="c">Valor (R$)<input id="eValor" inputmode="decimal" placeholder="negativo = estorno"></label>'+
-      '<label class="c larga">Categoria<input id="eCat" list="dlCat"></label><label class="c larga">Produto<input id="eProd"></label>'+
+      '<label class="c larga">Categoria<input id="eCat" list="dlCat"></label><label class="c">Produto<input id="eProd"></label><label class="c">Parcela<input id="eParc" placeholder="ex.: 1"></label>'+
       '<label class="c toda">Descrição<input id="eDesc"></label></div><datalist id="dlCat">'+categorias().map(function(c){ return '<option value="'+esc(c)+'">'; }).join("")+'</datalist>';
   }
   return h+'<div class="linha-acoes"><button class="bt" onclick="fecharEd()">Cancelar</button><button class="bt pri" id="eSalvar" onclick="salvarAjuste()">Salvar</button></div></div>';
@@ -757,7 +760,7 @@ function salvarAjuste(){
   } else {
     var u=v("eUser"); bloquear();
     rpc("comissao_lancamento_salvar",{p:{competencia:COMP,tipo:"receita",profissional_id:u===""?null:(u==="escritorio"?"00000000-0000-0000-0000-000000000000":u),
-      origem_id:v("eOrig")||null,cliente:v("eCli"),conta:v("eConta"),categoria:v("eCat"),produto:v("eProd"),descricao:v("eDesc"),valor:valor}})
+      origem_id:v("eOrig")||null,cliente:v("eCli"),conta:v("eConta"),categoria:v("eCat"),produto:v("eProd"),parcela:v("eParc"),descricao:v("eDesc"),valor:valor}})
       .then(function(){ ED=null; MSG={texto:"Lançado.",tipo:"ok"}; return carregar(); }).catch(falhou);
   }
 }
@@ -780,7 +783,7 @@ function fraseRegra(g){
   if(g.cond_profissional) c.push("o assessor é "+nomeP(g.cond_profissional));
   if(g.cond_cliente) c.push("o cliente é "+g.cond_cliente);
   if(g.cond_lista_id) c.push("o cliente está na lista \""+((lista(g.cond_lista_id)||{}).nome||"?")+"\"");
-  var d=(g.divisao||[]).map(function(x){ return (x.pct===null||x.pct===undefined?"o restante":pc(x.pct))+" para "+recebedorNome(x.recebedor)+(x.negativos===false?" (não entra em valor negativo)":""); });
+  var d=(g.divisao||[]).map(function(x){ return (x.pct===null||x.pct===undefined?"o restante":pc(x.pct))+" para "+recebedorNome(x.recebedor)+(x.so_primeira?" (só na 1ª parcela)":"")+(x.negativos===false?" (não entra em valor negativo)":""); });
   var tem=(g.divisao||[]).some(function(x){ return x.pct===null||x.pct===undefined; });
   return (c.length?"Quando "+c.join(" e "):"Para qualquer linha")+": "+d.join(", ")+(tem?"":", e o que sobrar fica com o escritório")+".";
 }
@@ -804,20 +807,21 @@ function blocoTeste(){
   var h='<details class="cartao"'+(TESTE?" open":"")+'><summary><b>Testar uma linha</b> <span class="sub">veja qual regra pega e como divide, sem gravar nada</span></summary><div class="grade" style="margin-top:12px">'+
     '<label class="c">Assessor (como vem na planilha)<input id="tProf" list="dlPess"></label><label class="c">Cliente ou conta<input id="tCli"></label>'+
     '<label class="c">Categoria<input id="tCat" list="dlCat2"></label><label class="c">Produto<input id="tProd"></label>'+
+    '<label class="c">Parcela<input id="tPar" placeholder="ex.: 2"></label>'+
     '<label class="c">Origem<select id="tOrig"><option value="">Qualquer</option>'+(P.origens||[]).map(function(o){ return '<option value="'+o.id+'">'+esc(o.nome)+'</option>'; }).join("")+'</select></label>'+
     '<label class="c">Comissão (R$)<input id="tVal" inputmode="decimal" value="1.000,00"></label></div>'+
     '<datalist id="dlPess">'+pessoasAtivas().map(function(p){ return '<option value="'+esc(p.nome)+'">'; }).join("")+'</datalist><datalist id="dlCat2">'+categorias().map(function(c){ return '<option value="'+esc(c)+'">'; }).join("")+'</datalist>'+
     '<div class="linha-acoes"><button class="bt" onclick="testar()">Testar</button></div>';
   if(TESTE){
     if(TESTE.erro) h+='<div class="aviso erro">'+esc(TESTE.erro)+'</div>';
-    else h+='<div class="aviso ok">Pega a regra <b>'+esc(TESTE.regra_nome)+'</b>'+(TESTE.avisos&&TESTE.avisos.length?' (troca feita: '+esc(trocaLegivel(TESTE.avisos.join("; ")))+')':'')+'. '+
+    else h+='<div class="aviso ok">Pega a regra <b>'+esc(TESTE.regra_nome)+'</b>'+(TESTE.primeira===false?' (não é a 1ª parcela)':'')+(TESTE.avisos&&TESTE.avisos.length?' (troca feita: '+esc(trocaLegivel(TESTE.avisos.join("; ")))+')':'')+'. '+
       (TESTE.rateio||[]).map(function(r){ return esc(nomeP(r.user_id))+": "+brl(r.valor); }).concat(["Escritório: "+brl(TESTE.valor_escritorio)]).join(" &middot; ")+'</div>';
   }
   return h+'</details>';
 }
 function testar(){
-  var vals={tProf:v("tProf"),tCli:v("tCli"),tCat:v("tCat"),tProd:v("tProd"),tOrig:v("tOrig"),tVal:v("tVal")};
-  rpc("comissao_testar",{p:{profissional:vals.tProf,cliente:vals.tCli,conta:vals.tCli,categoria:vals.tCat,produto:vals.tProd,origem_id:vals.tOrig||null,valor:lerValor(vals.tVal)},p_competencia:COMP})
+  var vals={tProf:v("tProf"),tCli:v("tCli"),tCat:v("tCat"),tProd:v("tProd"),tPar:v("tPar"),tOrig:v("tOrig"),tVal:v("tVal")};
+  rpc("comissao_testar",{p:{profissional:vals.tProf,cliente:vals.tCli,conta:vals.tCli,categoria:vals.tCat,produto:vals.tProd,parcela:vals.tPar,origem_id:vals.tOrig||null,valor:lerValor(vals.tVal)},p_competencia:COMP})
     .then(function(r){ TESTE=r; pintar(); Object.keys(vals).forEach(function(k){ var e=document.getElementById(k); if(e) e.value=vals[k]; }); }).catch(falhou);
 }
 function novaRegra(){ ED={tipo:"regra",i:null,d:{ativo:true,vigencia_inicio:"2026-10-01",divisao:[{recebedor:"profissional",pct:50,negativos:true},{recebedor:"escritorio",pct:null,negativos:true}]}}; pintar(); window.scrollTo(0,0); }
@@ -842,6 +846,7 @@ function formRegra(){
         pessoasAtivas().map(function(p){ return '<option value="'+p.user_id+'"'+(x.recebedor===p.user_id?" selected":"")+'>'+esc(p.nome)+'</option>'; }).join("")+'</select>'+
         '<input data-k="pct" inputmode="decimal" aria-label="Percentual" value="'+(resto?"":esc(String(x.pct).replace(".",",")))+'" placeholder="%"'+(resto?" disabled":"")+' oninput="somaDiv()">'+
         '<label class="mini"><input type="checkbox" data-k="resto"'+(resto?" checked":"")+' onchange="lerDiv();pintar()"> o restante</label>'+
+        '<label class="mini"><input type="checkbox" data-k="pri"'+(x.so_primeira?" checked":"")+' onchange="somaDiv()"> só na 1ª parcela</label>'+
         '<label class="mini"><input type="checkbox" data-k="neg"'+(x.negativos===false?"":" checked")+'> vale para valor negativo</label>'+
         '<button class="link perigo" onclick="lerDiv();ED.d.divisao.splice('+i+',1);pintar()">Tirar</button></div>';
     }).join("")+'</div><button class="link" onclick="lerDiv();ED.d.divisao.push({recebedor:\'escritorio\',pct:null,negativos:true});pintar()">+ Recebedor</button> <span id="rSoma" class="soma"></span>'+
@@ -863,12 +868,12 @@ function lerDiv(){
   lerCampos();
   var out=[]; document.querySelectorAll("#rDiv .div-linha").forEach(function(l){
     var resto=l.querySelector('[data-k=resto]').checked;
-    out.push({recebedor:l.querySelector('[data-k=rec]').value,pct:resto?null:lerValor(l.querySelector('[data-k=pct]').value),negativos:l.querySelector('[data-k=neg]').checked});
+    out.push({recebedor:l.querySelector('[data-k=rec]').value,pct:resto?null:lerValor(l.querySelector('[data-k=pct]').value),negativos:l.querySelector('[data-k=neg]').checked,so_primeira:l.querySelector('[data-k=pri]').checked});
   });
   ED.d.divisao=out; return out;
 }
 function somaDiv(){
-  var div=[]; document.querySelectorAll("#rDiv .div-linha").forEach(function(l){ var r=l.querySelector('[data-k=resto]').checked; div.push({recebedor:l.querySelector('[data-k=rec]').value,pct:r?null:lerValor(l.querySelector('[data-k=pct]').value),negativos:true}); });
+  var div=[]; document.querySelectorAll("#rDiv .div-linha").forEach(function(l){ var r=l.querySelector('[data-k=resto]').checked; div.push({recebedor:l.querySelector('[data-k=rec]').value,pct:r?null:lerValor(l.querySelector('[data-k=pct]').value),negativos:true,so_primeira:l.querySelector('[data-k=pri]').checked}); });
   var s=div.reduce(function(a,x){ return a+(x.pct===null?0:n(x.pct)); },0), tem=div.some(function(x){ return x.pct===null; });
   var e=document.getElementById("rSoma"); if(e){ e.textContent="Soma dos percentuais: "+pc(s)+(tem?" + o restante":(s<100?" (o que sobra vai para o escritório)":"")); e.className="soma "+(s>100.0001?"ruim":"bom"); }
   var f=document.getElementById("rFrase"); if(f){ lerCampos(); var g=JSON.parse(JSON.stringify(ED.d)); g.divisao=div; f.textContent=fraseRegra(g); }

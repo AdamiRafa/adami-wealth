@@ -3703,7 +3703,10 @@ create table if not exists public.comissao_listas (
 
 -- Regras de repasse. Condições vazias valem para qualquer valor. A de menor
 -- prioridade (número menor) é testada primeiro; a primeira que bate é usada.
--- divisao: [{recebedor: 'profissional' | 'escritorio' | <user_id>, pct: número ou null (= o restante), negativos: bool}]
+-- divisao: [{recebedor: 'profissional' | 'escritorio' | <user_id>, pct: número ou null (= o restante), negativos: bool,
+--            so_primeira: bool}]
+-- so_primeira (10/11/2026, pedido do Emil): o especialista de seguro e consórcio recebe só na 1ª parcela.
+-- Nas parcelas seguintes a parte dele vai para quem fica com "o restante" (normalmente o escritório).
 create table if not exists public.comissao_regras (
   id                uuid primary key default gen_random_uuid(),
   nome              text not null check (char_length(btrim(nome)) between 1 and 120),
@@ -3817,6 +3820,7 @@ create table if not exists public.comissao_lancamentos (
   criado_em        timestamptz not null default now(),
   criado_por       text
 );
+alter table public.comissao_lancamentos add column if not exists parcela int;   -- nº da parcela (seguro, consórcio)
 create index if not exists comissao_lanc_comp_idx on public.comissao_lancamentos (competencia);
 create index if not exists comissao_lanc_plan_idx on public.comissao_lancamentos (planilha_id);
 
@@ -3909,7 +3913,7 @@ returns boolean language sql stable security definer set search_path = public as
                                         and public.com_norm(i) <> ''));
 $$;
 
--- O motor. p: {cliente, conta, profissional (texto) ou profissional_id, categoria, produto, valor}
+-- O motor. p: {cliente, conta, profissional (texto) ou profissional_id, categoria, produto, valor, parcela}
 -- Devolve a linha calculada, com "erro" quando não dá para calcular e "avisos" das trocas feitas.
 create or replace function public.com_calcular(p jsonb, p_origem uuid, p_comp date, p_cotacao numeric)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
@@ -3921,6 +3925,7 @@ declare
   t record; r record; d jsonb; v_feitos text[] := '{}'; v_avisos jsonb := '[]'::jsonb;
   v_regra public.comissao_regras; v_soma numeric := 0; v_resto jsonb; v_parte numeric; v_quem uuid;
   v_rateio jsonb := '{}'::jsonb; v_escr numeric := 0; v_saida jsonb := '[]'::jsonb; k text;
+  v_parc int; v_primeira boolean := true;
 begin
   begin
     v_orig := coalesce(nullif(btrim(p->>'valor'), '')::numeric, 0);
@@ -3973,10 +3978,26 @@ begin
       'categoria', v_cat, 'produto', v_prod, 'valor_original', v_orig, 'valor', v_val, 'avisos', v_avisos);
   end if;
 
-  -- 4. a divisão
+  -- 4. a parcela: "1", "1/5", "Parcela 2 de 5" -> o primeiro número. Só importa se a regra tem
+  --    recebedor "só na 1ª parcela". Sem a coluna, é 1ª parcela se o mesmo cliente, conta e produto
+  --    ainda não apareceram, desta origem, em mês anterior.
+  v_parc := nullif(substring(coalesce(p->>'parcela', '') from '(\d{1,4})'), '')::int;
+  if exists (select 1 from jsonb_array_elements(v_regra.divisao) x where coalesce((x->>'so_primeira')::boolean, false)) then
+    if v_parc is not null then
+      v_primeira := v_parc <= 1;
+    elsif v_cli <> '' or v_conta <> '' then
+      v_primeira := not exists (select 1 from public.comissao_lancamentos l
+         where l.tipo = 'receita' and l.competencia < p_comp and l.origem_id is not distinct from p_origem
+           and public.com_norm(l.cliente) = public.com_norm(v_cli) and public.com_norm(l.conta) = public.com_norm(v_conta)
+           and public.com_norm(l.produto) = public.com_norm(v_prod));
+    end if;
+  end if;
+
+  -- 5. a divisão
   for d in select * from jsonb_array_elements(v_regra.divisao) loop
     if d->'pct' is null or jsonb_typeof(d->'pct') = 'null' then v_resto := d; continue; end if;
     if v_val < 0 and not coalesce((d->>'negativos')::boolean, true) then continue; end if;
+    if coalesce((d->>'so_primeira')::boolean, false) and not v_primeira then continue; end if;
     v_parte := round(v_val * (d->>'pct')::numeric / 100, 6);
     v_soma := v_soma + v_parte;
     if d->>'recebedor' = 'profissional' then
@@ -3992,7 +4013,8 @@ begin
     v_rateio := jsonb_set(v_rateio, array[v_quem::text], to_jsonb(coalesce((v_rateio->>v_quem::text)::numeric, 0) + v_parte));
   end loop;
   v_parte := v_val - v_soma;   -- o restante
-  if v_resto is not null and v_parte <> 0 and (v_val >= 0 or coalesce((v_resto->>'negativos')::boolean, true)) then
+  if v_resto is not null and v_parte <> 0 and (v_val >= 0 or coalesce((v_resto->>'negativos')::boolean, true))
+     and (v_primeira or not coalesce((v_resto->>'so_primeira')::boolean, false)) then
     if v_resto->>'recebedor' = 'escritorio' or (v_resto->>'recebedor' = 'profissional' and v_esc) then v_escr := v_escr + v_parte;
     elsif v_resto->>'recebedor' = 'profissional' and v_pid is null then
       return jsonb_build_object('erro', 'a regra "' || v_regra.nome || '" paga o profissional da linha, e a linha não tem profissional',
@@ -4010,7 +4032,8 @@ begin
   end loop;
   return jsonb_build_object('cliente', v_cli, 'conta', v_conta, 'profissional_txt', v_prof, 'profissional_id', v_pid,
     'prof_escritorio', v_esc, 'categoria', v_cat, 'produto', v_prod, 'valor_original', v_orig, 'valor', v_val,
-    'regra_id', v_regra.id, 'regra_nome', v_regra.nome, 'rateio', v_saida, 'valor_escritorio', v_escr, 'avisos', v_avisos);
+    'regra_id', v_regra.id, 'regra_nome', v_regra.nome, 'rateio', v_saida, 'valor_escritorio', v_escr, 'avisos', v_avisos,
+    'parcela', v_parc, 'primeira', v_primeira);
 end $$;
 
 -- Grava as linhas de uma planilha (apaga as anteriores dela). Devolve contagens.
@@ -4034,11 +4057,11 @@ begin
     end if;
     insert into public.comissao_lancamentos (competencia, tipo, planilha_id, linha, origem_id, origem_nome, cliente, conta,
       profissional_txt, profissional_id, prof_escritorio, categoria, produto, valor_original, cotacao, valor, regra_id, regra_nome,
-      rateio, valor_escritorio, criado_por)
+      rateio, valor_escritorio, parcela, criado_por)
     values (pl.competencia, 'receita', p_id, coalesce((it->>'linha')::int, i), pl.origem_id, o.nome, c->>'cliente', c->>'conta',
       c->>'profissional_txt', nullif(c->>'profissional_id', '')::uuid, coalesce((c->>'prof_escritorio')::boolean, false),
       c->>'categoria', c->>'produto', (c->>'valor_original')::numeric, pl.cotacao, (c->>'valor')::numeric,
-      (c->>'regra_id')::uuid, c->>'regra_nome', c->'rateio', (c->>'valor_escritorio')::numeric, public.com_quem());
+      (c->>'regra_id')::uuid, c->>'regra_nome', c->'rateio', (c->>'valor_escritorio')::numeric, (c->>'parcela')::int, public.com_quem());
     n_ok := n_ok + 1; v_total := v_total + (c->>'valor')::numeric;
   end loop;
   update public.comissao_planilhas set linhas = n_ok, linhas_erro = jsonb_array_length(erros), total = round(v_total, 2),
@@ -4125,7 +4148,7 @@ begin
     'lancamentos', coalesce((select jsonb_agg(jsonb_build_object('id', l.id, 'tipo', l.tipo, 'planilha_id', l.planilha_id, 'linha', l.linha,
         'origem_id', l.origem_id, 'origem_nome', l.origem_nome, 'cliente', l.cliente, 'conta', l.conta, 'profissional_txt', l.profissional_txt,
         'profissional_id', l.profissional_id, 'prof_escritorio', l.prof_escritorio, 'categoria', l.categoria, 'produto', l.produto,
-        'descricao', l.descricao, 'valor_original', l.valor_original, 'cotacao', l.cotacao, 'valor', l.valor, 'regra_nome', l.regra_nome,
+        'descricao', l.descricao, 'parcela', l.parcela, 'valor_original', l.valor_original, 'cotacao', l.cotacao, 'valor', l.valor, 'regra_nome', l.regra_nome,
         'rateio', l.rateio, 'valor_escritorio', l.valor_escritorio, 'fixo_id', l.fixo_id, 'criado_por', l.criado_por) order by l.criado_em, l.linha)
       from public.comissao_lancamentos l where l.competencia = v_comp), '[]'),
     'totais', coalesce((select jsonb_agg(to_jsonb(t)) from public.com_totais(v_comp) t), '[]'),
@@ -4241,11 +4264,11 @@ begin
     c := public.com_calcular(p, nullif(p->>'origem_id', '')::uuid, v_comp, 1);
     if c ? 'erro' then raise exception '%', c->>'erro'; end if;
     insert into public.comissao_lancamentos (competencia, tipo, origem_id, origem_nome, cliente, conta, profissional_txt, profissional_id, prof_escritorio,
-      categoria, produto, descricao, valor_original, valor, regra_id, regra_nome, rateio, valor_escritorio, criado_por)
+      categoria, produto, descricao, valor_original, valor, regra_id, regra_nome, rateio, valor_escritorio, parcela, criado_por)
     values (v_comp, 'receita', nullif(p->>'origem_id', '')::uuid, coalesce((select nome from public.comissao_origens where id = nullif(p->>'origem_id', '')::uuid), 'Lançamento avulso'),
       c->>'cliente', c->>'conta', c->>'profissional_txt', nullif(c->>'profissional_id', '')::uuid, coalesce((c->>'prof_escritorio')::boolean, false),
       c->>'categoria', c->>'produto', btrim(coalesce(p->>'descricao', '')), (c->>'valor_original')::numeric, (c->>'valor')::numeric,
-      (c->>'regra_id')::uuid, c->>'regra_nome', c->'rateio', (c->>'valor_escritorio')::numeric, public.com_quem())
+      (c->>'regra_id')::uuid, c->>'regra_nome', c->'rateio', (c->>'valor_escritorio')::numeric, (c->>'parcela')::int, public.com_quem())
     returning id into v_id;
   else
     raise exception 'Tipo de lançamento inválido.';
@@ -4289,7 +4312,8 @@ begin
       if (d->>'pct')::numeric <= 0 or (d->>'pct')::numeric > 100 then raise exception 'Cada percentual precisa ficar entre 0 e 100.'; end if;
       v_soma := v_soma + (d->>'pct')::numeric;
     end if;
-    v_div := v_div || jsonb_build_object('recebedor', v_rec, 'pct', d->'pct', 'negativos', coalesce((d->>'negativos')::boolean, true));
+    v_div := v_div || jsonb_build_object('recebedor', v_rec, 'pct', d->'pct', 'negativos', coalesce((d->>'negativos')::boolean, true),
+                                         'so_primeira', coalesce((d->>'so_primeira')::boolean, false));
   end loop;
   if v_restos > 1 then raise exception 'Só um recebedor pode ficar com "o restante".'; end if;
   if v_soma > 100.0001 then raise exception 'Os percentuais passam de 100%% (somam %).', v_soma; end if;
