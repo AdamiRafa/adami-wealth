@@ -1884,9 +1884,9 @@ begin
     raise exception 'Muitos códigos pedidos na última hora. Tente de novo mais tarde.';
   end if;
 
-  -- O código novo cancela os anteriores desta sessão.
-  update public.acesso_codigos set usado_em = now()
-   where user_id = p_user and sessao = p_sessao and usado_em is null;
+  -- 10/11/2026: pedir outro código NÃO cancela os anteriores. O e-mail do Microsoft 365 às vezes
+  -- chega 1 ou 2 minutos depois; a pessoa pedia outro, o primeiro chegava e era recusado.
+  -- Todos os códigos desta sessão valem até expirar (10 min); o primeiro certo libera e encerra os outros.
 
   v_codigo := lpad(((('x' || encode(gen_random_bytes(4), 'hex'))::bit(32)::bigint) % 1000000)::text, 6, '0');
   insert into public.acesso_codigos (user_id, sessao, codigo_hash, expira_em, ip, navegador)
@@ -1919,12 +1919,20 @@ begin
       'msg', 'Muitas tentativas erradas. Espere 30 minutos ou peça ajuda a um master.');
   end if;
 
+  -- Qualquer código ainda válido desta sessão serve (ver acesso_novo_codigo).
   select * into r from public.acesso_codigos
    where user_id = v_uid and sessao = v_sessao and usado_em is null and expira_em > now()
+     and length(v_cod) = 6 and codigo_hash = encode(digest(v_cod || ':' || v_sessao::text, 'sha256'), 'hex')
    order by criado_em desc limit 1
    for update;
   if not found then
-    return json_build_object('ok', false, 'expirado', true, 'msg', 'Esse código expirou ou já foi usado. Peça um novo.');
+    select * into r from public.acesso_codigos
+     where user_id = v_uid and sessao = v_sessao and usado_em is null and expira_em > now()
+     order by criado_em desc limit 1
+     for update;
+    if not found then
+      return json_build_object('ok', false, 'expirado', true, 'msg', 'Esse código expirou ou já foi usado. Peça um novo.');
+    end if;
   end if;
 
   if length(v_cod) <> 6 or r.codigo_hash <> encode(digest(v_cod || ':' || v_sessao::text, 'sha256'), 'hex') then
@@ -1940,7 +1948,7 @@ begin
       'msg', 'Código errado. Você ainda tem ' || (4 - r.tentativas) || ' tentativa(s) com este código.');
   end if;
 
-  update public.acesso_codigos set usado_em = now() where id = r.id;
+  update public.acesso_codigos set usado_em = now() where user_id = v_uid and sessao = v_sessao and usado_em is null;
   insert into public.acesso_sessoes (sessao, user_id, dia, ip, navegador)
   values (v_sessao, v_uid, public.dia_brasilia(), v_ip, v_nav)
   on conflict (sessao) do update

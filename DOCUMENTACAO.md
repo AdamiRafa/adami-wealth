@@ -670,6 +670,12 @@ imposto e folha por empresa (uma pessoa pode receber de duas PJs); origem Seguro
 20188910-5 e Consórcios de novembro). Nome do assessor como reserva do código, reconhecimento por
 primeiro e último nome, % do profissional vindo da planilha, várias categorias por condição, origem
 "BTG Banking" e Assessoria Digital indo para o escritório (seção 25)**.
+ · **2.99 (10/11/2026): código de acesso que "não chegava". Diagnóstico: o envio funcionava (função 200, SMTP
+aceito, SPF certo), mas o e-mail pelo Microsoft 365 às vezes leva 1 a 2 minutos; a pessoa pedia outro código,
+o novo cancelava o anterior e o anterior, ao chegar, era recusado (10/11 às 14:17: pediu, pediu de novo,
+digitou o primeiro, "código errado"). Agora pedir outro não cancela os anteriores: qualquer código válido da
+sessão libera (10 min, mesmos limites de 30 s, 8 por hora e 10 erros em 30 min), e o primeiro certo encerra os
+outros. Tela de código avisa da demora e que os anteriores valem. Migração `codigo_acesso_anteriores_valem`**.
 
 ---
 
