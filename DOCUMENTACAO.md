@@ -1757,6 +1757,9 @@ arredondamento é só nos totais. As comparações ignoram acento, maiúscula e 
     vez no Hub seria tratado como 1ª parcela: por isso a tela avisa e pede a coluna de parcela.
   - Na tela: caixa "só na 1ª parcela" na divisão, a frase da regra mostra, campo Parcela no
     assistente, no teste e no avulso; a conferência mostra "parcela N".
+  - Instalado em 10/11/2026 (migração `comissoes_2_1_primeira_parcela`: coluna `parcela` e as funções
+    com_calcular, com_processar_planilha, comissoes_painel, comissao_lancamento_salvar e
+    comissao_regra_salvar). Conferido em produção.
 - **Ajustes fixos** (`comissao_fixos`): grupo, pessoa, descrição, valor, início e fim. Entram
   sozinhos em todo mês aberto do período (`com_aplicar_fixos`, chamado ao abrir o painel e ao
   salvar). O escritório paga (`valor_escritorio` negativo). Ajuste avulso do mês e comissão ou
