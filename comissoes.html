@@ -159,7 +159,7 @@ details.mais{margin:12px 0 0;border:1px dashed #CBD7E8;border-radius:12px;paddin
 <body>
 <div id="app"><p class="vazio">Carregando…</p></div>
 <script>
-var VERSAO="Comissões 2.2";
+var VERSAO="Comissões 2.3";
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
 var SESSAO=null;
@@ -457,7 +457,9 @@ function recalcularMes(){
 /* As trocas guardam o e-mail da pessoa; na tela aparece o nome. */
 function trocaLegivel(t){ return String(t||"").replace(/[^\s→]+@[^\s→]+/g,function(m){ var k=normal(m), p=(P.pessoas||[]).filter(function(x){ return normal(x.email)===k; })[0]; return p?p.nome:m; }); }
 function erroCurto(e){ return String(e||"").replace(/\s*\(crie uma troca[^)]*\)/,""); }
-function nomeErro(msg){ var m=/profissional "(.+)" não está no cadastro/.exec(msg||""); return m?m[1]:null; }
+/* "profissional "8927247" (CLARISSA ...) não está no cadastro": devolve o que a planilha trouxe (o código) e o nome. */
+function nomeErro(msg){ var m=/profissional "([^"]+)"(?: \(([^)]*)\))? não está no cadastro/.exec(msg||""); return m?m[1]:null; }
+function nomeErroLegivel(msg){ var m=/profissional "([^"]+)"(?: \(([^)]*)\))? não está no cadastro/.exec(msg||""); return m?(m[2]?m[1]+" ("+m[2]+")":m[1]):null; }
 function gruposErro(erros){
   var g={}, ordem=[];
   (erros||[]).forEach(function(e){ var k=e.erro; if(!g[k]){ g[k]={n:0,linhas:[],valor:0}; ordem.push(k); } g[k].n++; if(g[k].linhas.length<8) g[k].linhas.push(e.linha); g[k].valor+=n(e.valor); });
@@ -473,9 +475,9 @@ function blocoErros(erros,volta){
       (nome&&opera()?'<button class="bt" onclick="ensinarNome('+i+',\''+volta+'\')">Dizer quem é</button>':'')+'</div>';
   }).join("")+'<p class="sub">Para resolver: crie a regra ou a troca de nome que falta e recalcule. As linhas ficam guardadas.</p></div>';
 }
-function ensinarNome(i,volta){ RAPIDA={nome:nomeErro(ERROS_VIS[i].erro),volta:volta}; pintar(); window.scrollTo(0,0); }
+function ensinarNome(i,volta){ RAPIDA={nome:nomeErro(ERROS_VIS[i].erro),rotulo:nomeErroLegivel(ERROS_VIS[i].erro),volta:volta}; pintar(); window.scrollTo(0,0); }
 function formRapida(){
-  return '<div class="cartao form"><h3>Quem é "'+esc(RAPIDA.nome)+'"?</h3><p class="sub">O Hub guarda isto em Troca de nomes e, daqui em diante, toda planilha com esse nome vai para a pessoa escolhida.</p>'+
+  return '<div class="cartao form"><h3>Quem é "'+esc(RAPIDA.rotulo||RAPIDA.nome)+'"?</h3><p class="sub">O Hub guarda isto em Troca de nomes e, daqui em diante, toda planilha com esse nome vai para a pessoa escolhida.</p>'+
     '<div class="grade"><label class="c larga">Esta pessoa é<select id="rPes">'+opcoesPessoas("",true,"Escolha…")+'</select></label></div>'+
     '<div class="linha-acoes"><button class="bt" onclick="RAPIDA=null;pintar()">Cancelar</button><button class="bt pri" id="rSalvar" onclick="salvarRapida()">Salvar e recalcular</button></div></div>';
 }
@@ -518,8 +520,8 @@ function excluirPlanilha(){
 }
 function baixarOriginal(id){
   rpc("comissao_planilha_itens",{p_id:id}).then(function(d){
-    var rows=[["Linha","Cliente","Conta","Profissional","Categoria","Produto","Parcela","Comissão"]];
-    (d.itens||[]).forEach(function(i){ rows.push([i.linha,i.cliente,i.conta,i.profissional,i.categoria,i.produto,i.parcela||"",n(i.valor)]); });
+    var rows=[["Linha","Cliente","Conta","Profissional","Nome do assessor","Categoria","Produto","Parcela","Comissão"]];
+    (d.itens||[]).forEach(function(i){ rows.push([i.linha,i.cliente,i.conta,i.profissional,i.profissional_nome||"",i.categoria,i.produto,i.parcela||"",n(i.valor)]); });
     var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Linhas");
     baixarWb(wb,"Linhas lidas - "+String(d.arquivo||"planilha").replace(/\.\w+$/,"")+".xlsx");
   }).catch(falhou);
@@ -529,10 +531,12 @@ function baixarOriginal(id){
 var CAMPOS=[
   ["cliente","Cliente",["cliente","nomecliente","nomedocliente","titular","nomedotitular"]],
   ["conta","Conta",["conta","cota","contrato","grupocota","contacliente","numerodaconta","numeroconta","nconta","codcliente","codigocliente","codigodocliente"]],
-  ["profissional","Profissional (assessor)",["profissional","assessor","nomeassessor","nomedoassessor","assessorresponsavel","codigoassessor","codassessor","codigodoassessor","cge","cgeassessor"]],
+  ["profissional","Profissional (código ou nome)",["codigoassessor","codassessor","codigodoassessor","cge","cgeassessor","profissional","assessor","assessorresponsavel"]],
+  ["profissional_nome","Nome do assessor (reserva, se o código faltar)",["assessorprincipal","nomeassessor","nomedoassessor","nomeprofissional","nomedoprofissional"]],
   ["categoria","Categoria",["categoria","mercado","linhadereceita","tipodereceita","classe","tipo"]],
   ["produto","Produto",["produto","subproduto","descricaoproduto","nomedoproduto","ativo","administradora","seguradora"]],
   ["parcela","Parcela",["parcela","nparcela","numparcela","numerodaparcela","noparcela","parcelaatual","parcelapaga","parcelaprazo","parcelas"]],
+  ["pct","% do profissional (se vier na planilha)",["percentual","porcentagem","pct","percentualprofissional","pctprofissional","repasseprofissional","percentualdoprofissional"]],
   ["valor","Comissão (valor)",["comissao","comissaoescritorio","valorcomissao","comissaoliquida","receitaescritorio","receitaliquida","receita","valor","valorrecebido","valorliquido"]]
 ];
 function novaPlanilha(oid){
@@ -595,7 +599,10 @@ function wizAba(nome,primeira){
   var cab=r.cab>=0?r.rows[r.cab]:[], mapa={}, usadas={};
   WIZ.titulos=cab.map(function(x){ return String(x).trim(); });
   var usarCfg=primeira&&cfg.colunas&&cfg.aba===nome;
+  /* Coluna de % do profissional: cabeçalho com "%" (ex.: "% Profissional"). Vem antes, para não virar "profissional". */
+  if(!(usarCfg&&cfg.colunas.pct)) for(var jp=0;jp<cab.length;jp++) if(String(cab[jp]).indexOf("%")>=0){ mapa.pct=jp; usadas[jp]=1; break; }
   CAMPOS.forEach(function(c){
+    if(c[0]==="pct"&&mapa.pct>=0) return;
     mapa[c[0]]=-1;
     if(usarCfg&&cfg.colunas[c[0]]){ var ix=idxLetra(cfg.colunas[c[0]]); if(ix>=0){ mapa[c[0]]=ix; usadas[ix]=1; return; } }
     for(var k=0;k<c[2].length&&mapa[c[0]]<0;k++) for(var j=0;j<cab.length;j++) if(!usadas[j]&&chaveCol(cab[j])===c[2][k]){ mapa[c[0]]=j; usadas[j]=1; break; }
@@ -622,14 +629,14 @@ function wizItens(){
     var val=m.valor>=0?valorCel(row[m.valor]):0;
     if(!val){ if(row.some(function(x){ return celTexto(x)!==""; })) ign++; continue; }
     out.push({linha:lin,cliente:m.cliente>=0?celTexto(row[m.cliente]):"",conta:m.conta>=0?celTexto(row[m.conta]):"",
-      profissional:m.profissional>=0?celTexto(row[m.profissional]):"",categoria:m.categoria>=0?celTexto(row[m.categoria]):"",
-      produto:m.produto>=0?celTexto(row[m.produto]):"",parcela:m.parcela>=0?celTexto(row[m.parcela]):"",valor:val});
+      profissional:m.profissional>=0?celTexto(row[m.profissional]):"",profissional_nome:m.profissional_nome>=0?celTexto(row[m.profissional_nome]):"",categoria:m.categoria>=0?celTexto(row[m.categoria]):"",
+      produto:m.produto>=0?celTexto(row[m.produto]):"",parcela:m.parcela>=0?celTexto(row[m.parcela]):"",pct_profissional:m.pct>=0?celTexto(row[m.pct]):"",valor:val});
   }
   WIZ.ignoradas=ign; return out;
 }
 function wiz2(){
   var titulos=WIZ.titulos||[], ncols=0;
-  (WIZ.rows||[]).slice(0,60).forEach(function(r){ if(r&&r.length>ncols) ncols=r.length; });
+  (WIZ.rows||[]).slice(0,60).forEach(function(r){ for(var j=(r||[]).length-1;j>=ncols;j--) if(celTexto(r[j])!==""){ ncols=j+1; break; } });
   var opc=function(sel){ var s='<option value="-1">(não tem)</option>'; for(var j=0;j<ncols;j++) s+='<option value="'+j+'"'+(sel===j?" selected":"")+'>'+letra(j)+(titulos[j]?" · "+esc(String(titulos[j]).slice(0,40)):"")+'</option>'; return s; };
   var itens=wizItens(), h='<p class="sub">Arquivo <b>'+esc(WIZ.arquivo)+'</b>. Confira de qual aba e de quais colunas vem cada informação. O Hub guarda esta escolha para o próximo mês desta origem.</p>';
   h+='<div class="grade"><label class="c larga">Aba<select onchange="wizAba(this.value,false)">'+WIZ.wb.SheetNames.map(function(a){ return '<option'+(a===WIZ.aba?" selected":"")+'>'+esc(a)+'</option>'; }).join("")+'</select></label>'+
@@ -677,7 +684,7 @@ function wiz3(){
       var prof=x.prof_escritorio?"Escritório":(x.profissional_id?nomeP(x.profissional_id):(x.profissional_txt||"—"));
       var div=(x.rateio||[]).map(function(r){ return esc(nomeP(r.user_id))+' '+brl(r.valor); }).concat(n(x.valor_escritorio)?['Escritório '+brl(x.valor_escritorio)]:[]).join("<br>");
       return '<tr'+(x.erro?' class="ruim"':'')+'><td>'+x.linha+'</td><td>'+(x.erro?'<span class="imp-erro">'+esc(erroCurto(x.erro))+'</span>':'<span class="imp-ok">ok</span>'+((x.avisos||[]).length?'<div class="sub" style="font-size:11px">'+esc(trocaLegivel(x.avisos.join("; ")))+'</div>':''))+'</td>'+
-        '<td>'+esc(x.cliente||"")+'</td><td>'+esc(prof)+'</td><td>'+esc([x.categoria,x.produto,x.parcela?"parcela "+x.parcela:""].filter(Boolean).join(" · "))+'</td><td class="n">'+brl(x.valor)+'</td><td>'+esc(x.regra_nome||"")+'</td><td class="rateio">'+(div||"—")+'</td></tr>';
+        '<td>'+esc(x.cliente||"")+'</td><td>'+esc(prof)+'</td><td>'+esc([x.categoria,x.produto,x.parcela?"parcela "+x.parcela:"",x.pct_linha?pc(x.pct_linha)+" na planilha":""].filter(Boolean).join(" · "))+'</td><td class="n">'+brl(x.valor)+'</td><td>'+esc(x.regra_nome||"")+'</td><td class="rateio">'+(div||"—")+'</td></tr>';
     }).join("")+(mostrar0.length>500?'<tr><td colspan="8" class="sub">… e mais '+(mostrar0.length-500)+' linha(s).</td></tr>':'')+'</tbody></table></div>';
   return h+'<div class="linha-acoes"><button class="bt" onclick="WIZ.passo=2;pintar()">Voltar</button><button class="bt pri" id="wSalvar" onclick="wizSalvar()"'+(sim.length?'':' disabled')+'>Gravar a planilha ('+ok.length.toLocaleString("pt-BR")+' linha(s) prontas)</button></div>'+
     (ruins.length?'<p class="sub" style="text-align:right">As '+ruins.length+' linha(s) com problema ficam guardadas na planilha: depois de resolver, é só recalcular.</p>':'');
@@ -796,7 +803,7 @@ function excluirLanc(id){
    planilhas vale, % do assessor e de outras pessoas, e o escritório fica com o resto sozinho.
    Condições extras (categoria, produto, assessor, cliente, vigência) ficam recolhidas. Regra fora
    desse formato abre na "divisão avançada" (o editor completo de antes). */
-function recebedorNome(r){ return r==="profissional"?"o assessor da linha":(r==="escritorio"?"o escritório":nomeP(r)); }
+function recebedorNome(r){ return r==="profissional"?"o profissional da linha":(r==="escritorio"?"o escritório":nomeP(r)); }
 function nomesOrigens(ids){ return (P.origens||[]).filter(function(o){ return (ids||[]).indexOf(o.id)>=0; }).map(function(o){ return o.nome; }); }
 function juntar(l){ return l.length<2?l.join(""):l.slice(0,-1).join(", ")+" e "+l[l.length-1]; }
 function fraseRegra(g){
@@ -807,7 +814,7 @@ function fraseRegra(g){
   if(g.cond_profissional) c.push("assessor "+nomeP(g.cond_profissional));
   if(g.cond_cliente) c.push("cliente "+g.cond_cliente);
   if(g.cond_lista_id) c.push("cliente da lista \""+((lista(g.cond_lista_id)||{}).nome||"?")+"\"");
-  var d=(g.divisao||[]).map(function(x){ return (x.pct===null||x.pct===undefined?"o restante":pc(x.pct))+" para "+recebedorNome(x.recebedor)+(x.so_primeira?" (só na 1ª parcela)":"")+(x.negativos===false?" (não entra em valor negativo)":""); });
+  var d=(g.divisao||[]).map(function(x){ return (x.pct===null||x.pct===undefined?"o restante":(x.pct_planilha?"o % da planilha (ou "+pc(x.pct)+")":pc(x.pct)))+" para "+recebedorNome(x.recebedor)+(x.so_primeira?" (só na 1ª parcela)":"")+(x.negativos===false?" (não entra em valor negativo)":""); });
   var tem=(g.divisao||[]).some(function(x){ return x.pct===null||x.pct===undefined; });
   var emp=g.empresa_id?empresa(g.empresa_id):null;
   return (c.length?"Quando for "+c.join(", "):"Para qualquer linha")+": "+d.join(", ")+(tem?"":", e o que sobrar fica com o escritório")+"."+
@@ -862,13 +869,13 @@ function simplesDe(div){
     if(x.negativos===false) ok=false;
     if(x.recebedor==="escritorio"){ if(!resto||x.so_primeira) ok=false; else restos++; }
     else if(resto) ok=false;
-    else if(x.recebedor==="profissional"){ if(s.ass) ok=false; s.ass=true; s.assPct=x.pct; s.assPri=!!x.so_primeira; }
+    else if(x.recebedor==="profissional"){ if(s.ass) ok=false; s.ass=true; s.assPct=x.pct; s.assPri=!!x.so_primeira; s.assPl=!!x.pct_planilha; }
     else s.outros.push({rec:x.recebedor,pct:x.pct,pri:!!x.so_primeira});
   });
   return ok&&restos<=1?s:null;
 }
 function divDeSimples(s){
-  var d=[]; if(s.ass) d.push({recebedor:"profissional",pct:lerValor(s.assPct),negativos:true,so_primeira:!!s.assPri});
+  var d=[]; if(s.ass) d.push({recebedor:"profissional",pct:lerValor(s.assPct),negativos:true,so_primeira:!!s.assPri,pct_planilha:!!s.assPl});
   s.outros.forEach(function(o){ d.push({recebedor:o.rec,pct:lerValor(o.pct),negativos:true,so_primeira:!!o.pri}); });
   d.push({recebedor:"escritorio",pct:null,negativos:true,so_primeira:false});
   return d;
@@ -884,9 +891,9 @@ function duplicarRegra(i){ var d=JSON.parse(JSON.stringify(P.regras[i])); delete
 function origensPorNome(teste){ return (P.origens||[]).filter(function(o){ return o.ativo&&teste(normal(o.nome)); }).map(function(o){ return o.id; }); }
 var MODELOS={
   pj1:{nome:"PJ1",origens:function(){ return origensPorNome(function(n){ return n.indexOf("CONSORCIO")<0&&n.indexOf("SEGURO")<0; }); },s:{ass:true,assPct:50,assPri:false,outros:[]}},
-  consorcio:{nome:"Consórcio · carta normal",origens:function(){ return origensPorNome(function(n){ return n.indexOf("CONSORCIO")>=0; }); },s:{ass:true,assPct:30,assPri:false,outros:[{rec:"",pct:30,pri:true}]}},
-  contemplada:{nome:"Consórcio · carta contemplada",produto:"CARTA CONTEMPLADA",origens:function(){ return origensPorNome(function(n){ return n.indexOf("CONSORCIO")>=0; }); },s:{ass:true,assPct:25,assPri:false,outros:[{rec:"",pct:23,pri:true}]}},
-  seguro:{nome:"Seguro",origens:function(){ return origensPorNome(function(n){ return n.indexOf("SEGURO")>=0; }); },s:{ass:true,assPct:30,assPri:false,outros:[{rec:"",pct:30,pri:true}]}}
+  consorcio:{nome:"Consórcio · carta normal",origens:function(){ return origensPorNome(function(n){ return n.indexOf("CONSORCIO")>=0; }); },s:{ass:true,assPct:30,assPri:false,assPl:true,outros:[]}},
+  contemplada:{nome:"Consórcio · carta contemplada",produto:"CARTA CONTEMPLADA",origens:function(){ return origensPorNome(function(n){ return n.indexOf("CONSORCIO")>=0; }); },s:{ass:true,assPct:25,assPri:false,assPl:true,outros:[]}},
+  seguro:{nome:"Seguro",origens:function(){ return origensPorNome(function(n){ return n.indexOf("SEGURO")>=0; }); },s:{ass:true,assPct:30,assPri:false,assPl:true,outros:[]}}
 };
 function usarModelo(k){
   var m=MODELOS[k], d=ED.d;
@@ -911,9 +918,10 @@ function formRegra(){
       return '<label class="chip-orig"><input type="checkbox" class="rOrigem" value="'+o.id+'"'+(d.cond_origens.indexOf(o.id)>=0?" checked":"")+' onchange="atualizarRegra()"> '+esc(o.nome)+'</label>'; }).join("")+'</div>';
   h+='<h4>Quem recebe <span class="sub">(% da comissão de cada linha)</span></h4>';
   if(ED.modo==="simples"){
-    h+='<div class="simples"><div class="srow"><label class="mini forte"><input type="checkbox" id="rAss"'+(s.ass?" checked":"")+' onchange="lerTudoRegra();pintar()"> O assessor da linha</label>'+
+    h+='<div class="simples"><div class="srow"><label class="mini forte"><input type="checkbox" id="rAss"'+(s.ass?" checked":"")+' onchange="lerTudoRegra();pintar()"> O profissional da linha</label>'+
       (s.ass?'<span class="pctbox"><input id="rAssPct" inputmode="decimal" value="'+esc(String(s.assPct==null?"":s.assPct).replace(".",","))+'" oninput="atualizarRegra()" aria-label="% do assessor">%</span>'+
-        '<label class="mini"><input type="checkbox" id="rAssPri"'+(s.assPri?" checked":"")+' onchange="atualizarRegra()"> só na 1ª parcela</label>':'')+'</div>'+
+        '<label class="mini"><input type="checkbox" id="rAssPri"'+(s.assPri?" checked":"")+' onchange="atualizarRegra()"> só na 1ª parcela</label>'+
+        '<label class="mini" title="Quando a planilha traz o % do profissional em cada linha (como a de consórcio), vale esse %; sem ele, vale o % daqui."><input type="checkbox" id="rAssPl"'+(s.assPl?" checked":"")+' onchange="atualizarRegra()"> usar o % da planilha, quando vier</label>':'')+'</div>'+
       s.outros.map(function(o,i){
         return '<div class="srow outro"><select id="rOutro'+i+'" data-k="rec" onchange="atualizarRegra()" aria-label="Pessoa">'+linhaPessoaSel(o.rec)+'</select>'+
           '<span class="pctbox"><input data-k="pct" inputmode="decimal" value="'+esc(String(o.pct==null?"":o.pct).replace(".",","))+'" oninput="atualizarRegra()" aria-label="%">%</span>'+
@@ -926,20 +934,21 @@ function formRegra(){
     var div=d.divisao||[];
     h+='<div id="rDiv">'+div.map(function(x,i){
       var resto=x.pct===null||x.pct===undefined;
-      return '<div class="div-linha"><select data-k="rec" aria-label="Recebedor" onchange="atualizarRegra()"><option value="profissional"'+(x.recebedor==="profissional"?" selected":"")+'>O assessor da linha</option><option value="escritorio"'+(x.recebedor==="escritorio"?" selected":"")+'>Escritório</option>'+
+      return '<div class="div-linha"><select data-k="rec" aria-label="Recebedor" onchange="atualizarRegra()"><option value="profissional"'+(x.recebedor==="profissional"?" selected":"")+'>O profissional da linha</option><option value="escritorio"'+(x.recebedor==="escritorio"?" selected":"")+'>Escritório</option>'+
         pessoasAtivas().map(function(p){ return '<option value="'+p.user_id+'"'+(x.recebedor===p.user_id?" selected":"")+'>'+esc(p.nome)+'</option>'; }).join("")+'</select>'+
         '<input data-k="pct" inputmode="decimal" aria-label="Percentual" value="'+(resto?"":esc(String(x.pct).replace(".",",")))+'" placeholder="%"'+(resto?" disabled":"")+' oninput="atualizarRegra()">'+
         '<label class="mini"><input type="checkbox" data-k="resto"'+(resto?" checked":"")+' onchange="lerTudoRegra();pintar()"> o restante</label>'+
         '<label class="mini"><input type="checkbox" data-k="pri"'+(x.so_primeira?" checked":"")+' onchange="atualizarRegra()"> só na 1ª parcela</label>'+
         '<label class="mini"><input type="checkbox" data-k="neg"'+(x.negativos===false?"":" checked")+' onchange="atualizarRegra()"> vale para valor negativo</label>'+
+        '<label class="mini"><input type="checkbox" data-k="pl"'+(x.pct_planilha?" checked":"")+' onchange="atualizarRegra()"> % da planilha (só profissional da linha)</label>'+
         '<button class="link perigo" onclick="lerTudoRegra();ED.d.divisao.splice('+i+',1);pintar()">Tirar</button></div>';
     }).join("")+'</div><button class="link" onclick="lerTudoRegra();ED.d.divisao.push({recebedor:\'escritorio\',pct:null,negativos:true});pintar()">+ Recebedor</button> <span id="rSoma" class="soma"></span>'+
     (simplesDe(div)?' &nbsp; <button class="link" onclick="lerTudoRegra();ED.s=simplesDe(ED.d.divisao);ED.modo=\'simples\';pintar()">Voltar à divisão simples</button>':'');
   }
   h+='<div class="previa" id="rExemplo"></div>';
   h+='<details class="mais"'+(temMais?" open":"")+'><summary>Mais condições (opcional): categoria, produto, assessor, cliente, vigência</summary><div class="grade" style="margin-top:10px">'+
-    '<label class="c">Categoria<input id="rCat" value="'+esc(d.cond_categoria||"")+'" list="dlCat3" placeholder="ex.: CONSÓRCIO" oninput="atualizarRegra()"></label>'+
-    '<label class="c">Produto<input id="rProd" value="'+esc(d.cond_produto||"")+'" placeholder="ex.: CARTA CONTEMPLADA" oninput="atualizarRegra()"></label>'+
+    '<label class="c">Categoria<input id="rCat" value="'+esc(d.cond_categoria||"")+'" list="dlCat3" placeholder="várias: separe por vírgula" title="Ex.: ERRO OPERACIONAL, FEE DE PLATAFORMA" oninput="atualizarRegra()"></label>'+
+    '<label class="c">Produto<input id="rProd" value="'+esc(d.cond_produto||"")+'" placeholder="ex.: CARTA CONTEMPLADA (várias: vírgula)" oninput="atualizarRegra()"></label>'+
     '<label class="c">Só quando o assessor é<select id="rProf" onchange="atualizarRegra()">'+opcoesPessoas(d.cond_profissional||"",false,"Qualquer")+'</select></label>'+
     '<label class="c">Cliente (nome ou conta)<input id="rCli" value="'+esc(d.cond_cliente||"")+'" oninput="atualizarRegra()"></label>'+
     '<label class="c larga">Ou cliente de uma lista<select id="rLista" onchange="atualizarRegra()"><option value="">Nenhuma lista</option>'+(P.listas||[]).map(function(l){ return '<option value="'+l.id+'"'+(d.cond_lista_id===l.id?" selected":"")+'>'+esc(l.nome)+' ('+(l.itens||[]).length+')</option>'; }).join("")+'</select></label>'+
@@ -963,14 +972,14 @@ function lerTudoRegra(){
   if(document.querySelector(".chips-orig")) d.cond_origens=[].map.call(document.querySelectorAll(".rOrigem:checked"),function(e){ return e.value; });
   if(ED.modo==="simples"){
     var s=ED.s, ass=document.getElementById("rAss");
-    if(ass){ s.ass=ass.checked; if(document.getElementById("rAssPct")){ s.assPct=v("rAssPct"); s.assPri=marcado("rAssPri"); } }
+    if(ass){ s.ass=ass.checked; if(document.getElementById("rAssPct")){ s.assPct=v("rAssPct"); s.assPri=marcado("rAssPri"); s.assPl=marcado("rAssPl"); } }
     s.outros=[].map.call(document.querySelectorAll(".simples .outro"),function(l){
       return {rec:l.querySelector('[data-k=rec]').value,pct:l.querySelector('[data-k=pct]').value,pri:l.querySelector('[data-k=pri]').checked}; });
     d.divisao=divDeSimples(s);
   } else if(document.getElementById("rDiv")){
     d.divisao=[].map.call(document.querySelectorAll("#rDiv .div-linha"),function(l){
       var resto=l.querySelector('[data-k=resto]').checked;
-      return {recebedor:l.querySelector('[data-k=rec]').value,pct:resto?null:lerValor(l.querySelector('[data-k=pct]').value),negativos:l.querySelector('[data-k=neg]').checked,so_primeira:l.querySelector('[data-k=pri]').checked}; });
+      return {recebedor:l.querySelector('[data-k=rec]').value,pct:resto?null:lerValor(l.querySelector('[data-k=pct]').value),negativos:l.querySelector('[data-k=neg]').checked,so_primeira:l.querySelector('[data-k=pri]').checked,pct_planilha:l.querySelector('[data-k=pl]').checked}; });
   }
   return d;
 }
@@ -987,7 +996,7 @@ function atualizarRegra(){
     else {
       var partes=[], resto=1000;
       div.forEach(function(x){ if(x.pct===null||x.pct===undefined) return; var vv=1000*n(x.pct)/100; resto-=vv;
-        partes.push((x.recebedor==="profissional"?"Assessor":(x.recebedor==="escritorio"?"Escritório":(x.recebedor?nomeP(x.recebedor):"(escolha a pessoa)")))+" "+brl(vv)+(x.so_primeira?" (só na 1ª parcela)":"")); });
+        partes.push((x.recebedor==="profissional"?"Profissional da linha"+(x.pct_planilha?" (ou o % da planilha)":""):(x.recebedor==="escritorio"?"Escritório":(x.recebedor?nomeP(x.recebedor):"(escolha a pessoa)")))+" "+brl(vv)+(x.so_primeira?" (só na 1ª parcela)":"")); });
       var dono=div.filter(function(x){ return x.pct===null||x.pct===undefined; })[0];
       partes.push((dono&&dono.recebedor!=="escritorio"?recebedorNome(dono.recebedor):"Escritório")+" "+brl(resto));
       ex.innerHTML='<b>Exemplo</b>, numa comissão de R$ 1.000,00: '+esc(partes.join(" · "));

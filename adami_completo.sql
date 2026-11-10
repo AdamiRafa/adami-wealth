@@ -3690,7 +3690,8 @@ insert into public.comissao_origens (nome, moeda, ordem, atualizado_por) values
   ('BTG Investimentos', 'BRL', 1, 'instalação'), ('BTG Offshore', 'USD', 2, 'instalação'),
   ('Consórcios', 'BRL', 3, 'instalação'), ('Corban', 'BRL', 4, 'instalação'),
   ('Pershing', 'USD', 5, 'instalação'), ('Previdência', 'BRL', 6, 'instalação'),
-  ('Seguros', 'BRL', 7, 'instalação')   -- 2.2: a regra de seguro precisa de uma planilha para apontar
+  ('Seguros', 'BRL', 7, 'instalação'),   -- 2.2: a regra de seguro precisa de uma planilha para apontar
+  ('BTG Banking', 'BRL', 2, 'instalação')  -- 2.3: Relatório B2B 20188910-5 (câmbio, cartão, conta PJ); entra no PJ1
 on conflict (nome) do nothing;
 
 -- Listas de clientes (nome ou número da conta), usadas nas regras e nas trocas.
@@ -3706,6 +3707,8 @@ create table if not exists public.comissao_listas (
 -- prioridade (número menor) é testada primeiro; a primeira que bate é usada.
 -- divisao: [{recebedor: 'profissional' | 'escritorio' | <user_id>, pct: número ou null (= o restante), negativos: bool,
 --            so_primeira: bool}]
+-- pct_planilha (2.3): o "profissional da linha" recebe o % que vem na própria planilha (coluna de % do
+-- profissional, como na planilha de consórcio); sem o % na linha, vale o pct da regra.
 -- so_primeira (10/11/2026, pedido do Emil): o especialista de seguro e consórcio recebe só na 1ª parcela.
 -- Nas parcelas seguintes a parte dele vai para quem fica com "o restante" (normalmente o escritório).
 create table if not exists public.comissao_regras (
@@ -3901,8 +3904,15 @@ create or replace function public.com_nome(p_user uuid) returns text language sq
 $$;
 
 -- Quem é o profissional escrito na planilha? Devolve user_id; "ESCRITORIO" devolve o uuid zero.
+-- Ordem: código da Equipe, nomes nas planilhas, nome, nome completo, e-mail e (2.3) primeiro + último
+-- nome, se só uma pessoa da Equipe combinar ("Angela Eva Adami" -> "Angela Adami").
 create or replace function public.com_pessoa(p_txt text) returns uuid language sql stable security definer set search_path = public as $$
-  with n as (select public.com_norm(p_txt) as t)
+  with n as (select public.com_norm(p_txt) as t),
+  cand as (
+    select p.user_id from public.perfis p, n
+     where n.t like '% %' and public.com_norm(p.nome) like '% %'
+       and split_part(public.com_norm(p.nome), ' ', 1) = split_part(n.t, ' ', 1)
+       and substring(public.com_norm(p.nome) from '[^ ]+$') = substring(n.t from '[^ ]+$'))
   select case when (select t from n) = '' then null
               when (select t from n) in ('ESCRITORIO', 'ESCRITORIO ADAMI', 'ADAMI CAPTAL') then '00000000-0000-0000-0000-000000000000'::uuid
               else (select x.uid from (
@@ -3911,7 +3921,14 @@ create or replace function public.com_pessoa(p_txt text) returns uuid language s
                 union all select p.user_id, 3 from public.perfis p, n where public.com_norm(p.nome) = n.t
                 union all select d.user_id, 4 from public.comissao_dados_pagto d, n where public.com_norm(d.nome_completo) = n.t
                 union all select u.id, 5 from auth.users u, n where public.com_norm(u.email) = n.t or public.com_norm(split_part(u.email, '@', 1)) = n.t
+                union all select c.user_id, 6 from cand c where (select count(*) from cand) = 1
               ) x order by x.ordem limit 1) end;
+$$;
+
+-- Condição de texto com vários valores (2.3): "ERRO OPERACIONAL, FEE DE PLATAFORMA" vale para qualquer um deles.
+create or replace function public.com_bate_valor(p_cond text, p_valor text) returns boolean language sql immutable set search_path = public as $$
+  select public.com_norm(p_cond) = ''
+      or public.com_norm(p_valor) = any(regexp_split_to_array(public.com_norm(p_cond), '\s*[;,]\s*'));
 $$;
 
 -- Item cabe na condição de cliente (texto ou lista)? Compara com o nome e com a conta.
@@ -3923,7 +3940,9 @@ returns boolean language sql stable security definer set search_path = public as
                                         and public.com_norm(i) <> ''));
 $$;
 
--- O motor. p: {cliente, conta, profissional (texto) ou profissional_id, categoria, produto, valor, parcela}
+-- O motor. p: {cliente, conta, profissional (texto: código ou nome) ou profissional_id, profissional_nome (2.3: o nome,
+--            quando a planilha traz código e nome; serve de reserva), categoria, produto, valor, parcela,
+--            pct_profissional (2.3: % do profissional que vem na planilha; 0,3 ou 30 = 30%)}
 -- Devolve a linha calculada, com "erro" quando não dá para calcular e "avisos" das trocas feitas.
 create or replace function public.com_calcular(p jsonb, p_origem uuid, p_comp date, p_cotacao numeric)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
@@ -3935,23 +3954,33 @@ declare
   t record; r record; d jsonb; v_feitos text[] := '{}'; v_avisos jsonb := '[]'::jsonb;
   v_regra public.comissao_regras; v_soma numeric := 0; v_resto jsonb; v_parte numeric; v_quem uuid;
   v_rateio jsonb := '{}'::jsonb; v_escr numeric := 0; v_saida jsonb := '[]'::jsonb; k text;
-  v_parc int; v_primeira boolean := true;
+  v_parc int; v_primeira boolean := true; v_nome text := btrim(coalesce(p->>'profissional_nome', '')); v_pid2 uuid;
+  v_pctl numeric; v_pct numeric;
 begin
+  begin
+    v_pctl := nullif(replace(regexp_replace(coalesce(p->>'pct_profissional', ''), '[^0-9,.-]', '', 'g'), ',', '.'), '')::numeric;
+    if v_pctl is not null and v_pctl > 0 and v_pctl <= 1 then v_pctl := v_pctl * 100; end if;   -- célula em % do Excel (0,3)
+    if v_pctl is not null and (v_pctl <= 0 or v_pctl > 100) then v_pctl := null; end if;
+  exception when others then v_pctl := null;
+  end;
   begin
     v_orig := coalesce(nullif(btrim(p->>'valor'), '')::numeric, 0);
   exception when others then
     return jsonb_build_object('erro', 'valor da comissão não é número: ' || coalesce(p->>'valor', ''));
   end;
   v_val := round(v_orig * coalesce(p_cotacao, 1), 6);
+  if v_prof = '' then v_prof := v_nome; end if;   -- sem código: vale o nome
+  if public.com_norm(v_nome) = public.com_norm(v_prof) then v_nome := ''; end if;
 
   -- 1. troca de campos (a primeira que bate, para cada campo)
   for t in select * from public.comissao_trocas where ativo and (cond_origem_id is null or cond_origem_id = p_origem) order by prioridade, criado_em loop
     continue when t.campo = any(v_feitos);
     continue when public.com_norm(t.cond_cliente) <> '' and public.com_norm(t.cond_cliente) not in (public.com_norm(v_cli), public.com_norm(v_conta));
-    continue when public.com_norm(t.cond_profissional) <> '' and public.com_norm(t.cond_profissional) <> public.com_norm(v_prof);
+    continue when public.com_norm(t.cond_profissional) <> '' and public.com_norm(t.cond_profissional) <> public.com_norm(v_prof)
+                  and public.com_norm(t.cond_profissional) <> public.com_norm(v_nome);
     continue when public.com_norm(t.cond_categoria) <> '' and public.com_norm(t.cond_categoria) <> public.com_norm(v_cat);
     continue when public.com_norm(t.cond_produto) <> '' and public.com_norm(t.cond_produto) <> public.com_norm(v_prod);
-    if t.campo = 'profissional' then v_avisos := v_avisos || to_jsonb(v_prof || ' → ' || t.valor); v_prof := t.valor;
+    if t.campo = 'profissional' then v_avisos := v_avisos || to_jsonb(v_prof || ' → ' || t.valor); v_prof := t.valor; v_nome := '';
     elsif t.campo = 'cliente' then v_avisos := v_avisos || to_jsonb(v_cli || ' → ' || t.valor); v_cli := t.valor;
     elsif t.campo = 'categoria' then v_avisos := v_avisos || to_jsonb(v_cat || ' → ' || t.valor); v_cat := t.valor;
     else v_avisos := v_avisos || to_jsonb(v_prod || ' → ' || t.valor); v_prod := t.valor; end if;
@@ -3965,9 +3994,14 @@ begin
     else v_prof := coalesce(public.com_nome(v_pid), v_prof); end if;
   elsif v_prof <> '' then
     v_pid := public.com_pessoa(v_prof);
+    if v_pid is null and v_nome <> '' then   -- o código não está na Equipe: tenta pelo nome
+      v_pid2 := public.com_pessoa(v_nome);
+      if v_pid2 is not null then v_pid := v_pid2; v_prof := v_nome; end if;
+    end if;
     if v_pid = '00000000-0000-0000-0000-000000000000'::uuid then v_pid := null; v_esc := true;
     elsif v_pid is null then
-      return jsonb_build_object('erro', 'profissional "' || v_prof || '" não está no cadastro (crie uma troca de nome ou cadastre em Pessoas)',
+      return jsonb_build_object('erro', 'profissional "' || v_prof || '"' || case when v_nome <> '' then ' (' || v_nome || ')' else '' end
+          || ' não está no cadastro (crie uma troca de nome ou cadastre em Pessoas)',
         'cliente', v_cli, 'conta', v_conta, 'profissional_txt', v_prof, 'categoria', v_cat, 'produto', v_prod,
         'valor_original', v_orig, 'valor', v_val, 'avisos', v_avisos);
     end if;
@@ -3977,8 +4011,8 @@ begin
   select * into v_regra from public.comissao_regras g
    where g.ativo and g.vigencia_inicio <= p_comp and (g.vigencia_fim is null or g.vigencia_fim >= p_comp)
      and (cardinality(g.cond_origens) = 0 or p_origem = any(g.cond_origens))
-     and (public.com_norm(g.cond_categoria) = '' or public.com_norm(g.cond_categoria) = public.com_norm(v_cat))
-     and (public.com_norm(g.cond_produto) = '' or public.com_norm(g.cond_produto) = public.com_norm(v_prod))
+     and public.com_bate_valor(g.cond_categoria, v_cat)
+     and public.com_bate_valor(g.cond_produto, v_prod)
      and (g.cond_profissional is null or g.cond_profissional = v_pid)
      and public.com_bate_cliente(g.cond_cliente, g.cond_lista_id, v_cli, v_conta)
    order by g.prioridade, g.criado_em limit 1;
@@ -4008,7 +4042,9 @@ begin
     if d->'pct' is null or jsonb_typeof(d->'pct') = 'null' then v_resto := d; continue; end if;
     if v_val < 0 and not coalesce((d->>'negativos')::boolean, true) then continue; end if;
     if coalesce((d->>'so_primeira')::boolean, false) and not v_primeira then continue; end if;
-    v_parte := round(v_val * (d->>'pct')::numeric / 100, 6);
+    v_pct := (d->>'pct')::numeric;
+    if d->>'recebedor' = 'profissional' and coalesce((d->>'pct_planilha')::boolean, false) and v_pctl is not null then v_pct := v_pctl; end if;
+    v_parte := round(v_val * v_pct / 100, 6);
     v_soma := v_soma + v_parte;
     if d->>'recebedor' = 'profissional' then
       if v_esc then v_escr := v_escr + v_parte; continue; end if;
@@ -4043,7 +4079,7 @@ begin
   return jsonb_build_object('cliente', v_cli, 'conta', v_conta, 'profissional_txt', v_prof, 'profissional_id', v_pid,
     'prof_escritorio', v_esc, 'categoria', v_cat, 'produto', v_prod, 'valor_original', v_orig, 'valor', v_val,
     'regra_id', v_regra.id, 'regra_nome', v_regra.nome, 'rateio', v_saida, 'valor_escritorio', v_escr, 'avisos', v_avisos,
-    'parcela', v_parc, 'primeira', v_primeira, 'empresa_id', v_regra.empresa_id);
+    'parcela', v_parc, 'primeira', v_primeira, 'empresa_id', v_regra.empresa_id, 'pct_linha', v_pctl);
 end $$;
 
 -- Grava as linhas de uma planilha (apaga as anteriores dela). Devolve contagens.
@@ -4139,8 +4175,14 @@ $$;
 
 revoke all on function public.com_quem(), public.com_mes(date), public.com_norm(text), public.com_garantir_mes(date),
   public.com_exigir_aberto(date), public.com_nome(uuid), public.com_pessoa(text), public.com_bate_cliente(text, uuid, text, text),
+  public.com_bate_valor(text, text),
   public.com_calcular(jsonb, uuid, date, numeric), public.com_processar_planilha(uuid), public.com_aplicar_fixos(date),
   public.com_totais(date), public.com_minimos(date) from public, anon, authenticated;
+
+-- 2.3: como no sistema antigo, a "Assessoria Digital" do BTG é do escritório.
+insert into public.comissao_trocas (grupo, prioridade, cond_profissional, campo, valor, atualizado_por)
+select 'Nomes das planilhas', 1000, 'ASSESSORIA DIGITAL', 'profissional', 'ESCRITORIO', 'instalação'
+ where not exists (select 1 from public.comissao_trocas where public.com_norm(cond_profissional) = 'ASSESSORIA DIGITAL');
 
 -- ---------- leitura (tela do Financeiro) ----------
 -- volatile: quem opera, ao abrir um mês aberto, já recebe os ajustes fixos do mês lançados.
@@ -4342,7 +4384,8 @@ begin
       v_soma := v_soma + (d->>'pct')::numeric;
     end if;
     v_div := v_div || jsonb_build_object('recebedor', v_rec, 'pct', d->'pct', 'negativos', coalesce((d->>'negativos')::boolean, true),
-                                         'so_primeira', coalesce((d->>'so_primeira')::boolean, false));
+                                         'so_primeira', coalesce((d->>'so_primeira')::boolean, false),
+                                         'pct_planilha', coalesce((d->>'pct_planilha')::boolean, false) and v_rec = 'profissional');
   end loop;
   if v_restos > 1 then raise exception 'Só um recebedor pode ficar com "o restante".'; end if;
   if v_soma > 100.0001 then raise exception 'Os percentuais passam de 100%% (somam %).', v_soma; end if;

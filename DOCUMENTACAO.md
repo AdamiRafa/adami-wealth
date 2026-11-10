@@ -666,6 +666,10 @@ Parcela na planilha (seção 25)**.
 formulário de regra simples com modelos (PJ1, consórcio normal, carta contemplada, seguro), escritório
 fica com o restante sozinho, exemplo com R$ 1.000; regra nova mais específica entra acima das gerais;
 imposto e folha por empresa (uma pessoa pode receber de duas PJs); origem Seguros (seção 25)**.
+ · **Comissões 2.3 (10/11/2026): ajustes com as planilhas reais (Relatório B2B 5390761-1, Relatório B2B
+20188910-5 e Consórcios de novembro). Nome do assessor como reserva do código, reconhecimento por
+primeiro e último nome, % do profissional vindo da planilha, várias categorias por condição, origem
+"BTG Banking" e Assessoria Digital indo para o escritório (seção 25)**.
 
 ---
 
@@ -1781,6 +1785,28 @@ arredondamento é só nos totais. As comparações ignoram acento, maiúscula e 
     recolhidas. Divisão fora desse formato abre na "divisão avançada" (editor antigo). Modelos preenchem
     tudo (os % dos modelos de consórcio e seguro são ponto de partida; a Sarah confere).
   - Instalado em 10/11/2026 (migração `comissoes_2_2_empresa_por_regra`). Origem nova "Seguros".
+- **Planilhas reais (2.3, 10/11/2026).** O Emil mandou as três que chegam hoje.
+  - **Relatório B2B 5390761-1 (BTG, investimentos):** abas Resumo, Detalhe, Fundos e Operações RF. O Hub lê
+    a aba **Detalhe** (cabeçalho na linha 5; colunas Data Receita, Conta, Cliente, Código Assessor,
+    Assessor Principal, Categoria, Produto, Ativo, Código/CNPJ, Tipo Receita, Receita Bruta, Receita
+    Líquida, **Comissão**). 2.897 linhas; a soma da Comissão bate com o total do Resumo (R$ 238.227,83 em
+    out/2026). A Comissão é o que o BTG paga ao escritório (já sem a parte do BTG).
+  - **Relatório B2B 20188910-5:** mesmo formato; câmbio, cartão, conta PJ e saldo remunerado (R$ 9.959,91).
+    A aba "Operações de Câmbio" é detalhe do que já está em Detalhe (não somar de novo). Decisão do Emil:
+    **entra no PJ1** (mesma divisão e empresa). Origem nova "BTG Banking", já marcada pelo modelo PJ1.
+  - **Consórcios (Template AAWZ, a planilha do sistema antigo):** Cliente, Profissional, Categoria,
+    Produto (administradora), **coluna E sem título = % do profissional** (decisão do Emil), Parcela,
+    Valor. "Profissional" é quem vendeu: pode ser especialista (Pedro Forini) ou assessor (Angela).
+  - Mudanças: campo "Nome do assessor (reserva)" (o BTG traz código e nome; código fora da Equipe tenta o
+    nome, e a troca de nome vale para os dois); `com_pessoa` reconhece também por primeiro + último nome
+    quando só uma pessoa combina; campo "% do profissional" (cabeçalho com "%" é reconhecido; senão a
+    Sarah escolhe a coluna uma vez e fica guardado) e, na regra, "usar o % da planilha, quando vier" para o
+    profissional da linha (`pct_planilha`; 0,3 ou 30 = 30%); categoria e produto da regra aceitam vários
+    valores separados por vírgula (`com_bate_valor`); troca pronta ASSESSORIA DIGITAL -> ESCRITORIO.
+  - Conferido em produção: todos os códigos e nomes das três planilhas são reconhecidos, menos Clarissa
+    Regina Centeno (8927247) e Marcelo Donizeti (9049619). Decisão do Emil: os dois ainda recebem; precisam
+    entrar na Equipe com o código do BTG. Rafael é reconhecido pelo nome (código BTG 1142507, na Equipe A004).
+  - Instalado em 10/11/2026 (migração `comissoes_2_3_planilhas_reais`).
 - **Ajustes fixos** (`comissao_fixos`): grupo, pessoa, descrição, valor, início e fim. Entram
   sozinhos em todo mês aberto do período (`com_aplicar_fixos`, chamado ao abrir o painel e ao
   salvar). O escritório paga (`valor_escritorio` negativo). Ajuste avulso do mês e comissão ou
