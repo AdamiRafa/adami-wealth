@@ -2890,6 +2890,15 @@
   }
   .ag-novo:hover{background:#E9EEF5;}
   .ag-novo:disabled{opacity:.55;cursor:not-allowed;}
+  /* Compartilhar a própria agenda (10/11/2026): chave no herói, texto branco sobre o azul. */
+  .ag-compartilhar{display:flex;align-items:flex-start;gap:10px;margin:14px 0 0;padding:10px 14px;border-radius:10px;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);max-width:620px;cursor:pointer;}
+  .ag-compartilhar input{width:18px;height:18px;margin:1px 0 0;accent-color:#C9A24B;flex:none;cursor:pointer;}
+  .ag-compartilhar strong{display:block;font-size:14px;font-weight:600;color:#fff;}
+  .ag-compartilhar span{display:block;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.72);margin-top:2px;}
+  .ag-leitura{display:inline-block;margin-top:12px;padding:5px 12px;border-radius:999px;font-size:12.5px;
+    background:rgba(255,255,255,.12);color:#fff;}
+  .ag-cliente-texto{color:var(--ink-soft);}
   .ag-dia-titulo{font-family:'Fraunces',Georgia,serif;font-size:clamp(22px,3vw,28px);font-weight:500;margin:0 0 4px;}
   .ag-aviso{
     background:var(--gold-tint);border:1px solid #E6D3A0;color:#5E4810;border-radius:12px;
@@ -5650,7 +5659,7 @@ async function fetchProfiles(){
     fetchCodigos(),
   ]);
   if(error) throw error;
-  return (data || []).map(p => ({ id:p.id, nome:p.nome, role:p.role, status:p.status, produtos:p.produtos || [], especialistasPadrao:p.especialistas_padrao || {}, codigo: codigos[p.id] || '' }));
+  return (data || []).map(p => ({ id:p.id, nome:p.nome, role:p.role, status:p.status, produtos:p.produtos || [], especialistasPadrao:p.especialistas_padrao || {}, codigo: codigos[p.id] || '', agendaCompartilhada: p.agenda_compartilhada === true }));
 }
 
 /* ---------- Agenda: tarefas (tabela `tarefas`, agenda.sql) ----------
@@ -5699,7 +5708,29 @@ async function fetchTarefas(){
   }
   const { data, error } = await sb.from('tarefas').select('*');
   if(error) throw error;
-  return (data || []).map(tarefaFromRow);
+  const tarefas = (data || []).map(tarefaFromRow);
+  /* Agenda compartilhada (agenda_compartilhar.sql): a ficha do cliente do colega
+     não é nossa, então o nome vem por esta função, só das tarefas compartilhadas.
+     Sem a função no banco, a tarefa aparece sem o nome do cliente. */
+  try{
+    const r = await sb.rpc('agenda_clientes_compartilhados');
+    if(!r.error && Array.isArray(r.data) && r.data.length){
+      const nomes = new Map(r.data.map(x => [x.lead_id, nomeCliente({ cliente: x.cliente, conta: x.conta })]));
+      tarefas.forEach(t => { if(t.leadId && nomes.has(t.leadId)) t.clienteNome = nomes.get(t.leadId); });
+    }
+  }catch(e){}
+  return tarefas;
+}
+/* Liga ou desliga o compartilhamento da própria agenda. */
+async function gravarCompartilharAgenda(ligar, userId){
+  if(MODO_DEMO){
+    const eu = demoStore.profiles.find(p => p.id === userId);
+    if(eu) eu.agendaCompartilhada = ligar;
+    return ligar;
+  }
+  const { data, error } = await sb.rpc('agenda_compartilhar', { p_compartilhar: ligar });
+  if(error) throw error;
+  return data === true;
 }
 async function gravarTarefa(t, nova){
   if(MODO_DEMO){
@@ -11347,7 +11378,7 @@ const agTipoLabel = (k) => (AG_TIPOS.find(t => t.key === k) || AG_TIPOS[3]).labe
 /* Tipo da tarefa -> tipo da atividade que ela registra na ficha ao ser concluída. */
 const AG_TIPO_ATIVIDADE = { ligacao:'ligacao', reuniao:'reuniao', email:'email', tarefa:'nota' };
 const AG_ORIGENS = {
-  manual:     { nome:'Minha',           cor:'#195AB4', corNoite:'#8FB8F2', desc:'criada pela própria pessoa' },
+  manual:     { nome:'Própria',         cor:'#195AB4', corNoite:'#8FB8F2', desc:'criada pela própria pessoa' },
   atribuida:  { nome:'Atribuída',       cor:'#7C5CC4', corNoite:'#BBA6EC', desc:'passada pelo head comercial ou por um master' },
   contato:    { nome:'Próximo contato', cor:'#2F7A56', corNoite:'#7FD3A6', desc:'data marcada na ficha do cliente' },
   vencimento: { nome:'Vencimento',      cor:'#B3403A', corNoite:'#F2A29C', desc:'alerta de vencimento na ficha do cliente' },
@@ -11427,7 +11458,7 @@ function agBaseTarefa(t, porLead, nomeDe){
   const lead = t.leadId ? porLead.get(t.leadId) : null;
   return {
     origem, tarefa: t, titulo: t.titulo, tipo: t.tipo, hora: t.hora || '',
-    leadId: lead ? lead.id : '', cliente: lead ? nomeCliente(lead) : '',
+    leadId: lead ? lead.id : '', cliente: lead ? nomeCliente(lead) : (t.clienteNome || ''),
     donoId: t.donoId, dono: nomeDe(t.donoId),
     por: origem === 'atribuida' ? nomeDe(t.criadoPor) : '',
     repete: agRepeteTexto(t),
@@ -11538,7 +11569,7 @@ function AgendaFaixa({ tarefas, leads, users, donoId, onAbrir }){
 }
 
 function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir, podeEditarLead,
-  onSalvarTarefa, onApagarTarefa, onConcluir, onOpen, onResolverAlerta, onRegistrar }){
+  onSalvarTarefa, onApagarTarefa, onConcluir, onOpen, onResolverAlerta, onRegistrar, onCompartilhar }){
   const hoje = todayISO();
   const [visao, setVisao] = useState('hoje');
   const [quem, setQuem] = useState(currentUser.id);
@@ -11550,13 +11581,25 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
   const [textoRegistro, setTextoRegistro] = useState('');
   const [todasAtrasadas, setTodasAtrasadas] = useState(false);
 
-  /* Quem pode ser visto: head comercial e master veem todos, o assessor só a si. */
+  /* Quem pode ser visto: head comercial e master veem todos; o assessor vê a
+     própria e a de quem ligou "Compartilhar minha agenda" (só para ler). */
   const pessoas = useMemo(() => {
-    const ativas = users.filter(u => u.status === 'ativo' && u.id !== currentUser.id)
+    const ativas = users.filter(u => u.status === 'ativo' && u.id !== currentUser.id
+        && (podeAtribuir || u.agendaCompartilhada))
       .sort((a,b) => (a.nome || '').localeCompare(b.nome || ''));
     return [currentUser].concat(ativas);
-  }, [users, currentUser]);
-  const visoes = podeAtribuir ? pessoas.map(p => p.id).concat(['todos']) : [currentUser.id];
+  }, [users, currentUser, podeAtribuir]);
+  const visoes = podeAtribuir ? pessoas.map(p => p.id).concat(['todos']) : pessoas.map(p => p.id);
+  /* O colega desligou o compartilhamento enquanto a agenda dele estava na tela. */
+  useEffect(() => { if(visoes.indexOf(quem) === -1) setQuem(currentUser.id); }, [visoes.join(','), quem]);
+  const soLeitura = !podeAtribuir && quem !== currentUser.id;
+  const compartilhando = !!(users.find(u => u.id === currentUser.id) || currentUser).agendaCompartilhada;
+  const [salvandoComp, setSalvandoComp] = useState(false);
+  const mudarCompartilhar = async (ligar) => {
+    if(!onCompartilhar || salvandoComp) return;
+    setSalvandoComp(true);
+    try { await onCompartilhar(ligar); } finally { setSalvandoComp(false); }
+  };
   const donos = useMemo(() => quem === 'todos' ? null : new Set([quem]), [quem]);
   const nomeDe = (id) => (users.find(u => u.id === id) || {}).nome || '';
   const irPara = (delta) => {
@@ -11631,7 +11674,9 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
           mostrarDia ? h('span', { className: it.atrasada ? 'ag-atraso' : '' },
             it.atrasada ? 'atrasada desde ' + agDataCurta(it.dia) : agRotuloDia(it.dia, hoje)) : null,
           it.tarefa ? h('span', null, agTipoLabel(it.tipo)) : null,
-          it.cliente ? h('button', { className: 'ag-cliente', onClick: () => abrirLead(it.leadId) }, it.cliente) : null,
+          it.cliente ? (it.leadId
+            ? h('button', { className: 'ag-cliente', onClick: () => abrirLead(it.leadId) }, it.cliente)
+            : h('span', { className: 'ag-cliente-texto' }, it.cliente)) : null,
           selo(it.origem),
           it.por ? h('span', null, 'de ' + it.por) : null,
           mostrarDono && it.dono ? h('span', null, 'para ' + it.dono) : null,
@@ -11659,16 +11704,16 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
   const nomeQuem = quem === 'todos' ? 'Toda a equipe' : quem === currentUser.id ? 'Minha agenda' : nomeDe(quem);
   const heroi = h('section', { className: 'pn-heroi' },
     h('div', { className: 'pn-heroi-topo ag-heroi-topo' },
-      podeAtribuir ? h('div', { className: 'pn-visao' },
+      visoes.length > 1 ? h('div', { className: 'pn-visao' },
         h('button', { className: 'pn-visao-seta', onClick: () => irPara(-1), 'aria-label': 'Agenda anterior' }, '‹'),
         h('label', { className: 'pn-visao-caixa' },
           h('span', null, 'Agenda de'),
           h('select', { value: quem, onChange: e => setQuem(e.target.value) },
             pessoas.map(p => h('option', { key: p.id, value: p.id }, p.id === currentUser.id ? 'Minha agenda (' + p.nome + ')' : p.nome)),
-            h('option', { value: 'todos' }, 'Toda a equipe'))),
+            podeAtribuir ? h('option', { value: 'todos' }, 'Toda a equipe') : null)),
         h('button', { className: 'pn-visao-seta', onClick: () => irPara(1), 'aria-label': 'Próxima agenda' }, '›')
       ) : h('div', { className: 'pn-visao-fixa' }, h('span', null, 'Agenda de'), h('strong', null, currentUser.nome)),
-      h('button', { className: 'ag-novo', onClick: () => novaTarefa(hoje), disabled: semTabela,
+      soLeitura ? null : h('button', { className: 'ag-novo', onClick: () => novaTarefa(hoje), disabled: semTabela,
         title: semTabela ? 'Falta criar a tabela de tarefas no banco' : '' }, h(IconPlus, { size: 15 }), 'Nova tarefa')),
     h('h2', { className: 'ag-dia-titulo' }, agDataLonga(hoje)),
     h('div', { className: 'pn-pilulas' },
@@ -11678,7 +11723,19 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
       resumo.feitas ? h('span', { className: 'pn-pilula boa' }, agPlural(resumo.feitas, 'feita', 'feitas')) : null,
       resumo.atrasadas ? h('span', { className: 'pn-pilula ruim' }, agPlural(resumo.atrasadas, 'atrasada', 'atrasadas')) : null,
       resumo.proxima ? h('span', { className: 'pn-pilula alerta' }, 'Próxima às ' + resumo.proxima.hora) : null),
-    h('div', { className: 'pn-meta' }, nomeQuem + ' · tarefas criadas na Agenda, próximos contatos, vencimentos e régua de relacionamento'));
+    soLeitura
+      ? h('div', null,
+          h('span', { className: 'ag-leitura' }, 'Agenda compartilhada · só para ver'),
+          h('div', { className: 'pn-meta' }, nomeQuem + ' · tarefas marcadas na Agenda. Próximo contato, vencimento e régua vêm das fichas dos clientes e não aparecem aqui: a carteira é de cada assessor.'))
+      : h('div', { className: 'pn-meta' }, nomeQuem + ' · tarefas criadas na Agenda, próximos contatos, vencimentos e régua de relacionamento'),
+    quem === currentUser.id && !semTabela && onCompartilhar ? h('label', { className: 'ag-compartilhar' },
+      h('input', { type: 'checkbox', checked: compartilhando, disabled: salvandoComp,
+        onChange: e => mudarCompartilhar(e.target.checked) }),
+      h('div', null,
+        h('strong', null, 'Compartilhar minha agenda com a equipe'),
+        h('span', null, compartilhando
+          ? 'Ligado: qualquer pessoa do CRM pode ver suas tarefas, sem poder mudar nada. Desmarque para deixar só com você.'
+          : 'Desligado: só você vê suas tarefas. O head comercial e os masters veem sempre.'))) : null);
 
   const abas = h('div', { className: 'pn-abas', role: 'tablist', 'aria-label': 'Visão da agenda' },
     [['hoje','Hoje'], ['semana','Semana'], ['mes','Mês']].map(([k, rot]) =>
@@ -11743,7 +11800,7 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
           h('div', { className: 'ag-coluna-cab' }, AG_DIAS[i] + ' ' + Number(d.slice(8,10))),
           h('div', { className: 'ag-coluna-corpo' },
             doDia.map(chip),
-            !semTabela ? h('button', { className: 'ag-chip', style: { '--ag-cor': 'transparent', background: 'none', color: 'var(--ink-faint)' },
+            !semTabela && !soLeitura ? h('button', { className: 'ag-chip', style: { '--ag-cor': 'transparent', background: 'none', color: 'var(--ink-faint)' },
               onClick: () => novaTarefa(d < hoje ? hoje : d), 'aria-label': 'Nova tarefa em ' + agDataCurta(d) }, '+ tarefa') : null));
       }))));
 
@@ -11902,7 +11959,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.10.1';
+const CRM_VERSAO = 'versão do CRM 2026.11.10.2';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -12963,7 +13020,8 @@ function App(){
     if(error || !data){ setMotivoBloqueio('sem-perfil'); setPhase('bloqueado'); return true; }
     if(data.status !== 'ativo'){ setMotivoBloqueio(data.status); setPhase('bloqueado'); return true; }
     setCurrentUser({ id:data.id, nome:data.nome, role:data.role, status:data.status,
-      produtos:data.produtos || [], especialistasPadrao:data.especialistas_padrao || {} });
+      produtos:data.produtos || [], especialistasPadrao:data.especialistas_padrao || {},
+      agendaCompartilhada: data.agenda_compartilhada === true });
     if(data.role === 'especialista'){
       setFunil('especialista');
       const meus = (data.produtos || []).filter(x => PRODUTOS.indexOf(x) !== -1);
@@ -13864,6 +13922,17 @@ function App(){
       return true;
     }catch(e){ pushToast(erroTarefa(e), 'error'); return false; }
   };
+  const compartilharAgenda = async (ligar) => {
+    try{
+      const ok = await gravarCompartilharAgenda(ligar, currentUser.id);
+      setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, agendaCompartilhada: ok } : u));
+      setCurrentUser(prev => prev ? { ...prev, agendaCompartilhada: ok } : prev);
+      pushToast(ok ? 'Agenda compartilhada com a equipe.' : 'Agenda só sua de novo.', 'success');
+    }catch(e){
+      pushToast(/agenda_compartilhar|function|schema cache/i.test(String(e && e.message))
+        ? 'Falta rodar o agenda_compartilhar.sql no Supabase.' : 'Não foi possível salvar: ' + ((e && e.message) || e), 'error');
+    }
+  };
   const apagarTarefa = async (t) => {
     try{
       await apagarTarefaBanco(t.id);
@@ -14175,7 +14244,7 @@ function App(){
         view==='agenda' ? h(Agenda,{ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
           podeEditarLead: podeEditar, onSalvarTarefa: salvarTarefa, onApagarTarefa: apagarTarefa,
           onConcluir: concluirTarefa, onOpen: setOpenLead, onResolverAlerta: resolverVencimentoDaAgenda,
-          onRegistrar: registrarDaAgenda }) :
+          onRegistrar: registrarDaAgenda, onCompartilhar: compartilharAgenda }) :
         view==='kanban' ? h('div',{className: (overviewOpen && filtered.length > 0) ? '' : 'overview-fechada'},
           /* Em notebook a visão geral come altura do funil — dá para recolher. */
           filtered.length > 0 ? h('div',{className:'overview-toggle'},

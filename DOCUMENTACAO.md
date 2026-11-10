@@ -694,6 +694,10 @@ evento `storage` e adota o token que outra aba renovou. No Hub e nos módulos qu
 token mais novo, e várias consultas com 401 juntas esperam uma renovação só. Motivo: o Supabase recusa refresh
 token já trocado e, passados 10 s, pode derrubar a sessão inteira. Testado no Chromium reproduzindo o defeito
 (versão anterior volta ao Hub e apaga o login; esta fica no CRM)**.
+ · **CRM 2026.11.10.2 (10/11/2026): agenda compartilhada. Cada pessoa liga ou desliga "Compartilhar minha
+agenda com a equipe" no topo da própria Agenda. Ligado, qualquer pessoa ativa do CRM escolhe o nome dela em "Agenda
+de" e vê as tarefas, só para ler. Head comercial e master continuam vendo todas. Banco: `agenda_compartilhar.sql`
+(seção 19), instalado como migração `agenda_compartilhada`**.
 
 ---
 
@@ -1291,6 +1295,22 @@ o próximo se marca na ficha); vencimento é marcado como resolvido. Recorrente 
 aparece uma vez só (a última ocorrência não feita, até 31 dias) e deixa de ser atrasada
 quando a ocorrência seguinte chega. Sem a tabela no banco, a aba avisa e mostra só o que
 vem das fichas. Testado com Playwright no modo demonstração (`semearTarefasDemo`).
+
+**Agenda compartilhada (10/11/2026, `agenda_compartilhar.sql`, também no fim do `adami_completo.sql`, seção
+8.19).** Pedido do Emil: o assessor decide se compartilha. Decisões: compartilhar é com toda a equipe (uma chave
+só), o colega vê tudo das tarefas (título, cliente, hora, nota) mas não altera, não conclui e não apaga, e head
+comercial e master seguem vendo todas como antes. Banco: coluna `profiles.agenda_compartilhada` (padrão
+desligado), gravada pela função `agenda_compartilhar(boolean)` (só a própria pessoa); a política `tarefas_ler`
+ganhou `or agenda_compartilhada(dono_id)`; as de alterar e apagar não mudaram, por isso a leitura é só leitura.
+O nome do cliente vem de `agenda_clientes_compartilhados()`, porque a ficha do cliente do colega continua fora
+do alcance (regra da carteira). Pelo mesmo motivo, próximo contato, vencimento e régua do colega não aparecem:
+eles são calculados da ficha. As três funções checam `acesso_liberado()` e não são executáveis pelo `anon`.
+Tela: o seletor "Agenda de" do assessor lista ele e quem compartilha; na agenda do colega some "Nova tarefa" e
+"+ tarefa", o check fica desligado e aparece o selo "Agenda compartilhada · só para ver". O selo das tarefas
+criadas pela própria pessoa passou de "Minha" para "Própria", que serve para as duas visões. Testado num Postgres
+local (sem compartilhar não vê; compartilhado vê e não altera, conclui nem apaga; não muda a chave de outro; sem
+código do dia nada responde; head vê tudo; anon recusado) e no Chromium com o banco simulado (computador e
+celular).
 
 **E-mail da manhã (`supabase/functions/agenda-manha`).** Chamado pelo `pg_cron`
 ("agenda-manha", `50 9 * * 1-5` em UTC = 6h50 de Brasília) via `pg_net`. Só envia em dia
