@@ -50,13 +50,40 @@ td.sublista{background:#FAFBFD;padding:6px 10px}td.sublista table{font-size:12.5
 <body>
 <div class="wrap"><a class="voltar" href="index.html">&#8592; Hub Adami</a><div id="app"><p class="vazio">Carregando…</p></div></div>
 <script>
-var VERSAO="Minha comissão 1.0";
+var VERSAO="Minha comissão 1.1";
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
 var SESSAO=null;
 try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
 if(!SESSAO||!SESSAO.access_token){ location.replace("index.html"); }
+/* 10/11/2026: outra aba (o CRM, o Hub, outro módulo) pode já ter renovado o token.
+   Antes de renovar, olha o aw_sessao: se lá tem um token mais novo e ainda válido da
+   mesma pessoa, usa ele; se não, renova com o refresh_token mais novo de lá, nunca com
+   o velho da memória (o Supabase recusa o velho e pode derrubar a sessão inteira). */
+function sessaoDeOutraAba(){
+  var ls=null; try{ ls=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
+  if(!ls||!ls.access_token||!SESSAO) return false;
+  if(SESSAO.id&&ls.id&&ls.id!==SESSAO.id) return false;
+  if(ls.refresh_token) SESSAO.refresh_token=ls.refresh_token;
+  if(ls.access_token===SESSAO.access_token) return Date.now()-RENOVADA_EM<20000;
+  var exp=0;
+  try{ var b=ls.access_token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"); exp=JSON.parse(atob(b+"===".slice((b.length+3)%4))).exp||0; }catch(e){}
+  if(exp*1000<Date.now()+30000) return false;
+  SESSAO.access_token=ls.access_token;
+  RENOVADA_EM=Date.now();
+  return true;
+}
+/* Várias consultas que dão 401 juntas esperam uma renovação só. A que chega logo
+   depois de uma renovação (até 20 s) só repete com o token novo. */
+var RENOVACAO=null, RENOVADA_EM=0;
 function renovar(){
+  if(sessaoDeOutraAba()) return Promise.resolve(SESSAO);
+  if(RENOVACAO) return RENOVACAO;
+  RENOVACAO=renovarAgora().then(function(x){ RENOVADA_EM=Date.now(); RENOVACAO=null; return x; },
+                                function(e){ RENOVACAO=null; throw e; });
+  return RENOVACAO;
+}
+function renovarAgora(){
   return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
     body:JSON.stringify({refresh_token:SESSAO.refresh_token})}).then(function(res){
       if(!res.ok) throw new Error("sessão expirada");

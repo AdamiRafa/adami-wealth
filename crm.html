@@ -5312,6 +5312,27 @@ function normalizarUrl(u){
 
 let sb = null;
 let erroCliente = '';
+/* 10/11/2026: o supabase-js guarda a sessão dele à parte (sb-<projeto>-auth-token).
+   Quando a pessoa saía e entrava de novo no Hub, sobrava ali a sessão antiga; ao
+   abrir o CRM, o supabase-js tentava renovar aquele token morto, o Supabase
+   respondia "Refresh Token Not Found", vinha um SIGNED_OUT e o CRM apagava o
+   login do Hub. Resultado: pedir senha e código de novo. A sessão que vale é
+   sempre a do Hub (aw_sessao): se a do supabase-js for outra, ela é descartada
+   antes de o cliente nascer, e ele nunca tenta renovar o que já morreu. */
+function chaveSessaoSb(){
+  try{ return 'sb-' + new URL(normalizarUrl(SUPABASE_URL)).hostname.split('.')[0] + '-auth-token'; }
+  catch(e){ return ''; }
+}
+(function descartarSessaoVelhaDoSb(){
+  try{
+    const portal = JSON.parse(localStorage.getItem('aw_sessao') || 'null');
+    if(!portal || !portal.access_token) return;
+    const k = chaveSessaoSb(); if(!k) return;
+    const meu = JSON.parse(localStorage.getItem(k) || 'null');
+    const tk = meu && (meu.access_token || (meu.currentSession && meu.currentSession.access_token));
+    if(meu && tk !== portal.access_token){ localStorage.removeItem(k); localStorage.removeItem(k + '-user'); }
+  }catch(e){}
+})();
 if(configurado && libPronta && !invertido && !chaveSecreta){
   try{
     sb = window.supabase.createClient(normalizarUrl(SUPABASE_URL), SUPABASE_ANON_KEY.trim());
@@ -11881,7 +11902,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.07.1';
+const CRM_VERSAO = 'versão do CRM 2026.11.10.1';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -12867,16 +12888,36 @@ function App(){
       }
       loadedOnce.current = true;
     })();
-    /* Sessão expirada ou logout em outra aba derruba esta também. */
+    /* Sessão expirada ou logout em outra aba derruba esta também.
+       10/11/2026: o SIGNED_OUT não apaga mais o login do Hub. Ele também
+       aparece quando o supabase-js falha ao renovar um token velho dele, e
+       apagar aw_sessao nesse caso derrubava um login do Hub que estava bom.
+       A fase 'login' manda para o Hub, que confere a própria sessão; se ela
+       morreu de verdade, o Hub pede a senha. Sair pelo botão apaga (handleLogout). */
     const { data: sub } = sb.auth.onAuthStateChange((evento, sessao) => {
       if(evento === 'SIGNED_OUT'){
         setCurrentUser(null); setPhase('login');
-        try { localStorage.removeItem('aw_sessao'); } catch(e){}
       } else if(evento === 'TOKEN_REFRESHED' || evento === 'SIGNED_IN'){
         devolverSessaoAoPortal(sessao);
       }
     });
-    return () => { if(sub && sub.subscription) sub.subscription.unsubscribe(); };
+    /* Outra aba (o Hub ou outro módulo) renovou o token: adota o novo, senão o
+       supabase-js daqui renovaria depois com o token antigo, que já foi trocado. */
+    const aoMudarSessao = (e) => {
+      if(e.key !== 'aw_sessao' || !e.newValue) return;
+      let p = null; try { p = JSON.parse(e.newValue); } catch(x){}
+      if(!p || !p.access_token || !p.refresh_token) return;
+      sb.auth.getSession().then(({ data }) => {
+        const atual = data && data.session;
+        if(atual && atual.access_token === p.access_token) return;
+        sb.auth.setSession({ access_token: p.access_token, refresh_token: p.refresh_token }).catch(() => {});
+      });
+    };
+    window.addEventListener('storage', aoMudarSessao);
+    return () => {
+      if(sub && sub.subscription) sub.subscription.unsubscribe();
+      window.removeEventListener('storage', aoMudarSessao);
+    };
   }, []);
 
   /* ---------- Login único com o portal ---------- */
@@ -12890,10 +12931,9 @@ function App(){
       access_token: portal.access_token,
       refresh_token: portal.refresh_token
     });
-    if(error){
-      try { localStorage.removeItem('aw_sessao'); } catch(e){}
-      return false;
-    }
+    /* Falhou: não apaga o login do Hub (ver onAuthStateChange). O CRM vai
+       para a fase 'login', que devolve ao Hub, e o Hub decide. */
+    if(error) return false;
     return true;
   }
   /* Quando o supabase-js renova o token, o portal precisa saber — senão
@@ -12901,7 +12941,11 @@ function App(){
   function devolverSessaoAoPortal(sessao){
     if(!sessao || !sessao.access_token) return;
     try {
-      const atual = JSON.parse(localStorage.getItem('aw_sessao') || 'null') || {};
+      /* Só atualiza um login do Hub que existe e é da mesma pessoa. Criar um
+         aw_sessao do zero aqui perderia a marca do código confirmado hoje (dia). */
+      const atual = JSON.parse(localStorage.getItem('aw_sessao') || 'null');
+      if(!atual || (atual.id && sessao.user && atual.id !== sessao.user.id)) return;
+      if(atual.access_token === sessao.access_token) return;
       atual.access_token  = sessao.access_token;
       atual.refresh_token = sessao.refresh_token;
       if(sessao.expires_at) atual.expires_at = sessao.expires_at;
@@ -13048,7 +13092,10 @@ function App(){
     setFiltros({ ...FILTROS_VAZIOS });
     setFiltrosAbertos(false);
     setView('kanban');
-    if(!MODO_DEMO) await sb.auth.signOut();
+    if(!MODO_DEMO){
+      await sb.auth.signOut();
+      try { localStorage.removeItem('aw_sessao'); } catch(e){}
+    }
     setCurrentUser(null); setLeads([]); setTarefas([]); setSouMaster(false); setPermissoes(null); setPhase('login');
     setQuery(''); setVendorFilter('all'); setView('kanban');
   };

@@ -553,6 +553,11 @@ sempre pela API, decodificando o campo `content`.
   de laço precisam ser interpolados (`'+i+'`), não referenciados por nome.
 - **CORS pode bloquear a API de PTAX do Banco Central.** O campo é sempre editável à mão
   e mostra mensagem de falha em vez de travar.
+- **Duas cópias do mesmo login brigam.** O Hub guarda a sessão em `aw_sessao`; o supabase-js do CRM guarda
+  outra em `sb-<projeto>-auth-token`. Refresh token do Supabase é de uso único: quem renova com uma cópia velha
+  recebe erro e pode derrubar a sessão de todo mundo. Regra: a cópia que vale é sempre o `aw_sessao`; quem for
+  renovar lê ela antes, e nenhum evento automático (SIGNED_OUT, erro de renovação) apaga o `aw_sessao`, só o
+  botão Sair. Ver 3.00 no histórico.
 - **Cache do navegador** engana com frequência. Sempre pedir Cmd+Shift+R e conferir o
   selo de versão antes de investigar qualquer coisa.
 - **O wi-fi do escritório bloqueava `.vercel.app`** por DNS
@@ -676,6 +681,19 @@ o novo cancelava o anterior e o anterior, ao chegar, era recusado (10/11 às 14:
 digitou o primeiro, "código errado"). Agora pedir outro não cancela os anteriores: qualquer código válido da
 sessão libera (10 min, mesmos limites de 30 s, 8 por hora e 10 erros em 30 min), e o primeiro certo encerra os
 outros. Tela de código avisa da demora e que os anteriores valem. Migração `codigo_acesso_anteriores_valem`**.
+ · **3.00 (10/11/2026; CRM 2026.11.10.1, Comissões 2.4, Minha comissão 1.1, Mesa RV 2.80, Fluxo 2.4,
+Alocação 1.11): CRM pedindo login de novo. Causa: o supabase-js do CRM guarda a sessão dele à parte
+(`sb-ghxjqmjtmbqzvogwzylo-auth-token`). Depois de sair e entrar de novo no Hub, sobrava ali a sessão antiga; ao
+abrir o CRM ele tentava renovar aquele token morto ("Refresh Token Not Found", 10/11 às 14:27:05), disparava
+SIGNED_OUT e o CRM apagava o `aw_sessao`, derrubando um login do Hub que estava bom (a sessão do Hub seguia viva
+no banco). Agora: (1) o CRM descarta a sessão própria quando ela não é a do Hub, antes de criar o cliente;
+(2) SIGNED_OUT e falha de `setSession` não apagam mais o `aw_sessao` (só o botão Sair apaga); (3) o CRM só
+devolve token ao Hub se o `aw_sessao` existe e é da mesma pessoa (não perde a marca `dia`); (4) o CRM escuta o
+evento `storage` e adota o token que outra aba renovou. No Hub e nos módulos que renovam token sozinhos,
+`renovar()` lê o `aw_sessao` antes: se outra aba já renovou, usa o token novo; se não, renova com o refresh
+token mais novo, e várias consultas com 401 juntas esperam uma renovação só. Motivo: o Supabase recusa refresh
+token já trocado e, passados 10 s, pode derrubar a sessão inteira. Testado no Chromium reproduzindo o defeito
+(versão anterior volta ao Hub e apaga o login; esta fica no CRM)**.
 
 ---
 
