@@ -143,7 +143,8 @@ create table if not exists public.comissao_origens (
 insert into public.comissao_origens (nome, moeda, ordem, atualizado_por) values
   ('BTG Investimentos', 'BRL', 1, 'instalação'), ('BTG Offshore', 'USD', 2, 'instalação'),
   ('Consórcios', 'BRL', 3, 'instalação'), ('Corban', 'BRL', 4, 'instalação'),
-  ('Pershing', 'USD', 5, 'instalação'), ('Previdência', 'BRL', 6, 'instalação')
+  ('Pershing', 'USD', 5, 'instalação'), ('Previdência', 'BRL', 6, 'instalação'),
+  ('Seguros', 'BRL', 7, 'instalação')   -- 2.2: a regra de seguro precisa de uma planilha para apontar
 on conflict (nome) do nothing;
 
 -- Listas de clientes (nome ou número da conta), usadas nas regras e nas trocas.
@@ -275,8 +276,16 @@ create table if not exists public.comissao_lancamentos (
   criado_por       text
 );
 alter table public.comissao_lancamentos add column if not exists parcela int;   -- nº da parcela (seguro, consórcio)
+alter table public.comissao_lancamentos add column if not exists empresa_id uuid references public.comissao_empresas(id) on delete set null;
 create index if not exists comissao_lanc_comp_idx on public.comissao_lancamentos (competencia);
 create index if not exists comissao_lanc_plan_idx on public.comissao_lancamentos (planilha_id);
+
+-- 2.2 (10/11/2026): a regra diz em quais planilhas vale (várias) e qual empresa paga.
+alter table public.comissao_regras add column if not exists cond_origens uuid[] not null default '{}';
+alter table public.comissao_regras add column if not exists empresa_id uuid references public.comissao_empresas(id) on delete set null;
+update public.comissao_regras set cond_origens = array[cond_origem_id], cond_origem_id = null
+ where cond_origem_id is not null and cardinality(cond_origens) = 0;
+alter table public.comissao_fixos add column if not exists empresa_id uuid references public.comissao_empresas(id) on delete set null;
 
 create table if not exists public.comissao_pagamentos (
   competencia    date not null references public.comissao_meses(competencia),
@@ -293,6 +302,7 @@ create table if not exists public.comissao_pagamentos (
   visualizado_em timestamptz,
   primary key (competencia, user_id)
 );
+alter table public.comissao_pagamentos add column if not exists por_empresa jsonb not null default '[]'::jsonb;
 
 alter table public.comissao_empresas    enable row level security;
 alter table public.comissao_dados_pagto enable row level security;
@@ -420,7 +430,7 @@ begin
   -- 3. a regra
   select * into v_regra from public.comissao_regras g
    where g.ativo and g.vigencia_inicio <= p_comp and (g.vigencia_fim is null or g.vigencia_fim >= p_comp)
-     and (g.cond_origem_id is null or g.cond_origem_id = p_origem)
+     and (cardinality(g.cond_origens) = 0 or p_origem = any(g.cond_origens))
      and (public.com_norm(g.cond_categoria) = '' or public.com_norm(g.cond_categoria) = public.com_norm(v_cat))
      and (public.com_norm(g.cond_produto) = '' or public.com_norm(g.cond_produto) = public.com_norm(v_prod))
      and (g.cond_profissional is null or g.cond_profissional = v_pid)
@@ -487,7 +497,7 @@ begin
   return jsonb_build_object('cliente', v_cli, 'conta', v_conta, 'profissional_txt', v_prof, 'profissional_id', v_pid,
     'prof_escritorio', v_esc, 'categoria', v_cat, 'produto', v_prod, 'valor_original', v_orig, 'valor', v_val,
     'regra_id', v_regra.id, 'regra_nome', v_regra.nome, 'rateio', v_saida, 'valor_escritorio', v_escr, 'avisos', v_avisos,
-    'parcela', v_parc, 'primeira', v_primeira);
+    'parcela', v_parc, 'primeira', v_primeira, 'empresa_id', v_regra.empresa_id);
 end $$;
 
 -- Grava as linhas de uma planilha (apaga as anteriores dela). Devolve contagens.
@@ -511,11 +521,12 @@ begin
     end if;
     insert into public.comissao_lancamentos (competencia, tipo, planilha_id, linha, origem_id, origem_nome, cliente, conta,
       profissional_txt, profissional_id, prof_escritorio, categoria, produto, valor_original, cotacao, valor, regra_id, regra_nome,
-      rateio, valor_escritorio, parcela, criado_por)
+      rateio, valor_escritorio, parcela, empresa_id, criado_por)
     values (pl.competencia, 'receita', p_id, coalesce((it->>'linha')::int, i), pl.origem_id, o.nome, c->>'cliente', c->>'conta',
       c->>'profissional_txt', nullif(c->>'profissional_id', '')::uuid, coalesce((c->>'prof_escritorio')::boolean, false),
       c->>'categoria', c->>'produto', (c->>'valor_original')::numeric, pl.cotacao, (c->>'valor')::numeric,
-      (c->>'regra_id')::uuid, c->>'regra_nome', c->'rateio', (c->>'valor_escritorio')::numeric, (c->>'parcela')::int, public.com_quem());
+      (c->>'regra_id')::uuid, c->>'regra_nome', c->'rateio', (c->>'valor_escritorio')::numeric, (c->>'parcela')::int,
+      nullif(c->>'empresa_id', '')::uuid, public.com_quem());
     n_ok := n_ok + 1; v_total := v_total + (c->>'valor')::numeric;
   end loop;
   update public.comissao_planilhas set linhas = n_ok, linhas_erro = jsonb_array_length(erros), total = round(v_total, 2),
@@ -531,30 +542,38 @@ begin
   if (select status from public.comissao_meses where competencia = v_comp) is distinct from 'aberto' then return; end if;
   delete from public.comissao_lancamentos l where l.competencia = v_comp and l.tipo = 'fixo'
      and not exists (select 1 from public.comissao_fixos f where f.id = l.fixo_id and f.ativo and f.inicio <= v_comp and (f.fim is null or f.fim >= v_comp)
-                       and l.valor = -f.valor and l.descricao = f.descricao and l.categoria = f.categoria and (l.rateio->0->>'user_id')::uuid = f.user_id);
-  insert into public.comissao_lancamentos (competencia, tipo, fixo_id, profissional_id, profissional_txt, categoria, descricao, valor, rateio, valor_escritorio, criado_por)
+                       and l.valor = -f.valor and l.descricao = f.descricao and l.categoria = f.categoria and (l.rateio->0->>'user_id')::uuid = f.user_id
+                       and l.empresa_id is not distinct from f.empresa_id);
+  insert into public.comissao_lancamentos (competencia, tipo, fixo_id, profissional_id, profissional_txt, categoria, descricao, valor, rateio, valor_escritorio, empresa_id, criado_por)
   select v_comp, 'fixo', f.id, f.user_id, coalesce(public.com_nome(f.user_id), ''), f.categoria, f.descricao, -f.valor,
-         jsonb_build_array(jsonb_build_object('user_id', f.user_id, 'papel', 'ajuste fixo', 'valor', f.valor)), -f.valor, 'automático'
+         jsonb_build_array(jsonb_build_object('user_id', f.user_id, 'papel', 'ajuste fixo', 'valor', f.valor)), -f.valor, f.empresa_id, 'automático'
     from public.comissao_fixos f
    where f.ativo and f.inicio <= v_comp and (f.fim is null or f.fim >= v_comp)
      and not exists (select 1 from public.comissao_lancamentos l where l.competencia = v_comp and l.fixo_id = f.id);
 end $$;
 
--- Totais de cada pessoa no mês: bruto (soma das partes), imposto da empresa pagadora e líquido.
-create or replace function public.com_totais(p_comp date)
-returns table (user_id uuid, bruto numeric, pct_imposto numeric, imposto numeric, liquido numeric, empresa_id uuid, linhas int)
+-- Totais de cada pessoa no mês. Cada parte vem paga por uma empresa: a da regra (ou do ajuste fixo e do
+-- ajuste); sem empresa, a empresa padrão da pessoa (dados de pagamento). O imposto é o da empresa,
+-- sobre a parte positiva dela. por_empresa traz a conta de cada empresa (a folha usa).
+drop function if exists public.com_totais(date);
+create function public.com_totais(p_comp date)
+returns table (user_id uuid, bruto numeric, pct_imposto numeric, imposto numeric, liquido numeric, empresa_id uuid, linhas int, por_empresa jsonb)
 language sql stable security definer set search_path = public as $$
-  with b as (
-    select (r->>'user_id')::uuid as uid, round(sum((r->>'valor')::numeric), 2) as bruto, count(*)::int as linhas
-      from public.comissao_lancamentos l, jsonb_array_elements(l.rateio) r
-     where l.competencia = public.com_mes(p_comp) and nullif(r->>'user_id', '') is not null
-     group by 1)
-  select b.uid, b.bruto, coalesce(e.pct_imposto, 0),
-         case when b.bruto > 0 then round(b.bruto * coalesce(e.pct_imposto, 0) / 100, 2) else 0 end,
-         b.bruto - case when b.bruto > 0 then round(b.bruto * coalesce(e.pct_imposto, 0) / 100, 2) else 0 end,
-         d.empresa_id, b.linhas
-    from b left join public.comissao_dados_pagto d on d.user_id = b.uid
-           left join public.comissao_empresas e on e.id = d.empresa_id;
+  with partes as (
+    select (r->>'user_id')::uuid as uid, coalesce(l.empresa_id, d.empresa_id) as emp, (r->>'valor')::numeric as v
+      from public.comissao_lancamentos l cross join jsonb_array_elements(l.rateio) r
+      left join public.comissao_dados_pagto d on d.user_id = (r->>'user_id')::uuid
+     where l.competencia = public.com_mes(p_comp) and nullif(r->>'user_id', '') is not null),
+  por as (
+    select x.uid, x.emp, round(sum(x.v), 2) as bruto, count(*)::int as n, coalesce(max(e.pct_imposto), 0) as pct
+      from partes x left join public.comissao_empresas e on e.id = x.emp
+     group by x.uid, x.emp),
+  por2 as (
+    select por.*, case when por.bruto > 0 then round(por.bruto * por.pct / 100, 2) else 0 end as imp from por)
+  select uid, sum(bruto), case when sum(bruto) > 0 then round(sum(imp) / sum(bruto) * 100, 4) else 0 end, sum(imp), sum(bruto) - sum(imp),
+         case when count(*) = 1 then (array_agg(emp))[1] end, sum(n)::int,
+         jsonb_agg(jsonb_build_object('empresa_id', emp, 'bruto', bruto, 'pct_imposto', pct, 'imposto', imp, 'liquido', bruto - imp) order by emp)
+    from por2 group by uid;
 $$;
 
 -- Mínimo garantido: quanto falta para cada pessoa chegar ao piso (sem contar o complemento já lançado).
@@ -602,7 +621,7 @@ begin
     'lancamentos', coalesce((select jsonb_agg(jsonb_build_object('id', l.id, 'tipo', l.tipo, 'planilha_id', l.planilha_id, 'linha', l.linha,
         'origem_id', l.origem_id, 'origem_nome', l.origem_nome, 'cliente', l.cliente, 'conta', l.conta, 'profissional_txt', l.profissional_txt,
         'profissional_id', l.profissional_id, 'prof_escritorio', l.prof_escritorio, 'categoria', l.categoria, 'produto', l.produto,
-        'descricao', l.descricao, 'parcela', l.parcela, 'valor_original', l.valor_original, 'cotacao', l.cotacao, 'valor', l.valor, 'regra_nome', l.regra_nome,
+        'descricao', l.descricao, 'parcela', l.parcela, 'empresa_id', l.empresa_id, 'valor_original', l.valor_original, 'cotacao', l.cotacao, 'valor', l.valor, 'regra_nome', l.regra_nome,
         'rateio', l.rateio, 'valor_escritorio', l.valor_escritorio, 'fixo_id', l.fixo_id, 'criado_por', l.criado_por) order by l.criado_em, l.linha)
       from public.comissao_lancamentos l where l.competencia = v_comp), '[]'),
     'totais', coalesce((select jsonb_agg(to_jsonb(t)) from public.com_totais(v_comp) t), '[]'),
@@ -710,19 +729,21 @@ begin
     v_user := nullif(p->>'profissional_id', '')::uuid;
     if v_user is null then raise exception 'Escolha a pessoa do ajuste.'; end if;
     if char_length(btrim(coalesce(p->>'descricao', ''))) < 3 then raise exception 'Escreva o motivo do ajuste.'; end if;
-    insert into public.comissao_lancamentos (competencia, tipo, profissional_id, profissional_txt, categoria, descricao, valor, rateio, valor_escritorio, criado_por)
+    insert into public.comissao_lancamentos (competencia, tipo, profissional_id, profissional_txt, categoria, descricao, valor, rateio, valor_escritorio, empresa_id, criado_por)
     values (v_comp, 'ajuste', v_user, coalesce(public.com_nome(v_user), ''), coalesce(nullif(btrim(p->>'categoria'), ''), 'AJUSTE'),
-            btrim(p->>'descricao'), -v_val, jsonb_build_array(jsonb_build_object('user_id', v_user, 'papel', 'ajuste', 'valor', v_val)), -v_val, public.com_quem())
+            btrim(p->>'descricao'), -v_val, jsonb_build_array(jsonb_build_object('user_id', v_user, 'papel', 'ajuste', 'valor', v_val)), -v_val,
+            nullif(p->>'empresa_id', '')::uuid, public.com_quem())
     returning id into v_id;
   elsif p->>'tipo' = 'receita' then
     c := public.com_calcular(p, nullif(p->>'origem_id', '')::uuid, v_comp, 1);
     if c ? 'erro' then raise exception '%', c->>'erro'; end if;
     insert into public.comissao_lancamentos (competencia, tipo, origem_id, origem_nome, cliente, conta, profissional_txt, profissional_id, prof_escritorio,
-      categoria, produto, descricao, valor_original, valor, regra_id, regra_nome, rateio, valor_escritorio, parcela, criado_por)
+      categoria, produto, descricao, valor_original, valor, regra_id, regra_nome, rateio, valor_escritorio, parcela, empresa_id, criado_por)
     values (v_comp, 'receita', nullif(p->>'origem_id', '')::uuid, coalesce((select nome from public.comissao_origens where id = nullif(p->>'origem_id', '')::uuid), 'Lançamento avulso'),
       c->>'cliente', c->>'conta', c->>'profissional_txt', nullif(c->>'profissional_id', '')::uuid, coalesce((c->>'prof_escritorio')::boolean, false),
       c->>'categoria', c->>'produto', btrim(coalesce(p->>'descricao', '')), (c->>'valor_original')::numeric, (c->>'valor')::numeric,
-      (c->>'regra_id')::uuid, c->>'regra_nome', c->'rateio', (c->>'valor_escritorio')::numeric, (c->>'parcela')::int, public.com_quem())
+      (c->>'regra_id')::uuid, c->>'regra_nome', c->'rateio', (c->>'valor_escritorio')::numeric, (c->>'parcela')::int,
+      nullif(c->>'empresa_id', '')::uuid, public.com_quem())
     returning id into v_id;
   else
     raise exception 'Tipo de lançamento inválido.';
@@ -749,9 +770,17 @@ begin
 end $$;
 
 -- ---------- cadastros ----------
+-- Quantas condições a regra tem (as mais específicas ficam em cima quando a regra nasce).
+create or replace function public.com_ncond(g public.comissao_regras) returns int language sql immutable set search_path = public as $$
+  select (btrim(g.cond_categoria) <> '')::int + (btrim(g.cond_produto) <> '')::int + (g.cond_profissional is not null)::int
+       + (btrim(g.cond_cliente) <> '')::int + (g.cond_lista_id is not null)::int + (cardinality(g.cond_origens) > 0)::int;
+$$;
+revoke all on function public.com_ncond(public.comissao_regras) from public, anon, authenticated;
+
 create or replace function public.comissao_regra_salvar(p jsonb)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare v_id uuid := nullif(p->>'id', '')::uuid; d jsonb; v_soma numeric := 0; v_restos int := 0; v_div jsonb := '[]'::jsonb; v_rec text;
+        v_origens uuid[]; v_novo boolean := false; v_regra public.comissao_regras; v_pos int;
 begin
   if not public.com_pode_operar() then raise exception 'Seu perfil não pode mexer nas regras.'; end if;
   if char_length(btrim(coalesce(p->>'nome', ''))) < 1 then raise exception 'Dê um nome para a regra.'; end if;
@@ -771,12 +800,15 @@ begin
   end loop;
   if v_restos > 1 then raise exception 'Só um recebedor pode ficar com "o restante".'; end if;
   if v_soma > 100.0001 then raise exception 'Os percentuais passam de 100%% (somam %).', v_soma; end if;
+  select coalesce(array_agg(distinct x::uuid), '{}') into v_origens
+    from jsonb_array_elements_text(case when jsonb_typeof(p->'cond_origens') = 'array' then p->'cond_origens' else '[]'::jsonb end) x;
   if v_id is null then
-    insert into public.comissao_regras (nome, prioridade, ativo, cond_cliente, cond_lista_id, cond_profissional, cond_origem_id,
+    v_novo := true;
+    insert into public.comissao_regras (nome, prioridade, ativo, cond_cliente, cond_lista_id, cond_profissional, cond_origens, empresa_id,
       cond_categoria, cond_produto, divisao, tag, obs, vigencia_inicio, vigencia_fim, atualizado_por)
-    values (btrim(p->>'nome'), coalesce(nullif(p->>'prioridade', '')::int, (select coalesce(max(prioridade) filter (where prioridade < 9999), 0) + 10 from public.comissao_regras)),
+    values (btrim(p->>'nome'), coalesce(nullif(p->>'prioridade', '')::int, 9000),
       coalesce((p->>'ativo')::boolean, true), btrim(coalesce(p->>'cond_cliente', '')), nullif(p->>'cond_lista_id', '')::uuid,
-      nullif(p->>'cond_profissional', '')::uuid, nullif(p->>'cond_origem_id', '')::uuid, btrim(coalesce(p->>'cond_categoria', '')),
+      nullif(p->>'cond_profissional', '')::uuid, v_origens, nullif(p->>'empresa_id', '')::uuid, btrim(coalesce(p->>'cond_categoria', '')),
       btrim(coalesce(p->>'cond_produto', '')), v_div, btrim(coalesce(p->>'tag', '')), coalesce(p->>'obs', ''),
       coalesce(nullif(p->>'vigencia_inicio', '')::date, date '2026-10-01'), nullif(p->>'vigencia_fim', '')::date, public.com_quem())
     returning id into v_id;
@@ -784,7 +816,8 @@ begin
   else
     update public.comissao_regras set nome = btrim(p->>'nome'), ativo = coalesce((p->>'ativo')::boolean, ativo),
       cond_cliente = btrim(coalesce(p->>'cond_cliente', '')), cond_lista_id = nullif(p->>'cond_lista_id', '')::uuid,
-      cond_profissional = nullif(p->>'cond_profissional', '')::uuid, cond_origem_id = nullif(p->>'cond_origem_id', '')::uuid,
+      cond_profissional = nullif(p->>'cond_profissional', '')::uuid, cond_origens = v_origens, cond_origem_id = null,
+      empresa_id = nullif(p->>'empresa_id', '')::uuid,
       cond_categoria = btrim(coalesce(p->>'cond_categoria', '')), cond_produto = btrim(coalesce(p->>'cond_produto', '')),
       divisao = v_div, tag = btrim(coalesce(p->>'tag', '')), obs = coalesce(p->>'obs', obs),
       vigencia_inicio = coalesce(nullif(p->>'vigencia_inicio', '')::date, vigencia_inicio), vigencia_fim = nullif(p->>'vigencia_fim', '')::date,
@@ -792,6 +825,18 @@ begin
      where id = v_id;
     if not found then raise exception 'Regra não encontrada.'; end if;
     insert into public.auditoria (usuario, acao, alvo, detalhe) values (public.com_quem(), 'alterou regra de repasse', p->>'nome', '');
+  end if;
+  -- Regra nova sem posição escolhida: entra logo acima da primeira regra mais geral que ela
+  -- (com menos condições), para a específica ser testada antes. O Repasse padrão (9999) fica por último.
+  if v_novo and nullif(p->>'prioridade', '') is null then
+    select * into v_regra from public.comissao_regras where id = v_id;
+    select min(g.prioridade) into v_pos from public.comissao_regras g
+     where g.id <> v_id and g.prioridade < 9999 and public.com_ncond(g) < public.com_ncond(v_regra);
+    update public.comissao_regras set prioridade = coalesce(v_pos - 5, (select coalesce(max(prioridade), 0) + 10 from public.comissao_regras where prioridade < 9000))
+     where id = v_id;
+    update public.comissao_regras g set prioridade = x.rn * 10
+      from (select id, row_number() over (order by prioridade, criado_em) as rn from public.comissao_regras where prioridade < 9999) x
+     where g.id = x.id;
   end if;
   return v_id;
 end $$;
@@ -901,14 +946,15 @@ begin
   v_fim := public.com_mes(nullif(p->>'fim', '')::date);
   if v_fim is not null and v_fim < v_ini then raise exception 'O fim vem antes do início.'; end if;
   if v_id is null then
-    insert into public.comissao_fixos (grupo, user_id, descricao, valor, categoria, inicio, fim, ativo, atualizado_por)
+    insert into public.comissao_fixos (grupo, user_id, descricao, valor, categoria, inicio, fim, ativo, empresa_id, atualizado_por)
     values (btrim(coalesce(p->>'grupo', '')), (p->>'user_id')::uuid, btrim(p->>'descricao'), (p->>'valor')::numeric,
-            coalesce(nullif(btrim(p->>'categoria'), ''), 'AJUSTE'), v_ini, v_fim, coalesce((p->>'ativo')::boolean, true), public.com_quem())
+            coalesce(nullif(btrim(p->>'categoria'), ''), 'AJUSTE'), v_ini, v_fim, coalesce((p->>'ativo')::boolean, true),
+            nullif(p->>'empresa_id', '')::uuid, public.com_quem())
     returning id into v_id;
   else
     update public.comissao_fixos set grupo = btrim(coalesce(p->>'grupo', '')), user_id = (p->>'user_id')::uuid, descricao = btrim(p->>'descricao'),
       valor = (p->>'valor')::numeric, categoria = coalesce(nullif(btrim(p->>'categoria'), ''), 'AJUSTE'), inicio = v_ini, fim = v_fim,
-      ativo = coalesce((p->>'ativo')::boolean, ativo), atualizado_por = public.com_quem()
+      ativo = coalesce((p->>'ativo')::boolean, ativo), empresa_id = nullif(p->>'empresa_id', '')::uuid, atualizado_por = public.com_quem()
      where id = v_id;
     if not found then raise exception 'Ajuste não encontrado.'; end if;
   end if;
@@ -1000,8 +1046,8 @@ begin
   delete from public.comissao_pagamentos where competencia = v_comp;
   for t in select * from public.com_totais(v_comp) loop
     if t.bruto > 0 then
-      insert into public.comissao_pagamentos (competencia, user_id, bruto, pct_imposto, imposto, valor, empresa_id)
-      values (v_comp, t.user_id, t.bruto, t.pct_imposto, t.imposto, t.liquido, t.empresa_id);
+      insert into public.comissao_pagamentos (competencia, user_id, bruto, pct_imposto, imposto, valor, empresa_id, por_empresa)
+      values (v_comp, t.user_id, t.bruto, t.pct_imposto, t.imposto, t.liquido, t.empresa_id, t.por_empresa);
       n_pag := n_pag + 1;
     elsif t.bruto < 0 then
       -- Fechou negativo: o saldo passa para o mês seguinte.
@@ -1165,10 +1211,13 @@ begin
     'nome', public.com_nome(v_eu),
     'meses', coalesce((select jsonb_agg(m.competencia order by m.competencia desc) from public.comissao_meses m where m.liberado), '[]'),
     'pagamento', (select jsonb_build_object('bruto', p.bruto, 'pct_imposto', p.pct_imposto, 'imposto', p.imposto, 'valor', p.valor, 'pago_em', p.pago_em,
-                    'empresa', (select nome from public.comissao_empresas e where e.id = p.empresa_id))
+                    'empresa', (select string_agg(e.nome, ', ' order by e.ordem) from public.comissao_empresas e
+                                 where e.id in (select (x->>'empresa_id')::uuid from jsonb_array_elements(p.por_empresa) x)),
+                    'por_empresa', (select jsonb_agg(x || jsonb_build_object('empresa', (select nome from public.comissao_empresas e where e.id = (x->>'empresa_id')::uuid)))
+                                      from jsonb_array_elements(p.por_empresa) x))
                     from public.comissao_pagamentos p where p.competencia = v_comp and p.user_id = v_eu),
     'linhas', coalesce((select jsonb_agg(jsonb_build_object('tipo', l.tipo, 'origem', l.origem_nome, 'cliente', l.cliente, 'conta', l.conta,
-        'categoria', l.categoria, 'produto', l.produto, 'descricao', l.descricao, 'gerada', l.valor, 'parte', (r->>'valor')::numeric, 'papel', r->>'papel')
+        'categoria', l.categoria, 'produto', l.produto, 'descricao', l.descricao, 'parcela', l.parcela, 'gerada', l.valor, 'parte', (r->>'valor')::numeric, 'papel', r->>'papel')
         order by l.categoria, l.cliente)
       from public.comissao_lancamentos l, jsonb_array_elements(l.rateio) r
      where l.competencia = v_comp and (r->>'user_id')::uuid = v_eu), '[]'));

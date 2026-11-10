@@ -662,6 +662,10 @@ ver o próprio fechamento quando o Financeiro libera (seção 25)**.
  · **Comissões 2.1 (10/11/2026): repasse "só na 1ª parcela" em cada recebedor da regra (pedido do Emil:
 o especialista de seguro e consórcio recebe só a parcela do mês em que fechou o negócio), coluna
 Parcela na planilha (seção 25)**.
+ · **Comissões 2.2 (10/11/2026): cada regra diz a empresa que paga e vale para várias planilhas de uma vez;
+formulário de regra simples com modelos (PJ1, consórcio normal, carta contemplada, seguro), escritório
+fica com o restante sozinho, exemplo com R$ 1.000; regra nova mais específica entra acima das gerais;
+imposto e folha por empresa (uma pessoa pode receber de duas PJs); origem Seguros (seção 25)**.
 
 ---
 
@@ -1760,6 +1764,23 @@ arredondamento é só nos totais. As comparações ignoram acento, maiúscula e 
   - Instalado em 10/11/2026 (migração `comissoes_2_1_primeira_parcela`: coluna `parcela` e as funções
     com_calcular, com_processar_planilha, comissoes_painel, comissao_lancamento_salvar e
     comissao_regra_salvar). Conferido em produção.
+- **Empresa por regra e regra mais fácil (2.2, 10/11/2026).** O Emil: "nas regras de repasse a gente coloca
+  quem é a empresa que paga cada produto" e hoje são só 3 a 4 regras (PJ1 = BTG + Previdência +
+  Pershing + etc.; consórcio carta normal e carta contemplada; seguro), mas o formulário estava difícil.
+  - `comissao_regras.empresa_id` (quem paga) e `cond_origens uuid[]` (planilhas em que vale; vazio = todas;
+    `cond_origem_id` antigo migrado e não usado mais). A linha calculada guarda `empresa_id`.
+  - Ajuste fixo e ajuste do mês também podem dizer a empresa. Sem empresa, vale a empresa padrão da
+    pessoa (`comissao_dados_pagto.empresa_id`, agora "Empresa padrão" na tela).
+  - `com_totais` agrupa por pessoa e empresa: imposto da empresa sobre a parte positiva dela;
+    `por_empresa` jsonb vai para `comissao_pagamentos.por_empresa`. A folha mostra uma coluna por empresa
+    e o Excel tem uma aba por empresa.
+  - Ordem: regra nova (sem posição) entra logo acima da primeira regra com menos condições (`com_ncond`).
+    Ex.: "carta contemplada" (planilha + produto) fica acima de "consórcio" (só planilha).
+  - Tela: nome, empresa, chips das planilhas, "O assessor da linha __%", "+ Outra pessoa __% (só na 1ª
+    parcela)", "Escritório fica com o restante" calculado, exemplo com R$ 1.000 e a frase. Condições extras
+    recolhidas. Divisão fora desse formato abre na "divisão avançada" (editor antigo). Modelos preenchem
+    tudo (os % dos modelos de consórcio e seguro são ponto de partida; a Sarah confere).
+  - Instalado em 10/11/2026 (migração `comissoes_2_2_empresa_por_regra`). Origem nova "Seguros".
 - **Ajustes fixos** (`comissao_fixos`): grupo, pessoa, descrição, valor, início e fim. Entram
   sozinhos em todo mês aberto do período (`com_aplicar_fixos`, chamado ao abrir o painel e ao
   salvar). O escritório paga (`valor_escritorio` negativo). Ajuste avulso do mês e comissão ou
