@@ -3821,7 +3821,8 @@ function naCarteira(lead){
 
 /* ================= Régua de relacionamento =================
    Padrão Supernova: cadência de contato por segmento, espaçada ao longo do
-   ano. Advisory não tem régua — só Private e Exclusive.
+   ano. Advisory entrou na régua em 12/11/2026 (Hub 3.20), com dois contatos de
+   relacionamento por ano.
 
    Não é alerta gravado, de propósito: um alerta gravado precisaria que
    alguém marcasse "resolvido" à parte, e o registro já é a prova de que
@@ -3838,7 +3839,21 @@ const REGUA_RELACIONAMENTO = {
     { tipo:'performance',    qtdAno:1 },
     { tipo:'revisao',        qtdAno:1 },
   ],
+  Advisory: [
+    { tipo:'relacionamento', qtdAno:2 },
+  ],
 };
+/* Segmento que entrou na régua depois de já ter carteira: sem contato registrado,
+   a primeira data não sai da criação do card (todos nasceriam atrasados no mesmo
+   dia). Sai da data em que o segmento entrou, mais um deslocamento fixo por
+   cliente (0 até o intervalo), para os primeiros contatos se espalharem ao longo
+   do período. O deslocamento vem do id: é sempre o mesmo para o mesmo cliente. */
+const REGUA_INICIO = { Advisory: '2026-11-12' };
+function reguaDeslocamento(texto, dias){
+  let h = 0;
+  for(let i = 0; i < texto.length; i++) h = (h * 31 + texto.charCodeAt(i)) >>> 0;
+  return dias > 0 ? h % dias : 0;
+}
 const DIA_MS = 86400000;
 
 /* Data (YYYY-MM-DD) da atividade mais recente deste tipo, ou nulo se nunca
@@ -3864,8 +3879,13 @@ function reguaStatus(lead, hoje){
   return regra.map(item => {
     const intervaloDias = Math.round(365 / item.qtdAno);
     const ultima = ultimaAtividade(lead, item.tipo);
-    const base = ultima || (lead.criadoEm ? tsToISODate(lead.criadoEm) : hoje);
-    const prevista = toISODate(new Date(new Date(base + 'T00:00:00').getTime() + intervaloDias * DIA_MS));
+    const criado = lead.criadoEm ? tsToISODate(lead.criadoEm) : hoje;
+    const inicio = REGUA_INICIO[lead.segmento];
+    let prevista;
+    if(!ultima && inicio && criado < inicio)
+      prevista = toISODate(new Date(new Date(inicio + 'T00:00:00').getTime() + reguaDeslocamento(String(lead.id) + item.tipo, intervaloDias) * DIA_MS));
+    else
+      prevista = toISODate(new Date(new Date((ultima || criado) + 'T00:00:00').getTime() + intervaloDias * DIA_MS));
     const diasAtraso = Math.round((new Date(hoje + 'T00:00:00') - new Date(prevista + 'T00:00:00')) / DIA_MS);
     return {
       tipo: item.tipo, label: tipoAtividadeLabel(item.tipo), qtdAno: item.qtdAno,
@@ -3876,7 +3896,7 @@ function reguaStatus(lead, hoje){
 const reguaPendencias = (lead, hoje) => reguaStatus(lead, hoje).filter(r => r.atrasado);
 
 /* O que aparece como "próximo contato" quando ninguém digitou nada: pra
-   quem tem régua (carteira Private ou Exclusive), a data mais próxima dela
+   quem tem régua (carteira Private, Exclusive ou Advisory), a data mais próxima dela
    já é o próximo contato de verdade — só não foi copiada pro campo. Nunca
    grava no banco (não é campo, é leitura): se gravasse, congelaria a data
    na primeira edição salva, e a régua podia já ter avançado sem que o
@@ -6940,7 +6960,7 @@ function FerramentasCliente({ lead }){
     ['Liberdade Financeira', 'liberdade.html?' + q],
     ['Plano Patrimonial', 'patrimonial.html?' + q],
     ['Controle de Boletas', 'boletas.html?' + q],
-    ['Relatório do mês', 'index.html#relatorio=' + encodeURIComponent(lead.conta || '') + '&nome=' + encodeURIComponent(lead.cliente || '')],
+    ['Relatório do mês', 'index.html#relatorio=' + encodeURIComponent(lead.conta || '') + '&nome=' + encodeURIComponent(lead.cliente || '') + '&lead=' + encodeURIComponent(lead.id || '')],
   ];
   return h('div',{className:'ferr-cliente'},
     h('h3',null,'Ferramentas para este cliente'),
@@ -12023,7 +12043,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.12.1';
+const CRM_VERSAO = 'versão do CRM 2026.11.12.2';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -14542,7 +14562,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão do CRM 2026.11.12.1";
+var VERSAO_CRM="versão do CRM 2026.11.12.2";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>

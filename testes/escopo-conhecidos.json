@@ -1,0 +1,6 @@
+{
+  "*": ["cancelAnimationFrame", "ClipboardItem"],
+  "imobiliario.html": ["cptable", "module", "require", "Deno", "IE_SaveFile", "saveAs", "chrome", "$", "Folder",
+    "decrypt_agile", "decrypt_std76", "encrypt_agile", "exports", "define", "self", "__e", "__g", "postMessage",
+    "PromiseRejectionEvent", "regeneratorRuntime", "XMLHttpRequest", "JSZip"]
+}

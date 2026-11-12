@@ -972,6 +972,21 @@ table.form tr.lin-herd td:first-child{box-shadow:inset 3px 0 0 #E1B54A}
 .bs-acoes{display:flex;gap:8px;flex-wrap:wrap}
 }
 @media print{ .mesnav,.st-mes,.conf-mes,.barra-salvar{display:none!important} }
+@media screen{
+.fech-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0 10px}
+.fech-nums div{border:1px solid #E2E6ED;border-radius:12px;padding:10px 14px;background:#fff}
+.fech-nums b{display:block;font:600 24px Georgia,serif;color:#1F6B47}
+.fech-nums .lan b{color:#8A6A18}.fech-nums .vaz b{color:#7A8698}
+.fech-nums span{font-size:12px;color:#5C6B7F}
+.fech-barra{height:6px;border-radius:999px;background:#EEF1F5;overflow:hidden}
+.fech-barra span{display:block;height:100%;background:linear-gradient(90deg,#C0A265,#2F7A56)}
+table.fech .sit{margin:1px 2px 1px 0}
+table.fech a{color:#12263F;text-decoration:none}table.fech a:hover{text-decoration:underline}
+.lig-lista{max-height:46vh;overflow:auto;border:1px solid #E2E6ED;border-radius:10px}
+.lig-item{display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;border:0;border-top:1px solid #EEF1F5;background:#fff;padding:9px 12px;cursor:pointer;font:13.5px Inter,sans-serif}
+.lig-item:first-child{border-top:0}.lig-item:hover{background:#F4F6F9}.lig-item.on{background:#12263F;color:#fff}
+.lig-item span{color:#7A8698;font-size:12px}.lig-item.on span{color:#C9D4E2}
+}
 .rel-aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9500;background:#12263F;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;box-shadow:0 8px 24px rgba(5,19,42,.25)}
 /* Primeiros passos, aviso do aparelho, adoção e problemas (3.10) */
 .hb-passos{padding:18px 22px}
@@ -1107,6 +1122,7 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
   <div class="topbar">
     <button class="voltar" onclick="irParaHub()" title="Voltar ao Hub">&#8592; Hub Adami</button>
     <div class="tabs">
+      <button id="tabF" onclick="setTab('fechamento')">Fechamento</button>
       <button id="tabP" class="on" onclick="setTab('preencher')">Preencher</button>
       <button id="tabC" onclick="setTab('carta')">Comentários do mês</button>
       <button id="tabR" onclick="setTab('relatorio')">Relatório</button>
@@ -1120,6 +1136,7 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
     <button class="btn" id="btnPdfTodos" onclick="abrirPdfTodos()" style="display:none">PDF de todos</button>
     <button class="btn" id="btnRelCrm" onclick="salvarRelatorioNoCRM()" style="display:none">Salvar no CRM</button>
     <button class="btn pri" id="btnGerarPdf" onclick="gerarPdfRelatorio()" style="display:none">Gerar PDF</button>
+    <button class="btn pri" id="btnEnviarCli" onclick="abrirEnvioRelatorio()" style="display:none">Enviar ao cliente</button>
   </div>
   <div id="view"><div class="card empty"><h2>Carregando…</h2></div></div>
 </main>
@@ -2051,7 +2068,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.11";
+var VERSAO="versão 3.20";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2246,7 +2263,7 @@ function cli(){ var id=S.cliente; return db.clientes.filter(function(c){return c
 function carregar(){
   status("wait","Carregando…");
   return Promise.all([
-    api("clientes?select=id,nome,assessor_id,contas_btg&order=nome.asc").catch(function(){ return api("clientes?select=id,nome,assessor_id&order=nome.asc").catch(function(){ return api("clientes?select=id,nome&order=nome.asc"); }); }),
+    api("clientes?select=id,nome,assessor_id,contas_btg,lead_id,emails_relatorio&order=nome.asc").catch(function(){ return api("clientes?select=id,nome,assessor_id,contas_btg&order=nome.asc"); }).catch(function(){ return api("clientes?select=id,nome,assessor_id&order=nome.asc").catch(function(){ return api("clientes?select=id,nome&order=nome.asc"); }); }),
     api("lancamentos?select=cliente_id,mes,ano,contas,indicadores,atualizado_em,feito_em,feito_por")
       .catch(function(){ return api("lancamentos?select=cliente_id,mes,ano,contas,indicadores"); }),
     api("cartas?select=mes,ano,conteudo").catch(function(){ return []; }),
@@ -2745,7 +2762,8 @@ function falha(e){ status("err","Erro ao salvar"); alert("Não foi possível con
 function selCliente(id){ S._chk=false; S.cliente=id; montarRascunho(); render(); }
 function mudarRef(){ montarRascunho(); render(); }
 function setTab(t){
-  if(t==="preencher"&&!EU.admin) return;
+  if((t==="preencher"||t==="fechamento")&&!EU.admin) return;
+  if(t==="fechamento") carregarEnviosMes();
   S.tab=t; render(); if(t==="historico"){ HIST.log=null; HIST.backups=null; abrirHistorico(); }
 }
 function setConta(i,campo,v){
@@ -2951,12 +2969,6 @@ function pdfIdentificarSecao(textoAntesDeEmCarteira){
   }
   return null;
 }
-function pdfDetectarFormato(todasLinhas){
-  var texto=todasLinhas.join('\n');
-  if(/Detalhamento dos Ativos/i.test(texto) && /necton|BTG Pactual/i.test(texto)) return "btg";
-  if(/SINOSSERRA FINANCEIRA/i.test(texto) || /Extrato de cliente/i.test(texto)) return "sinosserra";
-  return null;
-}
 function pdfParseBtgDetalhamento(todasLinhas){
   var inicio=-1;
   for(var i=0;i<todasLinhas.length;i++){
@@ -3126,60 +3138,86 @@ function pdfAgruparLinhas(textContent){
     return partes.join('').replace(/\u0000/g,'').replace(/\s+/g,' ').trim();
   }).filter(function(s){return s;});
 }
-function importarAtivosPdf(input){
-  var f=input.files[0]; if(!f) return;
-  if(typeof pdfjsLib==="undefined"){ alert("O leitor de PDF ainda não carregou. Recarregue a página (Cmd+Shift+R) e tente de novo."); input.value=""; return; }
-  pdfjsLib.GlobalWorkerOptions.workerSrc="vendor/pdfjs-3.11.174.worker.min.js";
-  var botao=document.getElementById("btnImportarPdf");
-  var textoOriginal=botao?botao.textContent:"";
-  if(botao){ botao.disabled=true; botao.textContent="Lendo PDF…"; }
-  function falhar(msg){
-    alert(msg);
-    input.value="";
-    if(botao){ botao.disabled=false; botao.textContent=textoOriginal; }
-  }
-  var fr=new FileReader();
-  fr.onload=function(){
-    var dados=new Uint8Array(fr.result);
-    pdfjsLib.getDocument({data:dados}).promise.then(function(pdf){
-      var todasLinhas=[], paginasDeItens=[], i=1;
-      function proximaPagina(){
-        if(i>pdf.numPages){
-          var formato=pdfDetectarFormato(todasLinhas);
-          var resultado;
-          if(formato==="btg") resultado=pdfParseBtgDetalhamento(todasLinhas);
-          else if(formato==="sinosserra") resultado=pdfParseSinosserra(paginasDeItens);
-          else { falhar("Não reconheci o formato desse PDF. Por enquanto importo o Relatório de Performance (BTG/Necton) e o Extrato de cliente (Sinosserra)."); return; }
-          if(resultado.erro){ falhar(resultado.erro); return; }
-          if(!confirm("Importar "+resultado.ativos.length+" ativo(s) desse PDF?\n\nIsso substitui a lista de ativos que está na tela agora, mas nada é gravado até você clicar em \"Salvar mês e ver relatório\". Confira a categoria, a subcategoria e a taxa de cada um — a separação automática é uma aproximação.")){
-            input.value="";
-            if(botao){ botao.disabled=false; botao.textContent=textoOriginal; }
+/* ===================== Leitores de extrato (3.20) =====================
+   Cada banco tem um leitor: "detectar" olha o texto do PDF e "ler" devolve os ativos.
+   BTG/Necton e Sinosserra estão prontos. Os outros bancos estão cadastrados para o PDF
+   ser reconhecido e a mensagem ser clara, mas o leitor só fica pronto com um extrato de
+   exemplo de cada um (o formato muda de banco para banco). */
+var LEITORES_EXTRATO=[
+  {id:"btg",nome:"BTG / Necton",inst:"BTG Pactual",pronto:true,
+   detectar:function(t){ return /Detalhamento dos Ativos/i.test(t)&&/necton|BTG Pactual/i.test(t); },
+   ler:function(linhas){ return pdfParseBtgDetalhamento(linhas); }},
+  {id:"sinosserra",nome:"Sinosserra",inst:"Sinosserra",pronto:true,
+   detectar:function(t){ return /SINOSSERRA FINANCEIRA/i.test(t)||/Extrato de cliente/i.test(t); },
+   ler:function(linhas,paginas){ return pdfParseSinosserra(paginas); }},
+  {id:"xp",nome:"XP",inst:"XP",detectar:function(t,topo){ return /XP Investimentos|xpi\.com\.br/i.test(topo); }},
+  {id:"itau",nome:"Itaú",inst:"Itaú",detectar:function(t,topo){ return /Ita[uú] Unibanco|Personnalit[eé]|itau\.com\.br/i.test(topo); }},
+  {id:"safra",nome:"Safra",inst:"Safra",detectar:function(t,topo){ return /Banco Safra|safra\.com\.br/i.test(topo); }},
+  {id:"inter",nome:"Inter",inst:"Inter",detectar:function(t,topo){ return /Banco Inter|bancointer|inter\.co/i.test(topo); }},
+  {id:"bradesco",nome:"Bradesco",inst:"Bradesco",detectar:function(t,topo){ return /Bradesco/i.test(topo); }},
+  {id:"santander",nome:"Santander",inst:"Santander",detectar:function(t,topo){ return /Santander/i.test(topo); }},
+  {id:"daycoval",nome:"Daycoval",inst:"Daycoval",detectar:function(t,topo){ return /Daycoval/i.test(topo); }}
+];
+/* Lê um PDF de extrato: {leitor, ativos, texto} ou rejeita com uma mensagem clara. */
+function lerPdfExtrato(arquivo){
+  return new Promise(function(ok,erro){
+    if(typeof pdfjsLib==="undefined") return erro(new Error("O leitor de PDF ainda não carregou. Recarregue a página (Cmd+Shift+R) e tente de novo."));
+    pdfjsLib.GlobalWorkerOptions.workerSrc="vendor/pdfjs-3.11.174.worker.min.js";
+    var fr=new FileReader();
+    fr.onerror=function(){ erro(new Error("Não consegui ler o arquivo.")); };
+    fr.onload=function(){
+      pdfjsLib.getDocument({data:new Uint8Array(fr.result)}).promise.then(function(pdf){
+        var linhas=[], paginas=[], i=1;
+        var proxima=function(){
+          if(i>pdf.numPages){
+            var texto=linhas.join("\n"), topo=linhas.slice(0,25).join("\n");
+            var prontos=LEITORES_EXTRATO.filter(function(l){ return l.pronto; });
+            var lt=prontos.filter(function(l){ return l.detectar(texto,topo); })[0]||LEITORES_EXTRATO.filter(function(l){ return !l.pronto&&l.detectar(texto,topo); })[0];
+            if(!lt) return erro(new Error("Não reconheci o banco deste PDF. Hoje leio: "+prontos.map(function(l){ return l.nome; }).join(", ")+"."));
+            if(!lt.pronto) return erro(new Error("Reconheci um extrato "+lt.nome+", mas o leitor deste banco ainda não está pronto. Mande um PDF de exemplo ao master para ele ser ensinado."));
+            var res=lt.ler(linhas,paginas);
+            if(res.erro) return erro(new Error(res.erro));
+            res.ativos.forEach(function(a){ if(!(a.inst||"").trim()) a.inst=lt.inst; });
+            ok({leitor:lt,ativos:res.ativos,texto:texto});
             return;
           }
-          guardarAntesImportacao("PDF");
-          S.rasc.ind.ativos=resultado.ativos;
-          render(true);
-          input.value="";
-          if(botao){ botao.disabled=false; botao.textContent=textoOriginal; }
-          return;
-        }
-        pdf.getPage(i).then(function(pagina){
-          return pagina.getTextContent().then(function(tc){
-            todasLinhas=todasLinhas.concat(pdfAgruparLinhas(tc));
-            var itens=tc.items.filter(function(it){ return it.str && it.str.trim(); })
-              .map(function(it){ return {str:it.str.replace(/\u0000/g,"").trim(), x:it.transform[4], y:it.transform[5]}; })
-              .filter(function(it){ return it.str; });
-            paginasDeItens.push(itens);
-            i++;
-            proximaPagina();
-          });
-        }).catch(function(e){ falhar("Não consegui ler a página "+i+" do PDF.\n\n"+e.message); });
-      }
-      proximaPagina();
-    }).catch(function(e){ falhar("Não consegui abrir esse PDF. Confira se o arquivo não está corrompido.\n\n"+e.message); });
-  };
-  fr.onerror=function(){ falhar("Não consegui ler o arquivo."); };
-  fr.readAsArrayBuffer(f);
+          pdf.getPage(i).then(function(pg){ return pg.getTextContent().then(function(tc){
+            linhas=linhas.concat(pdfAgruparLinhas(tc));
+            paginas.push(tc.items.filter(function(it){ return it.str&&it.str.trim(); })
+              .map(function(it){ return {str:it.str.replace(/\u0000/g,"").trim(),x:it.transform[4],y:it.transform[5]}; })
+              .filter(function(it){ return it.str; }));
+            i++; proxima();
+          }); }).catch(function(e){ erro(new Error("Não consegui ler a página "+i+" do PDF. "+e.message)); });
+        };
+        proxima();
+      }).catch(function(e){ erro(new Error("Não consegui abrir esse PDF. Confira se o arquivo não está corrompido. "+e.message)); });
+    };
+    fr.readAsArrayBuffer(arquivo);
+  });
+}
+/* Troca os ativos de uma instituição pelos do extrato e, se ela tiver uma conta só, põe
+   no saldo a soma dos ativos. Resultado, aplicações e resgates ficam para preencher. */
+function aplicarAtivosExtrato(r,ativos,instNome){
+  /* ativos sem instituição vieram de importações antigas de PDF (antes da 3.20 o leitor
+     do BTG não preenchia a instituição): saem junto, senão ficariam em dobro */
+  var k=instChave(instNome);
+  r.ind.ativos=(r.ind.ativos||[]).filter(function(x){ var kx=instChave(x.inst); return kx&&kx!==k; }).concat(ativos);
+  var contas=r.contas.filter(function(x){ return curDe(x)==="BRL"&&instChave(x.inst)===k; });
+  var soma=ativos.reduce(function(a,x){ return a+n(x.posicao); },0);
+  if(contas.length===1){ contas[0].saldo=Math.round(soma*100)/100; return {saldo:true,soma:soma}; }
+  return {saldo:false,soma:soma,semConta:!contas.length};
+}
+function importarAtivosPdf(input){
+  var f=input.files[0]; if(!f) return;
+  var botao=document.getElementById("btnImportarPdf"), texto0=botao?botao.textContent:"";
+  var fim=function(){ input.value=""; if(botao){ botao.disabled=false; botao.textContent=texto0; } };
+  if(botao){ botao.disabled=true; botao.textContent="Lendo PDF…"; }
+  lerPdfExtrato(f).then(function(res){
+    if(!confirm("Extrato "+res.leitor.nome+": "+res.ativos.length+" ativo(s), "+brl2(res.ativos.reduce(function(a,x){ return a+n(x.posicao); },0))+".\n\nIsso troca os ativos de "+res.leitor.inst+" (e os sem instituição) pelos do PDF; os de outros bancos ficam. Se houver uma conta só de "+res.leitor.inst+", o saldo dela passa a ser a soma dos ativos. Nada é gravado até salvar. A Conferência, no alto, mostra o que mudou. Continuar?")){ fim(); return; }
+    guardarAntesImportacao("PDF "+res.leitor.nome);
+    aplicarAtivosExtrato(S.rasc,res.ativos,res.leitor.inst);
+    fim(); render(true);
+  }).catch(function(e){ fim(); alert(e.message||e); });
 }
 
 /* Carta do mês: o editor grava HTML, e esse HTML aparece no relatório de todo
@@ -3492,7 +3530,11 @@ function viewPreencher(){
      '<button class="btn" onclick="excluirCliente()">Excluir cliente</button></div></div></div>'+
      (EU.admin&&c.assessor_id!==EU.id?'<div class="sec-sub" style="margin-top:-8px">Cliente de '+esc(nomeAssessor(c.assessor_id))+'.</div>':'')+
      '<div class="sec-sub" style="margin-top:-8px">Contas BTG: '+((c.contas_btg&&c.contas_btg.length)?esc(c.contas_btg.join(", ")):'<b>nenhuma informada</b>')+
-       ' &middot; <a href="#" onclick="editarContasBtg();return false">'+((c.contas_btg&&c.contas_btg.length)?"alterar":"informar")+'</a></div>';
+       ' &middot; <a href="#" onclick="editarContasBtg();return false">'+((c.contas_btg&&c.contas_btg.length)?"alterar":"informar")+'</a>'+
+       ' &nbsp;|&nbsp; Ficha no CRM: '+(c.lead_id?'<a href="crm.html#ficha='+encodeURIComponent(c.lead_id)+'">'+esc(nomeFicha(c))+'</a> &middot; ':'<b>não ligada</b> &middot; ')+
+       '<a href="#" onclick="ligarFicha();return false">'+(c.lead_id?"trocar":"ligar")+'</a>'+
+       ' &nbsp;|&nbsp; E-mail para relatórios: '+((c.emails_relatorio&&c.emails_relatorio.length)?esc(c.emails_relatorio.join(", ")):'<b>nenhum</b>')+
+       ' &middot; <a href="#" onclick="editarEmailsRelatorio();return false">'+((c.emails_relatorio&&c.emails_relatorio.length)?"alterar":"informar")+'</a></div>';
   h+=faixaStatusMes(c)+'<div id="confMes">'+painelConferenciaMes()+'</div>';
   if(r._herdado) h+='<div class="note"><b>Dados herdados do mês anterior.</b> Contas e saldos vieram do último mês lançado. Atualize os saldos e informe o resultado do mês — nada é gravado até você clicar em “Salvar mês”.</div>';
   if(!r._herdado && r._onHerdado){
@@ -4109,8 +4151,8 @@ function ativoFalta(x){
   if(CATEGORIAS_COM_PRAZO.indexOf(x.categoria)>=0&&!x.vencimento) f.vencimento=1;
   return f;
 }
-function conferirRascunho(){
-  var c=cli(), r=S.rasc; if(!c||!r) return {itens:[],inst:[],ant:null};
+function conferirRascunho(cOpt,rOpt){
+  var c=cOpt||cli(), r=rOpt||S.rasc; if(!c||!r) return {itens:[],inst:[],ant:null};
   var antInfo=regAnterior(c.id,S.mes,S.ano), antR=antInfo&&antInfo.r, refAnt=antInfo?MESES[antInfo.mes-1].toLowerCase()+"/"+antInfo.ano:"";
   var itens=conferir(c.id,S.mes,S.ano,{contas:r.contas.filter(function(x){ return (x.nome||"").trim()||n(x.saldo); }),ind:r.ind});
   var add=function(nivel,onde,titulo,detalhe){ itens.push({nivel:nivel,onde:onde,titulo:titulo,detalhe:detalhe}); };
@@ -4886,6 +4928,7 @@ function gerarPdfRelatorio(){
 }
 /* Liga um cliente das Carteiras a um cliente do CRM: pela conta do BTG, depois pelo nome. */
 function relLeadDe(c,leads){
+  if(c.lead_id){ var lig=leads.filter(function(l){ return l.id===c.lead_id; })[0]; if(lig) return lig; }
   var soNum=function(x){ return String(x||"").replace(/\D/g,"").replace(/^0+/,""); };
   var contas=(c.contas_btg||[]).map(soNum).filter(Boolean);
   var porConta=leads.filter(function(l){ return l.conta&&contas.indexOf(soNum(l.conta))!==-1; });
@@ -4974,6 +5017,250 @@ function gerarPdfTodos(){
     document.getElementById("rtFechar").textContent="Fechar"; bt.style.display="none";
   });
 }
+/* ===================== Ficha do CRM ligada à carteira (3.20) =====================
+   clientes.lead_id liga a carteira à ficha do CRM. Ao ligar, a conta do BTG da ficha
+   entra nas contas da carteira se ainda não houver nenhuma. */
+var FICHAS=null;
+function garantirFichas(){
+  if(FICHAS) return Promise.resolve(FICHAS);
+  return api("leads?select=id,cliente,conta,segmento,esteira&excluido=eq.false&funil=eq.assessor&order=cliente.asc")
+    .then(function(r){ FICHAS={lista:r||[],porId:{}}; FICHAS.lista.forEach(function(l){ FICHAS.porId[l.id]=l; }); return FICHAS; })
+    .catch(function(){ FICHAS={lista:[],porId:{}}; return FICHAS; });
+}
+function nomeFicha(c){ var l=FICHAS&&FICHAS.porId[c.lead_id]; if(!l){ garantirFichas().then(function(){ if(S.tab==="preencher") render(true); }); return "carregando…"; } return (l.cliente||"")+(l.conta?" · "+l.conta:""); }
+function ligarFicha(){
+  var c=cli(); if(!c) return;
+  garantirFichas().then(function(F){
+    var d=document.getElementById("ligv");
+    if(!d){ d=document.createElement("div"); d.id="ligv"; d.className="eqv no-print"; d.onclick=function(e){ if(e.target===d) d.style.display="none"; }; document.body.appendChild(d); }
+    d.style.display="flex";
+    d.innerHTML='<div class="eqx"><h2>Ligar '+esc(c.nome)+' à ficha do CRM</h2><p class="eqsub">A ligação faz o Relatório do mês, o Salvar no CRM e o envio ao cliente acharem a ficha certa. Se a carteira ainda não tiver conta do BTG, a conta da ficha entra junto.</p>'+
+      '<input class="inp" id="ligBusca" placeholder="Nome ou conta do cliente no CRM" style="width:100%;margin-bottom:10px" oninput="pintarLigar()">'+
+      '<div id="ligLista" class="lig-lista"></div><div class="eqfoot">'+(c.lead_id?'<button class="btn" onclick="gravarFicha(null)">Desligar</button>':'')+
+      '<button class="btn" onclick="document.getElementById(\'ligv\').style.display=\'none\'">Fechar</button></div></div>';
+    document.getElementById("ligBusca").value=c.nome; pintarLigar(); document.getElementById("ligBusca").focus();
+  });
+}
+function pintarLigar(){
+  var c=cli(), q=semAc(document.getElementById("ligBusca").value).trim(), qd=q.replace(/\D/g,"");
+  var l=(FICHAS.lista||[]).filter(function(x){ return !q||semAc(x.cliente).indexOf(q)>=0||(qd&&String(x.conta||"").replace(/\D/g,"").indexOf(qd)>=0); }).slice(0,40);
+  document.getElementById("ligLista").innerHTML=l.length?l.map(function(x){
+    return '<button type="button" class="lig-item'+(c.lead_id===x.id?" on":"")+'" onclick="gravarFicha(\''+esc(x.id)+'\')"><b>'+esc(x.cliente||"sem nome")+'</b><span>'+esc([x.conta,x.segmento,x.esteira==="base"?"carteira":"jornada"].filter(Boolean).join(" · "))+'</span></button>';
+  }).join(""):'<p class="eqsub">Nenhuma ficha com esse nome ou conta.</p>';
+}
+function gravarFicha(leadId){
+  var c=cli(); if(!c) return;
+  var l=leadId&&FICHAS.porId[leadId], corpo={lead_id:leadId||null};
+  var conta=l&&String(l.conta||"").replace(/\D/g,"");
+  if(conta&&!(c.contas_btg&&c.contas_btg.length)) corpo.contas_btg=[conta];
+  status("wait","Salvando…");
+  api("clientes?id=eq."+c.id,{method:"PATCH",prefer:"return=representation",body:corpo}).then(function(r){
+    c.lead_id=corpo.lead_id; if(corpo.contas_btg) c.contas_btg=corpo.contas_btg;
+    registrar(leadId?"ligou carteira à ficha":"desligou carteira da ficha",c.nome,l?l.cliente:"");
+    status("ok","Sincronizado"); document.getElementById("ligv").style.display="none"; render(true);
+  }).catch(function(e){ status("err","Não salvou"); alert(/lead_id|column/.test(String(e.message))?"Falta instalar o carteiras_envio.sql no Supabase.":"Não foi possível ligar: "+e.message); });
+}
+function editarEmailsRelatorio(){
+  var c=cli(); if(!c) return;
+  var v=prompt("E-mail(s) para o Relatório Consolidado de "+c.nome+" (até 5, separados por vírgula):",(c.emails_relatorio||[]).join(", "));
+  if(v===null) return;
+  var lista=String(v).split(/[,;\s]+/).map(function(x){ return x.trim().toLowerCase(); }).filter(Boolean);
+  var ruins=lista.filter(function(x){ return !/^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/.test(x); });
+  if(ruins.length){ alert("E-mail inválido: "+ruins.join(", ")); return; }
+  if(lista.length>5){ alert("No máximo 5 e-mails."); return; }
+  status("wait","Salvando…");
+  api("clientes?id=eq."+c.id,{method:"PATCH",prefer:"return=representation",body:{emails_relatorio:lista}}).then(function(){
+    c.emails_relatorio=lista; registrar("e-mail para relatórios",c.nome,lista.join(", ")); status("ok","Sincronizado"); render(true);
+  }).catch(function(e){ status("err","Não salvou"); alert(/emails_relatorio|column/.test(String(e.message))?"Falta instalar o carteiras_envio.sql no Supabase.":"Não foi possível salvar: "+e.message); });
+}
+
+/* ===================== Enviar o relatório ao cliente (3.20) =====================
+   Gera o PDF do relatório na tela e chama a função relatorio-enviar. Quem decide para
+   quem vai é o banco (clientes.emails_relatorio), e só com o mês marcado como feito. */
+function blobParaBase64(blob){
+  return new Promise(function(ok,erro){ var fr=new FileReader(); fr.onload=function(){ ok(String(fr.result).split(",")[1]||""); }; fr.onerror=function(){ erro(new Error("Não consegui ler o PDF.")); }; fr.readAsDataURL(blob); });
+}
+function abrirEnvioRelatorio(){
+  var c=cli(); if(!c||!document.querySelector("#view .pg")){ alert("Abra o relatório de um cliente com lançamento no mês."); return; }
+  var st=statusMes(c.id,S.mes,S.ano), emails=c.emails_relatorio||[];
+  var d=document.getElementById("envv");
+  if(!d){ d=document.createElement("div"); d.id="envv"; d.className="eqv no-print"; d.onclick=function(e){ if(e.target===d) d.style.display="none"; }; document.body.appendChild(d); }
+  d.style.display="flex";
+  var bloqueio=st!=="feito"?"O mês ainda não foi marcado como feito. Só dá para enviar ao cliente depois da conferência (aba Preencher, Marcar como feito).":
+    (!emails.length?"Este cliente não tem e-mail para relatórios. Informe no Preencher (E-mail para relatórios) ou peça à administração.":"");
+  d.innerHTML='<div class="eqx"><h2>Enviar o relatório de '+MESES[S.mes-1].toLowerCase()+'/'+S.ano+'</h2>'+
+    '<p class="eqsub">Sai pelo e-mail do Hub em nome da Adami Captal, com o PDF anexo. Quando o cliente responder, a resposta chega ao assessor.</p>'+
+    (bloqueio?'<div class="st-mes pend" style="margin:0 0 12px"><span>'+esc(bloqueio)+'</span></div>':
+      '<p style="font-size:13.5px;margin:0 0 10px"><b>Para:</b> '+esc(emails.join(", "))+'</p>'+
+      '<label style="display:block;font-size:12px;color:#5C6B7F;margin-bottom:4px">Mensagem (opcional)</label>'+
+      '<textarea id="envMsg" class="inp" rows="4" style="width:100%;resize:vertical" maxlength="2000" placeholder="Segue o seu Relatório Consolidado de Investimentos de '+esc(MESES[S.mes-1].toLowerCase()+' de '+S.ano)+'."></textarea>'+
+      '<label class="ado-filtro" style="display:flex;margin-top:10px"><input type="checkbox" id="envCopia" checked> Receber uma cópia</label>'+
+      (c.lead_id?'<label class="ado-filtro" style="display:flex"><input type="checkbox" id="envCrm" checked> Guardar o PDF na ficha do cliente no CRM</label>':'<p class="eqsub" style="margin:4px 0 0">A carteira não está ligada a uma ficha do CRM, então o PDF não vai para a ficha.</p>'))+
+    '<div id="envHist" class="eqsub" style="margin-top:12px"></div><div id="envMsgRes"></div>'+
+    '<div class="eqfoot"><button class="btn" onclick="document.getElementById(\'envv\').style.display=\'none\'">Fechar</button>'+
+    (bloqueio?'':'<button class="btn pri" id="envBtn" onclick="enviarRelatorio()">Enviar</button>')+'</div></div>';
+  api("relatorios_envios?select=enviado_em,para,erro&cliente_id=eq."+c.id+"&mes=eq."+S.mes+"&ano=eq."+S.ano+"&order=enviado_em.desc&limit=5").then(function(r){
+    var el=document.getElementById("envHist"); if(!el||!r||!r.length) return;
+    el.innerHTML="<b>Envios deste mês:</b><br>"+r.map(function(x){ return esc(new Date(x.enviado_em).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}))+" · "+esc((x.para||[]).join(", "))+(x.erro?' · <span style="color:#9B342E">'+esc(x.erro)+'</span>':""); }).join("<br>");
+  }).catch(function(){});
+}
+function enviarRelatorio(){
+  var c=cli(); if(!c) return;
+  var bt=document.getElementById("envBtn"), res=document.getElementById("envMsgRes");
+  var msg=(document.getElementById("envMsg").value||"").trim(), copia=document.getElementById("envCopia").checked;
+  var noCrm=!!(document.getElementById("envCrm")&&document.getElementById("envCrm").checked);
+  bt.disabled=true; bt.textContent="Gerando o PDF…";
+  var nome=tituloPdf()+".pdf", blob=null;
+  relLibs().then(function(){ return relPdfDasPaginas(document.querySelectorAll("#view .pg")); }).then(function(b){
+    blob=b; bt.textContent="Enviando…"; return blobParaBase64(b);
+  }).then(function(b64){
+    var tk=(SESSAO&&SESSAO.access_token)||"";
+    return fetch(SB_URL+"/functions/v1/relatorio-enviar",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk,"Content-Type":"application/json"},
+      body:JSON.stringify({cliente_id:c.id,mes:S.mes,ano:S.ano,nome_arquivo:nome,arquivo_base64:b64,mensagem:msg,copia:copia})})
+      .then(function(r){ return r.text().then(function(t){ var j=null; try{ j=t?JSON.parse(t):null; }catch(e){}
+        if(r.status===404) throw new Error("A função relatorio-enviar ainda não foi instalada no Supabase.");
+        if(!r.ok) throw new Error((j&&j.erro)||("erro "+r.status)); return j; }); });
+  }).then(function(j){
+    registrar("enviou relatório ao cliente",c.nome,MESES[S.mes-1]+"/"+S.ano+" · "+(j.para||[]).join(", "));
+    var crm=noCrm?relCarregarCRM().then(function(A){ return A.enviar({id:c.lead_id},{blob:blob,nome:nome,origem:"relatorio"},"Enviado ao cliente em "+new Date().toLocaleDateString("pt-BR")+"."); }).then(function(){ return " e guardado na ficha do CRM"; },function(){ return " (não consegui guardar na ficha do CRM)"; }):Promise.resolve("");
+    return crm.then(function(extra){ res.innerHTML='<div class="st-mes feito" style="margin:10px 0 0"><span><b>Enviado</b> para '+esc((j.para||[]).join(", "))+(j.cc&&j.cc.length?" com cópia para você":"")+esc(extra)+'.</span></div>'; bt.textContent="Enviado"; });
+  }).catch(function(e){ res.innerHTML='<div class="st-mes pend" style="margin:10px 0 0"><span>Não foi possível enviar: '+esc(e.message||e)+'</span></div>'; bt.disabled=false; bt.textContent="Tentar de novo"; });
+}
+
+/* ===================== Fechamento do mês (3.20) =====================
+   Todos os clientes do mês numa tela: estado (feito, lançado, vazio), situação de cada
+   instituição, conferência e último envio ao cliente. Daqui também sobem os extratos de
+   vários clientes de uma vez. */
+var FECH={filtro:"pendentes",envios:null,lote:[],lendo:false};
+function carregarEnviosMes(){
+  FECH.envios=null;
+  api("relatorios_envios?select=cliente_id,enviado_em,erro&mes=eq."+S.mes+"&ano=eq."+S.ano+"&order=enviado_em.desc").then(function(r){
+    FECH.envios={}; (r||[]).forEach(function(x){ if(!FECH.envios[x.cliente_id]&&!x.erro) FECH.envios[x.cliente_id]=x.enviado_em; });
+    if(S.tab==="fechamento") render(true);
+  }).catch(function(){ FECH.envios={}; });
+}
+function rascunhoDe(id){
+  var sc=S.cliente, sr=S.rasc;
+  S.cliente=id;
+  try{ montarRascunho(); return S.rasc; } finally { S.cliente=sc; S.rasc=sr; }
+}
+function linhaFechamento(c){
+  var st=statusMes(c.id,S.mes,S.ano), r=reg(c.id,S.mes,S.ano)||rascunhoDe(c.id);
+  var cf=r?conferirRascunho(c,r):{itens:[],inst:[]};
+  return {c:c,st:st,cf:cf,alta:cf.itens.filter(function(x){return x.nivel==="alta";}).length,aten:cf.itens.filter(function(x){return x.nivel==="atencao";}).length};
+}
+function irCliente(id,tab){ S.cliente=id; S._chk=false; montarRascunho(); S.tab=tab||"preencher"; render(); }
+function viewFechamento(){
+  if(FECH.envios===null&&!FECH._carregando){ FECH._carregando=true; setTimeout(function(){ FECH._carregando=false; carregarEnviosMes(); },0); }
+  var linhas=db.clientes.map(linhaFechamento);
+  var nF=linhas.filter(function(x){return x.st==="feito";}).length, nL=linhas.filter(function(x){return x.st==="lancado";}).length, nV=linhas.length-nF-nL;
+  var nEnv=FECH.envios?linhas.filter(function(x){ return FECH.envios[x.c.id]; }).length:0;
+  var vis=linhas.filter(function(x){ return FECH.filtro==="todos"||(FECH.filtro==="pendentes"?x.st!=="feito":(FECH.filtro==="feitos"?x.st==="feito":(x.st==="feito"&&FECH.envios&&!FECH.envios[x.c.id]))); });
+  var pctF=linhas.length?Math.round(nF/linhas.length*100):0;
+  var h='<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">'+
+    '<div><div class="sec-title">Fechamento de '+MESES[S.mes-1].toLowerCase()+'/'+S.ano+'</div><div class="sec-sub">Todos os clientes do mês numa tela. Clique num cliente para preencher, conferir e marcar como feito.</div></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" onclick="document.getElementById(\'arqLote\').click()"'+(FECH.lendo?" disabled":"")+'>'+(FECH.lendo?"Lendo extratos…":"Importar extratos de vários clientes")+'</button>'+
+    '<input type="file" id="arqLote" accept=".pdf" multiple style="display:none" onchange="importarLote(this)"></div></div>'+
+    '<div class="fech-nums"><div><b>'+nF+'</b><span>feitos</span></div><div class="lan"><b>'+nL+'</b><span>lançados, falta marcar</span></div><div class="vaz"><b>'+nV+'</b><span>sem lançamento</span></div><div><b>'+nEnv+'</b><span>enviados ao cliente</span></div></div>'+
+    '<div class="fech-barra"><span style="width:'+pctF+'%"></span></div></div>';
+  h+=blocoLote();
+  h+='<div class="card"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+    [["pendentes","Pendentes"],["feitos","Feitos"],["semenvio","Feitos sem envio"],["todos","Todos"]].map(function(f){ return '<button class="btn'+(FECH.filtro===f[0]?" pri":"")+'" onclick="FECH.filtro=\''+f[0]+'\';render(true)">'+f[1]+'</button>'; }).join("")+'</div>'+
+    '<div style="overflow-x:auto"><table class="form fech"><thead><tr><th>Cliente</th><th>Assessor</th><th>Situação</th><th>Instituições</th><th>Conferência</th><th>Enviado</th><th></th></tr></thead><tbody>'+
+    (vis.length?vis.map(function(x){
+      var inst=x.cf.inst.map(function(g){ var cls=g.sit==="herdada"?"herd":(g.bate===false?"al":"ok"); return '<span class="sit '+cls+'" title="'+esc(g.sit==="herdada"?"ainda com valores do mês anterior":(g.bate===false?"ativos não batem com o saldo":"atualizada"))+'">'+esc(g.rot)+'</span>'; }).join(" ");
+      var conf=(x.alta?'<span class="sit al">'+x.alta+' crítico'+(x.alta===1?"":"s")+'</span> ':'')+(x.aten?'<span class="sit herd">'+x.aten+' a conferir</span>':'')+(!x.alta&&!x.aten?(x.cf.inst.length?'<span class="sit ok">ok</span>':'—'):'');
+      var env=FECH.envios===null?"…":(FECH.envios[x.c.id]?new Date(FECH.envios[x.c.id]).toLocaleDateString("pt-BR"):"—");
+      return '<tr class="'+(x.st==="vazio"?"lin-herd":"")+'"><td><a href="#" onclick="irCliente(\''+x.c.id+'\');return false"><b>'+esc(x.c.nome)+'</b></a></td><td>'+esc(nomeAssessor(x.c.assessor_id))+'</td>'+
+        '<td><span class="sit '+(x.st==="feito"?"ok":"herd")+'">'+esc(tituloStatus(x.st))+'</span></td><td>'+(inst||'<span class="sit">sem conta</span>')+'</td><td>'+conf+'</td><td>'+env+'</td>'+
+        '<td style="white-space:nowrap"><button class="btn" onclick="irCliente(\''+x.c.id+'\')">Preencher</button>'+(x.st==="feito"?' <button class="btn" onclick="irCliente(\''+x.c.id+'\',\'relatorio\')">Relatório</button>':'')+'</td></tr>';
+    }).join(""):'<tr><td colspan="7" style="color:var(--muted)">'+(FECH.filtro==="pendentes"?"Nenhum cliente pendente neste mês.":"Nenhum cliente neste filtro.")+'</td></tr>')+
+    '</tbody></table></div></div>';
+  return h;
+}
+/* ---- extratos de vários clientes ---- */
+function acharClienteDoExtrato(texto){
+  /* números do PDF com 4 dígitos ou mais (sem os zeros da frente); ano solto não conta */
+  var dig={}; (String(texto).match(/\d[\d.\-]{2,16}\d/g)||[]).forEach(function(t){ dig[t.replace(/\D/g,"").replace(/^0+/,"")]=1; });
+  var soNum=function(x){ return String(x||"").replace(/\D/g,"").replace(/^0+/,""); };
+  var valida=function(k){ return k&&k.length>=4&&!(k.length===4&&+k>=1990&&+k<=2099); };
+  var porConta=db.clientes.filter(function(c){
+    var contas=(c.contas_btg||[]).map(soNum); var l=FICHAS&&FICHAS.porId[c.lead_id]; if(l&&l.conta) contas.push(soNum(l.conta));
+    return contas.some(function(k){ return valida(k)&&dig[k]; });
+  });
+  if(porConta.length===1) return {c:porConta[0],como:"conta"};
+  var tx=semAc(texto).replace(/\s+/g," ");
+  /* pelo nome só com o nome completo: o da ficha ligada (2 palavras ou mais) ou o da
+     carteira com 3 palavras ou mais. Primeiro nome sozinho bate com gente demais. */
+  var porNome=db.clientes.filter(function(c){ var l=FICHAS&&FICHAS.porId[c.lead_id]; var nm=semAc(l?l.cliente:c.nome).replace(/\s+/g," ").trim(); return nm.split(" ").length>=(l?2:3)&&tx.indexOf(nm)>=0; });
+  if(porNome.length===1) return {c:porNome[0],como:"nome"};
+  return null;
+}
+function importarLote(input){
+  var arquivos=[].slice.call(input.files||[]); input.value=""; if(!arquivos.length) return;
+  FECH.lendo=true; render(true);
+  garantirFichas().then(function(){
+    var passo=Promise.resolve();
+    arquivos.forEach(function(f){
+      passo=passo.then(function(){
+        return lerPdfExtrato(f).then(function(res){
+          var achou=acharClienteDoExtrato(res.texto);
+          FECH.lote.push({arquivo:f.name,leitor:res.leitor,ativos:res.ativos,cliente:achou?achou.c.id:"",como:achou?achou.como:"",soma:res.ativos.reduce(function(a,x){ return a+n(x.posicao); },0),estado:"pronto"});
+        }).catch(function(e){ FECH.lote.push({arquivo:f.name,estado:"erro",msg:String(e.message||e)}); }).then(function(){ render(true); });
+      });
+    });
+    return passo;
+  }).then(function(){ FECH.lendo=false; render(true); });
+}
+function blocoLote(){
+  if(!FECH.lote.length) return "";
+  var prontos=FECH.lote.filter(function(x){ return x.estado==="pronto"&&x.cliente; }).length;
+  var opc=function(sel){ return '<option value="">Escolha o cliente…</option>'+db.clientes.map(function(c){ return '<option value="'+c.id+'"'+(c.id===sel?" selected":"")+'>'+esc(c.nome)+'</option>'; }).join(""); };
+  return '<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><div class="sec-title">Extratos lidos</div>'+
+    '<div class="sec-sub">Confira o cliente de cada extrato. "Salvar" troca os ativos daquela instituição no mês e põe a soma no saldo da conta; o resultado do mês, as aplicações e os resgates ficam para conferir no Preencher. Nada é marcado como feito.</div></div>'+
+    '<div style="display:flex;gap:8px"><button class="btn" onclick="FECH.lote=[];render(true)">Limpar lista</button><button class="btn pri" onclick="salvarLote()"'+(prontos?"":" disabled")+'>Salvar '+prontos+' extrato'+(prontos===1?"":"s")+'</button></div></div>'+
+    '<div style="overflow-x:auto"><table class="form"><thead><tr><th>Arquivo</th><th>Banco</th><th>Cliente</th><th class="num">Ativos</th><th>Situação</th><th></th></tr></thead><tbody>'+
+    FECH.lote.map(function(x,i){
+      if(x.estado==="erro") return '<tr><td>'+esc(x.arquivo)+'</td><td colspan="5"><span class="sit al">'+esc(x.msg)+'</span></td></tr>';
+      return '<tr><td>'+esc(x.arquivo)+'</td><td>'+esc(x.leitor.nome)+'</td><td><select class="inp" onchange="FECH.lote['+i+'].cliente=this.value;FECH.lote['+i+'].como=\'escolhido\';render(true)"'+(x.estado!=="pronto"?" disabled":"")+'>'+opc(x.cliente)+'</select>'+
+        (x.como&&x.como!=="escolhido"?'<small style="color:var(--muted)"> achado pel'+(x.como==="conta"?"a conta":"o nome")+'</small>':'')+'</td>'+
+        '<td class="num">'+x.ativos.length+' · '+brl2(x.soma)+'</td><td>'+(x.estado==="salvo"?'<span class="sit ok">salvo</span>'+(x.saldoOk?'':' <span class="sit herd" title="O cliente tem mais de uma conta (ou nenhuma) nesta instituição: o saldo não foi mexido.">confira o saldo</span>'):(x.cliente?'<span class="sit">pronto</span>':'<span class="sit herd">escolha o cliente</span>'))+'</td>'+
+        '<td>'+(x.cliente?'<button class="btn" onclick="verExtratoLote('+i+')">Ver no Preencher</button>':'')+'</td></tr>';
+    }).join("")+'</tbody></table></div></div>';
+}
+function verExtratoLote(i){
+  var x=FECH.lote[i]; if(!x||!x.cliente) return;
+  S.cliente=x.cliente; montarRascunho(); guardarAntesImportacao("PDF "+x.leitor.nome+" · "+x.arquivo);
+  aplicarAtivosExtrato(S.rasc,JSON.parse(JSON.stringify(x.ativos)),x.leitor.inst); S.tab="preencher"; render();
+}
+function salvarLote(){
+  var itens=FECH.lote.filter(function(x){ return x.estado==="pronto"&&x.cliente; });
+  var porCliente={}; itens.forEach(function(x){ (porCliente[x.cliente]=porCliente[x.cliente]||[]).push(x); });
+  var ids=Object.keys(porCliente);
+  var jaFeitos=ids.filter(function(id){ return statusMes(id,S.mes,S.ano)==="feito"; });
+  if(!confirm("Salvar "+itens.length+" extrato(s) em "+ids.length+" cliente(s) de "+MESES[S.mes-1].toLowerCase()+"/"+S.ano+"?"+(jaFeitos.length?"\n\nAtenção: "+jaFeitos.length+" deles já estão marcados como feitos. O mês continua feito, mas os ativos mudam.":""))) return;
+  status("wait","Salvando…");
+  var passo=Promise.resolve(), ok=0, erros=[];
+  ids.forEach(function(id){
+    passo=passo.then(function(){
+      var r=rascunhoDe(id); if(!r) throw new Error("sem rascunho");
+      /* dois extratos do mesmo banco para o mesmo cliente (duas contas): os ativos somam */
+      var porInst={}; porCliente[id].forEach(function(x){ var k=x.leitor.inst; (porInst[k]=porInst[k]||[]).push.apply(porInst[k],JSON.parse(JSON.stringify(x.ativos))); });
+      var saldoOk=true; Object.keys(porInst).forEach(function(k){ if(!aplicarAtivosExtrato(r,porInst[k],k).saldo) saldoOk=false; });
+      var contas=r.contas.filter(function(c){ return (c.nome||"").trim()||n(c.saldo); }), agora=new Date().toISOString(), ind=limparInternos(r.ind);
+      return api("lancamentos?on_conflict=cliente_id,mes,ano",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
+        body:{cliente_id:id,mes:S.mes,ano:S.ano,contas:contas,indicadores:ind,atualizado_em:agora}}).then(function(rows){
+        var antes=reg(id,S.mes,S.ano)||{}, x0=(rows&&rows[0])||{};
+        db.dados[chave(id,S.mes,S.ano)]={contas:contas,ind:ind,atualizado_em:agora,feito_em:x0.feito_em!==undefined?x0.feito_em:antes.feito_em||null,feito_por:x0.feito_por!==undefined?x0.feito_por:antes.feito_por||null};
+        porCliente[id].forEach(function(x){ x.estado="salvo"; x.saldoOk=saldoOk; }); ok++;
+        registrar("importou extrato em lote",(db.clientes.filter(function(c){return c.id===id;})[0]||{}).nome||"",MESES[S.mes-1]+"/"+S.ano+" · "+porCliente[id].length+" extrato(s)");
+      });
+    }).catch(function(e){ erros.push(e.message||e); });
+  });
+  passo.then(function(){ status(erros.length?"err":"ok",erros.length?"Erro em "+erros.length:"Sincronizado"); montarRascunho(); render(true);
+    if(erros.length) alert("Salvos: "+ok+". Com erro: "+erros.length+"\n\n"+erros.slice(0,5).join("\n")); });
+}
+
 /* ---------- portal de sistemas ---------- */
 /* Dois grupos no hub. "ferramentas" produz entregavel; "simuladores"
    calcula cenario. A ordem dentro de cada grupo e a ordem da lista.  */
@@ -5988,7 +6275,7 @@ function prosseguirLogin(){
 window.addEventListener("hashchange",function(){ if(sessaoLiberada()&&db.clientes.length) abrirLinkDireto(); });
 function abrirLinkDireto(){
   var h=location.hash||"";
-  var mr=/^#relatorio=([^&]*)(?:&nome=(.*))?$/.exec(h), mc=/^#carteira=([0-9a-f-]{36})$/i.exec(h);
+  var mr=/^#relatorio=([^&]*)(?:&nome=([^&]*))?(?:&lead=(.*))?$/.exec(h), mc=/^#carteira=([0-9a-f-]{36})$/i.exec(h);
   if(h==="#carteiras"){ history.replaceState(null,"",location.pathname+location.search); irParaApp("carteiras"); return; }
   if(!mr&&!mc) return;
   history.replaceState(null,"",location.pathname+location.search);
@@ -5997,8 +6284,9 @@ function abrirLinkDireto(){
   var alvo=null;
   if(mc) alvo=db.clientes.filter(function(c){ return c.id===mc[1]; })[0];
   else {
-    var conta=soNum(dec(mr[1])), nome=hbSemAcento(dec(mr[2])).trim();
-    if(conta) alvo=db.clientes.filter(function(c){ return (c.contas_btg||[]).some(function(k){ return soNum(k)===conta; }); })[0];
+    var conta=soNum(dec(mr[1])), nome=hbSemAcento(dec(mr[2])).trim(), leadId=dec(mr[3]);
+    if(leadId) alvo=db.clientes.filter(function(c){ return c.lead_id===leadId; })[0];
+    if(!alvo&&conta) alvo=db.clientes.filter(function(c){ return (c.contas_btg||[]).some(function(k){ return soNum(k)===conta; }); })[0];
     if(!alvo&&nome) alvo=db.clientes.filter(function(c){ return hbSemAcento(c.nome).trim()===nome; })[0];
   }
   if(!alvo){
@@ -6169,19 +6457,22 @@ function render(manterScroll){
      herdado de uma sessão antiga (ou do padrão inicial) cai pro
      Relatório em vez de mostrar uma aba que a política vai recusar. */
   document.getElementById("tabP").style.display=EU.admin?"":"none";
-  if(S.tab==="preencher"&&!EU.admin) S.tab="relatorio";
+  document.getElementById("tabF").style.display=EU.admin?"":"none";
+  if((S.tab==="preencher"||S.tab==="fechamento")&&!EU.admin) S.tab="relatorio";
+  document.getElementById("tabF").className=S.tab==="fechamento"?"on":"";
   document.getElementById("tabP").className=S.tab==="preencher"?"on":"";
   document.getElementById("tabC").className=S.tab==="carta"?"on":"";
   document.getElementById("tabR").className=S.tab==="relatorio"?"on":"";
   document.getElementById("tabH").className=S.tab==="historico"?"on":"";
   document.getElementById("btnPdfR").style.display=S.tab==="relatorio"?"":"none";
   document.getElementById("btnPdfP").style.display=S.tab==="relatorio"?"":"none";
-  ["btnGerarPdf","btnPdfTodos","btnRelCrm"].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display=S.tab==="relatorio"?"":"none"; });
+  ["btnGerarPdf","btnPdfTodos","btnRelCrm","btnEnviarCli"].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display=S.tab==="relatorio"?"":"none"; });
   document.getElementById("btnChk").style.display=S.tab==="relatorio"?"":"none";
   var ma=document.getElementById("miniAcesso");
   if(ma) ma.textContent="Os dados ficam no servidor. "+(EU.admin?"Como administrador, voc\u00ea enxerga os clientes de todos os assessores.":"Cada assessor enxerga apenas os pr\u00f3prios clientes.");
   document.getElementById("view").innerHTML=
     S.tab==="preencher"?viewPreencher():
+    S.tab==="fechamento"?viewFechamento():
     (S.tab==="carta"?viewCarta():
     (S.tab==="historico"?viewHistorico():viewRelatorio()));
   if(manterScroll) window.scrollTo(0,scrollAntes); else window.scrollTo(0,0);

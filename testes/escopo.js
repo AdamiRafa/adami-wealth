@@ -10,3 +10,11 @@ const g=sm.globalScope; const decl=new Set(g.variables.map(v=>v.name));
 const faltando=new Map();
 g.through.forEach(r=>{ const n=r.identifier.name; if(!decl.has(n)&&!globaisNav.has(n)) faltando.set(n,r.identifier.loc.start.line); });
 console.log(arq.split('/').pop(), '| blocos:',blocos.length,'| sintaxe ok | sem declaração:', faltando.size?[...faltando].map(([n,l])=>n+'@'+l).join(', '):'nenhuma');
+/* --estrito: sai com erro se sobrar nome que não está na lista conhecida (testes/escopo-conhecidos.json).
+   É o modo que a publicação automática usa (testes/verificar.sh). */
+if(process.argv.includes('--estrito')){
+  const conhecidos=JSON.parse(fs.readFileSync(__dirname+'/escopo-conhecidos.json','utf8'));
+  const ok=new Set((conhecidos[arq.split('/').pop()]||[]).concat(conhecidos['*']||[]));
+  const novos=[...faltando.keys()].filter(n=>!ok.has(n));
+  if(novos.length){ console.error('ERRO '+arq+': variável usada sem declaração: '+novos.join(', ')); process.exit(1); }
+}

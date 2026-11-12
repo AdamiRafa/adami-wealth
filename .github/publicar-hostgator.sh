@@ -18,6 +18,12 @@ for v in FTP_SERVIDOR FTP_USUARIO FTP_SENHA; do
   if [ -z "${!v:-}" ]; then echo "::error::Falta o segredo $v."; exit 1; fi
 done
 
+# 0. Testes antes de publicar (3.20): sintaxe, escopo, SQL e os 15 módulos abertos num
+#    navegador de verdade. Se algum falhar, para aqui e nada é enviado.
+echo "::group::Verificações antes de publicar"
+VERIFICAR_INSTALAR=1 bash "$ORIGEM/testes/verificar.sh"
+echo "::endgroup::"
+
 # 1. Monta a pasta que vai ao ar. Lista positiva: só HTML, vendor/, img/, estilo/, comum/, webhook/, ajuda/,
 #    app.webmanifest e .htaccess.
 #    ajuda/ guarda o PDF do manual do Hub (botão ? e Primeiros passos).

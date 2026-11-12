@@ -726,6 +726,12 @@ Planos e Imobiliário, Hub instalável no celular, Adoção da equipe e Problema
 Conferência do mês ao vivo no Preencher (instituições, ativos x saldo, divergências com o mês anterior, campos
 faltando, o que a importação mudou com Desfazer). Banco: `carteiras_feito.sql` (também no fim do
 `adami_completo.sql`), migração `carteiras_feito_311`**.
+ · **3.20 (12/11/2026): fechamento do mês (seção 28). Aba Fechamento nas Carteiras, importação de extratos de
+vários clientes de uma vez, leitores de extrato por banco, carteira ligada à ficha do CRM (`clientes.lead_id`),
+e-mail do cliente para relatórios e "Enviar ao cliente" pela função `relatorio-enviar`, régua de relacionamento
+para Advisory no CRM e testes automáticos antes de cada publicação (`testes/verificar.sh`). Banco:
+`carteiras_envio.sql` (também no fim do `adami_completo.sql`), migração `carteiras_envio_320`. CRM
+`2026.11.12.2`**.
 
 ---
 
@@ -2047,3 +2053,58 @@ campo" ao subir a carteira.
   relatório" e "Salvar e marcar como feito".
 - Impressão do relatório conferida depois da mudança: as mesmas 18 páginas, com as mesmas margens.
 
+## 28. Fechamento do mês, envio ao cliente e testes automáticos (12/11/2026, Hub 3.20, `carteiras_envio.sql`, função `relatorio-enviar`)
+
+Pedido do Emil: "Pode fazer o passo 1 até o 7", sobre a lista de melhorias proposta depois da 3.11.
+
+1. **Aba Fechamento** (Carteiras, só administração; `viewFechamento`): todos os clientes do mês numa tela, com
+   contagem de feitos / lançados / sem lançamento / enviados, barra de progresso, filtros (Pendentes, Feitos,
+   Feitos sem envio, Todos) e, por cliente, a situação do mês, cada instituição (verde atualizada, amarelo ainda
+   do mês anterior, vermelho ativos que não batem com o saldo), a contagem da conferência (crítico / a conferir)
+   e a data do último envio. Clientes sem lançamento são conferidos sobre o rascunho herdado (`rascunhoDe`, que
+   troca `S.cliente`/`S.rasc` por um instante). `conferirRascunho(c, r)` aceita cliente e rascunho de fora.
+2. **Extratos de vários clientes** (`importarLote`, `blocoLote`, `salvarLote`): sobe vários PDFs; cada um é lido
+   (`lerPdfExtrato`) e o cliente é achado pelo número da conta (`contas_btg` da carteira ou a conta da ficha
+   ligada; números de 4 dígitos ou mais sem os zeros da frente, ano solto não conta) ou pelo nome completo
+   (da ficha ligada, ou o da carteira com 3 palavras ou mais). Sem achar, a pessoa escolhe. "Salvar" troca os
+   ativos daquela instituição (e os sem instituição, que vinham de importações antigas) e, se o cliente tiver uma
+   conta só daquela instituição, põe a soma no saldo; com duas ou mais contas o saldo não é mexido e aparece
+   "confira o saldo". Dois extratos do mesmo banco para o mesmo cliente somam. Nada é marcado como feito;
+   resultado, aplicações e resgates continuam no Preencher. "Ver no Preencher" abre o cliente com o extrato
+   aplicado no rascunho, sem gravar.
+3. **Leitores por banco** (`LEITORES_EXTRATO`): cada banco tem `detectar(texto, topo)` e `ler(linhas, paginas)`.
+   Prontos: BTG/Necton (instituição agora preenchida como "BTG Pactual"; antes vinha vazia) e Sinosserra.
+   Cadastrados sem leitor, só para a mensagem ficar clara: XP, Itaú, Safra, Inter, Bradesco, Santander,
+   Daycoval. Para ensinar um banco: um PDF de exemplo real, escrever o `ler` e marcar `pronto:true`. Os
+   não prontos são detectados só pelo topo do PDF (25 primeiras linhas), para não confundir um extrato do BTG
+   que cita outro banco.
+4. **Enviar ao cliente** (botão no Relatório; `abrirEnvioRelatorio`, `enviarRelatorio`): gera o mesmo PDF do
+   "Gerar PDF" e chama a função `relatorio-enviar`. Os destinatários vêm do banco (`clientes.emails_relatorio`,
+   até 5), nunca da tela; a função confere acesso e mês feito por `relatorio_envio_preparar` e registra em
+   `relatorios_envios` por `relatorio_envio_registrar` (também os envios com erro). Sai de "Adami Captal"
+   <hub@adamicaptal.com.br>, com Reply-To no e-mail do assessor do cliente e cópia opcional para quem enviou.
+   O anexo precisa começar com `%PDF` e ter até ~6,7 MB. Opcional: guardar o PDF na ficha do CRM
+   (`AdamiCRM.enviar`, origem `relatorio`). A função foi instalada pelo Claude (`verify_jwt` desligado: ela
+   mesma confere o login pela RPC).
+5. **Régua do CRM para Advisory**: `REGUA_RELACIONAMENTO.Advisory = relacionamento 2x/ano`. Como os Advisory já
+   eram carteira, o primeiro contato sem histórico não sai da criação do card (todos nasceriam atrasados): sai de
+   `REGUA_INICIO.Advisory` (12/11/2026) mais um deslocamento fixo por cliente (hash do id, de 0 a 182 dias), o
+   que espalha os primeiros contatos de novembro/2026 a maio/2027. Depois do primeiro contato registrado, a
+   régua corre normalmente. Para mudar a frequência, troque `qtdAno`.
+6. **Carteira ligada à ficha** (`clientes.lead_id`, `ligarFicha`, `gravarFicha`): no Preencher, "Ficha no CRM:
+   ligar/trocar" abre a lista de fichas com busca por nome ou conta. Ao ligar, se a carteira não tiver conta do
+   BTG, a conta da ficha entra em `contas_btg`. O link "Relatório do mês" da ficha passa `&lead=ID`, e o Hub acha
+   a carteira primeiro pela ligação, depois pela conta, depois pelo nome. "E-mail para relatórios" fica ao lado.
+7. **Testes automáticos antes de publicar** (`testes/verificar.sh`, chamado no começo do
+   `.github/publicar-hostgator.sh`): sintaxe e escopo de todo HTML (`testes/escopo.js --estrito`, nomes
+   conhecidos em `testes/escopo-conhecidos.json`), sintaxe de `comum/*.js`, SQL de todos os `.sql` (pglast) e o
+   teste de fumaça (`testes/fumaca.js`): os 15 módulos abertos num Chromium com o Supabase simulado
+   (`testes/simulador.js`, sem nenhum dado real) e, no Hub, as cinco abas das Carteiras e o relatório desenhado.
+   Qualquer falha para a publicação antes do envio por FTP e aparece na aba Actions. A publicação passou a levar
+   2 a 3 minutos (instala as ferramentas a cada vez). A medição de margens da impressão continua manual
+   (seção 26).
+
+Conferido antes de publicar: impressão do relatório com as mesmas 18 páginas e margens; testes de tela com
+dados simulados do Fechamento, da importação em lote (achado por conta, por nome, erro de banco sem leitor,
+salvar), da ligação com a ficha, dos e-mails do cliente, do envio (mês feito e bloqueio de mês não feito) e
+da régua (699 clientes Advisory espalhados por 7 meses).

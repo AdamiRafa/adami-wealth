@@ -56,6 +56,8 @@ redefinir senha pela `enviar-senha`, o e-mail da manhã da Agenda pela `agenda-m
 de acesso de 6 dígitos pela `codigo-acesso`. Os
 modelos são gerados por `emails/_base.py`, que grava cada um dentro da sua função.
 Agenda do CRM: tabela `tarefas` (`agenda.sql`); detalhes na seção 19 da documentação.
+Relatório ao cliente (3.20, seção 28): função `relatorio-enviar`; destinatários só de `clientes.emails_relatorio`
+e só com o mês feito. A carteira liga à ficha do CRM por `clientes.lead_id`.
 Visual 2026 (seção 20): vidro, menu lateral e modo noite; camada comum dos módulos em
 `estilo/adami-2026.css`. Tudo que é visual fica em `@media screen`: a impressão não pode mudar.
 Arquivos do cliente: Storage `anexos` + tabela `anexos` (`anexos.sql`); as ferramentas gravam
@@ -89,6 +91,9 @@ frente. A disciplina abaixo não é opcional.
 5. **SQL**: validar com `pglast` antes de entregar.
 
 O verificador de sintaxe e escopo está em `testes/escopo.js` (instruções em `testes/README.md`).
+Desde a 3.20 a publicação roda `testes/verificar.sh` antes de enviar (sintaxe, escopo, SQL e os 15 módulos
+abertos num navegador com o Supabase simulado): se falhar, nada vai ao ar. Rode-o também antes de commitar.
+Nome de navegador novo que o escopo não conhece vai em `testes/escopo-conhecidos.json`.
 
 Cada conjunto de mudanças ganha um número de versão novo, visível no rodapé de cada
 módulo (`var VERSAO="versão 2.51"` e equivalentes). O selo existe para o Emil perceber

@@ -44,7 +44,9 @@
     carteiras: { nome: "Carteiras", pag: 23, itens: [
       "Escolha o cliente à esquerda e o mês no alto (setas ou calendário). Ponto verde: mês feito; amarelo: falta marcar.",
       "Preencher: a Conferência do mês, no alto, mostra o que não bate e o que ainda é do mês anterior. Com tudo certo, Salvar e marcar como feito.",
+      "Fechamento (administração): todos os clientes do mês numa tela, com o que falta em cada um. Importar extratos de vários clientes sobe vários PDFs de uma vez.",
       "Relatório: confira com Conferir dados e use Gerar PDF. O arquivo sai com o nome do cliente e do mês.",
+      "Enviar ao cliente (no Relatório): manda o PDF por e-mail, só com o mês marcado como feito. O e-mail do cliente fica no Preencher.",
       "PDF de todos faz os relatórios do mês de todos os seus clientes, um arquivo por cliente.",
       "Os números vêm do lançamento do mês, feito pela administração na aba Preencher."] },
     crm: { nome: "CRM", pag: 14, itens: [
