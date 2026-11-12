@@ -130,7 +130,7 @@ execução e fica registrado no histórico.
   escrita; ver `DOCUMENTACAO.md` seção 5.
 - **Filtrar no navegador não é segurança.** Restrição de acesso se resolve no banco, com
   política.
-- **Verificação em duas etapas por e-mail e acesso que vence à meia-noite (2.91, seção 22).**
+- **Verificação em duas etapas por e-mail ou app autenticador (2.91 e 3.01) e acesso que vence à meia-noite (seção 22).**
   Toda tabela com RLS tem a política restritiva `exige_verificacao`; tabela nova também precisa
   ter. Função nova que devolve ou grava dado checa `acesso_liberado()` (as funções de permissão
   já checam) e nunca fica executável para `anon`: o Supabase dá EXECUTE ao `anon` por padrão,

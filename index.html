@@ -178,6 +178,12 @@ input,select,textarea{font-family:inherit;font-size:13px}
   font-weight:600;margin-bottom:12px}
 .mfa-status.on{background:#E6F1EC;color:#2F7A56}
 .mfa-status.off{background:#F4F6F9;color:#7D8A9B}
+.app-passos{margin:8px 0 14px;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--ink-soft,#3C4C60)}
+.app-passos li{margin-bottom:4px}
+.app-qr{background:#fff;border:1px solid var(--line,#DCE2EA);border-radius:6px;padding:6px;line-height:0;min-width:150px;min-height:150px}
+.app-qr svg{width:180px;height:180px;display:block}
+.app-conf{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.app-conf input{width:140px;font-size:20px;letter-spacing:.2em;text-align:center;padding:8px 10px;border:1px solid var(--line,#DCE2EA);border-radius:8px}
 /* Código de acesso por e-mail e tela Segurança (06/11/2026) */
 .auth-card input.cd-codigo{font-size:26px;letter-spacing:.42em;text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
 .seg-tit{font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#5C6B7F;margin:22px 0 10px}
@@ -1226,9 +1232,11 @@ function pintarEquipe(aviso){
 /* ===================== Segurança (06/11/2026) =====================
    A verificação em duas etapas agora é por e-mail e vale para todos (não se
    liga nem desliga). Aqui a pessoa vê os próprios acessos e pode sair de todos
-   os aparelhos; o master vê também os acessos da equipe. A verificação por
-   aplicativo (TOTP) saiu: ela só existia na tela, o banco nunca a exigia. */
-var SEG={meus:null,equipe:null,erro:""};
+   os aparelhos; o master vê também os acessos da equipe.
+   12/11/2026 (3.01): o app autenticador voltou, agora conferido pelo banco
+   (app_autenticador.sql). É um segundo caminho para o código, para quando o
+   e-mail não chega (o Microsoft 365 parou em 12/11 e ninguém entrava). */
+var SEG={meus:null,equipe:null,erro:"",app:null,appNovo:null,appMsg:"",appErro:false};
 function abrirSeguranca(){
   if(!document.getElementById("segv")){
     var d=document.createElement("div");
@@ -1238,16 +1246,18 @@ function abrirSeguranca(){
     document.body.appendChild(d);
   }
   document.getElementById("segv").style.display="flex";
-  SEG={meus:null,equipe:null,erro:""};
+  SEG={meus:null,equipe:null,erro:"",app:null,appNovo:null,appMsg:"",appErro:false};
   pintarSeguranca('<h2>Segurança</h2><p class="eqsub">Carregando…</p>');
   Promise.all([
     api("rpc/meus_acessos",{method:"POST",body:{}}).catch(function(e){ SEG.erro=String(e.message||e); return null; }),
-    EU.super?api("rpc/acessos_equipe",{method:"POST",body:{}}).catch(function(){ return null; }):Promise.resolve(null)
-  ]).then(function(r){ SEG.meus=r[0]; SEG.equipe=r[1]; pintarSeguranca(telaSeguranca()); });
+    EU.super?api("rpc/acessos_equipe",{method:"POST",body:{}}).catch(function(){ return null; }):Promise.resolve(null),
+    api("rpc/totp_estado",{method:"POST",body:{}}).catch(function(){ return null; })
+  ]).then(function(r){ SEG.meus=r[0]; SEG.equipe=r[1]; SEG.app=r[2]; pintarSeguranca(telaSeguranca()); });
 }
 function fecharSeguranca(){ var d=document.getElementById("segv"); if(d) d.style.display="none"; }
 function pintarSeguranca(html){ var x=document.getElementById("segx"); if(x) x.innerHTML=html; }
-var SEG_EVENTOS={entrou:"Entrou",codigo_enviado:"Código enviado",codigo_errado:"Código errado",bloqueado:"Bloqueado por erros",saiu_de_todos:"Saiu de todos os aparelhos"};
+var SEG_EVENTOS={entrou:"Entrou",entrou_app:"Entrou pelo app",codigo_enviado:"Código enviado",codigo_errado:"Código errado",bloqueado:"Bloqueado por erros",saiu_de_todos:"Saiu de todos os aparelhos",
+  app_ativado:"Ligou o app autenticador",app_desativado:"Desligou o app autenticador",app_zerado:"App autenticador zerado por um master"};
 function segAparelho(ua){
   ua=String(ua||"");
   var nav=/Edg\//.test(ua)?"Edge":/OPR\//.test(ua)?"Opera":/Firefox\//.test(ua)?"Firefox":/Chrome\//.test(ua)?"Chrome":/Safari\//.test(ua)?"Safari":"";
@@ -1274,6 +1284,7 @@ function telaSeguranca(){
     '<div class="mfa-status on">Verificação em duas etapas ativa</div>'+
     '<p class="eqsub" style="margin-top:12px">Toda entrada no Hub pede, depois da senha, um código de 6 números enviado para o seu e-mail. '+
     'O acesso vale até a meia-noite: no dia seguinte, todo mundo entra de novo.</p>'+
+    blocoApp()+
     '<h3 class="seg-tit">Seus últimos acessos</h3>';
   if(SEG.meus===null) h+='<p class="eqsub err">Não foi possível carregar os acessos.'+(SEG.erro?' '+esc(SEG.erro):'')+'</p>';
   else h+=segLinhas(SEG.meus,false);
@@ -1285,6 +1296,76 @@ function telaSeguranca(){
   h+='<div class="eqfoot"><button class="eqbt perigo" onclick="sairDeTodos()">Sair de todos os aparelhos</button>'+
      '<button class="btn" onclick="fecharSeguranca()">Fechar</button></div>';
   return h;
+}
+
+/* ---------- App autenticador (3.01) ---------- */
+function blocoApp(){
+  var h='<h3 class="seg-tit">App autenticador</h3>';
+  if(SEG.app===null) return h+'<p class="eqsub">O app autenticador ainda não foi instalado no banco. Avise um master.</p>';
+  var msg=SEG.appMsg?'<p class="eqmsg'+(SEG.appErro?' err':'')+'" role="'+(SEG.appErro?'alert':'status')+'" style="margin:10px 0 0">'+esc(SEG.appMsg)+'</p>':'';
+  if(SEG.appNovo){
+    var grupos=String(SEG.appNovo.segredo||"").replace(/(.{4})/g,"$1 ").trim();
+    return h+'<ol class="app-passos">'+
+      '<li>No celular, abra o <b>Microsoft Authenticator</b> ou o <b>Google Authenticator</b> (grátis na loja de aplicativos).</li>'+
+      '<li>Toque em <b>+</b> (adicionar conta) e escolha ler um QR code.</li>'+
+      '<li>Aponte a câmera para o quadro abaixo. Vai aparecer "Hub Adami" com um código de 6 números.</li>'+
+      '<li>Digite esse código aqui e clique em <b>Confirmar</b>.</li></ol>'+
+      '<div class="mfa-qr"><div id="appQr" class="app-qr" aria-label="QR code para o app autenticador" role="img"></div>'+
+      '<div class="mfa-secreto">Sem câmera? No app, escolha digitar a chave e use:<code>'+esc(grupos)+'</code></div></div>'+
+      '<div class="app-conf"><input id="appCod" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-label="Código de 6 números do app" onkeydown="if(event.key===\'Enter\')appConfirmar()">'+
+      '<button class="btn pri" onclick="appConfirmar()">Confirmar</button><button class="eqbt" onclick="appCancelar()">Cancelar</button></div>'+msg;
+  }
+  if(SEG.app.ativo){
+    return h+'<div class="mfa-status on">Ligado'+(SEG.app.desde?' desde '+esc(segQuando(SEG.app.desde)):'')+'</div>'+
+      '<p class="eqsub" style="margin-top:10px">Na tela do código, você pode digitar o código do app em vez de esperar o e-mail. Os dois valem.</p>'+
+      '<button class="eqbt" onclick="appDesligar()">Desligar (trocar de celular)</button>'+msg;
+  }
+  return h+'<div class="mfa-status off">Desligado</div>'+
+    '<p class="eqsub" style="margin-top:10px">Ligue o app para não depender do e-mail. Se o e-mail atrasar ou cair, como aconteceu com o Microsoft 365 em 12/11, você entra com o código que aparece no celular. Leva 1 minuto.</p>'+
+    '<button class="btn pri" onclick="appLigar()">Ligar o app autenticador</button>'+msg;
+}
+function carregarQR(cb){
+  if(window.qrcode) return cb();
+  var sc=document.createElement("script"); sc.src="vendor/qrcode-generator-1.4.4.js";
+  sc.onload=cb; sc.onerror=function(){ var q=document.getElementById("appQr"); if(q) q.textContent="Não foi possível desenhar o QR code. Use a chave ao lado."; };
+  document.head.appendChild(sc);
+}
+function desenharQR(){
+  if(!SEG.appNovo) return;
+  carregarQR(function(){
+    var q=document.getElementById("appQr"); if(!q||!window.qrcode) return;
+    var qr=window.qrcode(0,"M"); qr.addData(SEG.appNovo.uri); qr.make();
+    q.innerHTML=qr.createSvgTag(5,8);
+  });
+}
+function appLigar(){
+  SEG.appMsg=""; SEG.appErro=false;
+  api("rpc/totp_iniciar",{method:"POST",body:{}}).then(function(r){
+    SEG.appNovo=r; pintarSeguranca(telaSeguranca()); desenharQR();
+    setTimeout(function(){ var i=document.getElementById("appCod"); if(i) i.focus(); },50);
+  }).catch(function(e){ SEG.appMsg=String(e.message||e); SEG.appErro=true; pintarSeguranca(telaSeguranca()); });
+}
+function appConfirmar(){
+  var i=document.getElementById("appCod"); var c=((i&&i.value)||"").replace(/\D/g,"");
+  if(c.length!==6){ SEG.appMsg="Digite os 6 números que aparecem no app."; SEG.appErro=true; pintarSeguranca(telaSeguranca()); desenharQR(); return; }
+  api("rpc/totp_ativar",{method:"POST",body:{p_codigo:c}}).then(function(r){
+    if(r&&r.ok){ SEG.appNovo=null; SEG.app={ativo:true,desde:new Date().toISOString()}; SEG.appMsg="Pronto. A partir de agora, o código do app também vale para entrar."; SEG.appErro=false; }
+    else { SEG.appMsg=(r&&r.msg)||"Código não confere."; SEG.appErro=true; }
+    pintarSeguranca(telaSeguranca()); desenharQR();
+  }).catch(function(e){ SEG.appMsg=String(e.message||e); SEG.appErro=true; pintarSeguranca(telaSeguranca()); desenharQR(); });
+}
+function appCancelar(){ SEG.appNovo=null; SEG.appMsg=""; pintarSeguranca(telaSeguranca()); }
+function appDesligar(){
+  if(!confirm("Desligar o app autenticador? Até ligar de novo, o código só chega por e-mail.")) return;
+  api("rpc/totp_desativar",{method:"POST",body:{}}).then(function(){
+    SEG.app={ativo:false}; SEG.appMsg="App desligado. Para usar em outro celular, clique em Ligar."; SEG.appErro=false; pintarSeguranca(telaSeguranca());
+  }).catch(function(e){ SEG.appMsg=String(e.message||e); SEG.appErro=true; pintarSeguranca(telaSeguranca()); });
+}
+function zerarAppPessoa(){
+  var p=EQUIPE.filter(function(x){ return x.user_id===PESSOA_ID; })[0]; if(!p) return;
+  if(!confirm("Zerar o app autenticador de "+(p.nome||p.email)+"? Use quando a pessoa perdeu ou trocou de celular. Ela continua entrando pelo código do e-mail e pode ligar o app de novo.")) return;
+  api("rpc/totp_zerar",{method:"POST",body:{p_user:p.user_id}}).then(function(){ msgEq("App autenticador de "+(p.nome||p.email)+" zerado."); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
 }
 /* ===================== Registro de atividades (2.96, só master) =====================
    A auditoria inteira com quem fez, o quê, onde e quando, com filtros e "carregar mais".
@@ -1542,6 +1623,9 @@ function blocoPessoa(){
       '<p class="eqsub eqform-nota">Trocar o e-mail troca o login da pessoa, e o código de acesso passa a chegar no e-mail novo. Avise a pessoa antes.</p>'+
       '<button class="btn pri eqconvidar" onclick="salvarPessoa()">Salvar alterações</button>'+
     '</div>'+
+    '<h3 class="eqtit">App autenticador</h3>'+
+    '<p class="eqsub">Perdeu ou trocou de celular? Zere o app: a pessoa continua entrando pelo código do e-mail e liga o app de novo em Segurança.</p>'+
+    '<button class="eqbt" onclick="zerarAppPessoa()">Zerar app autenticador</button>'+
     '<h3 class="eqtit">Acesso</h3>';
   if(p.revogado){
     h+='<p class="eqsub">O acesso está bloqueado: a pessoa não consegue entrar no Hub nem no CRM. Os clientes e o histórico continuam como estavam.</p>'+
@@ -1823,7 +1907,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.00";
+var VERSAO="versão 3.01";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -4844,11 +4928,12 @@ function viewCodigoEmail(msg,tipo){
         ?'<p class="hint">Mandando um código de 6 números para '+para+'…</p>'
         :'<p class="hint">Mandamos um código de 6 números para '+para+'. Ele vale por 10 minutos. O e-mail pode levar 1 ou 2 minutos para chegar.</p>')+
       (msg?'<div class="erro'+(tipo==="ok"?' ok':'')+'" role="'+(tipo==="ok"?'status':'alert')+'">'+esc(msg)+'</div>':'')+
-      '<label for="cdCodigo">Código do e-mail</label>'+
+      '<label for="cdCodigo">Código do e-mail ou do app autenticador</label>'+
       '<div class="campo"><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" '+
         'id="cdCodigo" class="cd-codigo" placeholder="000000" oninput="codigoDigitado(this)" onkeydown="if(event.key===\'Enter\')confirmarCodigoEmail()"></div>'+
       '<button class="entrar" id="cdBtn" onclick="confirmarCodigoEmail()"'+(CODIGO_ESTADO==="enviando"?' disabled':'')+'>Entrar</button>'+
-      '<p class="hint" style="margin:14px 0 0">Não chegou? Espere um pouco e confira a caixa de spam ou lixo eletrônico (remetente hub@adamicaptal.com.br). Se pedir outro código, os anteriores continuam valendo: use qualquer um que chegar.</p>'+
+      '<p class="hint" style="margin:14px 0 0">Já ligou o app autenticador no Hub? Digite o código que aparece nele agora, sem esperar o e-mail.</p>'+
+      '<p class="hint" style="margin:10px 0 0">Não chegou? Espere um pouco e confira a caixa de spam ou lixo eletrônico (remetente hub@adamicaptal.com.br). Se pedir outro código, os anteriores continuam valendo: use qualquer um que chegar.</p>'+
       '<div class="pe-links">'+
         '<button type="button" class="link" onclick="reenviarCodigo()">Mandar outro código</button>'+
         '<button type="button" class="link" onclick="cancelarCodigo()">Voltar e trocar de conta</button>'+
@@ -5156,7 +5241,7 @@ function codigoDigitado(el){
 function confirmarCodigoEmail(){
   var el=document.getElementById("cdCodigo"); if(!el) return;
   var c=(el.value||"").replace(/\D/g,"");
-  if(c.length!==6){ mostrarCodigo("Digite os 6 números que chegaram no e-mail.","erro"); return; }
+  if(c.length!==6){ mostrarCodigo("Digite os 6 números do e-mail ou do app autenticador.","erro"); return; }
   var b=document.getElementById("cdBtn"); if(b){ if(b.disabled) return; b.disabled=true; b.textContent="Conferindo…"; }
   api("rpc/verificar_codigo",{method:"POST",body:{p_codigo:c}}).then(function(r){
     if(r&&r.ok){ marcarLiberado(); CODIGO_EMAIL=""; CODIGO_ESTADO=""; return prosseguirLogin(); }

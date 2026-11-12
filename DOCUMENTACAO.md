@@ -705,6 +705,13 @@ convite pendente") e o cadastro pelo "Primeiro acesso" também seria recusado. A
 Administrador marcado, foi para enzo@adamicaptal.com.nr (digitado errado), por isso "funcionou". Agora `convidar`
 reabre o convite (`consumido_em = null`); quem ainda tem conta continua barrado antes. Migração
 `convidar_reabre_convite`; `permissoes.sql` e `adami_completo.sql` atualizados**.
+ · **3.01 (12/11/2026): app autenticador. O Microsoft 365 parou de entregar e-mail em 12/11 (o Hub mandou o código
+às 18:27, o servidor aceitou em 2,7 s, nada chegou) e ninguém conseguia entrar. Agora o código também pode vir de
+um app (Microsoft Authenticator, Google Authenticator): cada pessoa liga em Segurança lendo um QR code, já
+logada, e daí em diante a tela do código aceita o do e-mail OU o do app. Banco: `app_autenticador.sql` (também no
+fim do `seguranca.sql` e do `adami_completo.sql`), migração `app_autenticador` (seção 22). Tela: bloco "App
+autenticador" em Segurança, botão "Zerar app autenticador" na ficha da pessoa (master), QR desenhado no próprio
+Hub com `vendor/qrcode-generator-1.4.4.js` (MIT, carregado só quando precisa)**.
 
 ---
 
@@ -1541,6 +1548,20 @@ precisa entrar no `connect-src` do `.htaccess`.**
 - Senha nova: mínimo de 8 caracteres na tela.
 
 ---
+
+**App autenticador (12/11/2026, 3.01, `app_autenticador.sql`).** Segundo caminho para o código, independente de
+e-mail. TOTP padrão (RFC 6238: HMAC-SHA1, passos de 30 s, 6 dígitos), conferido no banco como o código do e-mail:
+- `acesso_totp` (segredo de 20 bytes aleatórios, `ativo`, `ultimo_passo`): RLS sem política permissiva, com
+  `exige_verificacao`; ninguém lê pela API, só as funções.
+- `totp_iniciar()` gera o segredo e devolve o endereço `otpauth://` do QR; `totp_ativar(código)` só liga depois
+  de um código certo; `totp_desativar()`; `totp_zerar(pessoa)` só master; `totp_estado()`. Todas exigem
+  `acesso_liberado()` (quem liga o app já passou pelo código do dia) e nenhuma é executável pelo `anon`.
+- `verificar_codigo` tenta primeiro o app (passo anterior, atual e seguinte, pela diferença de relógio) e depois o
+  e-mail. Cada passo do app vale uma vez (`ultimo_passo`). Erros do app contam no mesmo limite de 10 em 30 min.
+- Eventos novos no registro: `entrou_app`, `app_ativado`, `app_desativado`, `app_zerado`.
+- Testado num Postgres local (vetores da RFC 6238, ligar com código errado e certo, reuso do mesmo código, código
+  do e-mail ainda valendo, zerar sem ser master, anon recusado) e na tela com o banco simulado (o QR desenhado foi
+  lido de volta por um leitor de QR).
 
 ## 23. Integração com a API do BTG (em levantamento, 06/11/2026)
 
