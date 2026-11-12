@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
+<script src="comum/barra.js"></script>
 <title>Fluxo e Captação — Adami Captal</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -221,7 +230,7 @@ function api(path,opts,jaTentou){
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
-var VERSAO_FLUXO="versão 2.4";
+var VERSAO_FLUXO="versão 2.5";
 document.getElementById("selo").textContent=VERSAO_FLUXO;
 
 var ESTADO={ lancamentos:null, mes:null, ano:null, resultado:null, paresDesmarcados:{}, transacoesExcluidas:{}, snapshots:[], snapshotAtualId:null,

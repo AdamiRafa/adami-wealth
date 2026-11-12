@@ -3,7 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
+<script src="comum/barra.js"></script>
 <title>Relatório Imobiliário</title>
 <style>
 :root{--prim:#1B2A4A;--sec:#8A9199;--borda:#E2E5EA;--fundo:#F6F7F9;--txt:#1F2933}
@@ -80,12 +89,22 @@ th.idx,td.idx{width:34px;text-align:center;color:var(--sec);font-size:11px}
 @media print{#awVoltar{display:none!important}}
 </style>
 <link rel="stylesheet" href="estilo/adami-2026.css">
+<style>
+/* Visual 2026 (3.10): cabeçalho em vidro e título com serifa, como os outros módulos. Só na tela. */
+@media screen{
+  html body > header{background:rgba(255,255,255,.74);margin:14px 16px 0;border-radius:18px;border:1px solid rgba(255,255,255,.9);
+    box-shadow:0 10px 34px rgba(5,19,42,.08);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);padding:12px 20px;top:10px}
+  header .cab-tit{display:flex;flex-direction:column;line-height:1.15}
+  header .cab-eb{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#A07F3A;font-weight:600}
+  header h1{font:500 21px Fraunces,Georgia,serif;color:#12263F;letter-spacing:0}
+  header .btn{border-radius:999px}
+}
+</style>
 </head>
 <body>
 
 <header>
-  <h1>RELATÓRIO IMOBILIÁRIO</h1>
-  <span class="dim" style="font-size:12px">Adami Captal</span>
+  <span class="cab-tit"><span class="cab-eb">Ferramentas</span><h1>Relatório Imobiliário</h1></span>
   <span class="dim" id="selo" style="font-size:11px;letter-spacing:.5px;opacity:.55"></span>
   <span class="dim" id="rasc" style="font-size:11px;opacity:.45"></span>
   <span class="esp"></span>
@@ -1745,7 +1764,7 @@ document.getElementById('arqProjeto').addEventListener('change',e=>{ if(e.target
   .forEach(id=>document.getElementById(id).addEventListener('input',()=>{ lerCampos(); campos(); marcarSujo(); validarUI(); }));
 
 /* ====================== SELO DE VERSAO ====================== */
-var VERSAO_IMOB = "versão 2.75";
+var VERSAO_IMOB = "versão 2.76";
 document.getElementById('selo').textContent = VERSAO_IMOB;
 
 /* ====================== RASCUNHO AUTOMATICO ======================

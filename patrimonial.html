@@ -3,7 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
+<script src="comum/barra.js"></script>
 <title>Gerador de Planos Patrimoniais</title>
 <style>
   :root{--navy:#1B2A4A;--navy-pale:#EDF0F5;--gold:#C9A24B;--cream:#F7F4EE;
@@ -105,13 +114,26 @@
 </style>
 <script src="comum/anexos.js"></script>
 <link rel="stylesheet" href="estilo/adami-2026.css">
+<style>
+/* Visual 2026 (3.10): cabeçalho em vidro, como os outros módulos. Só na tela. */
+@media screen{
+  html body > header{background:rgba(255,255,255,.74);color:#05132A;margin:14px 16px 0;border-radius:18px;border:1px solid rgba(255,255,255,.9);
+    box-shadow:0 10px 34px rgba(5,19,42,.08);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);padding:12px 20px;top:10px;flex-wrap:wrap}
+  header .cab-tit{display:flex;flex-direction:column;line-height:1.15}
+  header .cab-eb{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#A07F3A;font-weight:600}
+  header .cab-tit b{font:500 21px Fraunces,Georgia,serif;color:#12263F}
+  header .cab-ver{color:#7A8698}
+  header .btn.ghost{background:#fff;color:#05132A;border:1px solid #D5DCE5;border-radius:999px}
+  header .btn.ghost:hover{border-color:#12263F}
+  .selo.bom{background:#E6F1EC;color:#1F6B47}.selo.meio{background:#F7F0DC;color:#7A5D12}.selo.mau{background:#FBEBEA;color:#8E2B25}
+}
+</style>
 </head>
 <body>
 
 <header>
-  <span class="mark">ADAMI</span>
-  <span class="sub">Gerador de Planos Patrimoniais</span>
-  <span class="sub" style="opacity:.6">versão 2.75</span>
+  <span class="cab-tit"><span class="cab-eb">Ferramentas</span><b>Gerador de Planos Patrimoniais</b></span>
+  <span class="sub cab-ver">versão 2.76</span>
   <span class="dir">
     <span class="selo bom" id="selo">—</span>
     <button class="btn ghost" onclick="novoDoPadrao()">Novo</button>
@@ -1283,6 +1305,18 @@ function docxBlob(montador){
 }
 /* Salvar no CRM (06/11/2026): gera os .docx e grava na ficha do cliente escolhido
    (comum/anexos.js). A regra de erro que trava o download vale aqui também. */
+/* Aberto pela ficha do CRM (?lead=ID, 3.10): traz nome e patrimônio se ainda estiverem vazios. */
+setTimeout(function(){
+  if(!window.AdamiCRM||!window.AdamiCRM.leadIdDaUrl()) return;
+  window.AdamiCRM.leadDaUrl().then(function(l){
+    var d=window.AdamiCRM.dadosLead(l); if(!d) return;
+    var n=0;
+    if(!String(DADOS.cliente.nome||"").trim()&&d.nome){ DADOS.cliente.nome=d.nome; n++; }
+    if(!Number(DADOS.plano.patrimonio_liquido)&&d.patrimonio){ DADOS.plano.patrimonio_liquido=Math.round(d.patrimonio); n++; }
+    if(n) pintar();
+    window.AdamiCRM.faixa(d,n);
+  });
+},0);
 function salvarPlanosNoCRM(){
   if(travadoPorErro()) return;
   if(!window.AdamiCRM){ alert("Não foi possível carregar a ligação com o CRM. Recarregue a página."); return; }

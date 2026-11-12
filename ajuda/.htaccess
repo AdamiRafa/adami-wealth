@@ -1,0 +1,8 @@
+# Pasta do manual do Hub (3.10). Só PDF.
+# O cabeçalho Content-Security-Policy do Hub (object-src 'none') impede o leitor de PDF
+# do Chrome de abrir o arquivo; aqui ele é retirado. Buscadores não indexam.
+<IfModule mod_headers.c>
+  Header always unset Content-Security-Policy
+  Header always set X-Robots-Tag "noindex, nofollow"
+</IfModule>
+Options -Indexes

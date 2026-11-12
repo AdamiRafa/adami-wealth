@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
+<script src="comum/barra.js"></script>
 <title>Controle de Boletas — Adami Captal</title>
 <style>
 :root{
@@ -198,6 +207,7 @@ tr.vazia td{color:var(--muted);font-size:13px;text-align:center;padding:26px 8px
       <button class="btn" onclick="addLinha(true)">Adicionar ativo</button>
       <button class="btn claro" onclick="copiarResumo()">Copiar resumo</button>
       <button class="btn claro" onclick="window.print()">Imprimir</button>
+      <button class="btn claro" onclick="salvarNoCRM()">Salvar no CRM</button>
       <button class="btn perigo" onclick="limpar()">Limpar tudo</button>
     </div>
   </div>
@@ -229,10 +239,11 @@ tr.vazia td{color:var(--muted);font-size:13px;text-align:center;padding:26px 8px
 </div>
 
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Hub Adami</button>
+<script src="comum/anexos.js"></script>
 <div id="msg"></div>
 
 <script>
-var VERSAO_BOLETAS="versão 2.76";
+var VERSAO_BOLETAS="versão 2.77";
 document.getElementById("selo").textContent=VERSAO_BOLETAS;
 
 var CHAVE="aw_boletas";
@@ -568,6 +579,20 @@ document.getElementById("disponivel").addEventListener("blur",function(){
 });
 montar();
 montarResgates();
+
+/* ===== Salvar no CRM (3.10) =====
+   A simulação vira um PDF (cada cartão numa folha A4) e vai para a ficha do cliente
+   escolhido no CRM (comum/anexos.js). Aberta pela ficha (?lead=ID), o cliente já vem
+   escolhido. */
+function salvarNoCRM(){
+  if(!window.AdamiCRM){ alert("Não foi possível carregar a ligação com o CRM. Recarregue a página."); return; }
+  var nome=(document.getElementById("cliente").value||"").trim();
+  window.AdamiCRM.abrir({ titulo:"Salvar Controle de Boletas no CRM", cliente:nome,
+    opcoes:[{ rotulo:"Controle de Boletas (PDF)", gerar:function(){
+      return window.AdamiCRM.pdfDeBlocos(document.querySelectorAll(".wrap > header, .wrap > .cartao"), "Boletas_"+(nome||"cliente"), "boletas");
+    } }] });
+}
+if(window.AdamiCRM) window.AdamiCRM.daFicha(function(d){ return [["cliente",d.nome,"texto"]]; });
 </script>
 </body>
 </html>

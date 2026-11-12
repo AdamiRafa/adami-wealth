@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta http-equiv="Cache-Control" content="no-store, max-age=0">
 <title id="tituloPagina">Consolidado de Carteiras</title>
 <script>try{var c=localStorage.getItem("aw_cor");if(c==="noite"||(c==="sistema"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.setAttribute("data-cor","noite");}catch(e){}</script>
@@ -186,6 +194,10 @@ input,select,textarea{font-family:inherit;font-size:13px}
 .app-conf input{width:140px;font-size:20px;letter-spacing:.2em;text-align:center;padding:8px 10px;border:1px solid var(--line,#DCE2EA);border-radius:8px}
 /* Código de acesso por e-mail e tela Segurança (06/11/2026) */
 .auth-card input.cd-codigo{font-size:26px;letter-spacing:.42em;text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
+.auth-card label.cd-lembrar{display:flex;gap:10px;align-items:flex-start;margin:4px 0 16px;font:400 12.5px/1.45 Inter,"Segoe UI",system-ui,sans-serif;color:#5C6B7F;text-transform:none;letter-spacing:0;cursor:pointer;opacity:1}
+.auth-card label.cd-lembrar span{font:inherit;text-transform:none;letter-spacing:0}
+.cd-lembrar input{margin-top:2px;width:16px;height:16px;flex:0 0 auto;accent-color:#1B3A5F}
+.auth-card label.cd-lembrar b{color:#12263F;font-weight:600}
 .seg-tit{font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#5C6B7F;margin:22px 0 10px}
 .seg-so{font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;color:#8A6D1F;background:#F7F0DC;border-radius:999px;padding:2px 8px;margin-left:6px}
 .seg-rolagem{max-height:260px;overflow:auto;border:1px solid #E2E6ED;border-radius:10px;padding:0 10px}
@@ -898,6 +910,47 @@ html[data-cor="noite"] .eqtag.eu{color:#7FB0F0;border-color:#7FB0F0}
 /* Tela inicial limpa (06/11/2026): ferramentas só no menu; no meio, o dia, o calendário e os avisos. */
 .hb-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .hb-chip{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--chip);color:var(--tx2)}
+.rel-aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9500;background:#12263F;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;box-shadow:0 8px 24px rgba(5,19,42,.25)}
+/* Primeiros passos, aviso do aparelho, adoção e problemas (3.10) */
+.hb-passos{padding:18px 22px}
+.hb-passos-barra{height:6px;border-radius:999px;background:var(--chip);overflow:hidden;margin:-4px 0 12px}
+.hb-passos-barra span{display:block;height:100%;background:linear-gradient(90deg,#C0A265,#2F7A56);border-radius:999px}
+.hb-passos-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.hb-passos-lista li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--chip)}
+.hb-passos-lista li.feito{opacity:.62}
+.hb-passos-marca{width:24px;height:24px;flex:0 0 24px;border-radius:50%;border:2px solid var(--vd-borda);display:inline-flex;align-items:center;justify-content:center;color:#fff}
+.hb-passos-lista li.feito .hb-passos-marca{background:#2F7A56;border-color:#2F7A56}
+.hb-passos-marca svg{width:14px;height:14px}
+.hb-passos-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.hb-passos-txt b{font-size:13.5px}
+.hb-passos-txt span{font-size:12.5px;color:var(--tx2)}
+.hb-passos-lista .hb-pil{height:34px;font-size:12.5px;flex:0 0 auto}
+.hb-aviso-aparelho{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding:12px 16px;border-radius:16px;background:#F7F0DC;color:#5A4712;font-size:13.5px}
+.hb-aviso-aparelho span{flex:1;min-width:220px}
+html[data-cor="noite"] .hb-aviso-aparelho{background:#2A2516;color:#E9DDB8}
+@media screen and (max-width:640px){ .hb-passos-lista li{flex-wrap:wrap} .hb-passos-lista .hb-pil{margin-left:36px} }
+.ado-resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0 0 14px}
+.ado-resumo div{border:1px solid #E2E6ED;border-radius:10px;padding:10px 12px}
+.ado-resumo b{display:block;font:600 20px Georgia,serif;color:#12263F}
+.ado-resumo span{font-size:12px;color:#5C6B7F}
+.ado-resumo div.ruim b{color:#B3403A}
+.ado-filtro{display:inline-flex;gap:8px;align-items:center;font-size:12.5px;color:#5C6B7F;margin:0 0 10px;cursor:pointer}
+.ado-papel{font-size:11.5px;color:#7D8A9B}
+.ado-sim{color:#2F7A56;font-weight:600}.ado-nao{color:#B3403A;font-weight:600}
+.ado-inativo td{opacity:.55}
+.eqx td.n,.eqx th.n{text-align:right}
+.prb{border:1px solid #E2E6ED;border-radius:12px;padding:12px 14px;margin:0 0 10px}
+.prb.feito{opacity:.6}
+.prb-cab{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.prb-cab b{color:#12263F}.prb-cab span{font-size:12px;color:#7D8A9B}
+.prb-txt{margin:8px 0;white-space:pre-wrap;font-size:13.5px;line-height:1.5}
+.prb details{font-size:12px;color:#5C6B7F;margin:0 0 8px}.prb pre{white-space:pre-wrap;font-size:11.5px;background:#F4F6F9;padding:8px;border-radius:8px;max-height:180px;overflow:auto}
+.prb-acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+@media screen{
+  html[data-cor="noite"] .ado-resumo div,html[data-cor="noite"] .prb{border-color:rgba(255,255,255,.12)}
+  html[data-cor="noite"] .ado-resumo b,html[data-cor="noite"] .prb-cab b{color:#EEF2F8}
+  html[data-cor="noite"] .prb pre{background:rgba(255,255,255,.06);color:#C9D3DF}
+}
 .hb-chip.ruim{background:rgba(179,64,58,.12);color:#9B342E}
 .hb-chip.bom{background:rgba(47,122,86,.13);color:#1F6B47}
 html[data-cor="noite"] .hb-chip.ruim{color:#F2A29C}
@@ -1004,12 +1057,16 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
     <div class="spacer"></div>
     <button class="btn" id="btnChk" onclick="rodarConferencia()" style="display:none">Conferir dados</button>
     <button class="btn" id="btnPdfR" onclick="imprimir('retrato')" style="display:none">Imprimir retrato</button>
-    <button class="btn pri" id="btnPdfP" onclick="imprimir('paisagem')" style="display:none">Imprimir paisagem</button>
+    <button class="btn" id="btnPdfP" onclick="imprimir('paisagem')" style="display:none">Imprimir paisagem</button>
+    <button class="btn" id="btnPdfTodos" onclick="abrirPdfTodos()" style="display:none">PDF de todos</button>
+    <button class="btn" id="btnRelCrm" onclick="salvarRelatorioNoCRM()" style="display:none">Salvar no CRM</button>
+    <button class="btn pri" id="btnGerarPdf" onclick="gerarPdfRelatorio()" style="display:none">Gerar PDF</button>
   </div>
   <div id="view"><div class="card empty"><h2>Carregando…</h2></div></div>
 </main>
 
 <script src="comum/carteira.js"></script>
+<script src="comum/barra.js"></script>
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script src="vendor/pdfjs-3.11.174.min.js"></script>
 <script>
@@ -1236,7 +1293,7 @@ function pintarEquipe(aviso){
    12/11/2026 (3.01): o app autenticador voltou, agora conferido pelo banco
    (app_autenticador.sql). É um segundo caminho para o código, para quando o
    e-mail não chega (o Microsoft 365 parou em 12/11 e ninguém entrava). */
-var SEG={meus:null,equipe:null,erro:"",app:null,appNovo:null,appMsg:"",appErro:false};
+var SEG={meus:null,equipe:null,erro:"",app:null,appNovo:null,appMsg:"",appErro:false,aparelhos:null};
 function abrirSeguranca(){
   if(!document.getElementById("segv")){
     var d=document.createElement("div");
@@ -1246,18 +1303,20 @@ function abrirSeguranca(){
     document.body.appendChild(d);
   }
   document.getElementById("segv").style.display="flex";
-  SEG={meus:null,equipe:null,erro:"",app:null,appNovo:null,appMsg:"",appErro:false};
+  SEG={meus:null,equipe:null,erro:"",app:null,appNovo:null,appMsg:"",appErro:false,aparelhos:null};
   pintarSeguranca('<h2>Segurança</h2><p class="eqsub">Carregando…</p>');
   Promise.all([
     api("rpc/meus_acessos",{method:"POST",body:{}}).catch(function(e){ SEG.erro=String(e.message||e); return null; }),
     EU.super?api("rpc/acessos_equipe",{method:"POST",body:{}}).catch(function(){ return null; }):Promise.resolve(null),
-    api("rpc/totp_estado",{method:"POST",body:{}}).catch(function(){ return null; })
-  ]).then(function(r){ SEG.meus=r[0]; SEG.equipe=r[1]; SEG.app=r[2]; pintarSeguranca(telaSeguranca()); });
+    api("rpc/totp_estado",{method:"POST",body:{}}).catch(function(){ return null; }),
+    api("rpc/aparelhos_meus",{method:"POST",body:{}}).catch(function(){ return null; })
+  ]).then(function(r){ SEG.meus=r[0]; SEG.equipe=r[1]; SEG.app=r[2]; SEG.aparelhos=r[3]; pintarSeguranca(telaSeguranca()); });
 }
 function fecharSeguranca(){ var d=document.getElementById("segv"); if(d) d.style.display="none"; }
 function pintarSeguranca(html){ var x=document.getElementById("segx"); if(x) x.innerHTML=html; }
 var SEG_EVENTOS={entrou:"Entrou",entrou_app:"Entrou pelo app",codigo_enviado:"Código enviado",codigo_errado:"Código errado",bloqueado:"Bloqueado por erros",saiu_de_todos:"Saiu de todos os aparelhos",
-  app_ativado:"Ligou o app autenticador",app_desativado:"Desligou o app autenticador",app_zerado:"App autenticador zerado por um master"};
+  app_ativado:"Ligou o app autenticador",app_desativado:"Desligou o app autenticador",app_zerado:"App autenticador zerado por um master",
+  aparelho_lembrado:"Lembrou o aparelho por 7 dias",entrou_aparelho:"Entrou por aparelho lembrado",aparelho_esquecido:"Esqueceu aparelho lembrado"};
 function segAparelho(ua){
   ua=String(ua||"");
   var nav=/Edg\//.test(ua)?"Edge":/OPR\//.test(ua)?"Opera":/Firefox\//.test(ua)?"Firefox":/Chrome\//.test(ua)?"Chrome":/Safari\//.test(ua)?"Safari":"";
@@ -1282,9 +1341,9 @@ function segLinhas(lista,comNome){
 function telaSeguranca(){
   var h='<h2>Segurança</h2>'+
     '<div class="mfa-status on">Verificação em duas etapas ativa</div>'+
-    '<p class="eqsub" style="margin-top:12px">Toda entrada no Hub pede, depois da senha, um código de 6 números enviado para o seu e-mail. '+
-    'O acesso vale até a meia-noite: no dia seguinte, todo mundo entra de novo.</p>'+
-    blocoApp()+
+    '<p class="eqsub" style="margin-top:12px">Toda entrada no Hub pede, depois da senha, um código de 6 números: o do e-mail ou o do app autenticador. '+
+    'O acesso vale até a meia-noite: no dia seguinte, todo mundo entra de novo. Num computador lembrado, só a senha.</p>'+
+    blocoApp()+blocoAparelhos()+
     '<h3 class="seg-tit">Seus últimos acessos</h3>';
   if(SEG.meus===null) h+='<p class="eqsub err">Não foi possível carregar os acessos.'+(SEG.erro?' '+esc(SEG.erro):'')+'</p>';
   else h+=segLinhas(SEG.meus,false);
@@ -1296,6 +1355,30 @@ function telaSeguranca(){
   h+='<div class="eqfoot"><button class="eqbt perigo" onclick="sairDeTodos()">Sair de todos os aparelhos</button>'+
      '<button class="btn" onclick="fecharSeguranca()">Fechar</button></div>';
   return h;
+}
+
+/* ---------- Aparelhos lembrados (3.10) ---------- */
+function blocoAparelhos(){
+  var h='<h3 class="seg-tit">Aparelhos lembrados</h3>';
+  if(SEG.aparelhos===null) return h+'<p class="eqsub">Ainda não instalado no banco. Avise um master.</p>';
+  var meu=aparelhoLocal(), lista=SEG.aparelhos||[];
+  if(!lista.length) return h+'<p class="eqsub">Nenhum. Para não digitar o código todo dia neste computador, marque <b>Lembrar este computador por 7 dias</b> na tela do código'+
+    (SEG.app&&SEG.app.ativo?'':' (antes, ligue o app autenticador acima)')+'.</p>';
+  return h+'<div class="seg-rolagem"><table><thead><tr><th>Aparelho</th><th>Lembrado em</th><th>Vale até</th><th>Último uso</th><th></th></tr></thead><tbody>'+
+    lista.map(function(a,i){
+      var este=meu&&meu.id===a.id;
+      return '<tr><td>'+esc(segAparelho(a.navegador))+(este?' <span class="seg-so">este computador</span>':'')+'</td>'+
+        '<td>'+esc(segQuando(a.criado_em))+'</td><td>'+esc(segQuando(a.expira_em))+'</td><td>'+esc(a.ultimo_uso?segQuando(a.ultimo_uso):"—")+'</td>'+
+        '<td><button class="eqbt" onclick="esquecerAparelho('+i+')">Esquecer</button></td></tr>';
+    }).join("")+'</tbody></table></div>';
+}
+function esquecerAparelho(i){
+  var a=(SEG.aparelhos||[])[i]; if(!a) return;
+  api("rpc/aparelho_esquecer",{method:"POST",body:{p_id:a.id}}).then(function(){
+    var meu=aparelhoLocal(); if(meu&&meu.id===a.id) esquecerAparelhoLocal();
+    SEG.aparelhos=(SEG.aparelhos||[]).filter(function(x){ return x.id!==a.id; });
+    pintarSeguranca(telaSeguranca());
+  }).catch(function(e){ alert(String(e.message||e)); });
 }
 
 /* ---------- App autenticador (3.01) ---------- */
@@ -1358,6 +1441,7 @@ function appCancelar(){ SEG.appNovo=null; SEG.appMsg=""; pintarSeguranca(telaSeg
 function appDesligar(){
   if(!confirm("Desligar o app autenticador? Até ligar de novo, o código só chega por e-mail.")) return;
   api("rpc/totp_desativar",{method:"POST",body:{}}).then(function(){
+    esquecerAparelhoLocal(); SEG.aparelhos=[];
     SEG.app={ativo:false}; SEG.appMsg="App desligado. Para usar em outro celular, clique em Ligar."; SEG.appErro=false; pintarSeguranca(telaSeguranca());
   }).catch(function(e){ SEG.appMsg=String(e.message||e); SEG.appErro=true; pintarSeguranca(telaSeguranca()); });
 }
@@ -1446,6 +1530,7 @@ function sairDeTodos(){
     return tk?fetch(SB_URL+"/auth/v1/logout?scope=global",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk}}).catch(function(){}):null;
   }).then(function(){
     fecharSeguranca();
+    esquecerAparelhoLocal();
     limparSessao();
     db={clientes:[],dados:{},cartas:{}}; S.cliente=null; S.rasc=null; S.app=null;
     try{ localStorage.removeItem("aw_app"); }catch(e){}
@@ -1907,7 +1992,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.01";
+var VERSAO="versão 3.10";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -4354,6 +4439,191 @@ function imprimir(orientacao){
   }
   window.print();
 }
+/* ===================== Gerar PDF direto (3.10) =====================
+   Sem a janela de impressão: cada página do relatório (.pg) vira uma imagem A4 com as
+   mesmas regras de impressão (@media print) e entra num PDF, que baixa com o nome
+   padrão (tituloPdf). "PDF de todos" faz o mesmo para todos os clientes com lançamento
+   no mês, e pode gravar cada um na ficha do cliente no CRM. Para a versão em vetor
+   (texto selecionável), o Imprimir continua igual. */
+var REL_PDF={cancelar:false,rodando:false};
+function relCarregar(src){
+  return new Promise(function(ok,erro){
+    if(document.querySelector('script[data-rel="'+src+'"]')) return ok();
+    var x=document.createElement("script"); x.src=src; x.setAttribute("data-rel",src);
+    x.onload=function(){ ok(); }; x.onerror=function(){ erro(new Error("Não foi possível carregar "+src)); };
+    document.head.appendChild(x);
+  });
+}
+function relLibs(){ return relCarregar("vendor/jspdf-2.5.1.umd.min.js").then(function(){ return relCarregar("vendor/html2canvas-1.4.1.min.js"); }); }
+var REL_REGRAS=null;
+function relRegrasImpressao(){
+  if(REL_REGRAS!==null) return REL_REGRAS;
+  var out=[];
+  [].forEach.call(document.styleSheets,function(sh){
+    var rs; try{ rs=sh.cssRules; }catch(e){ return; }
+    [].forEach.call(rs||[],function(r){
+      if(r.type===4&&/\bprint\b/.test(r.media.mediaText)&&!/screen/.test(r.media.mediaText))
+        [].forEach.call(r.cssRules,function(x){ if(x.type===1) out.push(x.cssText); });
+    });
+  });
+  REL_REGRAS=out.join("\n");
+  return REL_REGRAS;
+}
+/* Uma página (.pg) em canvas, do jeito que sairia na impressão (largura A4 = 794 px). */
+function relPaginaCanvas(pg,idx){
+  pg.setAttribute("data-relpg",idx);
+  return window.html2canvas(pg,{scale:2,backgroundColor:"#ffffff",logging:false,windowWidth:1280,
+    onclone:function(doc){
+      var st=doc.createElement("style"); st.textContent=relRegrasImpressao()+"\n[data-relpg]{width:794px!important;max-width:none!important;box-sizing:border-box!important}";
+      doc.head.appendChild(st);
+      var alvo=doc.querySelector('[data-relpg="'+idx+'"]'); if(!alvo) return;
+      /* SVG com largura em % sai em branco no html2canvas: cada gráfico vira <img>. */
+      [].forEach.call(alvo.querySelectorAll("svg"),function(sv){
+        var vb=(sv.getAttribute("viewBox")||"").split(/[\s,]+/).map(Number);
+        var c=sv.cloneNode(true);
+        if(vb.length===4&&vb[2]>0){ if(!/^\d+$/.test(c.getAttribute("width")||"")) c.setAttribute("width",vb[2]); if(!/^\d+$/.test(c.getAttribute("height")||"")) c.setAttribute("height",vb[3]); }
+        c.setAttribute("xmlns","http://www.w3.org/2000/svg"); c.removeAttribute("style");
+        var img=doc.createElement("img");
+        img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(new XMLSerializer().serializeToString(c));
+        img.className=(sv.getAttribute("class")||"");
+        var noPainel=!!sv.closest(".panel");
+        img.style.cssText="display:block;margin:0 auto;max-width:100%;height:auto;"+(noPainel?"max-height:46mm;width:auto;":"")+(sv.getAttribute("style")||"").replace(/width:[^;]*;?/,"");
+        sv.parentNode.replaceChild(img,sv);
+      });
+    }}).then(function(cv){ pg.removeAttribute("data-relpg"); return cv; },function(e){ pg.removeAttribute("data-relpg"); throw e; });
+}
+function relPdfDasPaginas(paginas,progresso){
+  var pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",compress:true});
+  var passo=Promise.resolve();
+  [].forEach.call(paginas,function(pg,i){
+    passo=passo.then(function(){
+      if(REL_PDF.cancelar) throw new Error("cancelado");
+      if(progresso) progresso(i+1,paginas.length);
+      return relPaginaCanvas(pg,i);
+    }).then(function(cv){
+      if(i>0) pdf.addPage();
+      var alt=cv.height*210/cv.width, larg=210;
+      if(alt>297){ larg=210*297/alt; alt=297; }
+      pdf.addImage(cv.toDataURL("image/jpeg",0.86),"JPEG",(210-larg)/2,0,larg,alt);
+    });
+  });
+  return passo.then(function(){ return pdf.output("blob"); });
+}
+function relBaixar(blob,nome){
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=nome;
+  document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },2000);
+}
+function relAviso(txt){
+  var d=document.getElementById("relAviso");
+  if(!txt){ if(d) d.remove(); return; }
+  if(!d){ d=document.createElement("div"); d.id="relAviso"; d.className="rel-aviso no-print"; document.body.appendChild(d); }
+  d.textContent=txt;
+}
+function gerarPdfRelatorio(){
+  if(REL_PDF.rodando) return;
+  var paginas=document.querySelectorAll("#view .pg");
+  if(!paginas.length){ alert("Abra o relatório de um cliente com lançamento no mês."); return; }
+  REL_PDF.rodando=true; REL_PDF.cancelar=false;
+  var nome=tituloPdf()+".pdf";
+  relAviso("Preparando o PDF…");
+  relLibs().then(function(){
+    return relPdfDasPaginas(paginas,function(i,t){ relAviso("Gerando o PDF: página "+i+" de "+t+"…"); });
+  }).then(function(blob){
+    relBaixar(blob,nome); relAviso("PDF pronto: "+nome); setTimeout(function(){ relAviso(""); },4000);
+    registrar("gerou PDF do relatório",(cli()||{}).nome||"",MESES[S.mes-1]+"/"+S.ano);
+  }).catch(function(e){ relAviso(""); alert("Não foi possível gerar o PDF: "+(e.message||e)+"\n\nUse Imprimir retrato e escolha Salvar como PDF."); })
+  .then(function(){ REL_PDF.rodando=false; });
+}
+/* Liga um cliente das Carteiras a um cliente do CRM: pela conta do BTG, depois pelo nome. */
+function relLeadDe(c,leads){
+  var soNum=function(x){ return String(x||"").replace(/\D/g,"").replace(/^0+/,""); };
+  var contas=(c.contas_btg||[]).map(soNum).filter(Boolean);
+  var porConta=leads.filter(function(l){ return l.conta&&contas.indexOf(soNum(l.conta))!==-1; });
+  if(porConta.length===1) return porConta[0];
+  var nm=hbSemAcento(c.nome).trim();
+  var porNome=leads.filter(function(l){ return hbSemAcento(l.cliente).trim()===nm; });
+  return porNome.length===1?porNome[0]:null;
+}
+function relCarregarCRM(){
+  if(window.AdamiCRM&&window.AdamiCRM.enviar) return Promise.resolve(window.AdamiCRM);
+  return relCarregar("comum/anexos.js").then(function(){
+    if(!window.AdamiCRM||!window.AdamiCRM.enviar) throw new Error("ligação com o CRM indisponível");
+    return window.AdamiCRM;
+  });
+}
+function salvarRelatorioNoCRM(){
+  var c=cli(); if(!c||!document.querySelector("#view .pg")){ alert("Abra o relatório de um cliente com lançamento no mês."); return; }
+  relCarregarCRM().then(function(A){
+    return A.clientes().then(function(leads){
+      var l=relLeadDe(c,leads||[]);
+      A.abrir({ titulo:"Salvar o relatório no CRM", cliente:c.nome, leadId:l?l.id:null,
+        opcoes:[{ rotulo:"Relatório Consolidado de "+MESES[S.mes-1]+"/"+S.ano+" (PDF)", gerar:function(){
+          return relLibs().then(function(){ return relPdfDasPaginas(document.querySelectorAll("#view .pg")); })
+            .then(function(blob){ return { blob:blob, nome:tituloPdf()+".pdf", origem:"relatorio" }; });
+        } }] });
+    });
+  }).catch(function(e){ alert("Não foi possível abrir o Salvar no CRM: "+(e.message||e)); });
+}
+/* ---- PDF de todos os clientes do mês ---- */
+function relClientesDoMes(){ return db.clientes.filter(function(c){ return !!reg(c.id,S.mes,S.ano); }); }
+function abrirPdfTodos(){
+  var lista=relClientesDoMes();
+  var d=document.getElementById("relTodos");
+  if(!d){ d=document.createElement("div"); d.id="relTodos"; d.className="eqv no-print"; document.body.appendChild(d); }
+  d.style.display="flex";
+  d.innerHTML='<div class="eqx"><h2>PDF de todos os clientes</h2>'+
+    '<p class="eqsub">'+lista.length+' cliente(s) com lançamento em '+MESES[S.mes-1]+'/'+S.ano+'. Cada relatório vira um PDF com o nome padrão. Leva alguns segundos por cliente: deixe esta aba aberta até terminar.</p>'+
+    (lista.length?'<label class="ado-filtro" style="display:flex"><input type="checkbox" id="rtBaixar" checked> Baixar cada PDF neste computador (o navegador pode pedir para permitir vários downloads: clique em Permitir)</label>'+
+      '<label class="ado-filtro" style="display:flex"><input type="checkbox" id="rtCrm" checked> Salvar também na ficha de cada cliente no CRM (quando a conta ou o nome batem)</label>':'')+
+    '<div id="rtProg" class="eqsub" style="margin-top:10px"></div>'+
+    '<div class="eqfoot"><button class="btn" id="rtFechar" onclick="REL_PDF.cancelar=true;document.getElementById(\'relTodos\').style.display=\'none\'">Fechar</button>'+
+    (lista.length?'<button class="btn pri" id="rtIr" onclick="gerarPdfTodos()">Gerar '+lista.length+' PDF(s)</button>':'')+'</div></div>';
+}
+function gerarPdfTodos(){
+  if(REL_PDF.rodando) return;
+  var lista=relClientesDoMes(); if(!lista.length) return;
+  var baixar=document.getElementById("rtBaixar").checked, noCrm=document.getElementById("rtCrm").checked;
+  if(!baixar&&!noCrm){ alert("Marque baixar, salvar no CRM, ou os dois."); return; }
+  var prog=document.getElementById("rtProg"), bt=document.getElementById("rtIr");
+  bt.disabled=true; document.getElementById("rtFechar").textContent="Cancelar";
+  REL_PDF.rodando=true; REL_PDF.cancelar=false;
+  var salvo={cliente:S.cliente,tab:S.tab,rasc:S.rasc,chk:S._chk};
+  var caixa=document.createElement("div"); caixa.id="relLote";
+  caixa.style.cssText="position:absolute;left:0;top:0;width:794px;z-index:-1;pointer-events:none";
+  document.body.appendChild(caixa);
+  var feitos=[], semFicha=[], erros=[], leads=[], A=null;
+  var inicio=noCrm?relCarregarCRM().then(function(x){ A=x; return x.clientes(); }).then(function(l){ leads=l||[]; })
+      .catch(function(e){ noCrm=false; erros.push("CRM: "+(e.message||e)); }):Promise.resolve();
+  var passo=inicio.then(relLibs);
+  lista.forEach(function(c,k){
+    passo=passo.then(function(){
+      if(REL_PDF.cancelar) throw new Error("cancelado");
+      S.cliente=c.id; S._chk=false; montarRascunho();
+      caixa.innerHTML=viewRelatorio();
+      var nome=tituloPdf()+".pdf";
+      return relPdfDasPaginas(caixa.querySelectorAll(".pg"),function(i,t){
+        prog.textContent=(k+1)+" de "+lista.length+": "+c.nome+" (página "+i+" de "+t+")";
+      }).then(function(blob){
+        if(baixar) relBaixar(blob,nome);
+        var l=noCrm?relLeadDe(c,leads):null;
+        if(noCrm&&!l) semFicha.push(c.nome);
+        return (l?A.enviar(l,{blob:blob,nome:nome,origem:"relatorio"},"Relatório de "+MESES[S.mes-1]+"/"+S.ano+" gerado pelo PDF de todos."):Promise.resolve())
+          .then(function(){ feitos.push(c.nome); });
+      }).catch(function(e){ if(String(e.message)==="cancelado") throw e; erros.push(c.nome+": "+(e.message||e)); });
+    });
+  });
+  passo.catch(function(){}).then(function(){
+    caixa.remove();
+    S.cliente=salvo.cliente; S.tab=salvo.tab; S._chk=salvo.chk; montarRascunho(); render();
+    REL_PDF.rodando=false;
+    registrar("gerou PDF de todos",MESES[S.mes-1]+"/"+S.ano,feitos.length+" relatório(s)");
+    var d=document.getElementById("relTodos"); if(!d||d.style.display==="none") return;
+    prog.innerHTML=(REL_PDF.cancelar?"Cancelado. ":"Pronto. ")+feitos.length+" de "+lista.length+" relatório(s) gerado(s)."+
+      (semFicha.length?"<br>Sem ficha no CRM (só baixados): "+esc(semFicha.join(", "))+".":"")+
+      (erros.length?"<br>Com erro: "+esc(erros.join("; "))+".":"");
+    document.getElementById("rtFechar").textContent="Fechar"; bt.style.display="none";
+  });
+}
 /* ---------- portal de sistemas ---------- */
 /* Dois grupos no hub. "ferramentas" produz entregavel; "simuladores"
    calcula cenario. A ordem dentro de cada grupo e a ordem da lista.  */
@@ -4437,7 +4707,8 @@ function irParaHub(){
    Avisos da casa. Os números vêm do banco depois que a tela já apareceu
    (carregarInicio), então a tela nunca espera por eles. */
 var INICIO={estado:"vazio",em:0,agenda:null,tarefas:null,leads:[],rv:null,avisos:null,podePublicar:false,
-  formAviso:false,erroAviso:"",nums:null,numsCasa:false,abaAviso:"todos",avisosTodos:false,leitores:{},abertoLeitores:null};
+  formAviso:false,erroAviso:"",nums:null,numsCasa:false,abaAviso:"todos",avisosTodos:false,leitores:{},abertoLeitores:null,
+  check:null,problemasAbertos:0};
 var HB_CURTO=(function(){ try{ return localStorage.getItem("aw_menu_curto")==="1"; }catch(e){ return false; } })();
 /* Aparência: "dia", "noite" ou "sistema" (acompanha o claro/escuro do computador).
    Vale para o Hub e o CRM (mesma chave). Carteiras, dentro do Hub, fica sempre claro:
@@ -4471,7 +4742,10 @@ var HB_IC={
   relatorio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13h7M9 17h7"/></svg>',
   rv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>',
   aviso:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>',
-  mais:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
+  mais:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  grafico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  alerta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17.5v.5"/></svg>',
+  ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"/></svg>'
 };
 
 /* ---------- Agenda do dia (mesma regra da aba Agenda do CRM, só a própria pessoa) ---------- */
@@ -4566,8 +4840,10 @@ function carregarInicio(forcar){
     api("leads?select=funil,esteira,perdido,ganho,ganho_em,criado_em,etapa_desde,saldo_inicial,valor_potencial,valor_fechado,valor_offshore,saldo_inicial_offshore,movimentacoes,excluido,responsavel_id&excluido=eq.false"+(casa?"":"&responsavel_id=eq."+EU.id)),
     api("configuracoes?select=valor&chave=eq.usd_brl").catch(function(){ return []; })
   ]).then(function(x){ var cot=x[1]&&x[1][0]?Number(x[1][0].valor):null; return window.AWCarteira.numeros(x[0],cot,new Date()); }).catch(function(){ return null; }):Promise.resolve(null);
-  Promise.all([pAgenda,pRv,pAv,pPode,pNums]).then(function(r){
-    INICIO.nums=r[4]; INICIO.numsCasa=!!casa;
+  var pCheck=api("rpc/meu_checklist",{method:"POST",body:{}}).catch(function(){ return null; });
+  var pProb=EU.super?api("problemas?select=id&resolvido_em=is.null").then(function(r){ return (r||[]).length; }).catch(function(){ return 0; }):Promise.resolve(0);
+  Promise.all([pAgenda,pRv,pAv,pPode,pNums,pCheck,pProb]).then(function(r){
+    INICIO.nums=r[4]; INICIO.numsCasa=!!casa; INICIO.check=r[5]; INICIO.problemasAbertos=r[6]||0;
     INICIO.tarefas=r[0]?(r[0][0]||[]):null; INICIO.leads=r[0]?(r[0][1]||[]):[];
     var hoje=hbIso(new Date());
     if(INICIO.tarefas){ var a=hbAgendaFaixa(INICIO.tarefas,INICIO.leads,hoje,hoje,hoje);
@@ -4617,6 +4893,9 @@ function hbMenu(){
   h+='<div class="hb-rodape">';
   if(EU.super) h+='<button type="button" class="hb-item" onclick="abrirEquipe()" title="Gerenciar equipe">'+HB_IC.equipe+'<span class="rot">Gerenciar equipe</span></button>';
   if(EU.super) h+='<button type="button" class="hb-item" onclick="abrirRegistro()" title="Registro de atividades">'+HB_IC.relatorio+'<span class="rot">Registro de atividades</span></button>';
+  if(EU.super) h+='<button type="button" class="hb-item" onclick="abrirAdocao()" title="Adoção da equipe">'+HB_IC.grafico+'<span class="rot">Adoção da equipe</span></button>';
+  if(EU.super) h+='<button type="button" class="hb-item" onclick="abrirProblemas()" title="Problemas reportados">'+HB_IC.alerta+'<span class="rot">Problemas reportados</span>'+
+    (INICIO.problemasAbertos?'<span class="hb-cont quente">'+INICIO.problemasAbertos+'</span>':'')+'</button>';
   h+='<button type="button" class="hb-item" onclick="abrirSeguranca()" title="Segurança">'+HB_IC.cadeado+'<span class="rot">Segurança</span></button>'+
     (function(){ var a=hbAparencia(), op=[["dia","Dia",HB_IC.dia],["noite","Noite",HB_IC.noite],["sistema","Sistema",HB_IC.sistema]];
       var prox=a==="dia"?"noite":(a==="noite"?"sistema":"dia");
@@ -4842,6 +5121,7 @@ function viewHub(){
         '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
           '<button type="button" class="hb-pil escura" onclick="irParaAgenda()">'+HB_IC.agenda+'Abrir a Agenda</button>'+
         '</div></section>'+
+      hbAvisoAparelhoHtml()+hbChecklistHtml(naoLidos)+
       hbNumerosHtml()+
       '<div class="hb-dois">'+
         '<section class="hb-dia hb-cartao hb-vidro"><div class="hb-cartao-cab"><h2>'+esc(tituloDia)+'<small>da sua Agenda no CRM</small></h2>'+
@@ -4853,6 +5133,160 @@ function viewHub(){
         '</aside></div>'+
       '<div class="hb-pe">Acesso restrito aos colaboradores. Todas as ações ficam registradas. &nbsp;·&nbsp; '+VERSAO+' &nbsp;·&nbsp; &copy; '+new Date().getFullYear()+' '+esc(EMPRESA.nome)+'</div>'+
     '</main></div></div>';
+}
+/* ---------- Primeiros passos (3.10) ----------
+   Quadro na tela inicial com o que todo assessor faz no começo. Cada item é conferido de
+   verdade (banco: meu_checklist), não marcado à mão. Some quando tudo estiver feito ou se a
+   pessoa clicar em Ocultar (preferência deste navegador). */
+function hbLer(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function hbGravar(k,v){ try{ if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){} }
+function hbChecklistItens(naoLidos){
+  var c=INICIO.check; if(!c) return null;
+  var crm=podeFerramenta("crm"), it=[];
+  it.push({feito:!!c.app,titulo:"Ligue o app autenticador",texto:"Você entra mesmo quando o e-mail atrasar e pode marcar este computador para não pedir o código por 7 dias.",botao:"Ligar agora",acao:"abrirSeguranca()"});
+  it.push({feito:hbLer("aw_manual_aberto")==="1",titulo:"Dê uma olhada no manual do Hub",texto:"O passo a passo de cada ferramenta, com exemplos.",botao:"Abrir o manual",acao:"hbAbrirManual()"});
+  if(INICIO.avisos) it.push({feito:!naoLidos,titulo:"Leia os avisos da casa",texto:naoLidos?naoLidos+(naoLidos===1?" aviso ainda não lido.":" avisos ainda não lidos."):"Todos lidos.",botao:"Ver avisos",acao:"hbIrAvisos()"});
+  if(crm) it.push({feito:!!c.atividade,titulo:"Registre sua primeira atividade no CRM",texto:"Na ficha do cliente, em Atividades e histórico: ligação, reunião ou mensagem.",botao:"Abrir o CRM",acao:"location.href='crm.html'"});
+  if(crm&&c.jornada>0) it.push({feito:!c.jornada_sem_contato,titulo:"Marque o próximo contato de quem está em jornada",
+    texto:c.jornada_sem_contato?c.jornada_sem_contato+" de "+c.jornada+" cliente(s) em jornada sem próximo contato.":"Todos os clientes em jornada têm próximo contato.",botao:"Abrir o CRM",acao:"location.href='crm.html'"});
+  return it;
+}
+function hbChecklistHtml(naoLidos){
+  if(hbLer("aw_passos_oculto")==="1") return "";
+  var it=hbChecklistItens(naoLidos); if(!it||!it.length) return "";
+  var feitos=it.filter(function(x){ return x.feito; }).length;
+  if(feitos===it.length) return "";
+  return '<section class="hb-passos hb-vidro" aria-label="Primeiros passos no Hub">'+
+    '<div class="hb-cartao-cab"><h2>Primeiros passos no Hub<small>'+feitos+' de '+it.length+' feitos</small></h2>'+
+      '<button type="button" class="hb-link" onclick="hbGravar(\'aw_passos_oculto\',\'1\');render(true)">Ocultar</button></div>'+
+    '<div class="hb-passos-barra"><span style="width:'+Math.round(feitos/it.length*100)+'%"></span></div>'+
+    '<ol class="hb-passos-lista">'+it.map(function(x){
+      return '<li class="'+(x.feito?"feito":"")+'"><span class="hb-passos-marca">'+(x.feito?HB_IC.ok:"")+'</span>'+
+        '<span class="hb-passos-txt"><b>'+esc(x.titulo)+'</b><span>'+esc(x.texto)+'</span></span>'+
+        (x.feito?'':'<button type="button" class="hb-pil" onclick="'+x.acao+'">'+esc(x.botao)+'</button>')+'</li>';
+    }).join("")+'</ol></section>';
+}
+function hbAbrirManual(){ hbGravar("aw_manual_aberto","1"); window.open("ajuda/Manual-do-Hub.pdf","_blank","noopener"); render(true); }
+function hbIrAvisos(){ var a=document.getElementById("hbAvisos"); if(a) a.scrollIntoView({behavior:"smooth",block:"start"}); }
+function hbAvisoAparelhoHtml(){
+  if(!AVISO_APARELHO) return "";
+  return '<section class="hb-aviso-aparelho" role="status"><span>'+esc(AVISO_APARELHO)+'</span>'+
+    '<button type="button" class="hb-pil" onclick="AVISO_APARELHO=\'\';abrirSeguranca()">Abrir Segurança</button>'+
+    '<button type="button" class="hb-link" onclick="AVISO_APARELHO=\'\';render(true)">Fechar</button></section>';
+}
+
+/* ---------- Adoção da equipe (3.10, só master) ----------
+   Quem já ligou o app, quem entra, quem registra atividade e quem está com contato
+   atrasado. Quem lê é a função painel_adocao (exige master). */
+var ADOC={linhas:null,erro:"",soAtivos:true};
+function abrirAdocao(){
+  if(!EU.super) return;
+  if(!document.getElementById("adov")){
+    var d=document.createElement("div"); d.id="adov"; d.className="eqv";
+    d.onclick=function(e){ if(e.target===d) d.style.display="none"; };
+    d.innerHTML='<div class="eqx largo" id="adox"></div>'; document.body.appendChild(d);
+  }
+  document.getElementById("adov").style.display="flex";
+  ADOC.linhas=null; ADOC.erro=""; pintarAdocao();
+  api("rpc/painel_adocao",{method:"POST",body:{}}).then(function(r){ ADOC.linhas=r||[]; pintarAdocao(); })
+    .catch(function(e){ ADOC.erro=String(e.message||e); ADOC.linhas=[]; pintarAdocao(); });
+}
+function pintarAdocao(){
+  var x=document.getElementById("adox"); if(!x) return;
+  var h='<h2>Adoção da equipe</h2><p class="eqsub">Como cada pessoa está usando o Hub. Atividades e contatos contam os clientes de que a pessoa é responsável no CRM.</p>';
+  if(ADOC.linhas===null){ x.innerHTML=h+'<p class="eqsub">Carregando…</p>'; return; }
+  if(ADOC.erro){ x.innerHTML=h+'<p class="eqsub err">'+esc(/painel_adocao|PGRST202/.test(ADOC.erro)?"Falta instalar o usabilidade.sql no Supabase.":ADOC.erro)+'</p><div class="eqfoot"><button class="btn" onclick="document.getElementById(\'adov\').style.display=\'none\'">Fechar</button></div>'; return; }
+  var ls=ADOC.linhas.filter(function(l){ return !ADOC.soAtivos||l.ativo; });
+  var comApp=ls.filter(function(l){ return l.app; }).length;
+  var ativas=ls.filter(function(l){ return l.dias_acesso_30>0; }).length;
+  var semAtiv=ls.filter(function(l){ return l.clientes>0&&!l.atividades_30; }).length;
+  var atras=ls.reduce(function(a,l){ return a+(l.contatos_atrasados||0); },0);
+  var dias=function(t){ if(!t) return "nunca"; var d=Math.floor((Date.now()-new Date(t).getTime())/864e5); return d<=0?"hoje":(d===1?"ontem":"há "+d+" dias"); };
+  h+='<div class="ado-resumo">'+
+    '<div><b>'+comApp+' de '+ls.length+'</b><span>com app autenticador</span></div>'+
+    '<div><b>'+ativas+'</b><span>entraram nos últimos 30 dias</span></div>'+
+    '<div'+(semAtiv?' class="ruim"':'')+'><b>'+semAtiv+'</b><span>com clientes e sem atividade em 30 dias</span></div>'+
+    '<div'+(atras?' class="ruim"':'')+'><b>'+atras+'</b><span>contatos atrasados na equipe</span></div></div>'+
+    '<label class="ado-filtro"><input type="checkbox" '+(ADOC.soAtivos?"checked":"")+' onchange="ADOC.soAtivos=this.checked;pintarAdocao()"> Só pessoas ativas</label>'+
+    '<div class="seg-rolagem" style="max-height:60vh"><table><thead><tr><th>Pessoa</th><th>App</th><th>Último acesso</th><th class="n">Dias com acesso (30d)</th>'+
+    '<th class="n">Atividades (30d)</th><th class="n">Clientes</th><th class="n">Em jornada sem próximo contato</th><th class="n">Contatos atrasados</th><th class="n">Tarefas atrasadas</th></tr></thead><tbody>'+
+    ls.map(function(l){
+      var ruimAcesso=!l.ultimo_acesso||(Date.now()-new Date(l.ultimo_acesso).getTime())>7*864e5;
+      return '<tr'+(l.ativo?'':' class="ado-inativo"')+'><td><b>'+esc(l.nome||l.email)+'</b><br><span class="ado-papel">'+esc(l.papel||"")+(l.ativo?'':' · inativo')+'</span></td>'+
+        '<td>'+(l.app?'<span class="ado-sim">ligado</span>'+(l.aparelhos?' <span class="ado-papel">'+l.aparelhos+' aparelho(s) lembrado(s)</span>':''):'<span class="ado-nao">não</span>')+'</td>'+
+        '<td'+(ruimAcesso?' class="seg-ruim"':'')+'>'+esc(dias(l.ultimo_acesso))+'</td>'+
+        '<td class="n">'+l.dias_acesso_30+'</td>'+
+        '<td class="n'+(l.clientes>0&&!l.atividades_30?' seg-ruim':'')+'">'+l.atividades_30+'</td>'+
+        '<td class="n">'+l.clientes.toLocaleString("pt-BR")+'</td>'+
+        '<td class="n'+(l.jornada_sem_contato?' seg-ruim':'')+'">'+l.jornada_sem_contato+(l.jornada?' <span class="ado-papel">de '+l.jornada+'</span>':'')+'</td>'+
+        '<td class="n'+(l.contatos_atrasados?' seg-ruim':'')+'">'+l.contatos_atrasados+'</td>'+
+        '<td class="n'+(l.tarefas_atrasadas?' seg-ruim':'')+'">'+l.tarefas_atrasadas+'</td></tr>';
+    }).join("")+'</tbody></table></div>'+
+    '<div class="eqfoot"><button class="btn" onclick="document.getElementById(\'adov\').style.display=\'none\'">Fechar</button></div>';
+  x.innerHTML=h;
+}
+
+/* ---------- Problemas reportados (3.10, só master) ----------
+   O que a equipe mandou pelo botão "?" > Reportar um problema, com a foto da tela
+   (bucket privado "problemas": o link da foto vale 10 minutos). */
+var PROB={linhas:null,erro:"",todos:false};
+function abrirProblemas(){
+  if(!EU.super) return;
+  if(!document.getElementById("prbv")){
+    var d=document.createElement("div"); d.id="prbv"; d.className="eqv";
+    d.onclick=function(e){ if(e.target===d) d.style.display="none"; };
+    d.innerHTML='<div class="eqx largo" id="prbx"></div>'; document.body.appendChild(d);
+  }
+  document.getElementById("prbv").style.display="flex";
+  carregarProblemas();
+}
+function carregarProblemas(){
+  PROB.linhas=null; PROB.erro=""; pintarProblemas();
+  api("rpc/problemas_lista",{method:"POST",body:{}}).then(function(r){
+    PROB.linhas=r||[]; INICIO.problemasAbertos=PROB.linhas.filter(function(p){ return !p.resolvido_em; }).length; pintarProblemas();
+  }).catch(function(e){ PROB.erro=String(e.message||e); PROB.linhas=[]; pintarProblemas(); });
+}
+function pintarProblemas(){
+  var x=document.getElementById("prbx"); if(!x) return;
+  var h='<h2>Problemas reportados</h2><p class="eqsub">O que a equipe mandou pelo botão <b>?</b> no canto da tela. Vêm junto a tela, a versão, o navegador e os erros que o navegador registrou.</p>';
+  if(PROB.linhas===null){ x.innerHTML=h+'<p class="eqsub">Carregando…</p>'; return; }
+  if(PROB.erro){ x.innerHTML=h+'<p class="eqsub err">'+esc(/problemas_lista|PGRST202/.test(PROB.erro)?"Falta instalar o usabilidade.sql no Supabase.":PROB.erro)+'</p>'; return; }
+  var ls=PROB.linhas.filter(function(p){ return PROB.todos||!p.resolvido_em; });
+  h+='<label class="ado-filtro"><input type="checkbox" '+(PROB.todos?"checked":"")+' onchange="PROB.todos=this.checked;pintarProblemas()"> Mostrar também os resolvidos</label>';
+  if(!ls.length) h+='<p class="eqsub">'+(PROB.todos?"Nenhum problema reportado ainda.":"Nenhum problema em aberto.")+'</p>';
+  h+=ls.map(function(p){
+    var i=PROB.linhas.indexOf(p), erros=Array.isArray(p.erros)?p.erros:[];
+    return '<div class="prb'+(p.resolvido_em?' feito':'')+'"><div class="prb-cab"><b>'+esc(p.nome||p.email)+'</b><span>'+esc(segQuando(p.criado_em))+' · '+esc(p.modulo)+' · '+esc(p.versao||"sem selo")+' · '+esc(segAparelho(p.navegador))+' · '+esc(p.tela)+'</span></div>'+
+      '<p class="prb-txt">'+esc(p.texto)+'</p>'+
+      (erros.length?'<details><summary>'+erros.length+' erro(s) registrado(s) no navegador</summary><pre>'+esc(erros.map(function(e){ return (e.em||"").slice(11,19)+"  "+e.msg; }).join("\n"))+'</pre></details>':'')+
+      '<div class="prb-acoes">'+(p.print_caminho?'<button class="eqbt" onclick="verFotoProblema('+i+')">Ver a foto da tela</button>':'<span class="ado-papel">sem foto</span>')+
+        '<button class="eqbt" onclick="resolverProblema('+i+','+(!p.resolvido_em)+')">'+(p.resolvido_em?"Reabrir":"Marcar como resolvido")+'</button></div></div>';
+  }).join("");
+  h+='<div class="eqfoot"><button class="btn" onclick="document.getElementById(\'prbv\').style.display=\'none\';render(true)">Fechar</button></div>';
+  x.innerHTML=h;
+}
+function verFotoProblema(i){
+  var p=PROB.linhas[i]; if(!p||!p.print_caminho) return;
+  var janela=window.open("","_blank");
+  var assinar=function(tentou){
+    return fetch(SB_URL+"/storage/v1/object/sign/problemas/"+p.print_caminho.split("/").map(encodeURIComponent).join("/"),{method:"POST",
+      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+((SESSAO&&SESSAO.access_token)||SB_KEY),"Content-Type":"application/json"},body:JSON.stringify({expiresIn:600})})
+    .then(function(res){
+      if(res.status===401&&!tentou) return renovar().then(function(){ return assinar(true); });
+      if(!res.ok) return res.text().then(function(t){ throw new Error(t||("HTTP "+res.status)); });
+      return res.json();
+    });
+  };
+  assinar(false).then(function(r){
+    var u=r&&(r.signedURL||r.signedUrl); if(!u) throw new Error("sem link");
+    var url=SB_URL+"/storage/v1"+(u.charAt(0)==="/"?u:"/"+u);
+    if(janela) janela.location.href=url; else location.href=url;
+  }).catch(function(e){ if(janela) janela.close(); alert("Não foi possível abrir a foto: "+(e.message||e)); });
+}
+function resolverProblema(i,resolvido){
+  var p=PROB.linhas[i]; if(!p) return;
+  api("rpc/problema_resolver",{method:"POST",body:{p_id:p.id,p_resolvido:!!resolvido}}).then(carregarProblemas)
+    .catch(function(e){ alert(String(e.message||e)); });
 }
 function irParaAgenda(){ registrar("abriu sistema","CRM · Agenda",""); location.href="crm.html#agenda"; }
 function iconeOlho(aberto){
@@ -4931,6 +5365,8 @@ function viewCodigoEmail(msg,tipo){
       '<label for="cdCodigo">Código do e-mail ou do app autenticador</label>'+
       '<div class="campo"><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" '+
         'id="cdCodigo" class="cd-codigo" placeholder="000000" oninput="codigoDigitado(this)" onkeydown="if(event.key===\'Enter\')confirmarCodigoEmail()"></div>'+
+      '<label class="cd-lembrar"><input type="checkbox" id="cdLembrar"'+(LEMBRAR_APARELHO?' checked':'')+' onchange="LEMBRAR_APARELHO=this.checked"> '+
+        '<span><b>Lembrar este computador por 7 dias</b><br>Nos próximos dias, só a senha. Vale para quem já ligou o app autenticador. Não marque em computador de outra pessoa.</span></label>'+
       '<button class="entrar" id="cdBtn" onclick="confirmarCodigoEmail()"'+(CODIGO_ESTADO==="enviando"?' disabled':'')+'>Entrar</button>'+
       '<p class="hint" style="margin:14px 0 0">Já ligou o app autenticador no Hub? Digite o código que aparece nele agora, sem esperar o e-mail.</p>'+
       '<p class="hint" style="margin:10px 0 0">Não chegou? Espere um pouco e confira a caixa de spam ou lixo eletrônico (remetente hub@adamicaptal.com.br). Se pedir outro código, os anteriores continuam valendo: use qualquer um que chegar.</p>'+
@@ -5191,7 +5627,40 @@ function prosseguirLogin(){
     S.app=null; S.tab="preencher"; montarRascunho(); render();
     registrar("entrou","","");
     backupAutomatico();
+    abrirLinkDireto();
   });
+}
+/* Links diretos (3.10):
+   #relatorio=CONTA&nome=NOME  (botão "Relatório do mês" da ficha do CRM): abre Carteiras
+     no relatório do cliente, no último mês lançado. Acha pela conta do BTG; sem conta,
+     pelo nome. Só aparecem os clientes que a pessoa enxerga (o banco filtra).
+   #carteira=ID (busca do Hub): o mesmo, pelo id do cliente nas Carteiras. */
+window.addEventListener("hashchange",function(){ if(sessaoLiberada()&&db.clientes.length) abrirLinkDireto(); });
+function abrirLinkDireto(){
+  var h=location.hash||"";
+  var mr=/^#relatorio=([^&]*)(?:&nome=(.*))?$/.exec(h), mc=/^#carteira=([0-9a-f-]{36})$/i.exec(h);
+  if(h==="#carteiras"){ history.replaceState(null,"",location.pathname+location.search); irParaApp("carteiras"); return; }
+  if(!mr&&!mc) return;
+  history.replaceState(null,"",location.pathname+location.search);
+  var dec=function(x){ try{ return decodeURIComponent(x||""); }catch(e){ return x||""; } };
+  var soNum=function(x){ return String(x||"").replace(/\D/g,"").replace(/^0+/,""); };
+  var alvo=null;
+  if(mc) alvo=db.clientes.filter(function(c){ return c.id===mc[1]; })[0];
+  else {
+    var conta=soNum(dec(mr[1])), nome=hbSemAcento(dec(mr[2])).trim();
+    if(conta) alvo=db.clientes.filter(function(c){ return (c.contas_btg||[]).some(function(k){ return soNum(k)===conta; }); })[0];
+    if(!alvo&&nome) alvo=db.clientes.filter(function(c){ return hbSemAcento(c.nome).trim()===nome; })[0];
+  }
+  if(!alvo){
+    alert("Este cliente ainda não tem carteira lançada no Hub (ou não está na sua lista de Carteiras).");
+    return;
+  }
+  /* Último mês com lançamento deste cliente. */
+  var ult=Object.keys(db.dados).filter(function(k){ return k.indexOf(alvo.id+"|")===0; }).sort().pop();
+  if(ult){ var am=ult.split("|")[1].split("-"); S.ano=+am[0]; S.mes=+am[1]; }
+  S.cliente=alvo.id;
+  irParaApp("carteiras");
+  S.tab="relatorio"; montarRascunho(); render();
 }
 /* Segunda etapa (06/11/2026). Depois da senha: se o banco já tem o seguranca.sql,
    manda o código por e-mail (função codigo-acesso) e só libera depois que o banco
@@ -5201,7 +5670,10 @@ function segundaEtapa(){
   CODIGO_ESTADO="enviando"; mostrarCodigo(null);
   return api("rpc/estado_acesso",{method:"POST",body:{}}).then(function(st){
     if(st&&st.liberado){ marcarLiberado(); return prosseguirLogin(); }
-    return enviarCodigo();
+    return entrarPeloAparelho().then(function(ok){
+      if(ok){ marcarLiberado(); return prosseguirLogin(); }
+      return enviarCodigo();
+    });
   },function(err){
     if(/PGRST202|estado_acesso|could not find the function/i.test(String(err&&err.message))){
       marcarLiberado(); return prosseguirLogin();
@@ -5209,6 +5681,33 @@ function segundaEtapa(){
     if(!SESSAO){ render(); return; }
     CODIGO_ESTADO=""; mostrarCodigo("Não foi possível falar com o servidor. Tente de novo em instantes.","erro");
   });
+}
+/* ---------- Aparelho lembrado (3.10) ----------
+   Quem tem o app autenticador pode marcar "Lembrar este computador por 7 dias".
+   O banco devolve um token aleatório; aqui fica o token, lá só o hash. A senha
+   continua sendo pedida todo dia: o token só dispensa o código. "Sair de todos os
+   aparelhos" e desligar o app apagam os tokens no banco. */
+var LEMBRAR_APARELHO=false, AVISO_APARELHO="";
+function aparelhoLocal(){ try{ return JSON.parse(localStorage.getItem("aw_aparelho")||"null"); }catch(e){ return null; } }
+function esquecerAparelhoLocal(){ try{ localStorage.removeItem("aw_aparelho"); }catch(e){} }
+function entrarPeloAparelho(){
+  var a=aparelhoLocal();
+  if(!a||!a.token||!SESSAO||a.uid!==SESSAO.id) return Promise.resolve(false);
+  if(a.expira_em&&new Date(a.expira_em)<new Date()){ esquecerAparelhoLocal(); return Promise.resolve(false); }
+  return api("rpc/aparelho_entrar",{method:"POST",body:{p_token:a.token}}).then(function(r){
+    if(r&&r.ok) return true;
+    esquecerAparelhoLocal(); return false;
+  }).catch(function(){ return false; });
+}
+function lembrarAparelho(){
+  if(!LEMBRAR_APARELHO) return Promise.resolve();
+  LEMBRAR_APARELHO=false;
+  return api("rpc/aparelho_lembrar",{method:"POST",body:{}}).then(function(r){
+    if(r&&r.ok&&r.token){
+      try{ localStorage.setItem("aw_aparelho",JSON.stringify({uid:SESSAO&&SESSAO.id,id:r.id,token:r.token,expira_em:r.expira_em})); }catch(e){}
+      AVISO_APARELHO="";
+    }else AVISO_APARELHO=(r&&r.msg)||"Não foi possível lembrar este aparelho.";
+  }).catch(function(){ AVISO_APARELHO="Não foi possível lembrar este aparelho agora."; });
 }
 function enviarCodigo(){
   CODIGO_ESTADO="enviando"; mostrarCodigo(null);
@@ -5244,7 +5743,7 @@ function confirmarCodigoEmail(){
   if(c.length!==6){ mostrarCodigo("Digite os 6 números do e-mail ou do app autenticador.","erro"); return; }
   var b=document.getElementById("cdBtn"); if(b){ if(b.disabled) return; b.disabled=true; b.textContent="Conferindo…"; }
   api("rpc/verificar_codigo",{method:"POST",body:{p_codigo:c}}).then(function(r){
-    if(r&&r.ok){ marcarLiberado(); CODIGO_EMAIL=""; CODIGO_ESTADO=""; return prosseguirLogin(); }
+    if(r&&r.ok){ marcarLiberado(); CODIGO_EMAIL=""; CODIGO_ESTADO=""; return lembrarAparelho().then(prosseguirLogin); }
     mostrarCodigo((r&&r.msg)||"Código não confere.","erro");
   }).catch(function(e){
     if(!SESSAO){ render(); return; }
@@ -5327,6 +5826,7 @@ function render(manterScroll){
   document.getElementById("tabH").className=S.tab==="historico"?"on":"";
   document.getElementById("btnPdfR").style.display=S.tab==="relatorio"?"":"none";
   document.getElementById("btnPdfP").style.display=S.tab==="relatorio"?"":"none";
+  ["btnGerarPdf","btnPdfTodos","btnRelCrm"].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display=S.tab==="relatorio"?"":"none"; });
   document.getElementById("btnChk").style.display=S.tab==="relatorio"?"":"none";
   var ma=document.getElementById("miniAcesso");
   if(ma) ma.textContent="Os dados ficam no servidor. "+(EU.admin?"Como administrador, voc\u00ea enxerga os clientes de todos os assessores.":"Cada assessor enxerga apenas os pr\u00f3prios clientes.");
@@ -5377,6 +5877,7 @@ if(TOKEN_RECUPERACAO){
     if(db.clientes.length) S.cliente=db.clientes[0].id;
     montarRascunho(); render();
     backupAutomatico();
+    abrirLinkDireto();
   });
 }else{
   render();

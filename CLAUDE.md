@@ -60,6 +60,10 @@ Visual 2026 (seção 20): vidro, menu lateral e modo noite; camada comum dos mó
 `estilo/adami-2026.css`. Tudo que é visual fica em `@media screen`: a impressão não pode mudar.
 Arquivos do cliente: Storage `anexos` + tabela `anexos` (`anexos.sql`); as ferramentas gravam
 na ficha por `comum/anexos.js` (seção 21).
+Barra comum (3.10, seção 26): `comum/barra.js` no `<head>` de todo módulo (botão ?, busca Ctrl+K,
+Reportar um problema). Módulo novo carrega `comum/sessao.js` e `comum/barra.js` e ganha uma entrada em
+`AJUDA` no barra.js. O manual do Hub fica em `ajuda/Manual-do-Hub.pdf` (fonte em `manual-fonte/`); se o
+manual mudar, atualize as páginas em `AJUDA[...].pag`. O Hub é instalável no celular (`app.webmanifest`).
 A chave *publishable* fica no código do navegador, o que é correto: a proteção está na
 RLS. A *service_role* **nunca** entra em arquivo servido ao navegador.
 
@@ -84,7 +88,7 @@ frente. A disciplina abaixo não é opcional.
    na tela não revela problema de paginação.
 5. **SQL**: validar com `pglast` antes de entregar.
 
-A suíte usada nas auditorias não está versionada. Vale versioná-la.
+O verificador de sintaxe e escopo está em `testes/escopo.js` (instruções em `testes/README.md`).
 
 Cada conjunto de mudanças ganha um número de versão novo, visível no rodapé de cada
 módulo (`var VERSAO="versão 2.51"` e equivalentes). O selo existe para o Emil perceber
@@ -131,6 +135,7 @@ execução e fica registrado no histórico.
 - **Filtrar no navegador não é segurança.** Restrição de acesso se resolve no banco, com
   política.
 - **Verificação em duas etapas por e-mail ou app autenticador (2.91 e 3.01) e acesso que vence à meia-noite (seção 22).**
+  Com o app ligado, o aparelho pode ser lembrado por 7 dias (3.10, seção 26): só o código é dispensado, a senha não.
   Toda tabela com RLS tem a política restritiva `exige_verificacao`; tabela nova também precisa
   ter. Função nova que devolve ou grava dado checa `acesso_liberado()` (as funções de permissão
   já checam) e nunca fica executável para `anon`: o Supabase dá EXECUTE ao `anon` por padrão,

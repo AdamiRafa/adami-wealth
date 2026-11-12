@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Manual do Hub Adami</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@page{size:A4;margin:20mm 18mm 22mm 18mm}
+:root{--navy:#12263F;--navy2:#1B3A5F;--ouro:#C0A265;--ouro2:#C9A86A;--creme:#F7F2E7;--tinta:#1d2733;--cinza:#5d6b7a;--linha:#dfe4ea;--azulclaro:#eef2f7}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;font-family:Inter,system-ui,sans-serif;font-size:10pt;line-height:1.55;color:var(--tinta);background:#fff}
+h1,h2,h3,.serif{font-family:Fraunces,Georgia,serif;font-weight:500;color:var(--navy);letter-spacing:-.01em}
+h2{font-size:15pt;margin:20pt 0 6pt;break-after:avoid}
+h3{font-size:11.5pt;margin:14pt 0 4pt;break-after:avoid;font-weight:600}
+p{margin:0 0 7pt}
+b,strong{font-weight:600;color:#111c28}
+.eyebrow{font-size:7.5pt;letter-spacing:.2em;text-transform:uppercase;color:var(--ouro);font-weight:600}
+
+/* abertura de capítulo */
+.cap{break-before:page;padding-top:4mm;margin-bottom:10pt}
+.cap .num{font-family:Fraunces,serif;font-size:40pt;line-height:1;color:var(--ouro);font-weight:400}
+.cap h1{font-size:25pt;line-height:1.1;margin:6pt 0 8pt}
+.cap .regua{width:44px;height:2px;background:var(--ouro);margin:0 0 10pt}
+.cap .lead{font-size:11.5pt;line-height:1.55;color:#3a4756;max-width:150mm}
+.ficha{display:flex;gap:8pt;margin:12pt 0 6pt;flex-wrap:wrap}
+.ficha div{flex:1 1 0;min-width:38mm;border:1px solid var(--linha);border-radius:8px;padding:7pt 9pt;background:#fbfcfd}
+.ficha span{display:block;font-size:7pt;letter-spacing:.14em;text-transform:uppercase;color:var(--cinza);margin-bottom:2pt}
+.ficha b{font-size:9.5pt;color:var(--navy)}
+
+/* figuras */
+figure{margin:10pt 0 12pt;break-inside:avoid}
+figure img{display:block;width:100%;border-radius:7px;border:1px solid #d7dde5;box-shadow:0 2px 10px rgba(18,38,63,.08)}
+figcaption{font-size:8pt;color:var(--cinza);margin-top:5pt;padding-left:9pt;border-left:2px solid var(--ouro)}
+figure.meia img{width:72%;margin:0 auto}
+figure.estreita img{width:60%;margin:0 auto}
+figure.m80 img{width:80%;margin:0 auto}
+figure.m80 figcaption{margin-left:10%}
+figure.meia figcaption{margin-left:14%}
+.par{display:flex;gap:10pt;break-inside:avoid;margin:10pt 0 12pt}
+.par figure{flex:1;margin:0}
+
+/* passos */
+ol.passos{list-style:none;counter-reset:p;padding:0;margin:8pt 0 10pt;break-inside:avoid}
+ol.passos>li{counter-increment:p;position:relative;padding:0 0 7pt 26pt;break-inside:avoid}
+ol.passos>li::before{content:counter(p);position:absolute;left:0;top:0;width:17pt;height:17pt;border-radius:50%;background:var(--navy);color:#fff;font-size:8pt;font-weight:600;display:flex;align-items:center;justify-content:center}
+ul{margin:4pt 0 9pt;padding-left:14pt}
+ul li{margin-bottom:3pt}
+ul li::marker{color:var(--ouro)}
+
+/* caixas */
+.nota{border-left:3px solid var(--ouro);background:var(--creme);padding:8pt 11pt;border-radius:0 7px 7px 0;margin:9pt 0 11pt;break-inside:avoid}
+.nota.alerta{border-color:#b4553f;background:#fbefec}
+.nota.azul{border-color:var(--navy2);background:var(--azulclaro)}
+.nota .t{display:block;font-size:7.5pt;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--ouro);margin-bottom:3pt}
+.nota.alerta .t{color:#b4553f}
+.nota.azul .t{color:var(--navy2)}
+.nota p:last-child{margin:0}
+
+/* tabelas */
+table{width:100%;border-collapse:collapse;margin:7pt 0 11pt;font-size:8.8pt;break-inside:auto}
+thead{display:table-header-group}
+tr{break-inside:avoid}
+th{text-align:left;font-size:7pt;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--navy);padding:6pt 7pt;font-weight:600}
+td{padding:6pt 7pt;border-bottom:1px solid var(--linha);vertical-align:top}
+tr:nth-child(even) td{background:#fafbfc}
+td b{color:var(--navy)}
+.ck{color:#2f7d4f;font-weight:700}
+.nao{color:#b9c1cb}
+
+/* sumário */
+.sumario{columns:1}
+.sumario a{display:flex;align-items:baseline;gap:8pt;padding:3.2pt 0;border-bottom:1px dotted #cfd6de;color:var(--tinta);text-decoration:none;break-inside:avoid}
+.sumario .n{font-family:Fraunces,serif;color:var(--ouro);width:20pt;font-size:11pt}
+.sumario .t{flex:1;font-size:10.5pt}
+.sumario .d{font-size:8pt;color:var(--cinza);display:inline;margin-left:7pt}
+.sumario .pg{font-family:Fraunces,serif;color:var(--navy);font-size:10.5pt}
+
+/* cartões de módulo */
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:7pt;margin:8pt 0 12pt}
+.mod{border:1px solid var(--linha);border-radius:8px;padding:8pt 10pt;break-inside:avoid;background:#fff}
+.mod .g{font-size:6.8pt;letter-spacing:.16em;text-transform:uppercase;color:var(--ouro);font-weight:700}
+.mod b{display:block;font-family:Fraunces,serif;font-weight:500;font-size:11pt;color:var(--navy);margin:2pt 0}
+.mod p{font-size:8.5pt;color:#4a5866;margin:0}
+
+/* trilha R1..R4 */
+.trilha{display:flex;gap:5pt;margin:8pt 0 12pt;break-inside:avoid}
+.trilha div{flex:1;background:var(--navy);color:#fff;border-radius:8px;padding:8pt 8pt 9pt}
+.trilha div:nth-child(2n){background:var(--navy2)}
+.trilha i{font-style:normal;font-family:Fraunces,serif;color:var(--ouro2);font-size:14pt;display:block}
+.trilha b{color:#fff;font-size:9pt;display:block;margin:2pt 0 3pt}
+.trilha span{font-size:7.6pt;line-height:1.4;color:#c9d4e2;display:block}
+
+.paginas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9pt;margin:10pt 0;break-inside:avoid}
+.paginas figure{margin:0}
+.paginas img{border-radius:3px}
+
+.duas{display:flex;gap:12pt}
+.duas>div{flex:1}
+.campo{display:flex;gap:8pt;padding:4pt 0;border-bottom:1px solid #eef1f4;font-size:9pt;break-inside:avoid}
+.campo b{flex:0 0 46mm;color:var(--navy)}
+.abrir{break-before:page}
+.semquebra{break-inside:avoid}
+</style>
+</head>
+<body>
+
+<!-- ============ BOAS-VINDAS E SUMÁRIO ============ -->
+<section>
+  <div class="eyebrow">Manual do assessor</div>
+  <h1 style="font-size:24pt;margin:6pt 0 4pt">Bem-vindo ao Hub Adami</h1>
+  <div class="cap" style="break-before:auto;padding:0;margin:0"><div class="regua"></div></div>
+  <p class="lead" style="font-size:11pt;color:#3a4756">O Hub é o sistema interno da Adami Captal. Nele ficam o CRM, os relatórios dos clientes, as ferramentas de planejamento, os simuladores e o seu fechamento de comissão. Tudo num endereço só, com um login só.</p>
+  <p>Este manual mostra o caminho completo: como entrar pela primeira vez, como proteger a sua conta, o que cada ferramenta faz, quando usar e como preencher. As telas que aparecem aqui usam dados fictícios (a "Família Exemplo" e a assessora "Ana Ribeiro"). Os números são ilustrativos.</p>
+  <div class="ficha">
+    <div><span>Endereço</span><b>adamicaptal.com.br/hub</b></div>
+    <div><span>Versão do Hub</span><b>3.10 · novembro de 2026</b></div>
+    <div><span>Funciona em</span><b>Computador, tablet e celular</b></div>
+  </div>
+
+  <h2 style="margin-top:16pt">Sumário</h2>
+  <div class="sumario">
+    <a href="#c1"><span class="n">01</span><span class="t">O que é o Hub<span class="d">Os módulos e para que serve cada um</span></span><span class="pg" data-pg="c1"></span></a>
+    <a href="#c2"><span class="n">02</span><span class="t">Primeiro acesso<span class="d">Do convite por e-mail até a tela inicial</span></span><span class="pg" data-pg="c2"></span></a>
+    <a href="#c3"><span class="n">03</span><span class="t">Segurança da conta<span class="d">Código por e-mail, app autenticador e acesso diário</span></span><span class="pg" data-pg="c3"></span></a>
+    <a href="#c4"><span class="n">04</span><span class="t">A tela inicial<span class="d">Números, tarefas do dia, calendário e avisos</span></span><span class="pg" data-pg="c4"></span></a>
+    <a href="#c5"><span class="n">05</span><span class="t">Perfis e acessos<span class="d">Quem vê o quê</span></span><span class="pg" data-pg="c5"></span></a>
+    <a href="#c6"><span class="n">06</span><span class="t">CRM<span class="d">Jornada do cliente, ficha, agenda, dashboard e negócios</span></span><span class="pg" data-pg="c6"></span></a>
+    <a href="#c7"><span class="n">07</span><span class="t">Processo Comercial<span class="d">Segmentos e a trilha R1 a R4</span></span><span class="pg" data-pg="c7"></span></a>
+    <a href="#c8"><span class="n">08</span><span class="t">Carteiras e Relatório Consolidado<span class="d">Lançamento mensal e exemplo de relatório</span></span><span class="pg" data-pg="c8"></span></a>
+    <a href="#c9"><span class="n">09</span><span class="t">Ferramenta Wealth Planning<span class="d">Diagnóstico patrimonial completo</span></span><span class="pg" data-pg="c9"></span></a>
+    <a href="#c10"><span class="n">10</span><span class="t">Gerador de Planos Patrimoniais<span class="d">Plano Patrimonial e Análise de Enquadramento</span></span><span class="pg" data-pg="c10"></span></a>
+    <a href="#c11"><span class="n">11</span><span class="t">Relatório Imobiliário<span class="d">Imóveis e projetos para clientes private</span></span><span class="pg" data-pg="c11"></span></a>
+    <a href="#c12"><span class="n">12</span><span class="t">Política de Alocação<span class="d">Material do comitê do mês</span></span><span class="pg" data-pg="c12"></span></a>
+    <a href="#c13"><span class="n">13</span><span class="t">Mesa RV<span class="d">Recomendações de renda variável e histórico</span></span><span class="pg" data-pg="c13"></span></a>
+    <a href="#c14"><span class="n">14</span><span class="t">Controle de Boletas<span class="d">Quanto falta alocar, calculado na hora</span></span><span class="pg" data-pg="c14"></span></a>
+    <a href="#c15"><span class="n">15</span><span class="t">Simuladores<span class="d">Liberdade Financeira, Ágio e Receita RV</span></span><span class="pg" data-pg="c15"></span></a>
+    <a href="#c16"><span class="n">16</span><span class="t">Minha comissão<span class="d">O seu fechamento do mês</span></span><span class="pg" data-pg="c16"></span></a>
+    <a href="#c17"><span class="n">17</span><span class="t">Dúvidas e problemas comuns<span class="d">O que fazer quando algo não sai como esperado</span></span><span class="pg" data-pg="c17"></span></a>
+    <a href="#c18"><span class="n">A</span><span class="t">Anexos<span class="d">Checklist do primeiro dia e glossário</span></span><span class="pg" data-pg="c18"></span></a>
+  </div>
+</section>
+
+<!-- ============ 01 O QUE É ============ -->
+<section class="cap" id="c1">
+  <div class="num">01</div>
+  <h1>O que é o Hub</h1>
+  <div class="regua"></div>
+  <p class="lead">Um portal único com tudo o que o assessor usa no dia a dia: acompanhar o cliente, preparar reuniões, entregar relatórios e conferir a comissão.</p>
+</section>
+<p>Você entra pelo navegador, em <b>adamicaptal.com.br/hub</b>. Não precisa instalar nada. Funciona no Chrome, Safari, Edge e Firefox, no computador ou no celular. Os dados ficam guardados no servidor: o que você grava aparece igual em qualquer aparelho.</p>
+<p>Os módulos estão organizados em quatro grupos no menu da esquerda. Você só vê os que o seu perfil libera (capítulo 5).</p>
+
+<h3>Processo comercial</h3>
+<div class="grade">
+  <div class="mod"><span class="g">Comercial</span><b>CRM</b><p>Jornada do cliente da prospecção à captação, agenda, carteira, Net New Money e negócios de consórcio e seguro.</p></div>
+  <div class="mod"><span class="g">Comercial</span><b>Processo Comercial</b><p>A trilha de reuniões R1 a R4: o que fazer em cada etapa, quem participa, o que entregar e o ritmo esperado.</p></div>
+</div>
+<h3>Ferramentas</h3>
+<div class="grade">
+  <div class="mod"><span class="g">Ferramenta</span><b>Carteiras</b><p>Lançamento mensal das carteiras e geração do Relatório Consolidado em PDF.</p></div>
+  <div class="mod"><span class="g">Ferramenta</span><b>Ferramenta Wealth Planning</b><p>Projeção de patrimônio e renda, sucessão, proteção, previdência e alavancagem.</p></div>
+  <div class="mod"><span class="g">Ferramenta</span><b>Gerador de Planos Patrimoniais</b><p>Plano Patrimonial e Análise de Enquadramento em Word, com política, bandas e movimentações.</p></div>
+  <div class="mod"><span class="g">Ferramenta</span><b>Relatório Imobiliário</b><p>Imóveis, projetos, histórico de retornos e apresentação para clientes private.</p></div>
+  <div class="mod"><span class="g">Ferramenta</span><b>Política de Alocação</b><p>Material do comitê do mês: cenário, desempenho, diretrizes e as carteiras recomendadas, em PDF.</p></div>
+  <div class="mod"><span class="g">Ferramenta</span><b>Mesa RV</b><p>Recomendações de renda variável, card para o grupo de clientes e histórico das operações.</p></div>
+  <div class="mod"><span class="g">Ferramenta</span><b>Controle de Boletas</b><p>Valor disponível do cliente, ativos boletados e quanto falta alocar.</p></div>
+</div>
+<h3>Simuladores</h3>
+<div class="grade">
+  <div class="mod"><span class="g">Simulador</span><b>Liberdade Financeira</b><p>Quanto juntar para manter o padrão de vida e quanto dá para retirar por mês.</p></div>
+  <div class="mod"><span class="g">Simulador</span><b>Ágio e Troca de Ativos</b><p>Em quanto tempo a taxa melhor compensa o deságio de sair antes do vencimento.</p></div>
+  <div class="mod"><span class="g">Simulador</span><b>Simulador de Receita RV</b><p>Projeção da receita de swing trade e estruturadas contra a meta do mês.</p></div>
+</div>
+<h3>Financeiro</h3>
+<div class="grade">
+  <div class="mod"><span class="g">Financeiro</span><b>Minha comissão</b><p>O seu fechamento do mês, por categoria e por cliente, depois que o Financeiro libera.</p></div>
+</div>
+
+<!-- ============ 02 PRIMEIRO ACESSO ============ -->
+<section class="cap" id="c2">
+  <div class="num">02</div>
+  <h1>Primeiro acesso</h1>
+  <div class="regua"></div>
+  <p class="lead">O acesso é criado pela administração. Você recebe um convite por e-mail e cria a sua própria senha. Leva menos de cinco minutos.</p>
+</section>
+
+<h3>Antes de começar</h3>
+<ul>
+  <li>Tenha em mãos o seu e-mail corporativo <b>@adamicaptal.com.br</b>. É ele que recebe o convite e os códigos de acesso.</li>
+  <li>Deixe o celular por perto: no passo de segurança você vai precisar dele.</li>
+  <li>O convite chega do remetente <b>Hub Adami</b> (hub@adamicaptal.com.br). Se não aparecer na caixa de entrada em alguns minutos, olhe o lixo eletrônico e a pasta de spam.</li>
+</ul>
+
+<h3>Passo a passo</h3>
+<ol class="passos">
+  <li>Abra o e-mail <b>Bem-vindo ao Hub Adami</b> e clique em <b>Criar minha senha</b>. O Hub abre na tela de primeiro acesso. O link do convite não expira.</li>
+  <li>Se preferir, digite <b>adamicaptal.com.br/hub</b> no navegador e clique em <b>Primeiro acesso</b>, embaixo do botão Entrar.</li>
+  <li>Digite o <b>mesmo e-mail que recebeu o convite</b> e crie uma senha com pelo menos 8 caracteres. Clique em <b>Criar meu acesso</b>.</li>
+  <li>O Hub manda um <b>código de 6 números</b> para o seu e-mail. Digite o código e clique em <b>Entrar</b>.</li>
+  <li>Pronto: você está na tela inicial. Antes de qualquer outra coisa, <b>ligue o app autenticador</b> (capítulo 3). É o que garante que você entra mesmo num dia em que o e-mail atrasar.</li>
+</ol>
+
+<div class="par">
+  <figure><img src="imgj/01-login.jpg"><figcaption>Tela de login. "Primeiro acesso" fica embaixo do botão Entrar.</figcaption></figure>
+  <figure><img src="imgj/02-primeiro-acesso.jpg"><figcaption>Primeiro acesso: o e-mail do convite e a senha que você escolher.</figcaption></figure>
+</div>
+<figure class="meia"><img src="imgj/03-codigo.jpg"><figcaption>Confirmação: digite o código de 6 números que chegou por e-mail (ou o do app autenticador, depois que ele estiver ligado).</figcaption></figure>
+
+<div class="nota alerta"><span class="t">Se aparecer "Este e-mail não foi convidado"</span><p>O e-mail digitado precisa ser exatamente o que recebeu o convite. Confira se não há erro de digitação (".com.br" e não ".com"). Se estiver certo e mesmo assim não passar, peça à administração para reenviar o convite.</p></div>
+
+<h3>Nas próximas vezes</h3>
+<p>Basta abrir <b>adamicaptal.com.br/hub</b>, digitar e-mail e senha e clicar em <b>Entrar</b>. Em seguida, confirme com o código do app autenticador (ou do e-mail). Salve o endereço nos favoritos do navegador.</p>
+
+<!-- ============ 03 SEGURANÇA ============ -->
+<section class="cap" id="c3">
+  <div class="num">03</div>
+  <h1>Segurança da conta</h1>
+  <div class="regua"></div>
+  <p class="lead">O Hub guarda dados de clientes. Por isso a entrada tem duas etapas: a senha e um código que só você recebe. E o acesso vence todo dia à meia-noite.</p>
+</section>
+
+<h3>Como funciona a verificação em duas etapas</h3>
+<p>Depois da senha, o Hub pede um código de 6 números. Esse código pode vir de dois lugares:</p>
+<table>
+  <thead><tr><th style="width:26%">Forma</th><th>Como chega</th><th style="width:32%">Quando usar</th></tr></thead>
+  <tbody>
+    <tr><td><b>Código por e-mail</b></td><td>Enviado automaticamente para o seu e-mail corporativo a cada login. Vale por 10 minutos.</td><td>Sempre disponível. Pode demorar 1 ou 2 minutos para chegar.</td></tr>
+    <tr><td><b>App autenticador</b></td><td>Gerado no seu celular, num aplicativo como o Google Authenticator ou o Microsoft Authenticator. Muda a cada 30 segundos.</td><td><b>Recomendado.</b> É instantâneo e funciona mesmo se o e-mail estiver fora do ar.</td></tr>
+  </tbody>
+</table>
+<div class="nota"><span class="t">Por que ligar o app</span><p>Se o servidor de e-mail tiver uma instabilidade, o código não chega e você fica sem acesso. Com o app ligado, você digita o código do celular e entra na hora, sem depender do e-mail. Todo assessor deve ligar o app no primeiro dia.</p></div>
+
+<h3>Ligar o app autenticador, passo a passo</h3>
+<ol class="passos">
+  <li>No celular, instale o <b>Google Authenticator</b> ou o <b>Microsoft Authenticator</b> (grátis na App Store e na Play Store). Se você já usa um deles, por exemplo para o BTG, pode usar o mesmo: ele guarda várias contas.</li>
+  <li>No Hub, no computador, clique em <b>Segurança</b>, no menu da esquerda (embaixo, perto do seu nome).</li>
+  <li>No bloco <b>App autenticador</b>, clique em <b>Ligar o app autenticador</b>. Aparece um QR code.</li>
+  <li>No app do celular, toque em <b>+</b> e escolha <b>Ler código QR</b>. Aponte a câmera para o QR da tela.</li>
+  <li>O app passa a mostrar <b>Hub Adami</b> com 6 números. Digite esses números no Hub e clique em <b>Confirmar</b>.</li>
+  <li>Aparece "App ligado". A partir de agora, no login, você pode digitar o código do app em vez de esperar o e-mail.</li>
+</ol>
+<div class="par">
+  <figure><img src="imgj/05-seguranca.jpg"><figcaption>Tela de Segurança: estado da verificação, app autenticador e últimos acessos.</figcaption></figure>
+  <figure><img src="imgj/06-qr.jpg"><figcaption>QR code para ler com o app. Embaixo dele, a chave para digitar à mão, se a câmera não funcionar.</figcaption></figure>
+</div>
+
+<div class="nota azul"><span class="t">Microsoft Authenticator: "QR inválido"</span><p>Ao tocar em +, escolha <b>Outra conta (Google, Facebook etc.)</b>. Não escolha "Conta corporativa ou de estudante": essa opção só aceita contas da Microsoft e recusa o QR do Hub. Se preferir, toque em "Inserir código manualmente" e digite a chave que aparece embaixo do QR.</p></div>
+
+<h3>Lembrar este computador por 7 dias</h3>
+<p>Para quem já ligou o app autenticador, o Hub pode dispensar o código no computador que você usa todo dia. A senha continua sendo pedida diariamente; só o código deixa de ser.</p>
+<ol class="passos">
+  <li>Entre com e-mail e senha, como sempre.</li>
+  <li>Na tela do código, marque <b>Lembrar este computador por 7 dias</b> antes de clicar em Entrar.</li>
+  <li>Nos 7 dias seguintes, nesse computador, basta a senha. Depois disso, o Hub pede o código de novo e você pode marcar outra vez.</li>
+</ol>
+<figure class="meia"><img src="imgj/63-codigo-lembrar.jpg"><figcaption>A caixa "Lembrar este computador por 7 dias" fica logo acima do botão Entrar.</figcaption></figure>
+<div class="nota alerta"><span class="t">Só em computador seu</span><p>Nunca marque em computador compartilhado ou de outra pessoa. A lista de aparelhos lembrados fica em <b>Segurança</b>, com o botão <b>Esquecer</b> em cada um. <b>Sair de todos os aparelhos</b> e desligar o app também esquecem todos.</p></div>
+
+<h3>O acesso vence à meia-noite</h3>
+<p>A confirmação por código vale só para o dia. À meia-noite (horário de Brasília) o acesso vence e, no dia seguinte, o Hub pede o código de novo. É de propósito: um computador esquecido aberto não fica com acesso aos dados no dia seguinte.</p>
+
+<h3>Esqueci minha senha</h3>
+<ol class="passos">
+  <li>Na tela de login, clique em <b>Esqueci minha senha</b>.</li>
+  <li>Digite o seu e-mail. Chega o e-mail <b>Redefinir sua senha</b>.</li>
+  <li>Clique em <b>Criar nova senha</b>, escolha a senha nova e clique em <b>Salvar nova senha</b>. O link vale por tempo limitado e só funciona uma vez; se expirar, peça outro.</li>
+</ol>
+
+<h3>Últimos acessos e "Sair de todos os aparelhos"</h3>
+<p>Na tela de Segurança aparece a lista dos seus últimos acessos: data, se entrou por e-mail ou pelo app, aparelho e endereço. Se aparecer algum que você não reconhece:</p>
+<ol class="passos">
+  <li>Troque a senha (tela de login, <b>Esqueci minha senha</b>).</li>
+  <li>Volte em Segurança e clique em <b>Sair de todos os aparelhos</b>.</li>
+  <li>Avise a administração.</li>
+</ol>
+
+<h3>Boas práticas</h3>
+<ul>
+  <li>Não compartilhe a sua senha nem o código com ninguém, inclusive colegas. Cada pessoa tem o próprio acesso.</li>
+  <li>Ninguém da Adami vai pedir o seu código por telefone, WhatsApp ou e-mail. Se pedirem, é golpe.</li>
+  <li>Em computador que não é seu, clique em <b>Sair</b> ao terminar.</li>
+</ul>
+
+<!-- ============ 04 TELA INICIAL ============ -->
+<section class="cap" id="c4">
+  <div class="num">04</div>
+  <h1>A tela inicial</h1>
+  <div class="regua"></div>
+  <p class="lead">Ao entrar, você vê o resumo do seu dia: números da carteira, tarefas de hoje, o calendário do mês e os avisos da casa.</p>
+</section>
+<figure><img src="imgj/04-inicio.jpg"><figcaption>Tela inicial do Hub, com o menu de módulos à esquerda.</figcaption></figure>
+<table>
+  <thead><tr><th style="width:28%">Área</th><th>O que mostra</th></tr></thead>
+  <tbody>
+    <tr><td><b>Saudação e data</b></td><td>Seu nome e quantas tarefas você tem hoje. O botão <b>Abrir a Agenda</b> leva direto à agenda do CRM.</td></tr>
+    <tr><td><b>Números</b></td><td>Patrimônio sob gestão, captação líquida do mês, clientes na carteira e captações do mês, com a tendência em relação ao mês anterior.</td></tr>
+    <tr><td><b>Hoje</b></td><td>As tarefas e reuniões do dia que estão na Agenda do CRM, com horário.</td></tr>
+    <tr><td><b>Próximos dias</b></td><td>O que vem a seguir na agenda.</td></tr>
+    <tr><td><b>Calendário</b></td><td>O mês atual. Os dias com compromisso ficam marcados. Clique num dia para ver o que há nele.</td></tr>
+    <tr><td><b>Avisos da casa</b></td><td>Comunicados da gestão: comitês, novidades, prazos. Os fixados aparecem primeiro. Ao abrir um aviso, ele conta como lido.</td></tr>
+  </tbody>
+</table>
+<h3>Primeiros passos</h3>
+<p>Enquanto houver algo do começo por fazer, a tela inicial mostra o quadro <b>Primeiros passos no Hub</b>: ligar o app autenticador, abrir o manual, ler os avisos, registrar a primeira atividade no CRM e marcar o próximo contato de quem está em jornada. Cada item é conferido pelo próprio Hub e fica verde sozinho quando você faz. O quadro some quando tudo estiver feito, ou se você clicar em <b>Ocultar</b>.</p>
+<figure class="m80"><img src="imgj/60-inicio-passos.jpg"><figcaption>Primeiros passos na tela inicial, com o botão de cada item.</figcaption></figure>
+
+<h3>O menu da esquerda</h3>
+<ul>
+  <li><b>Módulos</b>, agrupados em Processo comercial, Ferramentas, Simuladores e Financeiro. Clique para abrir. Para voltar, use o botão <b>Hub Adami</b> no canto superior esquerdo de cada módulo.</li>
+  <li><b>Segurança</b>: app autenticador e últimos acessos (capítulo 3).</li>
+  <li><b>Dia, Noite e Sistema</b>: o visual claro, o escuro, ou o que o seu computador estiver usando.</li>
+  <li><b>Seu nome</b> e o botão de <b>Sair</b>.</li>
+</ul>
+<h3>O botão <b>?</b>: ajuda, busca e problemas</h3>
+<p>Em todas as telas do Hub há um botão redondo com <b>?</b> no canto inferior direito. Ele abre um painel com três coisas:</p>
+<ul>
+  <li><b>Busca</b>: digite parte do nome do cliente, o número da conta ou o nome de uma ferramenta. Clientes do CRM abrem direto na ficha; clientes das Carteiras abrem no relatório. Atalho: <b>Ctrl + K</b> (no Mac, <b>Cmd + K</b>), de qualquer tela.</li>
+  <li><b>Nesta tela</b>: o essencial da tela em que você está e o link para a página certa deste manual.</li>
+  <li><b>Reportar um problema</b>: escreva o que aconteceu e clique em Enviar. A foto da tela, a versão e os erros do navegador vão juntos, sem você precisar copiar nada.</li>
+</ul>
+<figure class="m80"><img src="imgj/61-ajuda.jpg"><figcaption>O painel do botão ?, com a busca, a ajuda da tela e o Reportar um problema.</figcaption></figure>
+
+<h3>O Hub no celular</h3>
+<p>O Hub funciona no navegador do celular e pode virar um ícone na tela inicial, como um aplicativo:</p>
+<ul>
+  <li><b>iPhone (Safari)</b>: abra adamicaptal.com.br/hub, toque em <b>Compartilhar</b> (o quadrado com a seta) e em <b>Adicionar à Tela de Início</b>.</li>
+  <li><b>Android (Chrome)</b>: abra o endereço, toque nos <b>três pontinhos</b> e em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li>
+</ul>
+<p>Na primeira vez que abrir pelo ícone, entre com e-mail, senha e código, como no computador.</p>
+
+<div class="nota azul"><span class="t">O selo de versão</span><p>No rodapé de cada módulo aparece a versão (por exemplo, "versão 3.01"). Se alguém avisar que saiu uma novidade e você não a vê, provavelmente o navegador está mostrando uma cópia antiga. Recarregue com <b>Ctrl + Shift + R</b> (Windows) ou <b>Cmd + Shift + R</b> (Mac) e confira o selo.</p></div>
+
+<!-- ============ 05 PERFIS ============ -->
+<section class="cap" id="c5">
+  <div class="num">05</div>
+  <h1>Perfis e acessos</h1>
+  <div class="regua"></div>
+  <p class="lead">Cada pessoa vê só o que precisa. O acesso é definido por perfil, e a regra é aplicada no servidor: não depende da tela.</p>
+</section>
+<table>
+  <thead><tr><th style="width:20%">Perfil</th><th>Para quem</th><th style="width:44%">O que libera</th></tr></thead>
+  <tbody>
+    <tr><td><b>Assessor</b></td><td>Assessores de investimentos</td><td>CRM (os próprios clientes), Processo Comercial, Carteiras dos próprios clientes, ferramentas, simuladores e Minha comissão.</td></tr>
+    <tr><td><b>Administrador</b></td><td>Backoffice e operações</td><td>Tudo do assessor, mais todas as carteiras: lança os dados do mês, conferência e cópias de segurança.</td></tr>
+    <tr><td><b>Mesa RV</b></td><td>Especialistas de renda variável</td><td>Registrar e encerrar operações na Mesa RV.</td></tr>
+    <tr><td><b>Financeiro</b></td><td>Equipe financeira</td><td>Comissões da equipe: planilhas, regras, fechamento e pagamentos.</td></tr>
+    <tr><td><b>Admin do CRM</b></td><td>Head comercial</td><td>No CRM, a visão da equipe inteira, KPIs, atualização da base do BTG e avisos da casa.</td></tr>
+    <tr><td><b>Master</b></td><td>Sócios</td><td>Tudo, inclusive convites, perfis, Fluxo e Captação e o registro de atividades.</td></tr>
+  </tbody>
+</table>
+<h3>O que você vê no seu dia a dia</h3>
+<ul>
+  <li><b>Os seus clientes.</b> No CRM e nas Carteiras você enxerga a sua carteira. Clientes de outro assessor não aparecem.</li>
+  <li><b>Agenda compartilhada.</b> Se você ligar "Compartilhar minha agenda com a equipe" (no CRM), os colegas veem os seus compromissos, só para leitura. A liderança vê todas as agendas.</li>
+  <li><b>Módulo bloqueado.</b> Um módulo que o seu perfil não libera aparece com cadeado ou não aparece. Se precisar dele, peça à administração.</li>
+</ul>
+
+<!-- ============ 06 CRM ============ -->
+<section class="cap" id="c6">
+  <div class="num">06</div>
+  <h1>CRM</h1>
+  <div class="regua"></div>
+  <p class="lead">O centro da rotina comercial. Cada cliente e cada prospect tem uma ficha, com a etapa da jornada, o pipe, as atividades e os arquivos. O que você registra aqui alimenta o dashboard, a agenda e os números da tela inicial.</p>
+</section>
+<p>O CRM tem duas abas no topo do menu: <b>Jornada</b> (a relação com o cliente de investimentos) e <b>Negócios</b> (consórcio e seguro). Você entra pelo card <b>CRM</b> no Hub, sem novo login.</p>
+
+<h2>Jornada do cliente</h2>
+<p>Em <b>Relacionamento</b>, cada coluna é uma etapa da trilha comercial (Prospect, R1, R2, R2.1, R3, R4) e cada cartão é um cliente. Arraste o cartão para a próxima coluna quando a reunião acontecer. No alto ficam os números da carteira e as notificações.</p>
+<figure><img src="imgj/24-crm-jornada.jpg"><figcaption>Jornada do cliente em quadro. Cada cartão mostra patrimônio, pipe e alertas (vencimentos, aniversários).</figcaption></figure>
+
+<h3>Cadastrar um cliente novo</h3>
+<ol class="passos">
+  <li>Clique em <b>+ Novo cliente</b>.</li>
+  <li>Preencha nome, tipo (pessoa física ou jurídica), segmento, etapa e o patrimônio estimado. Se já tiver conta no BTG, informe o número da conta.</li>
+  <li>Defina o <b>pipe</b> (Quente, Morno ou Frio) e o <b>próximo contato</b>. Salve.</li>
+</ol>
+
+<h3>A ficha do cliente</h3>
+<p>Clique em qualquer cartão para abrir a ficha. É nela que fica toda a história do relacionamento.</p>
+<figure><img src="imgj/25-crm-ficha.jpg"><figcaption>Ficha do cliente: etapa, pipe, valores, próximo contato, observações, arquivos e atividades.</figcaption></figure>
+<table>
+  <thead><tr><th style="width:28%">Campo</th><th>Como preencher</th></tr></thead>
+  <tbody>
+    <tr><td><b>Pipe</b></td><td><b>Quente</b>: vai fechar em breve. <b>Morno</b>: interessado, sem data. <b>Frio</b>: contato inicial ou parado.</td></tr>
+    <tr><td><b>Pipe total</b></td><td>Quanto do patrimônio do cliente pode vir para o escritório.</td></tr>
+    <tr><td><b>Pipe em negociação</b></td><td>O valor que está em conversa agora, com proposta na mesa.</td></tr>
+    <tr><td><b>Próximo contato</b></td><td>Data do próximo passo. Vira tarefa na Agenda e alerta no dashboard quando atrasa.</td></tr>
+    <tr><td><b>Observações</b></td><td>O que importa saber do cliente: família, objetivos, preferências. Clique em <b>+ Escrever</b>.</td></tr>
+    <tr><td><b>Arquivos</b></td><td>Arraste fotos e documentos (até 25 MB cada) ou clique em <b>+ Anexar</b>. Relatórios do Wealth Planning e do Plano Patrimonial chegam aqui sozinhos quando você usa "Salvar no CRM".</td></tr>
+    <tr><td><b>Atividades e histórico</b></td><td>Registre cada contato: tipo (ligação, reunião, e-mail, WhatsApp), data e o que foi conversado. Clique em <b>Registrar atividade</b>.</td></tr>
+  </tbody>
+</table>
+<h3>Ferramentas para este cliente</h3>
+<p>No fim da ficha, o quadro <b>Ferramentas para este cliente</b> abre o Wealth Planning, a Liberdade Financeira, o Plano Patrimonial e o Controle de Boletas já com o nome, a idade e o patrimônio do cliente preenchidos, e o <b>Relatório do mês</b> direto nas Carteiras. Uma faixa amarela no alto da ferramenta avisa o que veio da ficha. Confira antes de apresentar. Ao salvar no CRM, o cliente já vem escolhido.</p>
+<figure class="m80"><img src="imgj/62-ficha-ferr.jpg"><figcaption>O quadro Ferramentas para este cliente, no fim da ficha.</figcaption></figure>
+<p>No rodapé da ficha: <b>Captação efetivada</b> quando o dinheiro entrou, <b>Desqualificar</b> quando o cliente não segue (fica guardado em Desqualificados) e <b>Excluir</b> apenas para cadastro errado.</p>
+<div class="nota"><span class="t">Regra de ouro</span><p>Toda conversa com cliente vira uma atividade, e todo cliente ativo tem um próximo contato marcado. É isso que faz a agenda, os alertas e os números da equipe funcionarem.</p></div>
+
+<h2>Dashboard</h2>
+<p>A visão geral da sua carteira e da sua produção. Mostra o patrimônio sob gestão (onshore e offshore), o Net New Money do mês, a captação bruta, resgates, o que está em captação e os alertas: contatos atrasados, vencimentos, dinheiro parado na conta, receita gerada.</p>
+<figure class="m80"><img src="imgj/20-crm-dashboard-casa.jpg"><figcaption>Dashboard: resumo da carteira, captação do mês e alertas. Clique em qualquer número para ver os clientes por trás dele.</figcaption></figure>
+<p>As abas <b>Resumo</b>, <b>Carteira</b> e <b>Rotina</b> mostram a mesma carteira por ângulos diferentes: os números do mês, a distribuição por segmento e temperatura, e a disciplina de contatos.</p>
+<figure class="m80"><img src="imgj/21-crm-dash-carteira.jpg"><figcaption>Aba Carteira: distribuição do patrimônio por cliente e por segmento.</figcaption></figure>
+
+<h2>Agenda</h2>
+<p>Suas tarefas e reuniões em visão de hoje, semana ou mês. Cada item tem uma cor conforme a origem: <b>Própria</b> (criada por você), <b>Atribuída</b> (passada pelo head comercial ou por um master), <b>Próximo contato</b> (a data marcada na ficha do cliente), <b>Vencimento</b> (alerta de vencimento de ativo) e <b>Régua</b> (contato previsto pela régua de relacionamento).</p>
+<figure class="m80"><img src="imgj/11-crm-agenda.jpg"><figcaption>Agenda do dia, com a opção de compartilhar com a equipe.</figcaption></figure>
+<ol class="passos">
+  <li>Clique em <b>+ Nova tarefa</b>.</li>
+  <li>Dê um título, escolha o tipo (ligação, reunião, e-mail ou tarefa interna), a data e o horário. Se for recorrente, escolha a repetição: todo dia útil, toda semana ou todo mês.</li>
+  <li>Se quiser, vincule a um cliente. Salve.</li>
+  <li>Ao concluir, marque a tarefa como feita. Se ela estiver vinculada a um cliente, a conclusão vira uma atividade na ficha dele.</li>
+</ol>
+<p>Todo dia de manhã, o Hub manda para o seu e-mail um resumo da agenda do dia. A opção <b>Compartilhar minha agenda com a equipe</b> deixa os colegas verem os seus compromissos, só para leitura.</p>
+
+<h2>Minha carteira, Captados e Desqualificados</h2>
+<ul>
+  <li><b>Minha carteira</b>: os clientes que já estão no escritório, com patrimônio, movimentações e vencimentos.</li>
+  <li><b>Captados</b>: quem já teve a captação efetivada.</li>
+  <li><b>Desqualificados</b>: quem saiu da jornada, com o motivo. Dá para reativar.</li>
+</ul>
+
+<h2>Negócios: consórcio e seguro</h2>
+<p>Na aba <b>Negócios</b>, cada proposta de consórcio ou seguro vira um cartão no quadro, com produto, valor e etapa. Em <b>Minha produção</b> você acompanha o que fechou no mês. Em <b>Fechados</b> e <b>Perdidos</b> fica o histórico.</p>
+<figure class="m80"><img src="imgj/14b-crm-negocios.jpg"><figcaption>Minha produção em Negócios: propostas em andamento e fechadas.</figcaption></figure>
+
+<h2>Alertas</h2>
+<p>Ao abrir o CRM, uma janela mostra o que precisa de atenção hoje: vencimentos próximos, contatos atrasados, saldo parado na conta do cliente. Clique em um alerta para abrir a ficha do cliente.</p>
+<figure class="meia"><img src="imgj/16-crm-alertas.jpg"><figcaption>Janela de alertas ao entrar no CRM.</figcaption></figure>
+
+<h3>Rotina sugerida</h3>
+<table>
+  <thead><tr><th style="width:22%">Quando</th><th>O que fazer no CRM</th></tr></thead>
+  <tbody>
+    <tr><td><b>Começo do dia</b></td><td>Ler o e-mail da agenda, abrir os alertas, conferir os contatos atrasados no dashboard.</td></tr>
+    <tr><td><b>Após cada contato</b></td><td>Registrar a atividade, atualizar o pipe e marcar o próximo contato.</td></tr>
+    <tr><td><b>Após cada reunião</b></td><td>Mover o cartão para a etapa seguinte e anexar o material apresentado.</td></tr>
+    <tr><td><b>Fim da semana</b></td><td>Revisar o quadro de Relacionamento: ninguém parado sem próximo passo.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ 07 PROCESSO ============ -->
+<section class="cap" id="c7">
+  <div class="num">07</div>
+  <h1>Processo Comercial</h1>
+  <div class="regua"></div>
+  <p class="lead">A trilha de reuniões que transforma um contato em cliente consolidado. O módulo mostra, etapa por etapa, o que fazer, quem participa, o que entregar e em quanto tempo avançar.</p>
+</section>
+<h3>Segmentação: o ponto de partida</h3>
+<table>
+  <thead><tr><th style="width:20%">Segmento</th><th style="width:22%">Patrimônio</th><th>Entregáveis principais</th></tr></thead>
+  <tbody>
+    <tr><td><b>Advisory</b></td><td>Até R$ 1 milhão</td><td>Jornada estruturada, base para fidelização e crescimento patrimonial.</td></tr>
+    <tr><td><b>Exclusive</b></td><td>R$ 1 a 5 milhões</td><td>Relatório Consolidado completo como ferramenta central de visibilidade.</td></tr>
+    <tr><td><b>Private</b></td><td>Acima de R$ 5 milhões</td><td>Relatório Consolidado, Plano Patrimonial, Consolidação Imobiliária e Wealth Planning BTG.</td></tr>
+  </tbody>
+</table>
+<h3>A trilha do cliente novo</h3>
+<div class="trilha">
+  <div><i>R1</i><b>Descoberta</b><span>Presencial. Apresentação institucional, captura de informações e abertura de conta.</span></div>
+  <div><i>R2</i><b>Proposta</b><span>Proposta BTG, modelo de remuneração, TED e modelo de Relatório Consolidado.</span></div>
+  <div><i>R2.1</i><b>Consolidação</b><span>Presencial. Relatório real e captação dos valores em outros bancos.</span></div>
+  <div><i>R3</i><b>Liberdade Financeira</b><span>Plano de Liberdade Financeira e agendamento da R4.</span></div>
+  <div><i>R4</i><b>Produto</b><span>Reunião temática pelo gap: consórcio, seguro ou previdência.</span></div>
+</div>
+<table>
+  <thead><tr><th style="width:12%">Etapa</th><th style="width:30%">Quem participa</th><th>Ritmo até a próxima</th></tr></thead>
+  <tbody>
+    <tr><td><b>R1</b></td><td>Assessor</td><td>3 dias. A proposta deve chegar enquanto o cliente ainda está animado com a descoberta.</td></tr>
+    <tr><td><b>R2</b></td><td>Assessor + Investor (opcional)</td><td>7 dias para preparar o Relatório Consolidado real e agendar a consolidação.</td></tr>
+    <tr><td><b>R2.1</b></td><td>Assessor + Investor</td><td>7 dias para avançar ao Plano de Liberdade Financeira sem deixar esfriar.</td></tr>
+    <tr><td><b>R3</b></td><td>Assessor + Investor (opcional)</td><td>7 dias para fechar o ciclo com a reunião de produto.</td></tr>
+    <tr><td><b>R4</b></td><td>Assessor + Especialista</td><td>Uma pauta por reunião.</td></tr>
+  </tbody>
+</table>
+<div class="nota"><span class="t">Private</span><p>A espinha dorsal é a mesma, com camadas a mais: na R2 entram os modelos de Plano Patrimonial e Análise de Enquadramento; na R2.1, o Plano Patrimonial real (com formulário enviado antes ao cliente); na R3, Planejamento Imobiliário e Wealth Planning BTG.</p></div>
+<div class="nota azul"><span class="t">Cliente que já está na base</span><p>Quem já tem conta e recursos no escritório entra direto na R2 (Entrada), sem reunião institucional. O foco é ampliar a fatia do patrimônio que fica com a Adami.</p></div>
+<figure class="m80"><img src="imgj/36-processo.jpg"><figcaption>Módulo Processo Comercial. Mais abaixo na página: presencial ou vídeo, e a matriz reunião × segmento.</figcaption></figure>
+
+<h3>Qual ferramenta em qual reunião</h3>
+<table>
+  <thead><tr><th style="width:16%">Reunião</th><th>Ferramentas do Hub</th></tr></thead>
+  <tbody>
+    <tr><td><b>R1</b></td><td>CRM (cadastro e ficha).</td></tr>
+    <tr><td><b>R2</b></td><td>Carteiras (Relatório Consolidado modelo), Gerador de Planos Patrimoniais (modelo, para Private).</td></tr>
+    <tr><td><b>R2.1</b></td><td>Carteiras (relatório real), Controle de Boletas, Ágio e Troca de Ativos, Plano Patrimonial real.</td></tr>
+    <tr><td><b>R3</b></td><td>Liberdade Financeira, Ferramenta Wealth Planning, Relatório Imobiliário.</td></tr>
+    <tr><td><b>R4</b></td><td>Wealth Planning (proteção, previdência, alavancagem) e CRM Negócios.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ 08 CARTEIRAS ============ -->
+<section class="cap" id="c8">
+  <div class="num">08</div>
+  <h1>Carteiras e Relatório Consolidado</h1>
+  <div class="regua"></div>
+  <p class="lead">Todo mês, as posições de cada cliente são lançadas e o Hub gera o Relatório Consolidado de Investimentos: um PDF com a identidade da Adami, pronto para enviar ao cliente.</p>
+</section>
+<p>O módulo tem quatro abas: <b>Preencher</b> (lançamento do mês, feito pela administração), <b>Comentários do mês</b>, <b>Relatório</b> e <b>Histórico</b>. À esquerda ficam a lista de clientes e o mês de referência.</p>
+
+<h2>Relatório: o que o assessor usa</h2>
+<ol class="passos">
+  <li>No Hub, abra <b>Carteiras</b>.</li>
+  <li>À esquerda, escolha o <b>cliente</b> e o <b>mês de referência</b>.</li>
+  <li>Abra a aba <b>Relatório</b>. O relatório aparece na tela, como vai sair no papel.</li>
+  <li>Clique em <b>Conferir dados</b>: o Hub aponta campos faltando ou números estranhos antes de você enviar.</li>
+  <li>Clique em <b>Gerar PDF</b>. O arquivo baixa na hora, sem janela de impressão, já com o nome padrão (Adami Captal, ano-mês, cliente).</li>
+  <li>Clique em <b>Salvar no CRM</b> para guardar o PDF na ficha do cliente. Depois, envie ao cliente.</li>
+</ol>
+<figure class="m80"><img src="imgj/64-cart-botoes.jpg"><figcaption>Aba Relatório com Gerar PDF, Salvar no CRM e PDF de todos no alto.</figcaption></figure>
+<h3>PDF de todos os clientes do mês</h3>
+<p>No fim do mês, <b>PDF de todos</b> gera o relatório de todos os seus clientes com lançamento naquele mês, um arquivo por cliente. Marque se quer baixar os arquivos, salvar cada um na ficha do cliente no CRM, ou os dois. Deixe a aba aberta até aparecer "Pronto". Na primeira vez, o navegador pode perguntar se permite vários downloads: clique em <b>Permitir</b>.</p>
+<figure class="meia"><img src="imgj/66-pdf-todos.jpg"><figcaption>PDF de todos: baixar e salvar no CRM de uma vez.</figcaption></figure>
+<p>O <b>Imprimir retrato</b> e o <b>Imprimir paisagem</b> continuam lá, para quem preferir a janela de impressão.</p>
+
+<h2>Exemplo de relatório</h2>
+<p>O relatório completo tem em média de 15 a 20 páginas, conforme o tamanho da carteira. Seções: comentários do mês, resumo do patrimônio, distribuição por instituição, por categoria e por estratégia, retornos mensais, desempenho por conta, carteira contra os indicadores, lista de ativos, evolução do patrimônio, próximos vencimentos, patrimônio offshore e o aviso legal. As páginas abaixo são do relatório da Família Exemplo, que segue junto com este manual.</p>
+<div class="paginas">
+  <figure><img src="imgj/p-01.jpg"><figcaption>Capa</figcaption></figure>
+  <figure><img src="imgj/p-04.jpg"><figcaption>Resumo do patrimônio</figcaption></figure>
+  <figure><img src="imgj/p-06.jpg"><figcaption>Distribuição por categoria</figcaption></figure>
+</div>
+<div class="paginas">
+  <figure><img src="imgj/p-10.jpg"><figcaption>Carteira contra os indicadores</figcaption></figure>
+  <figure><img src="imgj/p-15.jpg"><figcaption>Evolução do patrimônio</figcaption></figure>
+  <figure><img src="imgj/p-17.jpg"><figcaption>Patrimônio offshore</figcaption></figure>
+</div>
+
+<h2>Preencher: o lançamento do mês</h2>
+<p>Feito pela administração (perfil Administrador). Vale conhecer, para entender de onde vêm os números do relatório e saber o que pedir quando algo estiver errado.</p>
+<figure class="m80"><img src="imgj/50-cart-preencher.jpg"><figcaption>Aba Preencher: contas onshore em reais e offshore em dólares, em blocos separados.</figcaption></figure>
+<table>
+  <thead><tr><th style="width:24%">Campo</th><th>O que é</th></tr></thead>
+  <tbody>
+    <tr><td><b>Conta e instituição</b></td><td>Cada conta do cliente, em cada instituição.</td></tr>
+    <tr><td><b>Saldo final</b></td><td>O saldo no último dia do mês.</td></tr>
+    <tr><td><b>Aplicações e resgates</b></td><td>O que entrou e o que saiu no mês. Sempre em número positivo.</td></tr>
+    <tr><td><b>Rend. R$ e Rend. %</b></td><td>O resultado do mês em reais e a rentabilidade informada pela instituição. São independentes: um aporte no meio do mês muda um sem mudar o outro.</td></tr>
+    <tr><td><b>PTAX</b></td><td>Cotação do dólar no fechamento, só como referência. Onshore e offshore nunca se somam.</td></tr>
+    <tr><td><b>Ativos e vencimentos</b></td><td>A lista de ativos com categoria, estratégia, taxa e posição, e os próximos vencimentos.</td></tr>
+  </tbody>
+</table>
+<p>O botão <b>Puxar do BTG</b> busca os dados das contas do BTG automaticamente. O mês seguinte herda as contas do anterior: só é preciso atualizar os valores.</p>
+
+<h3>Comentários do mês</h3>
+<p>Texto que abre o relatório: o resumo do mês e a visão para os próximos meses. É escrito uma vez e vale para todos os clientes daquele mês.</p>
+<figure class="meia"><img src="imgj/51-cart-carta.jpg"><figcaption>Editor dos Comentários do mês.</figcaption></figure>
+
+<div class="nota"><span class="t">Como ler os números</span><p>A rentabilidade da carteira é a média das contas ponderada pelo saldo de abertura de cada uma, e os meses são compostos, nunca somados. Por isso, num mês com aporte grande, o resultado em reais pode subir muito sem que a rentabilidade em % acompanhe. A rentabilidade offshore é em dólar e não inclui a variação cambial; isso está escrito no rodapé do relatório.</p></div>
+
+<!-- ============ 09 WEALTH ============ -->
+<section class="cap" id="c9">
+  <div class="num">09</div>
+  <h1>Ferramenta Wealth Planning</h1>
+  <div class="regua"></div>
+  <p class="lead">O diagnóstico patrimonial da família em uma página: composição do patrimônio, projeção até a aposentadoria, renda possível, sucessão, proteção, previdência e alavancagem.</p>
+</section>
+<div class="ficha"><div><span>Quando usar</span><b>R3 e reuniões de planejamento</b></div><div><span>Resultado</span><b>Relatório na tela, PDF e anexo no CRM</b></div><div><span>Tempo de preenchimento</span><b>15 a 20 minutos</b></div></div>
+<p>À esquerda fica o formulário; à direita, o relatório se monta sozinho conforme você preenche. Não há botão de calcular. Aberta pela ficha do CRM (<b>Ferramentas para este cliente</b>), a ferramenta já vem com nome, idade, profissão, estado civil e patrimônio.</p>
+<figure><img src="imgj/30-wealth-form.jpg"><figcaption>Formulário à esquerda e relatório ao vivo à direita.</figcaption></figure>
+
+<h3>Como preencher</h3>
+<div class="campo"><b>Dados do cliente</b><span>Nome, idade atual, idade em que quer se aposentar, profissão, estado (UF, que define a alíquota do ITCMD), estado civil e filhos.</span></div>
+<div class="campo"><b>Renda e patrimônio</b><span>Renda mensal fora da carteira, patrimônio investido, rentabilidade real esperada (acima da inflação, ex.: 4,5) e aportes mensais.</span></div>
+<div class="campo"><b>Imóveis e empresas</b><span>Valor aproximado de cada um, se os imóveis estão numa holding e se há bens no exterior.</span></div>
+<div class="campo"><b>Alocação atual</b><span>Percentuais em renda fixa, fundos, renda variável, internacional e previdência.</span></div>
+<div class="campo"><b>Objetivos</b><span>Metas com valor e ano (casa, estudo dos filhos, viagem). Use "Repete?" para metas recorrentes.</span></div>
+<div class="campo"><b>Proteção</b><span>Seguro de vida atual e cobertura, custo de vida mensal da família e dívidas relevantes.</span></div>
+<div class="campo"><b>Sucessão e impostos</b><span>Estimativa de ITCMD, posição em previdência e modelo da declaração de IR.</span></div>
+<div class="campo"><b>Consórcio</b><span>Se já tem consórcio e se quer simular uma carta na projeção (valor, ano de contemplação, prazo).</span></div>
+
+<h3>O que o relatório entrega</h3>
+<figure class="m80"><img src="imgj/31a-wealth.jpg"><figcaption>Resumo e composição patrimonial.</figcaption></figure>
+<figure class="m80"><img src="imgj/31b-wealth.jpg"><figcaption>Projeção patrimonial: acumulação até a aposentadoria e duas trajetórias depois dela (renda perpétua ou consumindo o patrimônio).</figcaption></figure>
+<figure class="m80"><img src="imgj/31c-wealth.jpg"><figcaption>Proteção patrimonial: gap de proteção estimado e apólice sugerida.</figcaption></figure>
+<ul>
+  <li><b>Sensibilidade da renda</b>: quanto muda a renda se a família aportar mais ou menos, ou se aposentar antes ou depois.</li>
+  <li><b>Planejamento sucessório</b>: os instrumentos indicados para o caso (doação, holding, previdência, seguro, fundos exclusivos), com prós e cuidados.</li>
+  <li><b>Previdência e alavancagem</b>: o espaço para PGBL no IR e as cartas de crédito compatíveis com a renda.</li>
+</ul>
+<h3>Salvar e entregar</h3>
+<ol class="passos">
+  <li>Revise o relatório na direita. Ajuste qualquer campo e o relatório se refaz.</li>
+  <li>Clique em <b>Salvar no CRM</b>: o PDF vai para a ficha do cliente, em Arquivos.</li>
+  <li>Para entregar ao cliente, use <b>Imprimir</b> e escolha <b>Salvar como PDF</b>.</li>
+</ol>
+<div class="nota alerta"><span class="t">Cuidado com o que se promete</span><p>As projeções são estimativas em valores de hoje e não garantem resultado. A escolha de instrumentos de sucessão depende de análise jurídica e tributária. O relatório já traz esse aviso; reforce na conversa.</p></div>
+
+<!-- ============ 10 PLANOS ============ -->
+<section class="cap" id="c10">
+  <div class="num">10</div>
+  <h1>Gerador de Planos Patrimoniais</h1>
+  <div class="regua"></div>
+  <p class="lead">Monta o Plano Patrimonial e a Análise de Enquadramento do cliente em Word, com a política de investimentos, as bandas de alocação e as movimentações sugeridas.</p>
+</section>
+<div class="ficha"><div><span>Quando usar</span><b>Private, R2 (modelo) e R2.1 (real)</b></div><div><span>Resultado</span><b>Dois documentos .docx</b></div><div><span>Salva</span><b>No CRM e em arquivo</b></div></div>
+<figure class="m80"><img src="imgj/39-patrimonial.jpg"><figcaption>Gerador de Planos Patrimoniais: seções à esquerda, formulário no centro, documentos e conferência à direita.</figcaption></figure>
+<h3>Seções do formulário</h3>
+<table>
+  <thead><tr><th style="width:32%">Seção</th><th>O que preencher</th></tr></thead>
+  <tbody>
+    <tr><td><b>Cliente e patrimônio</b></td><td>Nome, data, patrimônio financeiro total e objetivo.</td></tr>
+    <tr><td><b>Perfil do investidor</b></td><td>Perfil de suitability, capacidade e disposição para risco, horizonte.</td></tr>
+    <tr><td><b>Blocos do patrimônio</b></td><td>Como o patrimônio se divide por finalidade (reserva, renda, crescimento, sucessão).</td></tr>
+    <tr><td><b>Limites e restrições</b></td><td>Concentração máxima por emissor e por classe; restrições e particularidades do cliente.</td></tr>
+    <tr><td><b>Política de alocação</b></td><td>Faixas mínima, alvo e máxima por categoria e por estratégia.</td></tr>
+    <tr><td><b>Política de liquidez</b></td><td>Quanto precisa estar disponível em cada prazo.</td></tr>
+    <tr><td><b>Instituições e posição atual</b></td><td>Onde está o dinheiro hoje, por categoria, estratégia e liquidez.</td></tr>
+    <tr><td><b>Patrimônio imobiliário</b></td><td>Imóveis, com valor e situação. Use "Acrescentar imóvel".</td></tr>
+    <tr><td><b>Observações e próximos passos</b></td><td>O que foi combinado e as movimentações sugeridas.</td></tr>
+  </tbody>
+</table>
+<h3>Gerar os documentos</h3>
+<ol class="passos">
+  <li>Confira o quadro <b>Consistência</b>, à direita: ele avisa somas que não fecham e campos faltando.</li>
+  <li>Veja a <b>Prévia do enquadramento</b>: a carteira atual comparada com a política, banda por banda.</li>
+  <li>Clique em <b>Plano Patrimonial (.docx)</b> e em <b>Análise de Enquadramento (.docx)</b>. Os arquivos baixam prontos para revisar no Word.</li>
+  <li>Clique em <b>Salvar no CRM do cliente</b> para guardar na ficha.</li>
+</ol>
+<div class="nota azul"><span class="t">Continuar depois</span><p><b>Salvar JSON</b> guarda o preenchimento num arquivo no seu computador; <b>Abrir JSON</b> retoma de onde parou. Útil para atualizar o plano no ano seguinte sem digitar tudo de novo.</p></div>
+
+<!-- ============ 11 IMOBILIARIO ============ -->
+<section class="cap" id="c11">
+  <div class="num">11</div>
+  <h1>Relatório Imobiliário</h1>
+  <div class="regua"></div>
+  <p class="lead">A consolidação do patrimônio imobiliário do cliente private: imóveis, projetos em andamento e histórico de retornos, numa apresentação pronta.</p>
+</section>
+<div class="ficha"><div><span>Quando usar</span><b>Private, R3</b></div><div><span>Resultado</span><b>Apresentação em PowerPoint</b></div></div>
+<figure class="m80"><img src="imgj/40-imobiliario.jpg"><figcaption>Relatório Imobiliário: abas Cliente, Imóveis, Projetos, Histórico e Preview. Em vermelho, o que ainda falta preencher.</figcaption></figure>
+<ol class="passos">
+  <li>Em <b>Cliente</b>, preencha nome, mês e data de referência e a taxa de corretagem.</li>
+  <li>Em <b>Imóveis</b>, cadastre cada imóvel com valor e renda. Para muitos imóveis, clique em <b>Baixar modelo</b>, preencha a planilha e use <b>Importar planilha</b>.</li>
+  <li>Em <b>Projetos</b>, inclua os projetos imobiliários em andamento.</li>
+  <li>Em <b>Histórico</b>, os retornos dos meses anteriores.</li>
+  <li>Confira o <b>Preview</b> e clique em <b>Gerar PPTX</b>.</li>
+  <li>Use <b>Salvar projeto</b> para guardar e <b>Abrir projeto</b> para atualizar no mês seguinte.</li>
+</ol>
+
+<!-- ============ 12 ALOCACAO ============ -->
+<section class="cap" id="c12">
+  <div class="num">12</div>
+  <h1>Política de Alocação</h1>
+  <div class="regua"></div>
+  <p class="lead">O material do comitê de investimentos do mês. O comitê preenche; o assessor consulta e baixa o PDF para conversar com o cliente.</p>
+</section>
+<figure class="meia"><img src="imgj/41-alocacao.jpg"><figcaption>Política de Alocação: seções à esquerda, a prévia do documento à direita.</figcaption></figure>
+<h3>O que tem no material</h3>
+<ul>
+  <li><b>Projeções macroeconômicas</b>: juros, inflação, câmbio e crescimento, ano atual e próximo.</li>
+  <li><b>Desempenho das classes de ativos</b> no mês.</li>
+  <li><b>Objetivo e governança</b>, <b>diretrizes e risco</b> e a <b>régua de aderência</b>.</li>
+  <li><b>Trade ideas do mês</b> e <b>alterações no mês</b>.</li>
+  <li>As <b>três carteiras recomendadas</b> e os ativos e emissores sugeridos.</li>
+</ul>
+<h3>Para o assessor</h3>
+<ol class="passos">
+  <li>Abra <b>Política de Alocação</b> e escolha o mês.</li>
+  <li>Leia as alterações do mês: é o que muda na conversa com os clientes.</li>
+  <li>Clique em <b>Baixar PDF</b> para ter o material completo.</li>
+</ol>
+
+<!-- ============ 13 RV ============ -->
+<section class="cap" id="c13">
+  <div class="num">13</div>
+  <h1>Mesa RV</h1>
+  <div class="regua"></div>
+  <p class="lead">As recomendações de renda variável da casa: compra e venda, swing trade e operações estruturadas, com o card pronto para o grupo de clientes e o histórico de resultados.</p>
+</section>
+<figure class="meia"><img src="imgj/42-mesa-rv.jpg"><figcaption>Mesa RV: tipo de operação no alto, campos à esquerda e o card ao vivo à direita.</figcaption></figure>
+<h3>Montar um card</h3>
+<ol class="passos">
+  <li>Em <b>Nova operação</b>, escolha o tipo: Compra / Venda, Posição, Swing Trade, Stock or Coupon, Smart Hedge, Aceleradora, Fence, Booster, Autocall ou Outra.</li>
+  <li>Preencha ativo, quantidade, preço e, conforme o tipo, alvo, stop, vencimento, barreira, prêmio e fees.</li>
+  <li>Confira a <b>Prévia</b> do card à direita.</li>
+  <li>Clique em <b>Baixar imagem para o grupo</b> ou <b>Copiar imagem</b> e cole no WhatsApp.</li>
+</ol>
+<h3>Histórico</h3>
+<p>Em <b>Histórico</b> ficam todas as operações registradas, com filtro por tipo e por situação (em aberto ou encerradas), o resultado de cada uma e a taxa de acerto. Os clientes que entraram em cada operação ficam vinculados a ela.</p>
+<div class="nota azul"><span class="t">Quem registra</span><p>O assessor pode montar e baixar cards. O registro no histórico e o encerramento (atingiu o alvo, stopou, encerrar manualmente) são feitos pela Mesa RV. No seu acesso aparece "somente leitura".</p></div>
+
+<!-- ============ 14 BOLETAS ============ -->
+<section class="cap" id="c14">
+  <div class="num">14</div>
+  <h1>Controle de Boletas</h1>
+  <div class="regua"></div>
+  <p class="lead">Na hora de alocar o dinheiro de um cliente, mostra quanto já foi boletado e quanto ainda falta, calculado a cada linha.</p>
+</section>
+<figure class="m80"><img src="imgj/35-boletas.jpg"><figcaption>Controle de Boletas: disponível, boletado e quanto falta alocar.</figcaption></figure>
+<ol class="passos">
+  <li>Informe o <b>cliente</b> e o <b>valor disponível para alocar</b>.</li>
+  <li>Em <b>Ativos boletados</b>, adicione cada ativo com valor, vencimento, taxa e observação. O "falta alocar" se atualiza na hora.</li>
+  <li>Em <b>Resgates a enviar</b>, liste o que precisa ser resgatado para compor o disponível.</li>
+  <li>Use <b>Copiar resumo</b> para mandar à mesa ou ao cliente, ou <b>Imprimir</b>.</li>
+  <li><b>Salvar no CRM</b> guarda o controle em PDF na ficha do cliente.</li>
+</ol>
+
+<!-- ============ 15 SIMULADORES ============ -->
+<section class="cap" id="c15">
+  <div class="num">15</div>
+  <h1>Simuladores</h1>
+  <div class="regua"></div>
+  <p class="lead">Contas rápidas para usar dentro da reunião, com o cliente olhando a tela.</p>
+</section>
+
+<h2>Liberdade Financeira</h2>
+<p>Responde duas perguntas: quanto o cliente precisa juntar para manter o padrão de vida, e quanto ele pode retirar por mês sem acabar com o patrimônio. Tudo em valores reais, já descontada a inflação.</p>
+<figure class="m80"><img src="imgj/32-liberdade.jpg"><figcaption>Liberdade Financeira: dados, retirada desejada e o resultado em cartões.</figcaption></figure>
+<div class="campo"><b>Dados do cliente</b><span>Nome, idade atual, idade de aposentadoria e expectativa de vida.</span></div>
+<div class="campo"><b>Patrimônio e aportes</b><span>Patrimônio atual, aporte mensal, rentabilidade nominal e inflação esperada (% ao ano).</span></div>
+<div class="campo"><b>Retirada desejada</b><span>Quanto a família quer retirar por mês na aposentadoria.</span></div>
+<p>O resultado mostra o patrimônio na aposentadoria, a renda perpétua (preservando o patrimônio), a renda consumindo o patrimônio até a expectativa de vida, o monte financeiro necessário e tabelas de sensibilidade. <b>Salvar no CRM</b>, no fim da página, guarda a simulação em PDF na ficha do cliente; aberta pela ficha, ela já vem com nome, idade e patrimônio.</p>
+
+<h2>Ágio e Troca de Ativos</h2>
+<p>Quando o cliente tem um título que paga pouco e quer trocar por um que paga mais, a saída antecipada costuma ter deságio. O simulador mostra em quanto tempo a taxa nova compensa essa perda.</p>
+<figure class="meia"><img src="imgj/34-agio.jpg"><figcaption>Ágio e Troca de Ativos: no exemplo, a troca se paga em 22 meses.</figcaption></figure>
+<ol class="passos">
+  <li><b>Ativo atual</b>: valor na curva hoje e a taxa contratada.</li>
+  <li><b>Ativo novo</b>: o valor que efetivamente será aplicado (o valor de venda, já com o deságio) e a taxa do novo ativo.</li>
+  <li>Leia o resultado: deságio assumido, meses para empatar e a diferença no vencimento. O gráfico mostra as duas curvas.</li>
+  <li><b>Salvar no CRM</b> guarda a simulação em PDF na ficha do cliente.</li>
+</ol>
+
+<h2>Simulador de Receita RV</h2>
+<p>Ajuda a planejar a receita do mês com renda variável. Para swing trade e para estruturadas, informe o número de <b>clientes</b>, o <b>volume por cliente</b> no mês, as <b>ordens enviadas</b> e o <b>ROA por operação</b>. O simulador mostra o PL trabalhado, a receita do escritório, a sua receita e quanto da meta do mês já está coberto. Mais abaixo, ele sugere cenários para atingir a meta.</p>
+<figure class="meia"><img src="imgj/38-simulador.jpg"><figcaption>Simulador de Receita RV: indicadores principais e cenários.</figcaption></figure>
+
+<!-- ============ 16 COMISSAO ============ -->
+<section class="cap" id="c16">
+  <div class="num">16</div>
+  <h1>Minha comissão</h1>
+  <div class="regua"></div>
+  <p class="lead">O seu fechamento do mês, aberto linha a linha. Aparece depois que o Financeiro fecha e libera o mês.</p>
+</section>
+<figure class="m80"><img src="imgj/43-minha-comissao.jpg"><figcaption>Minha comissão: bruto, imposto, líquido e a data de pagamento; abaixo, o detalhe por categoria.</figcaption></figure>
+<ol class="passos">
+  <li>Abra <b>Minha comissão</b>. Aparece o último mês liberado; troque no seletor do canto direito.</li>
+  <li>Os cartões mostram a <b>comissão bruta</b>, o <b>imposto</b>, a <b>comissão líquida</b> e quando ela será paga.</li>
+  <li>Escolha ver <b>Por categoria</b> ou <b>Por cliente</b>. Clique numa linha para abrir o detalhe: origem, cliente, conta, produto, comissão gerada e a sua parte.</li>
+  <li><b>Baixar Excel</b> gera a planilha completa do mês.</li>
+</ol>
+<div class="nota"><span class="t">Dúvida em algum valor?</span><p>Anote a linha (cliente, conta e produto) e fale com o Financeiro. Ajustes entram no fechamento seguinte.</p></div>
+
+<!-- ============ 17 DUVIDAS ============ -->
+<section class="cap" id="c17">
+  <div class="num">17</div>
+  <h1>Dúvidas e problemas comuns</h1>
+  <div class="regua"></div>
+  <p class="lead">O que fazer antes de chamar alguém.</p>
+</section>
+<table>
+  <thead><tr><th style="width:36%">Situação</th><th>O que fazer</th></tr></thead>
+  <tbody>
+    <tr><td><b>O código não chegou no e-mail</b></td><td>Espere 2 minutos e olhe o spam. Se o app autenticador estiver ligado, use o código do app. Se não estiver, clique em "Mandar outro código" (há um intervalo de 30 segundos entre envios). Os códigos anteriores continuam valendo: use qualquer um que chegar.</td></tr>
+    <tr><td><b>"Código inválido" no app</b></td><td>Confira se está usando a conta <b>Hub Adami</b> no app (não a do BTG) e se o relógio do celular está no automático. Digite o código antes de ele trocar.</td></tr>
+    <tr><td><b>Conta bloqueada por 30 minutos</b></td><td>Foram muitas tentativas erradas. Espere o tempo e tente com calma. Persistindo, fale com a administração.</td></tr>
+    <tr><td><b>O Hub pediu o código de novo</b></td><td>Normal: o acesso vence à meia-noite. Confirme e siga.</td></tr>
+    <tr><td><b>Não vejo uma novidade anunciada</b></td><td>Recarregue com Ctrl + Shift + R (Windows) ou Cmd + Shift + R (Mac) e confira o selo de versão no rodapé.</td></tr>
+    <tr><td><b>Um módulo não aparece ou está bloqueado</b></td><td>O seu perfil não libera. Peça à administração.</td></tr>
+    <tr><td><b>Não acho um cliente no CRM</b></td><td>Use a busca no alto. Confira Captados e Desqualificados. Se o cliente é de outro assessor, ele não aparece para você.</td></tr>
+    <tr><td><b>O relatório saiu com números errados</b></td><td>Clique em Conferir dados e mostre à administração o que está diferente do extrato.</td></tr>
+    <tr><td><b>O PDF saiu cortado</b></td><td>Use <b>Gerar PDF</b>, que não depende da janela de impressão. Se preferir imprimir: margens "Padrão", escala 100% e "Gráficos de segundo plano" marcado.</td></tr>
+    <tr><td><b>Não acho um cliente ou uma ferramenta</b></td><td>Aperte <b>Ctrl + K</b> (no Mac, Cmd + K) e digite parte do nome ou a conta.</td></tr>
+    <tr><td><b>Parou de pedir o código</b></td><td>Você marcou "Lembrar este computador". Vale 7 dias. Para cancelar: Segurança, Aparelhos lembrados, Esquecer.</td></tr>
+    <tr><td><b>Troquei de celular</b></td><td>Peça para zerar o app autenticador da sua conta e ligue de novo no celular novo.</td></tr>
+    <tr><td><b>Esqueci a senha</b></td><td>Tela de login, Esqueci minha senha.</td></tr>
+  </tbody>
+</table>
+<h3>Reportar um problema</h3>
+<p>Algo deu errado? Clique no <b>?</b> no canto da tela, em <b>Reportar um problema</b>, escreva o que estava tentando fazer e o que apareceu, e clique em <b>Enviar</b>. A foto da tela, a versão e os erros do navegador vão juntos para o master. Desmarque a foto se houver algo na tela que não deva ir.</p>
+<figure class="meia"><img src="imgj/67-reportar.jpg"><figcaption>Reportar um problema: o texto, a foto da tela e o resto vão sozinhos.</figcaption></figure>
+<div class="nota azul"><span class="t">Nunca</span><p>Nunca escreva senha nem código no Reportar um problema, no WhatsApp ou no e-mail. Ninguém da Adami vai pedir.</p></div>
+
+<!-- ============ ANEXOS ============ -->
+<section class="cap" id="c18">
+  <div class="num">A</div>
+  <h1>Anexos</h1>
+  <div class="regua"></div>
+</section>
+<h2 style="margin-top:4pt">Checklist do primeiro dia</h2>
+<table>
+  <thead><tr><th style="width:8%"></th><th>Tarefa</th><th style="width:22%">Capítulo</th></tr></thead>
+  <tbody>
+    <tr><td>☐</td><td>Receber o convite e criar o acesso em <b>adamicaptal.com.br/hub</b></td><td>02 Primeiro acesso</td></tr>
+    <tr><td>☐</td><td>Ligar o <b>app autenticador</b> em Segurança</td><td>03 Segurança</td></tr>
+    <tr><td>☐</td><td>Marcar "Lembrar este computador por 7 dias" no seu computador</td><td>03 Segurança</td></tr>
+    <tr><td>☐</td><td>Salvar o Hub nos favoritos e instalar o ícone no celular</td><td>04 Tela inicial</td></tr>
+    <tr><td>☐</td><td>Escolher o visual (Dia, Noite ou Sistema)</td><td>04 Tela inicial</td></tr>
+    <tr><td>☐</td><td>Conferir no CRM se a sua carteira está completa</td><td>06 CRM</td></tr>
+    <tr><td>☐</td><td>Marcar o próximo contato de cada cliente ativo</td><td>06 CRM</td></tr>
+    <tr><td>☐</td><td>Decidir se compartilha a agenda com a equipe</td><td>06 CRM</td></tr>
+    <tr><td>☐</td><td>Ler a trilha R1 a R4 no Processo Comercial</td><td>07 Processo Comercial</td></tr>
+    <tr><td>☐</td><td>Abrir o Relatório Consolidado de um cliente e gerar o PDF</td><td>08 Carteiras</td></tr>
+    <tr><td>☐</td><td>Fazer um Wealth Planning de teste com dados fictícios</td><td>09 Wealth Planning</td></tr>
+    <tr><td>☐</td><td>Ler os avisos da casa</td><td>04 Tela inicial</td></tr>
+  </tbody>
+</table>
+
+<h2>Glossário</h2>
+<table>
+  <thead><tr><th style="width:26%">Termo</th><th>Significado</th></tr></thead>
+  <tbody>
+    <tr><td><b>Hub</b></td><td>O portal interno da Adami Captal, com todos os módulos.</td></tr>
+    <tr><td><b>Pipe</b></td><td>O patrimônio que pode vir para o escritório. Quente, morno ou frio indica a chance e o prazo.</td></tr>
+    <tr><td><b>NNM (Net New Money)</b></td><td>Captação líquida: o que entrou menos o que saiu no período.</td></tr>
+    <tr><td><b>Onshore e offshore</b></td><td>Investimentos no Brasil (em reais) e no exterior (em dólares). Aparecem sempre separados.</td></tr>
+    <tr><td><b>PTAX</b></td><td>Cotação oficial do dólar do Banco Central, usada como referência.</td></tr>
+    <tr><td><b>R1, R2, R2.1, R3, R4</b></td><td>As reuniões da trilha comercial (capítulo 7).</td></tr>
+    <tr><td><b>Advisory, Exclusive, Private</b></td><td>Os segmentos por patrimônio (capítulo 7).</td></tr>
+    <tr><td><b>Investor</b></td><td>O especialista de investimentos que acompanha o assessor nas reuniões de proposta e consolidação.</td></tr>
+    <tr><td><b>App autenticador</b></td><td>Aplicativo de celular que gera o código de acesso a cada 30 segundos.</td></tr>
+    <tr><td><b>Botão ?</b></td><td>O botão no canto de todas as telas: busca (Ctrl + K), ajuda da tela e Reportar um problema.</td></tr>
+    <tr><td><b>Selo de versão</b></td><td>O número da versão no rodapé de cada módulo, para saber se você está vendo a versão mais nova.</td></tr>
+    <tr><td><b>Enquadramento</b></td><td>A comparação da carteira atual com a política de alocação definida para o cliente.</td></tr>
+  </tbody>
+</table>
+<p style="margin-top:18pt;font-size:8.5pt;color:var(--cinza)">Manual do Hub Adami · versão 3.10 · novembro de 2026. Documento de uso interno da Adami Captal. As telas usam dados fictícios. Quando o Hub ganhar novidades, este manual é atualizado e o número de versão muda.</p>
+
+<script>
+/* Preenche os números de página do sumário a partir de window.PAGINAS (injetado na segunda passada). */
+if(window.PAGINAS){ document.querySelectorAll('[data-pg]').forEach(function(e){ var v=window.PAGINAS[e.getAttribute('data-pg')]; if(v) e.textContent=v; }); }
+</script>
+</body>
+</html>

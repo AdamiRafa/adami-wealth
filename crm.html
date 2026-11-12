@@ -2,7 +2,17 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
+<script src="comum/barra.js"></script>
 <title>CRM Comercial</title>
 <style>
   /* As fontes vem do Google como melhoria: se a rede bloquear, o CRM
@@ -2387,6 +2397,19 @@
   .print-header h1{font-size:20px;margin:10px 0 2px;}
   .print-header .print-meta{font-size:11.5px;color:var(--ink-muted);font-family:'IBM Plex Mono',Consolas,Menlo,'Courier New',monospace;}
   .print-header hr{border:none;border-top:2px solid var(--gold);margin:14px 0 18px;}
+
+  /* Guia de tela vazia e ferramentas a partir da ficha (3.10). */
+  .guia-vazio{margin:0 0 18px;padding:20px 22px;border:1px dashed var(--border,#E2E6ED);border-radius:16px;background:var(--bg,#F4F6F9);max-width:760px}
+  .guia-vazio h3{margin:0 0 6px;font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:20px;color:var(--ink)}
+  .guia-vazio p{margin:0 0 10px;color:var(--ink-muted);font-size:14px;line-height:1.55}
+  .guia-vazio ol{margin:0 0 14px;padding-left:20px;color:var(--ink-muted);font-size:13.5px;line-height:1.7}
+  .guia-vazio-acoes{display:flex;gap:10px;flex-wrap:wrap}
+  .ferr-cliente{margin-top:18px;padding:14px 16px;border:1px solid var(--border,#E2E6ED);border-radius:14px;background:var(--bg,#F4F6F9)}
+  .ferr-cliente h3{margin:0 0 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+  .ferr-cliente p{margin:0 0 10px;font-size:12.5px;color:var(--ink-muted)}
+  .ferr-cliente .ferr-lista{display:flex;flex-wrap:wrap;gap:8px}
+  .ferr-cliente a{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px;border-radius:999px;border:1px solid var(--border,#E2E6ED);background:var(--surface,#fff);color:var(--ink);font-size:12.5px;font-weight:600;text-decoration:none}
+  .ferr-cliente a:hover{border-color:var(--ink,#12263F)}
 
   @media print{
     @page{ margin:14mm; }
@@ -6839,7 +6862,8 @@ const ANX_TIPOS = {
   ppt:'application/vnd.ms-powerpoint', pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   txt:'text/plain', csv:'text/csv',
 };
-const ANX_ORIGENS = { upload:'Enviado na ficha', wealth_planning:'Wealth Planning', plano_patrimonial:'Plano Patrimonial', enquadramento:'Análise de Enquadramento' };
+const ANX_ORIGENS = { upload:'Enviado na ficha', wealth_planning:'Wealth Planning', plano_patrimonial:'Plano Patrimonial', enquadramento:'Análise de Enquadramento',
+  liberdade:'Liberdade Financeira', agio:'Ágio e Troca de Ativos', boletas:'Controle de Boletas', relatorio:'Relatório Consolidado' };
 const anxExt = (nome) => (String(nome).split('.').pop() || '').toLowerCase();
 const anxTipo = (arq) => ANX_TIPOS[anxExt(arq.name)] || (Object.values(ANX_TIPOS).indexOf(arq.type) !== -1 ? arq.type : '');
 const anxNomeSeguro = (nome) => String(nome).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80) || 'arquivo';
@@ -6885,6 +6909,43 @@ async function anexoApagar(a){
   if(error) throw error;
   if(count === 0) throw new Error('Só quem enviou o arquivo ou o head comercial pode excluir.');
   await sb.storage.from('anexos').remove([a.caminho]);
+}
+
+/* Tela vazia que explica o que fazer (3.10): aparece no Dashboard e no Relacionamento
+   quando a pessoa ainda não tem nenhum cartão neste funil, em vez de números zerados. */
+function GuiaVazio({ funil, podeCriar, onNovo }){
+  const esp = funil === 'especialista';
+  return h('div',{className:'guia-vazio', role:'note'},
+    h('h3',null, esp ? 'Nenhum negócio por aqui ainda' : 'Sua carteira no CRM ainda está vazia'),
+    h('p',null, esp
+      ? 'Cada proposta de consórcio ou seguro vira um cartão. Comece pelo primeiro negócio; ele aparece no quadro, na sua produção e no Dashboard.'
+      : 'Cadastre o primeiro cliente para começar. Quem já tem conta no BTG entra pela atualização da base, feita pela administração: se faltar algum cliente seu, avise.'),
+    esp ? null : h('ol',null,
+      h('li',null,'Clique em ', h('b',null,'+ Novo cliente'), ' e preencha nome, segmento e patrimônio estimado.'),
+      h('li',null,'Depois de cada conversa, registre uma atividade na ficha.'),
+      h('li',null,'Marque o próximo contato: ele vira tarefa na Agenda e alerta quando atrasa.')),
+    h('div',{className:'guia-vazio-acoes'},
+      podeCriar ? h('button',{className:'btn btn-primary', onClick:onNovo}, h(IconPlus,{size:14}), esp ? 'Novo negócio' : 'Novo cliente') : null,
+      window.AWBarra ? h('button',{className:'btn btn-ghost', onClick:()=>window.AWBarra.abrir('inicio')}, 'Ajuda desta tela') : null));
+}
+
+/* Ferramentas do Hub abertas a partir da ficha (3.10): cada uma lê ?lead= e já vem com
+   o nome, a idade e o patrimônio do cliente. O relatório do mês abre nas Carteiras pela
+   conta do BTG (ou pelo nome). */
+function FerramentasCliente({ lead }){
+  if(!lead || !lead.id || (lead.funil || 'assessor') !== 'assessor') return null;
+  const q = 'lead=' + encodeURIComponent(lead.id);
+  const itens = [
+    ['Wealth Planning', 'diagnostico.html?' + q],
+    ['Liberdade Financeira', 'liberdade.html?' + q],
+    ['Plano Patrimonial', 'patrimonial.html?' + q],
+    ['Controle de Boletas', 'boletas.html?' + q],
+    ['Relatório do mês', 'index.html#relatorio=' + encodeURIComponent(lead.conta || '') + '&nome=' + encodeURIComponent(lead.cliente || '')],
+  ];
+  return h('div',{className:'ferr-cliente'},
+    h('h3',null,'Ferramentas para este cliente'),
+    h('p',null,'Abrem já preenchidas com o que o CRM sabe dele. O que você salvar volta para esta ficha.'),
+    h('div',{className:'ferr-lista'}, itens.map(([rot, url]) => h('a',{key:rot, href:url}, rot))));
 }
 
 function ArquivosCliente({ lead, users, currentUser, isAdmin, somenteLeitura }){
@@ -7169,6 +7230,7 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
               onLimparCaptacao: () => { const at = onEncerrarCaptacao(draft.id, { motivo:'valor apagado na ficha' }); if(at) setDraft(at); },
               onAbrirCaptacao: abrirCaptacao,
               onSetObservacoes: onSetObservacoes ? (txt) => { const at = onSetObservacoes(draft.id, txt); if(at) setDraft(at); } : null }),
+        editando ? null : h(FerramentasCliente,{ lead: draft }),
         h('div',{className:'meta-line'}, 'Criado em ', new Date(draft.criadoEm).toLocaleDateString('pt-BR')),
         somenteLeitura ? h('div',{className:'readonly-note'},
           h(Icon,{path:'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM8 11V7a4 4 0 118 0v4', size:14}),
@@ -11085,7 +11147,9 @@ function Board({ leads, onOpen, users, showOwner, onQuickAdd, onLose, onWin, onR
           },
         },
           colLeads.length === 0
-            ? h('div',{className:'empty-col'}, 'Nenhum lead aqui ainda.')
+            ? h('div',{className:'empty-col'}, stage === stagesDo(funil)[0]
+                ? 'Nada nesta etapa. Cartões novos entram aqui.'
+                : 'Nada nesta etapa. Arraste o cartão para cá quando a reunião acontecer.')
             : colLeads.map(lead => h(LeadCard,{
                 key: lead.id, lead, onOpen, dragging: draggingId===lead.id, showOwner, onLose, onWin,
                 ownerName: nameFor(lead.responsavelId),
@@ -11959,7 +12023,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.10.2';
+const CRM_VERSAO = 'versão do CRM 2026.11.12.1';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -12840,6 +12904,24 @@ function App(){
     if(location.hash === '#agenda') setView('agenda');
     else if(currentUser.role !== 'especialista') setView('hoje');
   }, [currentUser]);
+  /* Link direto para a ficha (3.10): crm.html#ficha=ID, usado pela busca do Hub e pelo
+     "Voltar para a ficha" das ferramentas. Abre quando os clientes carregam e também
+     quando o endereço muda com a página já aberta. */
+  useEffect(() => {
+    const abrirDoHash = () => {
+      const m = /^#ficha=([\w-]{1,80})$/.exec(location.hash || '');
+      if(!m || !leads.length) return;
+      const alvo = leads.find(l => l.id === decodeURIComponent(m[1]));
+      if(!alvo) return;
+      history.replaceState(null, '', location.pathname + location.search);
+      setFunil(alvo.funil || 'assessor');
+      if(alvo.produto) setProdutoFiltro(alvo.produto);
+      setOpenLead(alvo);
+    };
+    abrirDoHash();
+    window.addEventListener('hashchange', abrirDoHash);
+    return () => window.removeEventListener('hashchange', abrirDoHash);
+  }, [leads.length > 0]);
   const [losingLead, setLosingLead] = useState(null);
   const [winningLead, setWinningLead] = useState(null);
   const [movingLead, setMovingLead] = useState(null);
@@ -13455,6 +13537,8 @@ function App(){
   const refinar = (lista) => aplicarFiltros(buscar(lista, query.trim().toLowerCase()), filtros, hojeISO);
 
   const filtered  = useMemo(() => refinar(scopedLeads.filter(l => !saiuDoQuadro(l))), [scopedLeads, query, filtros]);
+  /* Nenhum cartão neste funil (sem contar busca e filtros): mostra o guia de começo. */
+  const semCartoes = phase === 'app' && scopedLeads.filter(l => !l.perdido).length === 0;
   const lostLeads = useMemo(() => refinar(scopedLeads.filter(l => l.perdido)), [scopedLeads, query, filtros]);
   const wonLeads  = useMemo(() => refinar(scopedLeads.filter(l => l.ganho)), [scopedLeads, query, filtros]);
 
@@ -14237,6 +14321,7 @@ function App(){
                 )
               : null,
         view==='hoje' ? h(Fragment, null,
+          semCartoes ? h(GuiaVazio,{ funil, podeCriar, onNovo:()=>{ setQuickAddStage(null); setCreating(true); } }) : null,
           /* O dia de quem está na tela: o próprio, ou o do assessor simulado. */
           h(AgendaFaixa,{ tarefas, leads, users, donoId: simulando ? vendorFilter : currentUser.id, onAbrir:()=>setView('agenda') }),
           h(Painel,{ leads, users, currentUser, isAdmin, vendorFilter, setVendorFilter,
@@ -14257,6 +14342,7 @@ function App(){
             )
           ) : null,
           overviewOpen && filtered.length > 0 ? h(PipelineOverview,{ leads: filtered, onOpen:setOpenLead, funil, users }) : null,
+          semCartoes ? h(GuiaVazio,{ funil, podeCriar, onNovo:()=>{ setQuickAddStage(null); setCreating(true); } }) : null,
     
           /* Ações do quadro coladas ao quadro: filtrar e cadastrar são operações
              sobre os cards, não sobre a navegação do aplicativo. */
@@ -14456,7 +14542,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.86";
+var VERSAO_CRM="versão do CRM 2026.11.12.1";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>

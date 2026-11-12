@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
+<script src="comum/barra.js"></script>
 <title>Ferramenta Wealth Planning — Adami Wealth</title>
 <style>
   :root {
@@ -1745,7 +1754,7 @@ toggleSeguro();
 toggleSimConsorcio();
 render();
 /* selo de versao — serve para identificar cache antes de investigar bug */
-var VERSAO_DIAG = "versão 2.77";
+var VERSAO_DIAG = "versão 2.78";
 document.getElementById('selo').textContent = VERSAO_DIAG;
 </script>
 
@@ -1814,6 +1823,17 @@ async function wpGerarPdf(){
   var d=new Date(), dd=String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();
   return { blob:pdf.output('blob'), nome:'Wealth_Planning_'+nome.replace(/[^\wÀ-ÿ .-]/g,'').replace(/\s+/g,'_')+'_'+dd+'.pdf', origem:'wealth_planning' };
 }
+/* Aberto pela ficha do CRM (?lead=ID, 3.10): preenche nome, idade, profissão, estado civil e
+   patrimônio investido, só nos campos vazios. */
+if(window.AdamiCRM) window.AdamiCRM.daFicha(function(d){
+  if(d.estadoCivil){
+    var ec=String(d.estadoCivil).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    var val=/casad|uniao|estavel/.test(ec)?'casado':(/divorc|separad/.test(ec)?'divorciado':(/viuv/.test(ec)?'viuvo':(/solteir/.test(ec)?'solteiro':'')));
+    var bt=val&&document.querySelector('#estadoCivilGroup .toggle-btn[data-val="'+val+'"]');
+    if(bt) selectToggle('estadoCivilGroup', bt, function(){});
+  }
+  return [['nome',d.nome,'texto'],['idade',d.idade,'numero'],['profissao',d.profissao,'texto'],['patrimonioTotal',d.patrimonio,'moeda']];
+}).then(function(d){ if(d) render(); });
 function salvarWPnoCRM(){
   if(!window.AdamiCRM){ alert('Não foi possível carregar a ligação com o CRM. Recarregue a página.'); return; }
   window.AdamiCRM.abrir({ titulo:'Salvar Wealth Planning no CRM', cliente:(document.getElementById('nome').value||'').trim(),

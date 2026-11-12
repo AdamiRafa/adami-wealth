@@ -1,0 +1,44 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+@page{size:A4;margin:0}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;font-family:Inter,sans-serif}
+.pg{width:210mm;height:297mm;position:relative;overflow:hidden;background:#12263F;color:#fff;break-after:page}
+.pg:last-child{break-after:auto}
+.luz{position:absolute;inset:0;background:radial-gradient(120mm 120mm at 85% 8%,rgba(201,168,106,.22),transparent 70%),radial-gradient(160mm 140mm at 0% 100%,rgba(39,78,125,.65),transparent 70%)}
+.arco{position:absolute;right:-60mm;top:40mm;width:190mm;height:190mm;border:1px solid rgba(201,168,106,.35);border-radius:50%}
+.arco.b{right:-35mm;top:65mm;width:140mm;height:140mm;border-color:rgba(255,255,255,.10)}
+.logo{position:absolute;left:22mm;top:24mm;width:62mm}
+.meio{position:absolute;left:22mm;right:22mm;top:112mm}
+.eb{font-size:8.5pt;letter-spacing:.32em;text-transform:uppercase;color:#C9A86A;font-weight:600}
+h1{font-family:Fraunces,serif;font-weight:300;font-size:58pt;line-height:1;margin:10mm 0 0;letter-spacing:-.02em}
+h1 em{font-style:normal;color:#C9A86A;font-weight:400}
+.regua{width:22mm;height:2px;background:#C9A86A;margin:11mm 0 8mm}
+.sub{font-size:13pt;line-height:1.5;color:#c8d3e1;max-width:120mm}
+.pe{position:absolute;left:22mm;right:22mm;bottom:20mm;display:flex;justify-content:space-between;font-size:8.5pt;color:#9fb0c5;border-top:1px solid rgba(255,255,255,.15);padding-top:5mm;letter-spacing:.04em}
+.pe b{color:#fff;font-weight:500}
+.costas .meio{top:auto;bottom:70mm;text-align:center;left:0;right:0}
+.costas .logo{position:static;width:58mm;display:block;margin:0 auto 10mm}
+.costas p{color:#9fb0c5;font-size:9pt;margin:2mm 0;letter-spacing:.06em}
+</style></head><body>
+<div class="pg">
+  <div class="luz"></div><div class="arco"></div><div class="arco b"></div>
+  <img class="logo" src="img/logo-branco.png" alt="Adami Captal">
+  <div class="meio">
+    <div class="eb">Guia do assessor</div>
+    <h1>Manual<br>do <em>Hub</em></h1>
+    <div class="regua"></div>
+    <div class="sub">Primeiro acesso, segurança, ferramentas e relatórios: tudo o que o assessor precisa para usar o Hub Adami no dia a dia.</div>
+  </div>
+  <div class="pe"><span><b>adamicaptal.com.br/hub</b></span><span>Versão 3.10 · Novembro de 2026</span><span>Uso interno</span></div>
+</div>
+<div class="pg costas">
+  <div class="luz"></div>
+  <div class="meio">
+    <img class="logo" src="img/logo-branco.png" alt="Adami Captal">
+    <p>Porto Alegre · São Paulo</p>
+    <p>adamicaptal.com.br</p>
+  </div>
+</div>
+</body></html>

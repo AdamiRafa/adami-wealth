@@ -10,6 +10,8 @@
 <IfModule mod_expires.c>
   ExpiresActive Off
 </IfModule>
+# Aplicativo no celular (3.10): o manifesto precisa do tipo certo.
+AddType application/manifest+json .webmanifest
 
 # Sempre por https: o login e a sessão do Supabase não podem trafegar sem cadeado.
 <IfModule mod_rewrite.c>

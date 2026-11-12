@@ -94,7 +94,11 @@
     ".acrm-pe{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px;border-top:1px solid #E2E6ED}" +
     ".acrm-bt{height:40px;padding:0 18px;border-radius:999px;border:1px solid #E2E6ED;background:#fff;color:#0C1626;font:600 13.5px Inter,'Segoe UI',sans-serif;cursor:pointer}" +
     ".acrm-bt.p{background:#05132A;border-color:#05132A;color:#fff}.acrm-bt:disabled{opacity:.55;cursor:default}" +
-    "@media print{.acrm-fundo{display:none!important}}";
+    ".acrm-faixa{position:sticky;top:0;z-index:9990;display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:10px 18px;background:#F7F0DC;color:#5A4712;border-bottom:1px solid #E8D9AE;font:13px Inter,'Segoe UI',system-ui,sans-serif}" +
+    ".acrm-faixa span{flex:1;min-width:220px}.acrm-faixa b{color:#3E300A}.acrm-faixa a{color:#12263F;font-weight:600}" +
+    ".acrm-faixa button{border:0;background:none;font-size:20px;line-height:1;color:#5A4712;cursor:pointer;width:30px;height:30px;border-radius:8px}" +
+    "html[data-cor=noite] .acrm-faixa{background:#2A2516;color:#E9DDB8;border-color:#4A3F22}html[data-cor=noite] .acrm-faixa b{color:#F3E7C4}html[data-cor=noite] .acrm-faixa a{color:#E1C27A}html[data-cor=noite] .acrm-faixa button{color:#E9DDB8}" +
+    "@media print{.acrm-fundo,.acrm-faixa{display:none!important}}";
 
   function abrir(cfg){
     if(!document.getElementById("acrm-css")){ var st = document.createElement("style"); st.id = "acrm-css"; st.textContent = CSS; document.head.appendChild(st); }
@@ -135,8 +139,11 @@
     clientes().then(function(l){
       estado.lista = l || [];
       var q = semAcento(cfg.cliente).trim();
+      var alvo = cfg.leadId || leadIdDaUrl();
+      var porId = alvo ? estado.lista.filter(function(x){ return x.id === alvo; }) : [];
       var exatos = q ? estado.lista.filter(function(x){ return semAcento(x.cliente).trim() === q; }) : [];
-      if(exatos.length === 1) estado.escolhido = exatos[0];
+      if(porId.length === 1){ estado.escolhido = porId[0]; busca.value = nomeCliente(porId[0]); }
+      else if(exatos.length === 1) estado.escolhido = exatos[0];
       lista(); busca.focus();
     }).catch(function(e){ estado.lista = []; estado.erro = e.message; msg(); $("acrmLista").innerHTML = ""; });
     $("acrmSalvar").onclick = function(){
@@ -167,5 +174,149 @@
       });
     };
   }
-  window.AdamiCRM = { abrir: abrir };
+  /* ===== Ficha do CRM -> ferramenta já preenchida (3.10) =====
+     A ficha do cliente no CRM abre as ferramentas com ?lead=ID. Aqui a ferramenta lê o
+     cliente (o banco só devolve se a pessoa enxerga esse cliente no CRM), preenche só os
+     campos que estão vazios e mostra de onde vieram os dados. */
+  function leadIdDaUrl(){
+    try{ var v = new URLSearchParams(location.search).get("lead"); return v && /^[\w-]{1,80}$/.test(v) ? v : null; }
+    catch(e){ return null; }
+  }
+  var CAMPOS_LEAD = "id,cliente,conta,nascimento,profissao,estado_civil,segmento,tipo_pessoa,grupo_familiar,esteira,ganho,perdido,funil," +
+    "saldo_inicial,saldo_inicial_offshore,valor_potencial,valor_fechado,valor_offshore,movimentacoes,patrimonio,renda";
+  function leadDaUrl(){
+    var id = leadIdDaUrl();
+    if(!id) return Promise.resolve(null);
+    return chamar("/rest/v1/leads?select=" + CAMPOS_LEAD + "&id=eq." + encodeURIComponent(id) + "&excluido=eq.false", {})
+      .then(function(r){ return (r && r[0]) || null; }).catch(function(){ return null; });
+  }
+  function valor(v){
+    if(v === null || v === undefined || v === "") return null;
+    if(typeof v === "number") return isFinite(v) ? v : null;
+    var t = String(v).trim().toLowerCase(), mult = 1;
+    if(/\bmi(lh|l)?(ão|ões|ao|oes)?\b|\bmm\b|\bmi\b/.test(t) && !/\bmil\b/.test(t)) mult = 1e6;
+    else if(/\bmil\b|\d\s*k\b/.test(t)) mult = 1e3;
+    var n = Number(t.replace(/[^\d.,-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", "."));
+    return isNaN(n) || !t.match(/\d/) ? null : n * mult;
+  }
+  function idade(nasc){
+    if(!nasc || !/^\d{4}-\d{2}-\d{2}/.test(nasc)) return null;
+    var h = new Date(), d = new Date(nasc.slice(0, 10) + "T12:00:00");
+    var a = h.getFullYear() - d.getFullYear();
+    if(h.getMonth() < d.getMonth() || (h.getMonth() === d.getMonth() && h.getDate() < d.getDate())) a--;
+    return a > 0 && a < 120 ? a : null;
+  }
+  /* Patrimônio onshore: o mesmo número do CRM para quem já é cliente (saldo + movimentações);
+     para prospect, o patrimônio estimado da ficha. */
+  function patrimonio(l){
+    if(!l) return null;
+    var base = l.esteira === "base", cliente = base || l.ganho;
+    var ini = cliente ? (base ? valor(l.saldo_inicial) : (valor(l.valor_fechado) || valor(l.valor_potencial))) : null;
+    if(ini !== null){
+      var mov = (l.movimentacoes || []).reduce(function(acc, m){
+        if((m && m.custodia) === "offshore") return acc;
+        var v = valor(m && m.valor); return acc + (v === null ? 0 : v * (m.tipo === "retirada" ? -1 : 1));
+      }, 0);
+      return Math.max(0, ini + mov);
+    }
+    return valor(l.valor_potencial) || valor(l.patrimonio);
+  }
+  function dadosLead(l){
+    if(!l) return null;
+    return { id: l.id, nome: (l.cliente || "").trim(), conta: l.conta || "", idade: idade(l.nascimento),
+      profissao: l.profissao || "", estadoCivil: l.estado_civil || "", segmento: l.segmento || "",
+      patrimonio: patrimonio(l), renda: valor(l.renda) };
+  }
+  function brl(n){ return "R$ " + Math.round(n).toLocaleString("pt-BR"); }
+  /* campos: [[id, valor, "moeda"|"numero"|"texto"]]. Só escreve em campo vazio ou no valor
+     padrão da página (data-padrao ou o value original do HTML). */
+  function preencher(campos){
+    var n = 0;
+    campos.forEach(function(c){
+      var el = document.getElementById(c[0]), v = c[1];
+      if(!el || v === null || v === undefined || v === "") return;
+      var atual = String(el.value || "").trim();
+      var padrao = String(el.defaultValue || "").trim();
+      if(atual && atual !== padrao) return;
+      var txt = c[2] === "moeda" ? brl(v) : String(v);
+      if(el.tagName === "SELECT"){
+        var alvo = semAcento(txt), op = [].filter.call(el.options, function(o){ return semAcento(o.text) === alvo || semAcento(o.value) === alvo; })[0];
+        if(!op) return; el.value = op.value;
+      } else el.value = txt;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      n++;
+    });
+    return n;
+  }
+  function faixa(d, quantos){
+    if(!d || document.getElementById("acrmFaixa")) return;
+    if(!document.getElementById("acrm-css")){ var st = document.createElement("style"); st.id = "acrm-css"; st.textContent = CSS; document.head.appendChild(st); }
+    var f = document.createElement("div"); f.id = "acrmFaixa"; f.className = "acrm-faixa"; f.setAttribute("role", "status");
+    f.innerHTML = '<span><b>' + esc(d.nome || "Cliente") + '</b> · ' + (quantos ? quantos + ' campo(s) preenchido(s) com os dados da ficha no CRM. Confira antes de apresentar.' : 'aberto a partir da ficha no CRM.') + '</span>' +
+      '<a href="crm.html#ficha=' + encodeURIComponent(d.id) + '">Voltar para a ficha</a><button type="button" aria-label="Fechar aviso">&times;</button>';
+    f.querySelector("button").onclick = function(){ f.remove(); };
+    document.body.insertBefore(f, document.body.firstChild);
+  }
+  /* Uso: AdamiCRM.daFicha(function(d){ return [["nome", d.nome, "texto"], ...]; }) */
+  function daFicha(montar){
+    return leadDaUrl().then(function(l){
+      var d = dadosLead(l); if(!d) return null;
+      var n = 0; try{ n = preencher(montar(d) || []); }catch(e){}
+      faixa(d, n);
+      return d;
+    });
+  }
+
+  /* ===== PDF a partir dos blocos da tela (3.10) =====
+     Mesma técnica do Wealth Planning: cada bloco vira uma imagem numa folha A4, bloco que
+     não cabe vai para a folha seguinte, bloco maior que a folha é cortado. Botões (.acoes,
+     button) ficam fora da imagem. */
+  function carregar(src){
+    return new Promise(function(ok, erro){
+      if(document.querySelector('script[data-acrm="' + src + '"]')) return ok();
+      var s = document.createElement("script"); s.src = src; s.setAttribute("data-acrm", src);
+      s.onload = function(){ ok(); }; s.onerror = function(){ erro(new Error("Não foi possível carregar " + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  function pdfDeBlocos(blocos, nome, origem){
+    return carregar("vendor/jspdf-2.5.1.umd.min.js").then(function(){ return carregar("vendor/html2canvas-1.4.1.min.js"); }).then(function(){
+      var lista = [].filter.call(blocos, function(e){ return e && e.offsetHeight > 0; });
+      if(!lista.length) throw new Error("Nada para salvar: preencha a ferramenta antes.");
+      var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+      var M = 12, W = 186, H = 273, y = M, primeira = true;
+      var passo = Promise.resolve();
+      lista.forEach(function(el){
+        passo = passo.then(function(){
+          return window.html2canvas(el, { scale: 2, backgroundColor: "#ffffff", logging: false,
+            ignoreElements: function(n){ return n.classList && (n.classList.contains("acoes") || n.tagName === "BUTTON" || n.id === "awVoltar"); } });
+        }).then(function(cv){
+          var alt = cv.height * W / cv.width;
+          if(!primeira && y + alt > M + H && y > M){ pdf.addPage(); y = M; }
+          if(alt <= H - (y - M)){ pdf.addImage(cv.toDataURL("image/jpeg", 0.9), "JPEG", M, y, W, alt); y += alt + 4; }
+          else {
+            var pxmm = cv.width / W, feito = 0;
+            while(feito < cv.height){
+              var fatia = Math.min(Math.floor((M + H - y) * pxmm), cv.height - feito);
+              var c2 = document.createElement("canvas"); c2.width = cv.width; c2.height = fatia;
+              c2.getContext("2d").drawImage(cv, 0, feito, cv.width, fatia, 0, 0, cv.width, fatia);
+              pdf.addImage(c2.toDataURL("image/jpeg", 0.9), "JPEG", M, y, W, fatia / pxmm);
+              feito += fatia; y += fatia / pxmm;
+              if(feito < cv.height){ pdf.addPage(); y = M; }
+            }
+            y += 4;
+          }
+          primeira = false;
+        });
+      });
+      return passo.then(function(){
+        var d = new Date(), dd = String(d.getDate()).padStart(2, "0") + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + d.getFullYear();
+        return { blob: pdf.output("blob"), nome: String(nome).replace(/[^\wÀ-ÿ .-]/g, "").replace(/\s+/g, "_") + "_" + dd + ".pdf", origem: origem };
+      });
+    });
+  }
+
+  window.AdamiCRM = { abrir: abrir, enviar: enviar, clientes: clientes, leadDaUrl: leadDaUrl, leadIdDaUrl: leadIdDaUrl, dadosLead: dadosLead,
+    preencher: preencher, daFicha: daFicha, faixa: faixa, pdfDeBlocos: pdfDeBlocos, valor: valor };
 })();

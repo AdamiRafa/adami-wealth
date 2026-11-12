@@ -3,7 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
+<script src="comum/barra.js"></script>
 <title>Mesa RV — recomendações e histórico</title>
 <style>
   :root{
@@ -298,7 +307,7 @@ LOGO_IMG.onload=function(){ LOGO_OK=true; try{ desenhar(); }catch(e){} };
 LOGO_IMG.onerror=function(){ LOGO_OK=false; };
 LOGO_IMG.src=LOGO_BRANCO;
 
-var VERSAO_RV="versão 2.80";
+var VERSAO_RV="versão 2.81";
 try{ document.getElementById("selVersao").textContent=VERSAO_RV; }catch(e){}
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";

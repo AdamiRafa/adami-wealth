@@ -3,7 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
+<script src="comum/barra.js"></script>
     <title>Simulador de Receita RV — Adami Captal</title>
     <style>
         * {
@@ -400,6 +409,30 @@
   @media print{#awVoltar{display:none!important}}
 </style>
 <link rel="stylesheet" href="estilo/adami-2026.css">
+<style>
+/* Visual 2026 (3.10): mesmo padrão dos outros módulos. Sem emoji, título com serifa,
+   cartões de indicador nas cores da casa. Só na tela. */
+@media screen{
+  body{font-family:Inter,"Segoe UI",system-ui,sans-serif}
+  .sim-eb{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#A07F3A;font-weight:600;margin-bottom:6px}
+  .container h1{font:500 32px Fraunces,Georgia,serif;color:#12263F;letter-spacing:-.01em}
+  .container .subtitle{color:#5C6B7F}
+  h2.sim-tit{font:500 21px Fraunces,Georgia,serif;color:#12263F;margin:0 0 1.2rem}
+  .sim-k{border:1px solid rgba(255,255,255,.9)!important}
+  .sim-k .card-label{color:#5C6B7F;letter-spacing:.12em}
+  .sim-k .card-value{font:600 27px Fraunces,Georgia,serif!important;letter-spacing:-.01em}
+  .sim-k.azul .card-value{color:#12263F}
+  .sim-k.ouro .card-value{color:#8A6A18}
+  .sim-k.verde .card-value{color:#1F6B47}
+  .sim-k.meta .card-value{color:#12263F}
+  .sim-k.ouro{background:linear-gradient(135deg,rgba(247,240,220,.9),rgba(255,255,255,.75))!important}
+  .sim-k.verde{background:linear-gradient(135deg,rgba(230,241,236,.9),rgba(255,255,255,.75))!important}
+  input[type=range]{accent-color:#12263F}
+  input[type=range]::-webkit-slider-thumb{background:#12263F!important}
+  input[type=range]::-moz-range-thumb{background:#12263F!important}
+  .tab-content > div[style*="linear-gradient"]{background:rgba(255,255,255,.55)!important;border-color:rgba(255,255,255,.9)!important;border-radius:18px!important}
+}
+</style>
 </head>
 <body>
 <script>
@@ -411,6 +444,7 @@
 })();
 </script>
     <div class="container">
+        <div class="sim-eb">Simuladores</div>
         <h1>Simulador de Receita RV</h1>
         <p class="subtitle">Adami Captal · Projete cenários para atingir sua meta de receita &nbsp;<span id="selSim"></span></p>
 
@@ -423,36 +457,36 @@
         <!-- TAB RESUMO -->
         <div class="tab-content active" id="resumo" style="display: block !important;">
             <div style="margin-bottom: 3rem; padding: 2rem; background: linear-gradient(135deg, #f5f7fa 0%, #e9ecf0 100%); border-radius: 12px; border: 1px solid #d0d8e0;">
-                <h2 style="font-size: 18px; color: #1a1a1a; font-weight: 600; margin-bottom: 1.5rem;">📊 Indicadores Principais</h2>
+                <h2 class="sim-tit">Indicadores Principais</h2>
                 <div class="grid-4">
-                    <div class="card card-big" style="background: linear-gradient(135deg, #f0f7ff 0%, #e3f2fd 100%); border: 1px solid #90caf9; box-shadow: 0 2px 8px rgba(25, 103, 210, 0.1);">
+                    <div class="card card-big sim-k azul">
                         <div class="card-label">PL Total Trabalhado</div>
-                        <div class="card-value" id="plTotalValue" style="color: #1565c0; font-size: 26px;">R$ 0</div>
+                        <div class="card-value" id="plTotalValue" >R$ 0</div>
                         <div class="card-meta">Swing Trade + Estruturadas</div>
                     </div>
 
-                    <div class="card card-big" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border: 1px solid #ffb74d; box-shadow: 0 2px 8px rgba(230, 81, 0, 0.1);">
+                    <div class="card card-big sim-k ouro">
                         <div class="card-label">Receita Escritório</div>
-                        <div class="card-value" id="receitaEscritórioValue" style="color: #e65100; font-size: 26px;">R$ 0</div>
+                        <div class="card-value" id="receitaEscritórioValue" >R$ 0</div>
                         <div class="card-meta">Fee 0.5% + Ganho ROA</div>
                     </div>
 
-                    <div class="card card-big" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border: 1px solid #81c784; box-shadow: 0 2px 8px rgba(46, 125, 50, 0.1);">
+                    <div class="card card-big sim-k verde">
                         <div class="card-label">Receita Assessor</div>
-                        <div class="card-value" id="receitaAssessorValue" style="color: #2e7d32; font-size: 26px;">R$ 0</div>
+                        <div class="card-value" id="receitaAssessorValue" >R$ 0</div>
                         <div class="card-meta">50% da receita do escritório</div>
                     </div>
 
-                    <div class="card card-big" style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border: 1px solid #ce93d8; box-shadow: 0 2px 8px rgba(142, 68, 173, 0.1);">
+                    <div class="card card-big sim-k meta">
                         <div class="card-label">Meta Atingida</div>
-                        <div class="card-value" id="metaVsAtualValue" style="color: #6a1b9a; font-size: 26px;">0%</div>
+                        <div class="card-value" id="metaVsAtualValue" >0%</div>
                         <div class="card-meta" id="metaVsAtualMeta">da meta</div>
                     </div>
                 </div>
             </div>
             
             <div style="margin-bottom: 3rem;">
-                <h2 style="font-size: 18px; color: #1a1a1a; font-weight: 600; margin-bottom: 1.5rem;">⚙️ Configurar Cenários</h2>
+                <h2 class="sim-tit">Configurar Cenários</h2>
                 
                 <div class="section-title" style="margin-top: 0;">Swing Trade (Ações) - 70% para escritório</div>
             <div class="grid-4">
@@ -532,7 +566,7 @@
             </div>
 
             <div style="margin-top: 3rem;">
-                <h2 style="font-size: 18px; color: #1a1a1a; font-weight: 600; margin-bottom: 1.5rem;">🎯 Cenários para atingir sua meta</h2>
+                <h2 class="sim-tit">Cenários para atingir sua meta</h2>
             <div class="grid-3">
                 <div class="scenario-box">
                     <div class="scenario-title">Cenário 1: Só Swing Trade</div>
@@ -554,7 +588,7 @@
             </div>
 
             <div style="margin-top: 3rem;">
-                <h2 style="font-size: 18px; color: #1a1a1a; font-weight: 600; margin-bottom: 1.5rem;">📈 Análise Atual</h2>
+                <h2 class="sim-tit">Análise Atual</h2>
                 <div class="section-title" style="margin-top: 0;">Breakdown de receita</div>
             <div class="metrics-row">
                 <div class="metric">
@@ -850,7 +884,7 @@
     </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Hub Adami</button>
 <script>
-var VERSAO_SIM="versão 2.75";
+var VERSAO_SIM="versão 2.76";
 try{ document.getElementById("selSim").textContent=VERSAO_SIM; }catch(e){}
 </script>
 </body>

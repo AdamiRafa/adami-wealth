@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
+<script src="comum/barra.js"></script>
 <title>Ágio e Troca de Ativos — Adami Captal</title>
 <style>
 :root{
@@ -195,6 +204,7 @@ td.pos{color:var(--green)}
     <div class="acoes">
       <button class="btn claro" onclick="window.print()">Imprimir</button>
       <button class="btn claro" onclick="copiarResumo()">Copiar resumo</button>
+      <button class="btn claro" onclick="salvarNoCRM()">Salvar no CRM</button>
     </div>
   </div>
 
@@ -215,9 +225,10 @@ td.pos{color:var(--green)}
 </div>
 
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Hub Adami</button>
+<script src="comum/anexos.js"></script>
 
 <script>
-var VERSAO_AGIO="versão 2.75";
+var VERSAO_AGIO="versão 2.76";
 document.getElementById("selo").textContent=VERSAO_AGIO;
 
 /* Leitura de numero em pt-BR. A regra ingenua ("se tem virgula, o ponto e
@@ -486,6 +497,20 @@ function copiarResumo(){
 });
 limparGrafico();
 render();
+
+/* ===== Salvar no CRM (3.10) =====
+   A simulação vira um PDF (cada cartão numa folha A4) e vai para a ficha do cliente
+   escolhido no CRM (comum/anexos.js). Aberta pela ficha (?lead=ID), o cliente já vem
+   escolhido. */
+function salvarNoCRM(){
+  if(!window.AdamiCRM){ alert("Não foi possível carregar a ligação com o CRM. Recarregue a página."); return; }
+  var nome="";
+  window.AdamiCRM.abrir({ titulo:"Salvar Ágio e Troca de Ativos no CRM", cliente:nome,
+    opcoes:[{ rotulo:"Ágio e Troca de Ativos (PDF)", gerar:function(){
+      return window.AdamiCRM.pdfDeBlocos(document.querySelectorAll(".wrap > header, .wrap > .cartao"), "Agio_Troca_de_Ativos_"+(nome||"cliente"), "agio");
+    } }] });
+}
+if(window.AdamiCRM&&window.AdamiCRM.leadIdDaUrl()) window.AdamiCRM.daFicha(function(){ return []; });
 </script>
 </body>
 </html>

@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#12263F">
+<link rel="icon" type="image/png" href="img/app-192.png">
+<link rel="apple-touch-icon" href="img/app-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Adami">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
+<script src="comum/barra.js"></script>
 <title>Liberdade Financeira — Adami Captal</title>
 <style>
 :root{
@@ -223,6 +232,7 @@ td.neg{color:var(--red)}
     <p class="tab-nota" id="notaB"></p>
     <div class="acoes">
       <button class="btn claro" onclick="window.print()">Imprimir</button>
+      <button class="btn claro" onclick="salvarNoCRM()">Salvar no CRM</button>
     </div>
   </div>
 
@@ -243,9 +253,10 @@ td.neg{color:var(--red)}
 </div>
 
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Hub Adami</button>
+<script src="comum/anexos.js"></script>
 
 <script>
-var VERSAO_LIB="versão 2.75";
+var VERSAO_LIB="versão 2.76";
 document.getElementById("selo").textContent=VERSAO_LIB;
 
 /* Leitura de numero em pt-BR. A regra ingenua ("se tem virgula, o ponto e
@@ -522,6 +533,24 @@ function grafico(c,d){
   });
 });
 render();
+
+/* ===== Salvar no CRM (3.10) =====
+   A simulação vira um PDF (cada cartão numa folha A4) e vai para a ficha do cliente
+   escolhido no CRM (comum/anexos.js). Aberta pela ficha (?lead=ID), o cliente já vem
+   escolhido. */
+function salvarNoCRM(){
+  if(!window.AdamiCRM){ alert("Não foi possível carregar a ligação com o CRM. Recarregue a página."); return; }
+  var nome=(document.getElementById("nome").value||"").trim();
+  window.AdamiCRM.abrir({ titulo:"Salvar Liberdade Financeira no CRM", cliente:nome,
+    opcoes:[{ rotulo:"Liberdade Financeira (PDF)", gerar:function(){
+      return window.AdamiCRM.pdfDeBlocos(document.querySelectorAll(".wrap > header, .wrap > .cartao"), "Liberdade_Financeira_"+(nome||"cliente"), "liberdade");
+    } }] });
+}
+/* Aberta pela ficha do CRM (?lead=ID): nome, idade e patrimônio, só se estiverem vazios
+   ou no valor de exemplo da página. */
+if(window.AdamiCRM) window.AdamiCRM.daFicha(function(d){
+  return [["nome",d.nome,"texto"],["idade",d.idade,"numero"],["patrimonio",d.patrimonio,"moeda"]];
+});
 </script>
 </body>
 </html>

@@ -35,3 +35,19 @@
   }
   html body #awVoltar:hover{background:#fff;color:#05132A;}
 }
+/* Celular (3.10): nada passa da largura da tela. Tabela larga rola de lado dentro do
+   próprio cartão; menu lateral de seções some; grades viram uma coluna. Só na tela. */
+@media screen and (max-width:640px){
+  html body :is(.cartao,.card,.pane) table, html body table.matriz{display:block;overflow-x:auto;max-width:100%}
+  html body canvas{max-width:100%!important;height:auto!important}
+  html body header nav{flex-wrap:wrap;margin-left:0}
+  html body nav.lado{display:none}
+  html body .layout{grid-template-columns:minmax(0,1fr)!important;padding:12px}
+  html body .shell{grid-template-columns:minmax(0,1fr)!important}
+  html body .painel-form{min-width:0;max-width:100%;border-right:0}
+  html body .painel-preview{min-width:0;max-width:100%;overflow-x:auto}
+  html body .topo-acoes{flex-wrap:wrap}
+  html body .toggle-group{flex-wrap:wrap}
+  html body :is(.row2,.row3,.linha2,.linha3){grid-template-columns:minmax(0,1fr)!important}
+  html body :is(.field,.campo) :is(input,select){min-width:0;max-width:100%}
+}

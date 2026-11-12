@@ -712,6 +712,14 @@ logada, e daí em diante a tela do código aceita o do e-mail OU o do app. Banco
 fim do `seguranca.sql` e do `adami_completo.sql`), migração `app_autenticador` (seção 22). Tela: bloco "App
 autenticador" em Segurança, botão "Zerar app autenticador" na ficha da pessoa (master), QR desenhado no próprio
 Hub com `vendor/qrcode-generator-1.4.4.js` (MIT, carregado só quando precisa)**.
+ · **3.10 (12/11/2026): pacote de usabilidade pedido pelo Emil depois do manual (seção 26). Lembrar o
+aparelho por 7 dias, Primeiros passos na tela inicial, botão ? em todos os módulos (ajuda, busca Ctrl+K,
+Reportar um problema), guia de tela vazia no CRM, ferramentas abertas pela ficha já preenchidas, Salvar no CRM
+em Liberdade/Ágio/Boletas/Relatório, Gerar PDF e PDF de todos nas Carteiras, visual 2026 no Simulador RV,
+Planos e Imobiliário, Hub instalável no celular, Adoção da equipe e Problemas reportados (master). Banco:
+`usabilidade.sql` (também no fim do `adami_completo.sql`), migrações `usabilidade_310`,
+`aparelho_lembrar_devolve_id` e `anexos_origens_310`. CRM `2026.11.12.1`. Manual do Hub 3.10 em
+`ajuda/Manual-do-Hub.pdf`, fonte em `manual-fonte/`**.
 
 ---
 
@@ -1914,3 +1922,87 @@ arredondamento é só nos totais. As comparações ignoram acento, maiúscula e 
 - Instalado em 07/11/2026 (migração `comissoes_2_0_hub_2_98`). Conferido em produção: só a regra
   Repasse padrão, 6 origens, 3 empresas, 12 políticas `exige_verificacao`, nenhuma função para
   `anon` e o motor respondendo (escritório e nome desconhecido).
+
+## 26. Usabilidade (12/11/2026, Hub 3.10, `usabilidade.sql`, `comum/barra.js`)
+
+Pedido do Emil depois do manual: "implementa todas essas melhorias". O que mudou e onde mora:
+
+### 26.1. Lembrar o aparelho por 7 dias
+- Na tela do código há a caixa **Lembrar este computador por 7 dias**. Com o código certo e a caixa
+  marcada, o Hub chama `aparelho_lembrar()`, que só aceita quem tem o app autenticador ligado e devolve
+  um token aleatório de 256 bits. O navegador guarda o token em `localStorage.aw_aparelho`
+  (`{uid,id,token,expira_em}`); o banco guarda só o SHA-256 em `acesso_aparelhos`.
+- No login seguinte (senha digitada), antes de mandar o e-mail, `segundaEtapa` tenta
+  `aparelho_entrar(token)`: se vale, grava `acesso_sessoes` para a sessão do JWT, como a
+  `verificar_codigo`, e entra sem código. **A senha continua todo dia**; o token só dispensa o código.
+- Vale 7 dias a partir da criação (não renova sozinho), no máximo 5 por pessoa, e só enquanto o app
+  estiver ligado. `registrar_saida_geral` (Sair de todos), `totp_desativar` e `totp_zerar` apagam os
+  tokens. Tela Segurança: lista "Aparelhos lembrados" com Esquecer (`aparelhos_meus`, `aparelho_esquecer`).
+- Eventos novos no registro: `aparelho_lembrado`, `entrou_aparelho`, `aparelho_esquecido`.
+- Testado no banco numa transação desfeita: token falso recusado, token certo libera, Sair de todos
+  invalida.
+
+### 26.2. Primeiros passos (tela inicial)
+`meu_checklist()` devolve app ligado, se já há atividade registrada, clientes em jornada (esteira
+`novo`) e quantos estão sem próximo contato. A tela soma "abrir o manual" (marcado no navegador) e
+"avisos lidos". Some quando tudo está feito ou com Ocultar (`aw_passos_oculto`). Atenção: 828 dos 831
+clientes da base estavam sem próximo contato em 12/11; por isso o item vale só para quem está em jornada.
+
+### 26.3. Botão ? (`comum/barra.js`, carregado no `<head>` de todos os módulos e do Hub)
+- **Busca (Ctrl+K / Cmd+K):** ferramentas (lista fixa), `leads` por nome ou conta e `clientes` das
+  Carteiras, sempre pela API com a sessão da pessoa (o banco filtra). Cliente do CRM abre em
+  `crm.html#ficha=ID`; carteira em `index.html#carteira=ID`.
+- **Ajuda desta tela:** texto curto por módulo e link para a página do manual (`AJUDA[...].pag`; ao
+  mudar o manual, atualizar esses números: página do PDF final, contando a capa).
+- **Reportar um problema:** texto + foto da tela (html2canvas, painel escondido na hora da foto) +
+  versão (variável `VERSAO*` da página) + últimos 12 erros do navegador. Foto no bucket privado
+  `problemas` (pasta = id de quem reporta), linha na tabela `problemas` (RLS: cada um lê o seu, master
+  lê todos). No CRM o barra.js não renova token (quem renova é o CRM; ver a armadilha do 3.00).
+- Some enquanto há janela aberta (`.overlay`, `.eqv`, `.acrm-fundo`) e sem sessão do dia.
+
+### 26.4. Ficha do CRM abre as ferramentas
+Quadro "Ferramentas para este cliente" na ficha (`FerramentasCliente`): `diagnostico.html?lead=ID`,
+`liberdade.html?lead=ID`, `patrimonial.html?lead=ID`, `boletas.html?lead=ID` e
+`index.html#relatorio=CONTA&nome=NOME`. Nas ferramentas, `AdamiCRM.daFicha()` (comum/anexos.js) lê o
+lead pela API, calcula idade (nascimento) e patrimônio (o mesmo do CRM: saldo da base + movimentações
+onshore; para prospect, o patrimônio estimado), **preenche só campo vazio ou com o valor de exemplo** e
+mostra a faixa amarela com "Voltar para a ficha". O Salvar no CRM já vem com o cliente escolhido.
+O CRM abre a ficha por `#ficha=ID` (ao carregar e em `hashchange`).
+
+### 26.5. Salvar no CRM e PDF do relatório
+- `AdamiCRM.pdfDeBlocos()` (comum/anexos.js): cada bloco da tela vira imagem numa folha A4, usado por
+  Liberdade, Ágio e Boletas. Origens novas em `anexos.origem`: `liberdade`, `agio`, `boletas`, `relatorio`.
+- Carteiras, aba Relatório: **Gerar PDF** (sem janela de impressão), **Salvar no CRM** e **PDF de todos**.
+  Cada `.pg` é renderizada com as regras `@media print` copiadas para a cópia do html2canvas, largura
+  794 px (A4), gráficos SVG trocados por imagem. Conferido: 18 páginas, mesmas margens da impressão
+  (14 mm laterais), 1,8 MB. "PDF de todos" percorre os clientes com lançamento no mês, baixa um arquivo
+  por cliente e, se marcado, grava na ficha (liga carteira e lead pela conta do BTG, depois pelo nome).
+  O Imprimir continua igual, para quem quiser o PDF em vetor.
+
+### 26.6. Visual, celular e telas vazias
+- Simulador RV sem emoji, título com serifa e indicadores nas cores da casa; Planos e Imobiliário com
+  cabeçalho em vidro. Tudo em `@media screen`.
+- `estilo/adami-2026.css` ganhou um bloco `@media screen and (max-width:640px)`: tabelas largas rolam
+  dentro do cartão, menu lateral dos Planos some, grades viram uma coluna. Nenhuma página passa da
+  largura de um iPhone 13 (conferido nos 15 módulos).
+- O CRM não tinha `<meta name="viewport">`: no celular abria encolhido e as 34 regras de celular dele
+  nunca valiam. Agora tem.
+- `app.webmanifest` + ícones `img/app-*.png` + metas Apple: "Adicionar à Tela de Início" vira app.
+  `.htaccess` ganhou o tipo do manifesto; `ajuda/.htaccess` tira a CSP (o leitor de PDF do Chrome não
+  abre com `object-src 'none'`) e marca noindex. `.github/publicar-hostgator.sh` publica `ajuda/` e o
+  manifesto.
+- CRM: `GuiaVazio` no Dashboard e no Relacionamento quando a pessoa não tem nenhum cartão no funil;
+  colunas vazias explicam o que fazer.
+
+### 26.7. Telas do master
+- **Adoção da equipe** (`painel_adocao()`, só master): app ligado, aparelhos lembrados, último acesso,
+  dias com acesso em 30 dias, atividades em 30 dias, clientes, em jornada sem próximo contato,
+  contatos atrasados e tarefas atrasadas, por pessoa.
+- **Problemas reportados** (`problemas_lista()`, `problema_resolver()`): lista com foto (link assinado
+  de 10 min), erros e "Marcar como resolvido". Contador no menu.
+
+### 26.8. Segurança conferida
+Todas as funções novas são `security definer`, exigem `acesso_liberado()` (ou `eh_super()`), e
+nenhuma é executável por `anon` (conferido com `has_function_privilege`). `acesso_aparelhos` sem
+privilégio para `authenticated` (só pelas funções); `problemas` com `exige_verificacao`, insert só da
+própria linha e sem update pela API.
