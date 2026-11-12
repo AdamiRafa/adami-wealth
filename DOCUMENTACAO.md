@@ -720,6 +720,12 @@ Planos e Imobiliário, Hub instalável no celular, Adoção da equipe e Problema
 `usabilidade.sql` (também no fim do `adami_completo.sql`), migrações `usabilidade_310`,
 `aparelho_lembrar_devolve_id` e `anexos_origens_310`. CRM `2026.11.12.1`. Manual do Hub 3.10 em
 `ajuda/Manual-do-Hub.pdf`, fonte em `manual-fonte/`**.
+ · **3.11 (12/11/2026): Carteiras com o mês no alto e "mês feito" (seção 27). Navegação de mês na barra do alto
+(setas e calendário com os 12 meses, ponto verde = feito, amarelo = lançado sem marcar), "Marcar como feito" /
+"Salvar e marcar como feito" / "Reabrir", lista de clientes com o estado do mês e "Próximo pendente", e a
+Conferência do mês ao vivo no Preencher (instituições, ativos x saldo, divergências com o mês anterior, campos
+faltando, o que a importação mudou com Desfazer). Banco: `carteiras_feito.sql` (também no fim do
+`adami_completo.sql`), migração `carteiras_feito_311`**.
 
 ---
 
@@ -2006,3 +2012,38 @@ Todas as funções novas são `security definer`, exigem `acesso_liberado()` (ou
 nenhuma é executável por `anon` (conferido com `has_function_privilege`). `acesso_aparelhos` sem
 privilégio para `authenticated` (só pelas funções); `problemas` com `exige_verificacao`, insert só da
 própria linha e sem update pela API.
+
+## 27. Carteiras: mês no alto, mês feito e conferência ao vivo (12/11/2026, Hub 3.11, `carteiras_feito.sql`)
+
+Pedido do Emil, com prints de outro sistema de consolidação como referência: "joga a navegação de mês pra cima
+e abre uma função nova de marcar mês como feito" e "ver se tem divergência de categoria, saldo, valor, qualquer
+campo" ao subir a carteira.
+
+- **Mês no alto** (`pintarMesNav`, `#mesNav` na barra do alto, só nas Carteiras): setas para o mês anterior e o
+  seguinte e um calendário com os 12 meses do ano. O bloco "Mês de referência" saiu da lateral.
+  `statusMes(cliente, mês, ano)`: `feito` (lançamento com `feito_em`), `lancado` (salvo, sem `feito_em`) ou
+  `vazio`. O calendário mostra o estado do cliente selecionado; a lateral mostra o estado de cada cliente no mês e
+  "X de Y feitos em <mês>".
+- **Mês feito:** colunas `lancamentos.feito_em` e `feito_por`. O `feito_por` é carimbado pelo gatilho
+  `lancamentos_carimba_feito` (`auth.uid()`), nunca vem da tela; quem grava continua sendo só quem já gravava
+  (`eh_admin()`). Tela: faixa no Preencher ("Pendente em <mês>" ou "feito em <data> por <nome>", com "alterado
+  depois de marcado" quando o lançamento foi salvo depois), "Marcar como feito" (PATCH) ou "Salvar e marcar como
+  feito" (quando há mudança não salva), "Reabrir" e "Próximo pendente". Com ponto crítico na conferência, pede
+  confirmação. Salvar sozinho não mexe no feito.
+- **Conferência ao vivo** (`conferirRascunho`, `painelConferenciaMes`, repinta 350 ms depois de cada edição): a
+  conferência de contas que já existia (`conferir`, agora aceita o rascunho) mais:
+  - instituições: saldo das contas onshore x soma das posições dos ativos da mesma instituição (casadas pela
+    primeira palavra do nome: "BTG" = "BTG Pactual"), com "bate" (até 0,5%) ou a diferença; situação "Atualizada"
+    ou "Ainda com valores de <mês anterior>" (todas as contas iguais ao mês anterior e sem resultado nem
+    movimento);
+  - ativos: sem nome, posição negativa, repetido, vencido ainda com posição, categoria ou subcategoria diferente
+    do mês anterior, ainda com a posição do mês anterior e sem rentabilidade, sem subcategoria, RF/COE sem
+    vencimento ou sem taxa, novos, que saíram, mudança de posição acima de 40%;
+  - linhas em amarelo (conta ou ativo ainda do mês anterior) e campos com borda vermelha (faltando).
+- **Importação:** Puxar do BTG, Importar planilha e Importar de PDF guardam o "antes" (`guardarAntesImportacao`);
+  a Conferência mostra o que mudou (novos, saíram, posição, categoria, saldo onshore antes e depois) e
+  "Desfazer importação".
+- **Barra fixa no rodapé do Preencher:** resumo da rentabilidade, contagem da conferência, "Salvar mês e ver
+  relatório" e "Salvar e marcar como feito".
+- Impressão do relatório conferida depois da mudança: as mesmas 18 páginas, com as mesmas margens.
+

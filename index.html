@@ -910,6 +910,68 @@ html[data-cor="noite"] .eqtag.eu{color:#7FB0F0;border-color:#7FB0F0}
 /* Tela inicial limpa (06/11/2026): ferramentas só no menu; no meio, o dia, o calendário e os avisos. */
 .hb-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .hb-chip{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--chip);color:var(--tx2)}
+/* Carteiras 3.11: mês no alto, mês feito, conferência ao vivo. Só tela. */
+@media screen{
+.mesnav{position:relative;display:flex;align-items:center;gap:2px;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.9);border-radius:999px;padding:3px}
+.mesnav .mn-seta{width:32px;height:32px;border:0;background:transparent;border-radius:50%;font-size:20px;line-height:1;color:var(--ink-2);cursor:pointer}
+.mesnav .mn-seta:hover{background:#fff}
+.mesnav .mn-mes{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border:1px solid transparent;border-radius:999px;background:#05132A;color:#fff;font:600 13.5px Inter,"Segoe UI",sans-serif;cursor:pointer}
+.mesnav .mn-mes.on{box-shadow:0 0 0 3px rgba(192,162,101,.45)}
+.mesnav .mn-car{font-size:10px;opacity:.8}
+.mn-pt{width:8px;height:8px;border-radius:50%;display:inline-block;background:#7A8698}
+.mn-pt.feito{background:#3FBF8A}.mn-pt.lancado{background:#E1B54A}.mn-pt.vazio{background:transparent;border:1px solid #9FB0C4}
+.cal-pop{position:absolute;top:44px;left:50%;transform:translateX(-50%);z-index:80;width:290px;background:#fff;border:1px solid #E2E6ED;border-radius:16px;box-shadow:0 18px 44px rgba(5,19,42,.18);padding:14px}
+.cal-cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-cab b{font:600 16px Georgia,serif;color:#12263F}
+.cal-cab button{width:30px;height:30px;border:0;background:#F1F4F8;border-radius:50%;font-size:18px;cursor:pointer;color:#3C4C60}
+.cal-grade{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.cal-m{position:relative;height:42px;border:1px solid #E7EBF1;background:#F7F9FB;border-radius:10px;font:500 13px Inter,sans-serif;color:#1d2733;cursor:pointer}
+.cal-m:hover{border-color:#12263F}
+.cal-m i{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);width:6px;height:6px;border-radius:50%}
+.cal-m.feito i{background:#3FBF8A}.cal-m.lancado i{background:#E1B54A}
+.cal-m.on{background:#12263F;border-color:#12263F;color:#fff}
+.cal-leg{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:#7A8698}
+.cal-leg i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.cal-leg i.feito{background:#3FBF8A}.cal-leg i.lancado{background:#E1B54A}
+.rail-resumo{font-size:12px;color:#9FB3C8;margin:-2px 0 8px;line-height:1.4}
+.rail-resumo b{color:#fff}.rail-resumo span{color:#E9C46A}
+.cli-list li .cl-st{flex:0 0 16px;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.cli-list li .cl-st.feito{background:#3FBF8A;color:#05132A}
+.cli-list li .cl-st.lancado{background:transparent;border:2px solid #E1B54A}
+.cli-list li .cl-st.vazio{background:transparent;border:2px dashed #5D7186}
+.cli-list li b{flex:1;min-width:0}
+.st-mes{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:12px 16px;border-radius:14px;margin:0 0 16px;font-size:13.5px}
+.st-mes span{flex:1;min-width:240px}
+.st-mes.pend{background:#FBF3DC;border:1px solid #EAD9A6;color:#5A4712}
+.st-mes.feito{background:#E6F1EC;border:1px solid #BFDCCB;color:#1F5B3E}
+.st-mes em{font-style:normal;color:#8A6A18}
+.conf-mes{margin-bottom:18px;border-radius:16px}
+.conf-mes>.sec-sub,.conf-mes>.imp-res,.conf-mes>div[style*=overflow],.conf-mes>details>summary{margin-left:20px;margin-right:20px}
+.conf-mes>.conf-intro{margin:12px 20px 12px}
+.conf-mes>details{border-top:1px solid var(--line-2);margin-top:4px}
+.conf-mes>details>summary{padding:10px 0}
+.conf-inst{margin:4px 0 12px}
+.conf-inst small{color:#7A8698;margin-left:4px}
+.sit{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:#EEF1F5;color:#5C6B7F;white-space:nowrap}
+.sit.ok{background:#E6F1EC;color:#1F6B47}.sit.herd{background:#FBF0D2;color:#7A5D12}.sit.al{background:#FBEBEA;color:#9B342E}
+.conf-det summary{cursor:pointer;font-size:13px;font-weight:600;color:#12263F;margin:6px 0}
+table.form tr.lin-herd td{background:#FDF6E3}
+table.form tr.lin-herd td:first-child{box-shadow:inset 3px 0 0 #E1B54A}
+.inp.inp-falta{border-color:#D9645A!important;background:#FFF6F5}
+.imp-res{border:1px solid #DCE6F2;background:#F5F9FD;border-radius:12px;padding:12px 14px;margin:0 0 12px}
+.imp-cab{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap}
+.imp-cab b{color:#12263F}.imp-cab span{font-size:12.5px;color:#5C6B7F;flex:1}
+.imp-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px}
+.imp-g{background:#fff;border:1px solid #E2E6ED;border-radius:10px;padding:8px 12px;font-size:12.5px}
+.imp-g ul{margin:6px 0 0;padding-left:16px;color:#3C4C60}.imp-g li{margin-bottom:2px}
+.imp-g.novo b{color:#1F6B47}.imp-g.saiu b{color:#9B342E}.imp-g.mudou b{color:#12263F}.imp-g.cat b{color:#8A6A18}
+.barra-salvar{position:sticky;bottom:12px;z-index:40;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;margin-top:18px;padding:12px 72px 12px 16px;
+  background:rgba(255,255,255,.9);border:1px solid #E2E6ED;border-radius:16px;box-shadow:0 12px 34px rgba(5,19,42,.14);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.bs-info{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.bs-conf b{font-weight:600;margin-right:10px}.bs-conf b.al{color:#9B342E}.bs-conf b.at{color:#8A6A18}.bs-conf b.ok{color:#1F6B47}
+.bs-acoes{display:flex;gap:8px;flex-wrap:wrap}
+}
+@media print{ .mesnav,.st-mes,.conf-mes,.barra-salvar{display:none!important} }
 .rel-aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9500;background:#12263F;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;box-shadow:0 8px 24px rgba(5,19,42,.25)}
 /* Primeiros passos, aviso do aparelho, adoção e problemas (3.10) */
 .hb-passos{padding:18px 22px}
@@ -1025,13 +1087,9 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
   <div class="rail-brand" id="railBrand"><span>Consolidado de carteiras</span></div>
   <div class="rail-block">
     <div class="rail-label">Clientes</div>
+    <div class="rail-resumo" id="railResumo"></div>
     <ul class="cli-list" id="cliList"></ul>
     <button onclick="novoCliente()">+ Novo cliente</button>
-  </div>
-  <div class="rail-block">
-    <div class="rail-label">Mês de referência</div>
-    <select id="selMes" onchange="mudarRef()"></select>
-    <select id="selAno" onchange="mudarRef()" style="margin-top:8px"></select>
   </div>
   <div class="rail-block">
     <div class="rail-label">Dados</div>
@@ -1054,6 +1112,7 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
       <button id="tabR" onclick="setTab('relatorio')">Relatório</button>
       <button id="tabH" onclick="setTab('historico')">Histórico</button>
     </div>
+    <div class="mesnav no-print" id="mesNav"></div>
     <div class="spacer"></div>
     <button class="btn" id="btnChk" onclick="rodarConferencia()" style="display:none">Conferir dados</button>
     <button class="btn" id="btnPdfR" onclick="imprimir('retrato')" style="display:none">Imprimir retrato</button>
@@ -1992,7 +2051,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.10";
+var VERSAO="versão 3.11";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2188,7 +2247,8 @@ function carregar(){
   status("wait","Carregando…");
   return Promise.all([
     api("clientes?select=id,nome,assessor_id,contas_btg&order=nome.asc").catch(function(){ return api("clientes?select=id,nome,assessor_id&order=nome.asc").catch(function(){ return api("clientes?select=id,nome&order=nome.asc"); }); }),
-    api("lancamentos?select=cliente_id,mes,ano,contas,indicadores"),
+    api("lancamentos?select=cliente_id,mes,ano,contas,indicadores,atualizado_em,feito_em,feito_por")
+      .catch(function(){ return api("lancamentos?select=cliente_id,mes,ano,contas,indicadores"); }),
     api("cartas?select=mes,ano,conteudo").catch(function(){ return []; }),
     api("perfis?select=user_id,nome,admin,mesa_rv,super").catch(function(){ return api("perfis?select=user_id,nome,admin").catch(function(){ return []; }); }),
     api("rpc/minhas_permissoes",{method:"POST",body:{}}).catch(function(){ return null; })
@@ -2207,7 +2267,8 @@ function carregar(){
     db.clientes=r[0]||[];
     db.dados={};
     (r[1]||[]).forEach(function(l){
-      db.dados[chave(l.cliente_id,l.mes,l.ano)]={contas:l.contas||[],ind:l.indicadores||indVazio()};
+      db.dados[chave(l.cliente_id,l.mes,l.ano)]={contas:l.contas||[],ind:l.indicadores||indVazio(),
+        atualizado_em:l.atualizado_em||null,feito_em:l.feito_em||null,feito_por:l.feito_por||null};
     });
     db.cartas={};
     (r[2]||[]).forEach(function(k){ db.cartas[chaveCarta(k.mes,k.ano)]=k.conteudo||""; });
@@ -2576,6 +2637,7 @@ function puxarBtg(){
       "\nNada é gravado até você clicar em \"Salvar mês\". Continuar?";
     if(!confirm(txt)) return;
 
+    guardarAntesImportacao("BTG");
     S.rasc.contas=S.rasc.contas.filter(function(x){ return !(curDe(x)==="BRL"&&ehBtg(x.inst)); }).concat(contas);
     S.rasc.ind.ativos=(S.rasc.ind.ativos||[]).filter(function(x){ return !ehBtg(x.inst); }).concat(ativos);
     if(totEst){ var e={}; ESTRAT.forEach(function(x){ e[x[0]]=porEst[x[0]]?Math.round(porEst[x[0]]/totEst*10000)/100:0; }); S.rasc.ind.estrategias=e; }
@@ -2583,7 +2645,7 @@ function puxarBtg(){
     S.rasc._herdado=false; S.rasc._btg=true;
     registrar("puxou do BTG",c.nome,mesTxt);
     render(true);
-    alert("Pronto. Confira os números e a categoria de cada ativo, e clique em \"Salvar mês e ver relatório\".");
+    alert("Pronto. A Conferência, no alto, mostra o que mudou e o que não bate. Confira e salve.");
   }).catch(function(e){
     status("err","Erro");
     var m=String(e.message||e);
@@ -2640,23 +2702,37 @@ function excluirCliente(){
     status("ok","Sincronizado"); montarRascunho(); render();
   }).catch(falha);
 }
-function salvarMes(){
+function salvarMes(opts){
+  opts=opts||{};
   if(!S.cliente){ alert("Selecione um cliente."); return; }
   var contas=S.rasc.contas.filter(function(c){return (c.nome||"").trim()||n(c.saldo);});
   if(!contas.length){ alert("Informe ao menos uma conta com nome ou saldo."); return; }
   var b=document.getElementById("btnSalvar"); if(b){b.disabled=true;b.textContent="Salvando…";}
   status("wait","Salvando…");
-  api("lancamentos?on_conflict=cliente_id,mes,ano",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
-    body:{cliente_id:S.cliente,mes:S.mes,ano:S.ano,contas:contas,indicadores:S.rasc.ind,atualizado_em:new Date().toISOString()}})
-    .then(function(){
-      db.dados[chave(S.cliente,S.mes,S.ano)]={contas:contas,ind:S.rasc.ind};
+  var agora=new Date().toISOString(), corpo={cliente_id:S.cliente,mes:S.mes,ano:S.ano,contas:contas,indicadores:limparInternos(S.rasc.ind),atualizado_em:agora};
+  if(opts.feito) corpo.feito_em=agora;
+  var antes=reg(S.cliente,S.mes,S.ano)||{};
+  api("lancamentos?on_conflict=cliente_id,mes,ano",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",body:corpo})
+    .then(function(rows){
+      var x=(rows&&rows[0])||{};
+      db.dados[chave(S.cliente,S.mes,S.ano)]={contas:contas,ind:corpo.indicadores,atualizado_em:agora,
+        feito_em:x.feito_em!==undefined?x.feito_em:(opts.feito?agora:antes.feito_em||null),
+        feito_por:x.feito_por!==undefined?x.feito_por:(opts.feito?EU.id:antes.feito_por||null)};
+      if(opts.feito) registrar("marcou mês como feito",(cli()||{}).nome||"",MESES[S.mes-1]+"/"+S.ano);
       registrar("salvou lançamento",(cli()||{}).nome||"",MESES[S.mes-1]+"/"+S.ano+" · "+contas.length+(contas.length===1?" conta · ":" contas · ")+brl(totais({contas:contas}).pl));
       return replicarIndices(S.mes,S.ano,S.cliente,S.rasc.ind);
     })
     .then(function(qtd){
       status("ok",qtd?("Sincronizado · índices replicados para "+qtd+(qtd===1?" cliente":" clientes")):"Sincronizado");
-      montarRascunho(); S.tab="relatorio"; render();
-    }).catch(function(e){ falha(e); if(b){b.disabled=false;b.textContent="Salvar mês e ver relatório";} });
+      montarRascunho();
+      /* Salvar sozinho leva ao relatório, como antes; "Salvar e marcar como feito" fica no
+         Preencher, com o atalho para o próximo cliente pendente. */
+      if(!opts.feito) S.tab="relatorio";
+      render(); if(opts.feito) window.scrollTo(0,0);
+    }).catch(function(e){
+      if(opts.feito&&/feito_em|column/.test(String(e.message))) e=new Error("Falta instalar o carteiras_feito.sql no Supabase. O mês não foi salvo.");
+      falha(e); if(b){b.disabled=false;b.textContent="Salvar mês e ver relatório";}
+    });
 }
 function excluirMes(){
   if(!confirm("Excluir os dados de "+MESES[S.mes-1]+"/"+S.ano+"?")) return;
@@ -2667,7 +2743,7 @@ function excluirMes(){
 }
 function falha(e){ status("err","Erro ao salvar"); alert("Não foi possível concluir:\n\n"+e.message); }
 function selCliente(id){ S._chk=false; S.cliente=id; montarRascunho(); render(); }
-function mudarRef(){ S._chk=false; S.mes=parseInt(document.getElementById("selMes").value,10); S.ano=parseInt(document.getElementById("selAno").value,10); montarRascunho(); render(); }
+function mudarRef(){ montarRascunho(); render(); }
 function setTab(t){
   if(t==="preencher"&&!EU.admin) return;
   S.tab=t; render(); if(t==="historico"){ HIST.log=null; HIST.backups=null; abrirHistorico(); }
@@ -2703,6 +2779,17 @@ var CAMPOS_NUM_ATIVO={posicao:1,rentMes:1,rentAno:1,rent12m:1,rentInicio:1};
 function setAtivo(i,campo,v){
   if(!S.rasc.ind.ativos) S.rasc.ind.ativos=[];
   S.rasc.ind.ativos[i][campo]=CAMPOS_NUM_ATIVO[campo]?n(v):v;
+  var tr=document.getElementById("trA"+i), x=S.rasc.ind.ativos[i];
+  if(tr&&x){
+    var antInfo=regAnterior(S.cliente,S.mes,S.ano), mapa={};
+    ativosValidos(antInfo&&antInfo.r).forEach(function(a){ mapa[ativoChave(a)]=a; });
+    tr.classList.toggle("lin-herd",ativoHerdado(x,mapa));
+    var f=ativoFalta(x);
+    [["nome",'input[oninput*="\'nome\'"]'],["subcategoria",'select[onchange*="subcategoria"]'],["vencimento",'input[oninput*="vencimento"]']].forEach(function(par){
+      var el=tr.querySelector(par[1]); if(el) el.classList.toggle("inp-falta",!!f[par[0]]);
+    });
+  }
+  atualizarConferencia();
 }
 function addAtivo(){
   if(!S.rasc.ind.ativos) S.rasc.ind.ativos=[];
@@ -2803,6 +2890,7 @@ function importarAtivosArquivo(input){
     }
     if(!novos.length){ alert("Não encontrei nenhum ativo preenchido nessa planilha."); input.value=""; return; }
     if(!confirm("Importar "+novos.length+" ativo(s) da planilha?\n\nIsso substitui a lista de ativos que está na tela agora, mas nada é gravado até você clicar em \"Salvar mês e ver relatório\".")){ input.value=""; return; }
+    guardarAntesImportacao("planilha");
     S.rasc.ind.ativos=novos;
     render(true);
     input.value="";
@@ -3068,6 +3156,7 @@ function importarAtivosPdf(input){
             if(botao){ botao.disabled=false; botao.textContent=textoOriginal; }
             return;
           }
+          guardarAntesImportacao("PDF");
           S.rasc.ind.ativos=resultado.ativos;
           render(true);
           input.value="";
@@ -3285,8 +3374,9 @@ function renderRail(){
   if(!db.clientes.length){ ul.innerHTML='<li style="color:#7A8DA3;cursor:default">Nenhum cliente ainda</li>'; }
   else{
     var item=function(c){
-      var r=reg(c.id,S.mes,S.ano),t=r?totais(r,"BRL"):null;
-      return '<li class="'+(S.cliente===c.id?"on":"")+'" onclick="selCliente(\''+c.id+'\')"><b>'+esc(c.nome)+'</b><i>'+(t?brlC(t.pl):"—")+'</i></li>';
+      var r=reg(c.id,S.mes,S.ano),t=r?totais(r,"BRL"):null,st=statusMes(c.id,S.mes,S.ano);
+      return '<li class="'+(S.cliente===c.id?"on":"")+'" onclick="selCliente(\''+c.id+'\')" title="'+esc(tituloStatus(st))+'">'+
+        '<span class="cl-st '+st+'" aria-hidden="true">'+(st==="feito"?"&#10003;":"")+'</span><b>'+esc(c.nome)+'</b><i>'+(t?brlC(t.pl):"—")+'</i></li>';
     };
     if(EU.admin){
       var gs=assessoresComClientes();
@@ -3297,14 +3387,92 @@ function renderRail(){
       ul.innerHTML=db.clientes.map(item).join("");
     }
   }
-  var sm=document.getElementById("selMes");
-  if(!sm.options.length){
-    sm.innerHTML=MESES.map(function(m,i){return '<option value="'+(i+1)+'">'+m+'</option>';}).join("");
-    var y=new Date().getFullYear(),o="";
-    for(var a=y+1;a>=y-6;a--) o+='<option value="'+a+'">'+a+'</option>';
-    document.getElementById("selAno").innerHTML=o;
+  var rr=document.getElementById("railResumo");
+  if(rr){
+    var feitos=db.clientes.filter(function(c){ return statusMes(c.id,S.mes,S.ano)==="feito"; }).length;
+    var falta=db.clientes.length-feitos;
+    rr.innerHTML=db.clientes.length?('<b>'+feitos+' de '+db.clientes.length+'</b> feitos em '+MESES[S.mes-1].toLowerCase()+
+      (falta?'. <span>'+falta+' pendente'+(falta===1?"":"s")+'</span>':'. Tudo feito.')):"";
   }
-  sm.value=S.mes; document.getElementById("selAno").value=S.ano;
+  pintarMesNav();
+}
+/* ===================== Mês de referência no alto e "mês feito" (3.11) =====================
+   O mês fica na barra do alto: setas para o anterior e o seguinte, e um calendário com os
+   12 meses do ano. No calendário e na lista de clientes, cada mês tem um estado:
+   feito (lançado e marcado como pronto), lançado (salvo, falta marcar) ou vazio. */
+var CAL={aberto:false,ano:null};
+function statusMes(id,mes,ano){ var r=reg(id,mes,ano); if(!r) return "vazio"; return r.feito_em?"feito":"lancado"; }
+function tituloStatus(st){ return st==="feito"?"Feito":(st==="lancado"?"Lançado, falta marcar como feito":"Sem lançamento"); }
+function irMes(mes,ano){ S._chk=false; S.mes=mes; S.ano=ano; CAL.aberto=false; montarRascunho(); render(); }
+function mesPasso(d){ var m=S.mes+d,a=S.ano; if(m<1){m=12;a--;} if(m>12){m=1;a++;} irMes(m,a); }
+function alternarCal(ev){ if(ev) ev.stopPropagation(); CAL.aberto=!CAL.aberto; CAL.ano=S.ano; pintarMesNav(); }
+function pintarMesNav(){
+  var el=document.getElementById("mesNav"); if(!el) return;
+  el.style.display=S.app==="carteiras"?"":"none";
+  var st=S.cliente?statusMes(S.cliente,S.mes,S.ano):"";
+  var h='<button type="button" class="mn-seta" onclick="mesPasso(-1)" aria-label="Mês anterior" title="Mês anterior">&#8249;</button>'+
+    '<button type="button" class="mn-mes'+(CAL.aberto?" on":"")+'" onclick="alternarCal(event)" aria-haspopup="true" aria-expanded="'+CAL.aberto+'" title="Escolher o mês">'+
+      (st?'<i class="mn-pt '+st+'" title="'+esc(tituloStatus(st))+'"></i>':'')+MESES[S.mes-1]+' '+S.ano+'<span class="mn-car">'+(CAL.aberto?"&#9652;":"&#9662;")+'</span></button>'+
+    '<button type="button" class="mn-seta" onclick="mesPasso(1)" aria-label="Próximo mês" title="Próximo mês">&#8250;</button>';
+  if(CAL.aberto){
+    var a=CAL.ano||S.ano;
+    h+='<div class="cal-pop" role="dialog" aria-label="Escolher o mês" onclick="event.stopPropagation()">'+
+      '<div class="cal-cab"><button type="button" onclick="CAL.ano='+(a-1)+';pintarMesNav()" aria-label="Ano anterior">&#8249;</button><b>'+a+'</b>'+
+      '<button type="button" onclick="CAL.ano='+(a+1)+';pintarMesNav()" aria-label="Próximo ano">&#8250;</button></div><div class="cal-grade">'+
+      MESES_C.map(function(m,i){
+        var s2=S.cliente?statusMes(S.cliente,i+1,a):"vazio", on=(i+1===S.mes&&a===S.ano);
+        return '<button type="button" class="cal-m '+s2+(on?" on":"")+'" onclick="irMes('+(i+1)+','+a+')" title="'+esc(MESES[i]+"/"+a+": "+tituloStatus(s2))+'">'+
+          m.charAt(0).toUpperCase()+m.slice(1)+'<i></i></button>';
+      }).join("")+'</div>'+
+      '<div class="cal-leg"><span><i class="feito"></i>feito</span><span><i class="lancado"></i>lançado, falta marcar</span></div></div>';
+  }
+  el.innerHTML=h;
+}
+document.addEventListener("click",function(){ if(CAL.aberto){ CAL.aberto=false; pintarMesNav(); } });
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&CAL.aberto){ CAL.aberto=false; pintarMesNav(); } });
+function proximoPendente(){
+  var lista=db.clientes, i=lista.map(function(c){ return c.id; }).indexOf(S.cliente);
+  for(var k=1;k<=lista.length;k++){ var c=lista[(i+k)%lista.length]; if(c&&c.id!==S.cliente&&statusMes(c.id,S.mes,S.ano)!=="feito") return c; }
+  return null;
+}
+/* Rascunho diferente do que está salvo? (para "Salvar e marcar como feito") */
+function rascunhoAlterado(){
+  var r=reg(S.cliente,S.mes,S.ano); if(!r||!S.rasc) return true;
+  var limpa=function(cs){ return (cs||[]).filter(function(c){return (c.nome||"").trim()||n(c.saldo);}); };
+  var semInterno=function(o){ var x={}; Object.keys(o||{}).forEach(function(k){ if(k.charAt(0)!=="_") x[k]=o[k]; }); return x; };
+  return JSON.stringify(limpa(S.rasc.contas))!==JSON.stringify(limpa(r.contas))||JSON.stringify(semInterno(S.rasc.ind))!==JSON.stringify(semInterno(r.ind));
+}
+function marcarFeito(feito){
+  var c=cli(); if(!c) return;
+  if(feito){
+    var crit=(conferirRascunho().itens||[]).filter(function(x){ return x.nivel==="alta"; }).length;
+    if(crit&&!confirm("A conferência aponta "+crit+(crit===1?" ponto crítico":" pontos críticos")+" neste mês. Marcar como feito mesmo assim?")) return;
+    if(!reg(c.id,S.mes,S.ano)||rascunhoAlterado()){ salvarMes({feito:true}); return; }
+  }else if(!confirm("Reabrir "+MESES[S.mes-1]+"/"+S.ano+" de "+c.nome+"? O mês volta a aparecer como pendente.")) return;
+  status("wait","Salvando…");
+  api("lancamentos?cliente_id=eq."+c.id+"&mes=eq."+S.mes+"&ano=eq."+S.ano,{method:"PATCH",prefer:"return=representation",
+    body:{feito_em:feito?new Date().toISOString():null}}).then(function(rows){
+    var r=reg(c.id,S.mes,S.ano), x=(rows&&rows[0])||{};
+    if(r){ r.feito_em=x.feito_em!==undefined?x.feito_em:(feito?new Date().toISOString():null); r.feito_por=x.feito_por!==undefined?x.feito_por:(feito?EU.id:null); }
+    registrar(feito?"marcou mês como feito":"reabriu mês",c.nome,MESES[S.mes-1]+"/"+S.ano);
+    status("ok","Sincronizado"); render(true);
+  }).catch(function(e){
+    status("err","Erro");
+    alert(/feito_em|column/.test(String(e.message))?"Falta instalar o carteiras_feito.sql no Supabase.":"Não foi possível marcar: "+e.message);
+  });
+}
+function faixaStatusMes(c){
+  var r=reg(c.id,S.mes,S.ano), mesTxt=MESES[S.mes-1]+"/"+S.ano, prox=proximoPendente();
+  var linkProx=prox?'<button type="button" class="btn" onclick="selCliente(\''+prox.id+'\')">Próximo pendente: '+esc(prox.nome)+' &#8594;</button>':'';
+  if(r&&r.feito_em){
+    var quem=r.feito_por&&PERFIS[r.feito_por]?PERFIS[r.feito_por].nome:"";
+    var depois=r.atualizado_em&&new Date(r.atualizado_em).getTime()>new Date(r.feito_em).getTime()+60000;
+    return '<div class="st-mes feito"><span><b>&#10003; '+mesTxt+' feito</b> em '+new Date(r.feito_em).toLocaleDateString("pt-BR")+(quem?' por '+esc(quem):'')+
+      (depois?' · <em>alterado depois de marcado</em>':'')+'</span>'+linkProx+
+      (EU.admin?'<button type="button" class="btn" onclick="marcarFeito(false)">Reabrir</button>':'')+'</div>';
+  }
+  return '<div class="st-mes pend"><span><b>Pendente em '+mesTxt+':</b> '+(r?"falta conferir e marcar como feito.":"o mês ainda não foi lançado.")+'</span>'+
+    (EU.admin?'<button type="button" class="btn pri" onclick="marcarFeito(true)">'+(r&&!rascunhoAlterado()?"Marcar como feito":"Salvar e marcar como feito")+'</button>':'')+'</div>';
 }
 function viewPreencher(){
   var h="";
@@ -3325,6 +3493,7 @@ function viewPreencher(){
      (EU.admin&&c.assessor_id!==EU.id?'<div class="sec-sub" style="margin-top:-8px">Cliente de '+esc(nomeAssessor(c.assessor_id))+'.</div>':'')+
      '<div class="sec-sub" style="margin-top:-8px">Contas BTG: '+((c.contas_btg&&c.contas_btg.length)?esc(c.contas_btg.join(", ")):'<b>nenhuma informada</b>')+
        ' &middot; <a href="#" onclick="editarContasBtg();return false">'+((c.contas_btg&&c.contas_btg.length)?"alterar":"informar")+'</a></div>';
+  h+=faixaStatusMes(c)+'<div id="confMes">'+painelConferenciaMes()+'</div>';
   if(r._herdado) h+='<div class="note"><b>Dados herdados do mês anterior.</b> Contas e saldos vieram do último mês lançado. Atualize os saldos e informe o resultado do mês — nada é gravado até você clicar em “Salvar mês”.</div>';
   if(!r._herdado && r._onHerdado){
     h+='<div class="note" style="margin-bottom:14px"><b>'+r._onHerdado+' conta(s) em reais trazida(s) do m\u00eas anterior.</b> '+
@@ -3393,6 +3562,8 @@ function viewPreencher(){
      '<button class="btn" style="margin-top:14px" onclick="addVenc()">+ Adicionar vencimento</button></div>';
 
   var ativos=S.rasc.ind.ativos||[];
+  var antInfoA=regAnterior(c.id,S.mes,S.ano), mapaAntA={};
+  ativosValidos(antInfoA&&antInfoA.r).forEach(function(x){ mapaAntA[ativoChave(x)]=x; });
   h+='<div class="card"><div class="sec-title">Lista de ativos</div>'+
      '<div class="sec-sub">Opcional. Se ficar em branco, a seção não aparece no relatório. Taxa e vencimento só fazem sentido para renda fixa e COE — deixe em branco nos demais. '+
      'A subcategoria alimenta o gráfico de distribuição por estratégia. O relatório separa por categoria, e os dados passam para o mês seguinte — só a rentabilidade nasce zerada.'+
@@ -3404,18 +3575,20 @@ function viewPreencher(){
      '<th class="num">Mês</th>'+
      '<th class="num">Ano</th><th class="num">12 meses</th><th class="num">Desde o início</th><th></th></tr></thead><tbody>'+
      (ativos.length?ativos.map(function(x,i){
-       return '<tr>'+
+       var falta=ativoFalta(x), herd=ativoHerdado(x,mapaAntA);
+       var fc=function(campo){ return falta[campo]?" inp-falta":""; };
+       return '<tr id="trA'+i+'" class="'+(herd?"lin-herd":"")+'" title="'+(herd?"Ainda com a posição do mês anterior":"")+'">'+
        '<td><select class="inp" onchange="setAtivo('+i+',\'categoria\',this.value)">'+
          CATEGORIAS_ATIVO.map(function(c){ return '<option value="'+esc(c)+'"'+(x.categoria===c?" selected":"")+'>'+esc(c)+'</option>'; }).join("")+
          '</select></td>'+
-       '<td><select class="inp" onchange="setAtivo('+i+',\'subcategoria\',this.value)">'+
+       '<td><select class="inp'+fc("subcategoria")+'" onchange="setAtivo('+i+',\'subcategoria\',this.value)">'+
          '<option value=""'+(!x.subcategoria?" selected":"")+'>—</option>'+
          SUBCATEGORIAS_ATIVO.map(function(s){ return '<option value="'+esc(s)+'"'+(x.subcategoria===s?" selected":"")+'>'+esc(s)+'</option>'; }).join("")+
          '</select></td>'+
-       '<td><input class="inp" value="'+esc(x.nome)+'" oninput="setAtivo('+i+',\'nome\',this.value)" placeholder="Ex.: CDB Banco XYZ"></td>'+
+       '<td><input class="inp'+fc("nome")+'" value="'+esc(x.nome)+'" oninput="setAtivo('+i+',\'nome\',this.value)" placeholder="Ex.: CDB Banco XYZ"></td>'+
        '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setAtivo('+i+',\'inst\',this.value)" placeholder="Ex.: XP"></td>'+
        '<td><input class="inp" value="'+esc(x.taxa)+'" oninput="setAtivo('+i+',\'taxa\',this.value)" placeholder="Ex.: 112% do CDI"></td>'+
-       '<td><input class="inp" type="date" value="'+esc(x.vencimento)+'" oninput="setAtivo('+i+',\'vencimento\',this.value)"></td>'+
+       '<td><input class="inp'+fc("vencimento")+'" type="date" value="'+esc(x.vencimento)+'" oninput="setAtivo('+i+',\'vencimento\',this.value)"></td>'+
        '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.posicao)+'" oninput="onMoeda(this,function(v){setAtivo('+i+',\'posicao\',v);})"></td>'+
        '<td><input class="inp num" type="number" step="0.01" value="'+(x.rentMes||"")+'" oninput="setAtivo('+i+',\'rentMes\',this.value)"></td>'+
        '<td><input class="inp num" type="number" step="0.01" value="'+(x.rentAno||"")+'" oninput="setAtivo('+i+',\'rentAno\',this.value)"></td>'+
@@ -3436,18 +3609,22 @@ function viewPreencher(){
      'Depois de editar, use "Importar planilha" para trazer de volta — a tabela acima é atualizada para você conferir, e só grava de verdade quando clicar em "Salvar mês e ver relatório". '+
      '"Importar de PDF" lê o Relatório de Performance (BTG/Necton) ou o Extrato de cliente (Sinosserra) e separa os ativos automaticamente — confira a categoria e a taxa de cada um antes de salvar, porque a separação é uma aproximação.</div></div>';
 
-  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnSalvar" onclick="salvarMes()">Salvar mês e ver relatório</button>'+
-     '<span style="font-size:12.5px;color:var(--muted)" id="resumoMini">Onshore: '+pct(t.rendPct)+' • '+brl2(t.rendRs)+'</span></div>';
+  var feitoJa=statusMes(c.id,S.mes,S.ano)==="feito";
+  h+='<div class="barra-salvar no-print"><span class="bs-info"><span id="resumoMini">Onshore: '+pct(t.rendPct)+' • '+brl2(t.rendRs)+'</span><span id="bsConf" class="bs-conf"></span></span>'+
+     '<span class="bs-acoes"><button class="btn'+(feitoJa?' pri':'')+'" id="btnSalvar" onclick="salvarMes()">Salvar mês e ver relatório</button>'+
+     (feitoJa?'':'<button class="btn pri" onclick="marcarFeito(true)" title="Salva o mês e marca como pronto">Salvar e marcar como feito</button>')+'</span></div>';
+  setTimeout(atualizarConferencia,0);
   return h;
 }
 
 var PTAX_TENTADO={};
 function cardContas(r,cur){
   var off=(cur==="USD"), t=totais(r,cur), sfx=(off?"U":"B");
-  var linhas="";
+  var linhas="", antInfoC=S.cliente?regAnterior(S.cliente,S.mes,S.ano):null;
   r.contas.forEach(function(x,i){
     if(curDe(x)!==cur) return;
-    linhas+='<tr>'+
+    var herd=contaHerdada(x,antInfoC&&antInfoC.r);
+    linhas+='<tr id="trC'+i+'" class="'+(herd?"lin-herd":"")+'" title="'+(herd?"Ainda com o saldo do mês anterior, sem resultado nem movimento":"")+'">'+
     '<td><input class="inp" value="'+esc(x.nome)+'" oninput="setConta('+i+',\'nome\',this.value)" placeholder="'+(off?"Ex.: Pershing":"Ex.: XP")+'"></td>'+
     '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setConta('+i+',\'inst\',this.value)" placeholder="'+(off?"Ex.: Avenue":"Ex.: XP")+'"></td>'+
     '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.saldo)+'" oninput="onMoeda(this,function(v){setConta('+i+',\'saldo\',v);})"></td>'+
@@ -3606,6 +3783,9 @@ function atualizarResumo(){
   });
   var t=totais(S.rasc,"BRL"), tu=totais(S.rasc,"USD");
   set("resumoMini","Onshore: "+pct(t.rendPct)+" • "+brl2(t.rendRs)+(contasDe(S.rasc,"USD").length?"  |  Offshore: "+pct(tu.rendPct)+" • "+usd2(tu.rendRs):""));
+  var antInfo=S.cliente?regAnterior(S.cliente,S.mes,S.ano):null;
+  (S.rasc.contas||[]).forEach(function(c,i){ var tr=document.getElementById("trC"+i); if(tr) tr.classList.toggle("lin-herd",contaHerdada(c,antInfo&&antInfo.r)); });
+  atualizarConferencia();
 }
 
 /* ============ gráficos ============ */
@@ -3761,8 +3941,8 @@ var SNUM=0;
 /* ===== conferencia de consistencia dos lancamentos =====
    Regras deterministicas: cada achado aponta a conta, o numero encontrado
    e o numero esperado, para dar pra conferir na mao. */
-function conferir(id,mes,ano){
-  var r=reg(id,mes,ano), out=[];
+function conferir(id,mes,ano,rOpt){
+  var r=rOpt||reg(id,mes,ano), out=[];
   if(!r) return out;
   var add=function(nivel,onde,titulo,detalhe){ out.push({nivel:nivel,onde:onde,titulo:titulo,detalhe:detalhe}); };
   var ant=null,pa=anterior(mes,ano),tt=0;
@@ -3896,6 +4076,176 @@ function conferir(id,mes,ano){
   var ordem={alta:0,atencao:1,info:2};
   out.sort(function(a,b){ return ordem[a.nivel]-ordem[b.nivel]; });
   return out;
+}
+/* ===================== Conferência ao vivo do Preencher (3.11) =====================
+   Roda sobre o rascunho (o que está na tela, antes de salvar): a conferência das contas
+   (conferir) mais a dos ativos e a das instituições. Aponta o que ainda é do mês anterior,
+   o que não bate entre ativos e saldo, categoria que mudou, campo faltando, ativo repetido,
+   vencido ou que sumiu. */
+function limparInternos(o){ var x={}; Object.keys(o||{}).forEach(function(k){ if(k.charAt(0)!=="_") x[k]=o[k]; }); return x; }
+function semAc(s){ return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(); }
+function instChave(s){ var t=semAc(s).replace(/[^a-z0-9 ]/g," ").trim().split(/\s+/)[0]||""; return t; }
+function ativoChave(x){ return semAc(x.nome).replace(/\s+/g," ").trim()+"|"+instChave(x.inst); }
+function regAnterior(id,mes,ano){
+  var p=anterior(mes,ano),t=0;
+  while(t<24){ var rr=reg(id,p.mes,p.ano); if(rr) return {r:rr,mes:p.mes,ano:p.ano}; p=anterior(p.mes,p.ano); t++; }
+  return null;
+}
+function ativosValidos(r){ return ((r&&r.ind&&r.ind.ativos)||[]).filter(function(x){ return (x.nome||"").trim()||n(x.posicao); }); }
+/* Conta igual à do mês anterior e sem movimento nem resultado: ainda não foi atualizada. */
+function contaHerdada(c,antR){
+  if(!antR||n(c.rendRs)||n(c.rendPct)||n(c.apl)||n(c.res)) return false;
+  var a=contasDe(antR,curDe(c)).filter(function(x){ return chaveConta(x)===chaveConta(c); })[0];
+  return !!a&&Math.abs(n(a.saldo)-n(c.saldo))<0.005&&n(c.saldo)>0;
+}
+function ativoHerdado(x,mapaAnt){
+  var a=mapaAnt[ativoChave(x)];
+  return !!a&&!n(x.rentMes)&&Math.abs(n(a.posicao)-n(x.posicao))<0.005&&n(x.posicao)>0;
+}
+function ativoFalta(x){
+  var f={};
+  if(n(x.posicao)&&!(x.nome||"").trim()) f.nome=1;
+  if(!x.subcategoria&&x.categoria!=="Renda Variável") f.subcategoria=1;
+  if(CATEGORIAS_COM_PRAZO.indexOf(x.categoria)>=0&&!x.vencimento) f.vencimento=1;
+  return f;
+}
+function conferirRascunho(){
+  var c=cli(), r=S.rasc; if(!c||!r) return {itens:[],inst:[],ant:null};
+  var antInfo=regAnterior(c.id,S.mes,S.ano), antR=antInfo&&antInfo.r, refAnt=antInfo?MESES[antInfo.mes-1].toLowerCase()+"/"+antInfo.ano:"";
+  var itens=conferir(c.id,S.mes,S.ano,{contas:r.contas.filter(function(x){ return (x.nome||"").trim()||n(x.saldo); }),ind:r.ind});
+  var add=function(nivel,onde,titulo,detalhe){ itens.push({nivel:nivel,onde:onde,titulo:titulo,detalhe:detalhe}); };
+  var lista=function(arr){ var nomes=arr.slice(0,6).map(function(x){ return "<i>"+esc(x).replace(/&amp;#8594;/g,"&#8594;")+"</i>"; }).join(", "); return nomes+(arr.length>6?" e mais "+(arr.length-6):""); };
+  var ativos=ativosValidos(r), ativosAnt=ativosValidos(antR), mapaAnt={};
+  ativosAnt.forEach(function(x){ mapaAnt[ativoChave(x)]=x; });
+
+  /* contas ainda com o valor do mês anterior */
+  var contasHerd=r.contas.filter(function(x){ return contaHerdada(x,antR); });
+  /* conta ainda do mês anterior já sai no aviso agrupado abaixo: sem repetir "Mês sem resultado" */
+  var nomesHerd={}; contasHerd.forEach(function(x){ nomesHerd[(x.nome||"sem nome")+(curDe(x)==="USD"?" (offshore)":"")]=1; });
+  itens=itens.filter(function(x){ return !(x.titulo==="M\u00eas sem resultado"&&nomesHerd[x.onde]); });
+  if(contasHerd.length) add("atencao","Contas","Ainda com o saldo de "+refAnt,
+    contasHerd.length+" conta(s) estão iguais ao mês anterior, sem resultado nem movimento: "+lista(contasHerd.map(function(x){ return (x.nome||"sem nome")+" ("+(x.inst||"—")+")"; }))+". Atualize com o extrato do mês.");
+
+  /* ativos */
+  var vistos={}, repetidos=[], semNome=0, negativos=[], semSub=[], semVenc=[], semTaxa=[], vencidos=[], herd=[], mudouCat=[], grandes=[], novos=[];
+  var corte=S.ano+"-"+String(S.mes).padStart(2,"0")+"-01";
+  ativos.forEach(function(x){
+    var k=ativoChave(x), nome=(x.nome||"").trim()||"sem nome";
+    if(vistos[k]) repetidos.push(nome); vistos[k]=1;
+    if(!(x.nome||"").trim()) semNome++;
+    if(n(x.posicao)<0) negativos.push(nome);
+    var f=ativoFalta(x);
+    if(f.subcategoria) semSub.push(nome);
+    if(f.vencimento) semVenc.push(nome);
+    if(CATEGORIAS_COM_PRAZO.indexOf(x.categoria)>=0&&!(x.taxa||"").trim()) semTaxa.push(nome);
+    if(x.vencimento&&String(x.vencimento)<corte&&n(x.posicao)>0) vencidos.push(nome+" ("+dataBR(x.vencimento)+")");
+    var a=mapaAnt[k];
+    if(a){
+      if(ativoHerdado(x,mapaAnt)) herd.push(nome);
+      if((a.categoria||"")!==(x.categoria||"")||((a.subcategoria||"")!==(x.subcategoria||"")&&a.subcategoria&&x.subcategoria))
+        mudouCat.push(nome+": "+[a.categoria,a.subcategoria].filter(Boolean).join(" · ")+" &#8594; "+[x.categoria,x.subcategoria].filter(Boolean).join(" · "));
+      var pa=n(a.posicao), px=n(x.posicao);
+      if(pa>0&&px>0&&Math.abs(px-pa)/pa>0.4) grandes.push(nome+" ("+brl(pa)+" &#8594; "+brl(px)+")");
+    }else if(antR) novos.push(nome);
+  });
+  var sairam=ativosAnt.filter(function(a){ return !vistos[ativoChave(a)]&&n(a.posicao)>0; }).map(function(a){ return (a.nome||"sem nome")+" ("+brl(n(a.posicao))+")"; });
+  if(semNome) add("alta","Ativos","Ativo sem nome",semNome+" linha(s) com posição e sem o nome do ativo.");
+  if(negativos.length) add("alta","Ativos","Posição negativa",lista(negativos)+". Posição de ativo não fica negativa: confira o sinal.");
+  if(repetidos.length) add("alta","Ativos","Ativo repetido",lista(repetidos)+" aparece(m) mais de uma vez na mesma instituição. Some duas vezes no relatório.");
+  if(vencidos.length) add("alta","Ativos","Vencido e ainda na carteira",lista(vencidos)+". O vencimento é anterior a "+MESES[S.mes-1].toLowerCase()+" e o ativo ainda tem posição.");
+  if(mudouCat.length) add("atencao","Ativos","Categoria diferente do mês anterior",lista(mudouCat)+". Se foi correção, ótimo; se não, volte ao que era para os gráficos não mudarem sozinhos.");
+  if(herd.length) add("atencao","Ativos","Ainda com a posição de "+refAnt,herd.length+" ativo(s) com a mesma posição do mês anterior e sem rentabilidade no mês: "+lista(herd)+".");
+  if(semSub.length) add("atencao","Ativos","Sem subcategoria",semSub.length+" ativo(s): "+lista(semSub)+". A subcategoria alimenta a distribuição por estratégia.");
+  if(semVenc.length) add("atencao","Ativos","Renda fixa ou COE sem vencimento",lista(semVenc)+".");
+  if(sairam.length) add("info","Ativos","Saíram da carteira",lista(sairam)+". Estavam no mês anterior e não estão neste. Se foram resgatados ou venceram, está certo.");
+  if(novos.length) add("info","Ativos","Ativos novos",lista(novos)+".");
+  if(grandes.length) add("info","Ativos","Mudança grande de posição",lista(grandes)+". Mais de 40% em relação ao mês anterior.");
+  if(semTaxa.length) add("info","Ativos","Renda fixa ou COE sem taxa",lista(semTaxa)+".");
+
+  /* instituições: saldo das contas contra a soma dos ativos */
+  var inst={}, ordem=[];
+  var pega=function(k,rot){ if(!inst[k]){ inst[k]={rot:rot,contas:0,nContas:0,ativos:0,nAtivos:0,herd:0,usd:false}; ordem.push(k); } return inst[k]; };
+  r.contas.forEach(function(x){
+    if(!((x.nome||"").trim()||n(x.saldo))) return;
+    var g=pega(instChave(x.inst)||"?",(x.inst||"Sem instituição").trim());
+    if(curDe(x)==="USD"){ g.usd=true; return; }
+    g.contas+=n(x.saldo); g.nContas++; if(contaHerdada(x,antR)) g.herd++;
+  });
+  ativos.forEach(function(x){ var g=pega(instChave(x.inst)||"?",(x.inst||"Sem instituição").trim()); g.ativos+=n(x.posicao); g.nAtivos++; });
+  var linhasInst=ordem.map(function(k){
+    var g=inst[k], dif=g.ativos-g.contas, lim=Math.max(1,g.contas*0.005);
+    var sit=g.nContas&&g.herd===g.nContas?"herdada":(g.nContas?"ok":(g.usd?"usd":"semconta"));
+    var bate=!g.nAtivos||!g.nContas?null:Math.abs(dif)<=lim;
+    if(bate===false) add(Math.abs(dif)>Math.max(1000,g.contas*0.02)?"alta":"atencao",g.rot,"Ativos não batem com o saldo",
+      "Saldo das contas "+brl2(g.contas)+", soma dos ativos "+brl2(g.ativos)+": diferença de <i>"+brl2(dif)+"</i>. Falta ou sobra ativo, ou o saldo está desatualizado (saldo em conta corrente também entra como ativo).");
+    if(g.nAtivos&&!g.nContas&&!g.usd) add("atencao",g.rot,"Ativos sem conta","Há "+g.nAtivos+" ativo(s) de "+esc(g.rot)+" ("+brl2(g.ativos)+") e nenhuma conta dessa instituição.");
+    return {rot:g.rot,sit:sit,contas:g.contas,ativos:g.ativos,nAtivos:g.nAtivos,nContas:g.nContas,dif:dif,bate:bate};
+  });
+  var ordemN={alta:0,atencao:1,info:2};
+  itens.sort(function(a,b){ return ordemN[a.nivel]-ordemN[b.nivel]; });
+  return {itens:itens,inst:linhasInst,ant:refAnt};
+}
+/* O que a última importação (BTG, planilha ou PDF) mudou no rascunho, com desfazer. */
+function guardarAntesImportacao(fonte){
+  if(!S.rasc) return;
+  S.rasc._import={fonte:fonte,em:Date.now(),contas:JSON.parse(JSON.stringify(S.rasc.contas||[])),
+    ativos:JSON.parse(JSON.stringify((S.rasc.ind&&S.rasc.ind.ativos)||[])),
+    estrategias:JSON.parse(JSON.stringify((S.rasc.ind&&S.rasc.ind.estrategias)||{}))};
+}
+function desfazerImportacao(){
+  var im=S.rasc&&S.rasc._import; if(!im) return;
+  if(!confirm("Voltar contas e ativos para como estavam antes da importação ("+im.fonte+")?")) return;
+  S.rasc.contas=im.contas; S.rasc.ind.ativos=im.ativos; S.rasc.ind.estrategias=im.estrategias; delete S.rasc._import;
+  render(true);
+}
+function blocoImportacao(){
+  var im=S.rasc&&S.rasc._import; if(!im) return "";
+  var antes={}, depois={};
+  im.ativos.filter(function(x){ return (x.nome||"").trim()||n(x.posicao); }).forEach(function(x){ antes[ativoChave(x)]=x; });
+  ativosValidos(S.rasc).forEach(function(x){ depois[ativoChave(x)]=x; });
+  var novos=[], sairam=[], mudou=[], cat=[];
+  Object.keys(depois).forEach(function(k){
+    var d=depois[k], a=antes[k];
+    if(!a){ novos.push(d.nome+" ("+brl(n(d.posicao))+")"); return; }
+    if(Math.abs(n(a.posicao)-n(d.posicao))>0.5) mudou.push(d.nome+": "+brl(n(a.posicao))+" &#8594; "+brl(n(d.posicao)));
+    if((a.categoria||"")!==(d.categoria||"")||(a.subcategoria||"")!==(d.subcategoria||"")) cat.push(d.nome+": "+[a.categoria,a.subcategoria].filter(Boolean).join(" · ")+" &#8594; "+[d.categoria,d.subcategoria||"sem subcategoria"].filter(Boolean).join(" · "));
+  });
+  Object.keys(antes).forEach(function(k){ if(!depois[k]) sairam.push(antes[k].nome+" ("+brl(n(antes[k].posicao))+")"); });
+  var sAntes=im.contas.reduce(function(a,x){ return a+(curDe(x)==="BRL"?n(x.saldo):0); },0), sDepois=S.rasc.contas.reduce(function(a,x){ return a+(curDe(x)==="BRL"?n(x.saldo):0); },0);
+  var bloco=function(tit,arr,cls){ return arr.length?'<div class="imp-g '+cls+'"><b>'+tit+' ('+arr.length+')</b><ul>'+arr.slice(0,10).map(function(x){ return "<li>"+esc(x).replace(/&amp;#8594;/g,"&#8594;")+"</li>"; }).join("")+(arr.length>10?"<li>e mais "+(arr.length-10)+"</li>":"")+'</ul></div>':""; };
+  return '<div class="imp-res"><div class="imp-cab"><b>O que mudou com a importação ('+esc(im.fonte)+')</b>'+
+    '<span>Saldo onshore: '+brl2(sAntes)+' &#8594; '+brl2(sDepois)+'</span>'+
+    '<button type="button" class="btn" onclick="desfazerImportacao()">Desfazer importação</button></div>'+
+    ((novos.length||sairam.length||mudou.length||cat.length)?
+      '<div class="imp-grade">'+bloco("Ativos novos",novos,"novo")+bloco("Saíram",sairam,"saiu")+bloco("Posição mudou",mudou,"mudou")+bloco("Categoria mudou",cat,"cat")+'</div>':
+      '<div class="sec-sub" style="margin:6px 0 0">Nenhum ativo mudou.</div>')+'</div>';
+}
+function painelConferenciaMes(){
+  var cf=conferirRascunho(), it=cf.itens;
+  var alta=it.filter(function(x){return x.nivel==="alta";}).length, aten=it.filter(function(x){return x.nivel==="atencao";}).length, info=it.length-alta-aten;
+  var tag=(alta?'<span class="chk-tag al">'+alta+(alta===1?" crítico":" críticos")+'</span>':'')+(aten?'<span class="chk-tag at">'+aten+' a conferir</span>':'')+
+    (!alta&&!aten?'<span class="chk-tag ok">nada crítico</span>':'');
+  var sitTxt={ok:'<span class="sit ok">Atualizada</span>',herdada:'<span class="sit herd">Ainda com valores de '+esc(cf.ant)+'</span>',semconta:'<span class="sit herd">Sem conta</span>',usd:'<span class="sit">Offshore</span>'};
+  var tab=cf.inst.length?'<div style="overflow-x:auto"><table class="form conf-inst"><thead><tr><th>Instituição</th><th>Situação</th><th class="num">Saldo das contas</th><th class="num">Soma dos ativos</th><th class="num">Ativos x saldo</th></tr></thead><tbody>'+
+    cf.inst.map(function(g){
+      return '<tr class="'+(g.sit==="herdada"?"lin-herd":"")+'"><td><b>'+esc(g.rot)+'</b></td><td>'+(sitTxt[g.sit]||"")+'</td>'+
+        '<td class="num">'+(g.nContas?brl2(g.contas):"—")+'</td><td class="num">'+(g.nAtivos?brl2(g.ativos)+' <small>'+g.nAtivos+' ativo'+(g.nAtivos===1?"":"s")+'</small>':"—")+'</td>'+
+        '<td class="num">'+(g.bate===null?'<span class="sit">—</span>':(g.bate?'<span class="sit ok">bate</span>':'<span class="sit al">'+brl2(g.dif)+'</span>'))+'</td></tr>';
+    }).join("")+'</tbody></table></div>':'';
+  var lista=it.length?it.map(function(x){
+    return '<div class="chk-item"><div class="chk-bar '+x.nivel+'"></div><div class="chk-txt"><span class="chk-onde">'+esc(x.onde)+'</span><b>'+esc(x.titulo)+'</b><span>'+x.detalhe+'</span></div></div>';
+  }).join(""):'<div class="chk-vazio">Nada a apontar nas contas, nos ativos e na comparação com o mês anterior.</div>';
+  var bs=document.getElementById("bsConf");
+  if(bs) bs.innerHTML=(alta?'<b class="al">'+alta+(alta===1?" crítico":" críticos")+'</b>':'')+(aten?'<b class="at">'+aten+' a conferir</b>':'')+(!alta&&!aten?'<b class="ok">conferência sem pendência</b>':'');
+  return '<div class="chk conf-mes no-print"><div class="chk-top"><h3>Conferência de '+MESES[S.mes-1].toLowerCase()+'/'+S.ano+'</h3>'+tag+
+    (info?'<span class="chk-tag">'+info+' informativo'+(info===1?"":"s")+'</span>':'')+'</div>'+
+    '<div class="sec-sub conf-intro">Atualiza enquanto você preenche. Compara com '+(cf.ant?esc(cf.ant):"o mês anterior")+' e confere ativos contra o saldo de cada instituição. Nada é gravado até salvar.</div>'+
+    blocoImportacao()+tab+'<details class="conf-det"'+(alta||aten?" open":"")+'><summary>'+it.length+' apontamento'+(it.length===1?"":"s")+'</summary>'+lista+'</details></div>';
+}
+var CONF_T=null;
+function atualizarConferencia(){
+  clearTimeout(CONF_T);
+  CONF_T=setTimeout(function(){ var el=document.getElementById("confMes"); if(el&&S.tab==="preencher") el.innerHTML=painelConferenciaMes(); },350);
 }
 function mesesDoCliente(id){
   var out=[];

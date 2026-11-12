@@ -115,7 +115,7 @@ td b{color:var(--navy)}
   <p>Este manual mostra o caminho completo: como entrar pela primeira vez, como proteger a sua conta, o que cada ferramenta faz, quando usar e como preencher. As telas que aparecem aqui usam dados fictícios (a "Família Exemplo" e a assessora "Ana Ribeiro"). Os números são ilustrativos.</p>
   <div class="ficha">
     <div><span>Endereço</span><b>adamicaptal.com.br/hub</b></div>
-    <div><span>Versão do Hub</span><b>3.10 · novembro de 2026</b></div>
+    <div><span>Versão do Hub</span><b>3.11 · novembro de 2026</b></div>
     <div><span>Funciona em</span><b>Computador, tablet e celular</b></div>
   </div>
 
@@ -498,12 +498,12 @@ td b{color:var(--navy)}
   <div class="regua"></div>
   <p class="lead">Todo mês, as posições de cada cliente são lançadas e o Hub gera o Relatório Consolidado de Investimentos: um PDF com a identidade da Adami, pronto para enviar ao cliente.</p>
 </section>
-<p>O módulo tem quatro abas: <b>Preencher</b> (lançamento do mês, feito pela administração), <b>Comentários do mês</b>, <b>Relatório</b> e <b>Histórico</b>. À esquerda ficam a lista de clientes e o mês de referência.</p>
+<p>O módulo tem quatro abas: <b>Preencher</b> (lançamento do mês, feito pela administração), <b>Comentários do mês</b>, <b>Relatório</b> e <b>Histórico</b>. À esquerda fica a lista de clientes; o mês de referência fica no alto, com setas e um calendário. No calendário e na lista, um ponto verde indica mês <b>feito</b> (conferido e marcado como pronto) e um ponto amarelo, mês lançado que ainda falta marcar.</p>
 
 <h2>Relatório: o que o assessor usa</h2>
 <ol class="passos">
   <li>No Hub, abra <b>Carteiras</b>.</li>
-  <li>À esquerda, escolha o <b>cliente</b> e o <b>mês de referência</b>.</li>
+  <li>À esquerda, escolha o <b>cliente</b>; no alto, o <b>mês</b> (setas ou calendário).</li>
   <li>Abra a aba <b>Relatório</b>. O relatório aparece na tela, como vai sair no papel.</li>
   <li>Clique em <b>Conferir dados</b>: o Hub aponta campos faltando ou números estranhos antes de você enviar.</li>
   <li>Clique em <b>Gerar PDF</b>. O arquivo baixa na hora, sem janela de impressão, já com o nome padrão (Adami Captal, ano-mês, cliente).</li>
@@ -542,6 +542,7 @@ td b{color:var(--navy)}
     <tr><td><b>Ativos e vencimentos</b></td><td>A lista de ativos com categoria, estratégia, taxa e posição, e os próximos vencimentos.</td></tr>
   </tbody>
 </table>
+<p>No alto do Preencher fica a <b>Conferência do mês</b>, que se atualiza enquanto os dados são preenchidos: mostra cada instituição (atualizada ou ainda com valores do mês anterior), se a soma dos ativos bate com o saldo das contas e o que diverge do mês anterior (categoria trocada, posição igual sem rentabilidade, ativo novo ou que saiu, campo faltando). Depois de uma importação, mostra também o que ela mudou, com <b>Desfazer importação</b>. Linhas em amarelo ainda são do mês anterior; campos com borda vermelha estão faltando. Com tudo conferido, <b>Salvar e marcar como feito</b> dá o mês como pronto e oferece o próximo cliente pendente.</p>
 <p>O botão <b>Puxar do BTG</b> busca os dados das contas do BTG automaticamente. O mês seguinte herda as contas do anterior: só é preciso atualizar os valores.</p>
 
 <h3>Comentários do mês</h3>
@@ -816,7 +817,7 @@ td b{color:var(--navy)}
     <tr><td><b>Enquadramento</b></td><td>A comparação da carteira atual com a política de alocação definida para o cliente.</td></tr>
   </tbody>
 </table>
-<p style="margin-top:18pt;font-size:8.5pt;color:var(--cinza)">Manual do Hub Adami · versão 3.10 · novembro de 2026. Documento de uso interno da Adami Captal. As telas usam dados fictícios. Quando o Hub ganhar novidades, este manual é atualizado e o número de versão muda.</p>
+<p style="margin-top:18pt;font-size:8.5pt;color:var(--cinza)">Manual do Hub Adami · versão 3.11 · novembro de 2026. Documento de uso interno da Adami Captal. As telas usam dados fictícios. Quando o Hub ganhar novidades, este manual é atualizado e o número de versão muda.</p>
 
 <script>
 /* Preenche os números de página do sumário a partir de window.PAGINAS (injetado na segunda passada). */

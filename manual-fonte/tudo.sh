@@ -9,7 +9,7 @@ w=pypdf.PdfWriter(); c=pypdf.PdfReader('capa.pdf'); m=pypdf.PdfReader('miolo.pdf
 w.add_page(c.pages[0])
 for pg in m.pages: w.add_page(pg)
 w.add_page(c.pages[1])
-w.add_metadata({'/Title':'Manual do Hub Adami','/Author':'Adami Captal','/Subject':'Guia do assessor, versão 3.10'})
+w.add_metadata({'/Title':'Manual do Hub Adami','/Author':'Adami Captal','/Subject':'Guia do assessor, versão 3.11'})
 w.compress_identical_objects() if hasattr(w,'compress_identical_objects') else None
 w.write('Manual do Hub Adami.pdf'); print(len(w.pages),'paginas')
 PY

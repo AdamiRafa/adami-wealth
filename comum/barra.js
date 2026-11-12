@@ -42,7 +42,8 @@
       "Avisos da casa: abra e clique em Marcar como lido.",
       "Segurança (menu da esquerda): ligue o app autenticador para não depender do e-mail."] },
     carteiras: { nome: "Carteiras", pag: 23, itens: [
-      "Escolha o cliente e o mês à esquerda.",
+      "Escolha o cliente à esquerda e o mês no alto (setas ou calendário). Ponto verde: mês feito; amarelo: falta marcar.",
+      "Preencher: a Conferência do mês, no alto, mostra o que não bate e o que ainda é do mês anterior. Com tudo certo, Salvar e marcar como feito.",
       "Relatório: confira com Conferir dados e use Gerar PDF. O arquivo sai com o nome do cliente e do mês.",
       "PDF de todos faz os relatórios do mês de todos os seus clientes, um arquivo por cliente.",
       "Os números vêm do lançamento do mês, feito pela administração na aba Preencher."] },
