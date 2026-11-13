@@ -492,6 +492,24 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
    vencimento, as outras não. Colunas não cabem com largura automática — o
    navegador afunilava Ativo e Taxa até quebrar palavra por letra. Largura
    fixa por coluna, só aqui, para não mexer nas outras tabelas .rt. */
+.at-cab{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:2px 2px 10px;border-bottom:2px solid var(--navy,#12263F);margin-bottom:2px}
+.at-cab b{font-family:var(--display);font-size:15px;color:var(--navy,#12263F);font-weight:600}.at-cab b span{font-weight:400;font-size:12px;color:var(--muted)}
+.at-cab>span{font-family:var(--mono);font-size:11.5px;color:var(--ink-2,#3A4A5E)}
+.rt.at-tab{table-layout:fixed;width:100%}
+.rt.at-tab th:nth-child(1),.rt.at-tab td:nth-child(1){width:37%}
+.rt.at-tab th:nth-child(2),.rt.at-tab td:nth-child(2){width:13%}
+.rt.at-tab th:nth-child(3),.rt.at-tab td:nth-child(3),.rt.at-tab th:nth-child(4),.rt.at-tab td:nth-child(4){width:7.5%}
+.rt.at-tab th:nth-child(n+5),.rt.at-tab td:nth-child(n+5){width:8.75%}
+.rt.at-tab td{padding:8px 8px;vertical-align:top}
+.rt.at-tab th{letter-spacing:.04em;font-size:9.5px;padding:9px 8px;white-space:nowrap}
+.rt.at-tab small.cdi{white-space:nowrap;font-size:9.5px}
+.rt.at-tab tr.at-l td:first-child b{display:block;font-weight:600;font-size:12px;color:var(--ink,#12263F);line-height:1.35}
+.rt.at-tab small{display:block;font-size:10.5px;color:var(--muted);font-family:Inter,sans-serif;font-weight:400;margin-top:2px;line-height:1.3;white-space:normal}
+.rt.at-tab td.n small{font-family:var(--mono)}
+.rt.at-tab tr.at-banda td{background:#F1F3F6;font-weight:600;font-size:11.5px;color:var(--navy,#12263F);padding:7px 10px;border-bottom:0}
+.rt.at-tab tr.at-banda td small{display:inline;font-weight:400}
+.rt.at-tab tr.at-ref td{font-size:11px;color:var(--muted);font-style:italic;padding:6px 10px}
+.rt.at-tab tr.at-ref td small{display:inline;font-style:normal}
 .rt.ativos-rf{table-layout:fixed}
 .rt.ativos-rf th:nth-child(1),.rt.ativos-rf td:nth-child(1){width:13%}
 .rt.ativos-rf th:nth-child(2),.rt.ativos-rf td:nth-child(2){width:11%}
@@ -2084,7 +2102,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.22";
+var VERSAO="versão 3.23";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3444,7 +3462,7 @@ function aplicarPerformance(r,p,arquivo){
   else if(ant) res.aviso.push("O relatório começa o mês com "+brl2(p.saldoAnterior)+", e o Hub tinha "+brl2(ant)+" no mês anterior.");
   var k=instChave("BTG Pactual");
   r.ind.ativos=(r.ind.ativos||[]).filter(function(x){ var kx=instChave(x.inst); return kx&&kx!==k&&kx!=="necton"; })
-    .concat(p.ativos.map(function(a){ var x=JSON.parse(JSON.stringify(a)); delete x.dataInicial; return x; }));
+    .concat(p.ativos.map(function(a){ var x=JSON.parse(JSON.stringify(a)); if(!x.dataInicial) delete x.dataInicial; return x; }));
   var soma=p.ativos.reduce(function(a,x){ return a+n(x.posicao); },0), dif=p.saldo-soma;
   if(Math.abs(dif)<=Math.max(1,p.saldo*0.005)) res.ok.push("Os "+p.ativos.length+" ativos somam "+brl2(soma)+(Math.abs(dif)>=0.01?"; a diferença de "+brl2(dif)+" é conta corrente e valor em trânsito":"")+".");
   else res.aviso.push("Os ativos somam "+brl2(soma)+" e o saldo é "+brl2(p.saldo)+": diferença de "+brl2(dif)+".");
@@ -4972,117 +4990,99 @@ function viewRelatorio(){
     pag(htmlInd,{altura:alturaTabelaSimples(contaLinhas(htmlBench))});
   }
 
-  /* --- lista de ativos, por categoria --- */
+  /* --- lista de ativos, no desenho do relatório do BTG (3.23) ---
+     Por classe: cabeçalho com o peso na carteira e o valor, faixa por estratégia com o
+     subtotal, e cada ativo com instituição, taxa, vencimento e data de entrada embaixo do
+     nome; colunas de peso na classe e na carteira e as rentabilidades, com o % do CDI do
+     mês embaixo. Uma linha de referência (CDI; Ibovespa na renda variável) abre a tabela. */
   var ativosRel=listaAtivos(r.ind);
   if(ativosRel.length && secOn(r.ind,"ativos")){
     var rp=function(v){ return v||v===0?'<span class="'+sinal(n(v))+'">'+pct(n(v))+'</span>':"—"; };
-    /* subtotalCompleto: número (mostra a linha de Subtotal com esse valor,
-       usado só no último pedaço de cada categoria) ou null (esconde a linha —
-       usado nos pedaços intermediários, pra não mostrar dois "Subtotal"
-       diferentes na mesma categoria). */
-    var tabelaAtivos=function(lista,comRF,subtotalCompleto){
-      return '<table class="rt '+(comRF?"ativos-rf":"ativos-out")+'"><thead><tr>'+
-        '<th>Ativo</th><th>Instit.</th>'+
-        (comRF?'<th>Taxa</th><th class="n">Venc.</th>':'')+
-        '<th class="n">Posição</th>'+
-        '<th class="n">Mês</th><th class="n">Ano</th>'+
-        '<th class="n">12m</th><th class="n">Iníc.</th></tr></thead><tbody>'+
-        lista.map(function(x){
-          return '<tr><td>'+esc(x.nome||"—")+'</td><td>'+esc(x.inst||"—")+'</td>'+
-          (comRF?'<td>'+esc(x.taxa||"—")+'</td><td class="n">'+(x.vencimento?dataBR(x.vencimento):"—")+'</td>':'')+
-          '<td class="n">'+(n(x.posicao)?brl(n(x.posicao)):"—")+'</td>'+
-          '<td class="n">'+rp(x.rentMes)+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
-          '<td class="n">'+(semDozeMeses(x)?"—":rp(x.rent12m))+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
-        }).join("")+
-        (subtotalCompleto==null?"":'<tr class="tot"><td colspan="'+(comRF?4:2)+'">Subtotal</td><td class="n">'+brl(subtotalCompleto)+'</td>'+
-        '<td colspan="4"></td></tr>')+
-        '</tbody></table>';
-    };
-    /* Dentro de cada categoria, quanto está em cada subcategoria (a mesma
-       leitura de listaEstrat, só que restrita aos ativos daquele grupo em
-       vez da carteira inteira) — só aparece quando algum ativo do grupo tem
-       subcategoria marcada. */
-    var subEstratDoGrupo=function(lista){
-      var porSub={}, totalGrupo=0;
-      lista.forEach(function(x){
-        var v=n(x.posicao); totalGrupo+=v;
-        var s=x.subcategoria; if(!s) return;
-        porSub[s]=(porSub[s]||0)+v;
-      });
-      if(totalGrupo<=0) return [];
-      return SUBCATEGORIAS_ATIVO.map(function(s){
-        var v=porSub[s]||0;
-        return {nome:s,valor:v,pc:v?(v/totalGrupo*100):0};
-      }).filter(function(x){ return x.pc>0; });
-    };
     var totalGeral=ativosRel.reduce(function(a,x){return a+n(x.posicao);},0);
-    /* Quantas linhas cabem numa folha sem estourar a altura física — calibrado
-       com Playwright contra nomes reais de ativos (que quebram linha em
-       colunas estreitas) e sempre pelo orçamento mais apertado dos dois
-       formatos de impressão (paisagem tem menos altura que retrato), pra a
-       mesma lista de páginas valer pros dois sem recalcular nada na hora de
-       imprimir. Ver PADRAO_LINHAS_ATIVOS logo acima da função viewRelatorio. */
-    var maxLinhas=function(comRF,primeiraPagina){
-      var p=PADRAO_LINHAS_ATIVOS;
-      var overhead=primeiraPagina?p.overheadComTitulo:p.overheadSemTitulo;
-      var disponivel=p.alturaPagina-overhead-p.subtotal;
-      var porLinha=comRF?p.linhaComTaxa:p.linhaSemTaxa;
-      return Math.max(3,Math.floor(disponivel/porLinha));
+    var serieAnoA=serieHist(c.id,S.mes,S.ano,"BRL",S.mes).filter(function(x){ return x.ano===S.ano; }), serie12A=serieHist(c.id,S.mes,S.ano,"BRL",12);
+    var refInd=function(k){ var m=n(r.ind&&r.ind[k]); if(!m) return null;
+      return {mes:m,ano:benchAcum(serieAnoA,k),m12:serie12A.length>=12&&benchMeses(serie12A,k)>=12?benchAcum(serie12A,k):null}; };
+    var refCdi=refInd("cdi"), refIbov=refInd("ibov");
+    var ordemSub=function(s){ var i=SUBCATEGORIAS_ATIVO.indexOf(s||""); return i<0?99:i; };
+    var subLinha=function(x){ return [x.inst, x.taxa, x.vencimento?"vence "+dataBR(x.vencimento):"", x.dataInicial?"desde "+dataBR(x.dataInicial):""].filter(function(t){ return t&&String(t).trim(); }).join(" · "); };
+    /* altura estimada (px) de cada linha, pelo formato mais estreito (retrato) */
+    /* Medido com Playwright na impressão (13/11/2026): no retrato, o nome quebra a cada ~30
+       caracteres e a linha de baixo a cada ~56; linha = 18 + 16 por linha de nome + 14 por
+       linha de baixo (o % do CDI ocupa o lugar dela quando não há). A folha útil mais baixa
+       é a paisagem: 692 px; cabeçalho do painel 112 (155 na primeira, com o título da seção),
+       cabeçalho da tabela 34. As alturas estimadas valem para os dois formatos. */
+    var altLinha=function(x){ var a=Math.max(1,Math.ceil(String(x.nome||"—").length/30)), sl=subLinha(x), b=Math.max(1,sl?Math.ceil(sl.length/56):1); return 18+a*16+b*14; };
+    var UTIL=692, OH_T=155, OH=112, THEAD=34, FOLGA=12, NOTA=64;
+    var ALT={banda:32,ref:30,tot:34};
+    var linhaAtivo=function(x,totCat){
+      var pos=n(x.posicao), sub=subLinha(x);
+      var ehRV=x.categoria==="Renda Variável"||ehDerivativo(x);
+      var pc=(refCdi&&!ehRV&&n(x.rentMes))?n(x.rentMes)/refCdi.mes*100:null;
+      return '<tr class="at-l"><td><b>'+esc(x.nome||"—")+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</td>'+
+        '<td class="n">'+(pos?brl(pos):"—")+'</td><td class="n">'+(totCat?pct(pos/totCat*100,1):"—")+'</td><td class="n">'+(totalGeral?pct(pos/totalGeral*100,1):"—")+'</td>'+
+        '<td class="n">'+rp(x.rentMes)+(pc!==null?'<small class="cdi">'+pct(pc,0)+' CDI</small>':'')+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
+        '<td class="n">'+(semDozeMeses(x)?"—":rp(x.rent12m))+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
     };
-    var chunk=function(lista,tam){
-      var out=[];
-      for(var i=0;i<lista.length;i+=tam) out.push(lista.slice(i,i+tam));
-      return out;
-    };
-    /* Cada categoria vira uma ou mais páginas: com 5 categorias possíveis
-       agora (a partir do COE) e clientes com dezenas de ativos numa mesma
-       categoria, uma tabela só não cabe numa folha. A seção continua com um
-       único número — só a primeira página leva o título; as demais só
-       repetem o rótulo da categoria (com "continuação" quando for o mesmo
-       grupo) como continuação da mesma lista. */
+    var linhaRef=function(rotulo,ref){ return ref?'<tr class="at-ref"><td>'+rotulo+' <small>referência</small></td><td></td><td></td><td></td>'+
+      '<td class="n">'+pct(ref.mes)+'</td><td class="n">'+(ref.ano!=null?pct(ref.ano):"—")+'</td><td class="n">'+(ref.m12!=null?pct(ref.m12):"—")+'</td><td class="n">—</td></tr>':""; };
+    var cabTabela='<table class="rt at-tab"><thead><tr><th>Ativo</th><th class="n">Posição</th><th class="n">% classe</th><th class="n">% cart.</th>'+
+      '<th class="n">Mês</th><th class="n">Ano</th><th class="n">12 m</th><th class="n">Início</th></tr></thead><tbody>';
     var gruposComDados=CATEGORIAS_ATIVO.map(function(cat){
-      return {cat:cat,lista:ativosRel.filter(function(x){ return (x.categoria||CATEGORIAS_ATIVO[0])===cat; })};
+      var l=ativosRel.filter(function(x){ return (x.categoria||CATEGORIAS_ATIVO[0])===cat; });
+      l=l.map(function(x,i){ return {x:x,i:i}; }).sort(function(a,b){ return (ordemSub(a.x.subcategoria)-ordemSub(b.x.subcategoria))||(a.i-b.i); }).map(function(o){ return o.x; });
+      return {cat:cat,lista:l};
     }).filter(function(g){ return g.lista.length; });
-    var primeiraPaginaGeral=true;
+    var P=PADRAO_LINHAS_ATIVOS, primeiraPaginaGeral=true;
     gruposComDados.forEach(function(g,gi){
-      var comRF=CATEGORIAS_COM_PRAZO.indexOf(g.cat)!==-1;
-      var subtotalCategoria=g.lista.reduce(function(a,x){return a+n(x.posicao);},0);
-      /* O orçamento de linhas por página só é menor na página que leva o
-         cabeçalho da seção (shead) — isso acontece só uma vez em todo o
-         relatório (a folha em que "primeiraPaginaGeral" ainda é true), nunca
-         de novo dentro da mesma categoria. Por isso o corte em pedaços
-         acontece linha a linha, e não de uma vez com um tamanho fixo — senão
-         toda a primeira categoria herdava o orçamento apertado da 1ª folha. */
-      var restante=g.lista.slice();
-      var pedacos=[];
-      while(restante.length){ pedacos.push(restante.splice(0,maxLinhas(comRF,primeiraPaginaGeral && pedacos.length===0))); }
-      var ehUltimaCategoria=gi===gruposComDados.length-1;
-      pedacos.forEach(function(pedaco,ci){
-        var ehUltimoPedaco=ci===pedacos.length-1;
-        var titulo=ci===0?g.cat:g.cat+" (continuação)";
-        var corpo='<div class="panel"><h3 class="venc-tit">'+esc(titulo)+'</h3>'+
-          tabelaAtivos(pedaco,comRF,ehUltimoPedaco?subtotalCategoria:null);
-        if(ehUltimoPedaco){
-          var subEstr=subEstratDoGrupo(g.lista);
-          if(subEstr.length){
-            corpo+='<h3 class="venc-tit" style="margin-top:20px;opacity:.7">Estratégia dentro de '+esc(g.cat)+'</h3>'+
-              '<div class="dn-leg" style="justify-content:flex-start;margin:4px 0 2px">'+
-              subEstr.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+
-              '</div>';
-          }
-          if(ehUltimaCategoria){
-            corpo+='<p class="foot-note" style="margin-top:16px"><b>Total geral: '+brl(totalGeral)+'.</b> '+
-              'Taxa e vencimento se aplicam apenas a ativos de renda fixa e COE. Rentabilidades informadas pela instituição '+
-              'custodiante, líquidas de taxas quando aplicável, brutas de imposto de renda.</p>';
-          }
+      var totCat=g.lista.reduce(function(a,x){return a+n(x.posicao);},0);
+      var porSub={}; g.lista.forEach(function(x){ var s=x.subcategoria||""; porSub[s]=(porSub[s]||0)+n(x.posicao); });
+      var temBandas=Object.keys(porSub).length>1||!!Object.keys(porSub)[0];
+      var ref=g.cat==="Renda Variável"?["Ibovespa",refIbov]:["CDI",refCdi];
+      /* monta as linhas e corta em folhas pela altura estimada */
+      var itens=[], subAtual=null;
+      g.lista.forEach(function(x){
+        var s=x.subcategoria||"";
+        if(temBandas&&s!==subAtual){ itens.push({tipo:"banda",s:s,alt:ALT.banda}); subAtual=s; }
+        itens.push({tipo:"ativo",x:x,alt:altLinha(x)});
+      });
+      var folhas=[], atual=[], usado=0;
+      var temRef=!!ref[1];
+      var limite=function(){ return UTIL-(primeiraPaginaGeral&&!folhas.length?OH_T:OH)-THEAD-(temRef?ALT.ref:0)-ALT.tot-FOLGA; };
+      itens.forEach(function(it){
+        if(atual.length&&usado+it.alt>limite()){ folhas.push(atual); atual=[]; usado=0; }
+        atual.push(it); usado+=it.alt;
+      });
+      if(atual.length){
+        /* a nota do total geral vai na última folha da última categoria: se não couber, abre outra */
+        if(gi===gruposComDados.length-1&&atual.length>1&&usado+NOTA>limite()){ var ult=atual.pop(); folhas.push(atual); atual=[ult]; }
+        folhas.push(atual);
+      }
+      folhas.forEach(function(f,fi){
+        if(f.length>1&&f[f.length-1].tipo==="banda"&&folhas[fi+1]){ folhas[fi+1].unshift(f.pop()); }
+      });
+      folhas.forEach(function(f,fi){
+        var ultima=fi===folhas.length-1, ehUltimaCategoria=gi===gruposComDados.length-1;
+        if(f[0]&&f[0].tipo==="ativo"&&temBandas) f.unshift({tipo:"banda",s:f[0].x.subcategoria||"",cont:true,alt:ALT.banda});
+        var corpo='<div class="panel at-panel"><div class="at-cab"><b>'+esc(g.cat)+(fi?' <span>(continuação)</span>':'')+'</b>'+
+          '<span>'+pct(totalGeral?totCat/totalGeral*100:0,1)+' da carteira · '+brl(totCat)+'</span></div>'+cabTabela+linhaRef(ref[0],ref[1])+
+          f.map(function(it){
+            if(it.tipo==="banda") return '<tr class="at-banda"><td>'+esc(it.s||"Sem estratégia")+(it.cont?' <small>continuação</small>':'')+'</td><td class="n">'+brl(porSub[it.s]||0)+'</td>'+
+              '<td class="n">'+pct(totCat?(porSub[it.s]||0)/totCat*100:0,1)+'</td><td class="n">'+pct(totalGeral?(porSub[it.s]||0)/totalGeral*100:0,1)+'</td><td colspan="4"></td></tr>';
+            return linhaAtivo(it.x,totCat);
+          }).join("")+
+          (ultima?'<tr class="tot"><td>Total '+esc(g.cat)+'</td><td class="n">'+brl(totCat)+'</td><td class="n">100,0%</td><td class="n">'+pct(totalGeral?totCat/totalGeral*100:0,1)+'</td><td colspan="4"></td></tr>':'')+
+          '</tbody></table>';
+        if(ultima&&ehUltimaCategoria){
+          corpo+='<p class="foot-note" style="margin-top:14px"><b>Total geral: '+brl(totalGeral)+'.</b> '+
+            'Rentabilidades informadas pela instituição custodiante, líquidas de taxas quando aplicável, brutas de imposto de renda. '+
+            '"—" em 12 meses: ativo há menos de um ano na carteira. % do CDI calculado sobre o CDI do mês.</p>';
         }
         corpo+='</div>';
-        /* Estratégia-dentro-da-categoria e o rodapé de "Total geral" só entram
-           no último pedaço de cada categoria — a altura estimada leva uma
-           folga extra nesse caso pra cobrir esse conteúdo a mais. */
-        var alturaChunk=alturaAtivosChunk(comRF,pedaco.length,primeiraPaginaGeral)+(ehUltimoPedaco?110:0);
-        if(primeiraPaginaGeral){ pag(shead(nx(),"Lista de ativos","posição em "+dataBase(S.mes,S.ano))+corpo,{altura:alturaChunk}); primeiraPaginaGeral=false; }
-        else pag(corpo,{altura:alturaChunk});
+        var px=(primeiraPaginaGeral?OH_T:OH)+THEAD+(temRef?ALT.ref:0)+(ultima?ALT.tot:0)+(ultima&&ehUltimaCategoria?NOTA:0)+f.reduce(function(a,it){ return a+it.alt; },0);
+        /* o empacotador de páginas trabalha na escala de PADRAO_LINHAS_ATIVOS.alturaPagina */
+        var alt=Math.min(P.alturaPagina,Math.round(px*P.alturaPagina/UTIL)+20);
+        if(primeiraPaginaGeral){ pag(shead(nx(),"Lista de ativos","posição em "+dataBase(S.mes,S.ano))+corpo,{altura:alt}); primeiraPaginaGeral=false; }
+        else pag(corpo,{altura:alt});
       });
     });
   }

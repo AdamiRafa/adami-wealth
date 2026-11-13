@@ -737,6 +737,7 @@ entradas, saídas, resultado, índices e todos os ativos com rentabilidade e ven
 partir dos dados reais (sem os falsos alarmes), com atalho para o ativo e caixa "Conferido"**.
  · **3.22 (13/11/2026): próximos vencimentos automáticos pela lista de ativos (janela de 12 meses, refeita a
 cada mês e a cada importação) e "12 meses" sem 0,00% falso nos ativos com menos de um ano (seção 29)**.
+ · **3.23 (13/11/2026): Lista de ativos do relatório no desenho do Relatório de Performance do BTG (seção 29)**.
 
 ---
 
@@ -2181,3 +2182,14 @@ aviso de "Marcar como feito". A chave inclui os nomes dos ativos: se entrar outr
   aponta "Ativos sem rentabilidade" e a solução é subir o Relatório de Performance do mês.
 - O "12 meses" da carteira (quadro de rentabilidade) soma só os meses lançados no Hub, que começam em
   janeiro/2026; até dezembro ele mostra quantos meses entraram.
+
+**3.23: Lista de ativos no desenho do BTG.** Pedido do Emil: "usa de base o relatório do BTG para o layout".
+Cada classe abre com o peso na carteira e o valor; uma linha de referência (CDI; Ibovespa na renda variável)
+com mês, ano e 12 meses (12 meses só com os 12 índices lançados); faixa cinza por estratégia com subtotal e
+pesos; cada ativo com instituição, taxa, vencimento e "desde" (data inicial, gravada a partir do Relatório de
+Performance) embaixo do nome; colunas Posição, % classe, % carteira, Mês (com o % do CDI do mês embaixo), Ano,
+12 m e Início; "Total <classe>" no fim. A legenda "Estratégia dentro de..." saiu (as faixas mostram o mesmo).
+Corte em folhas pela altura medida com Playwright na impressão (`altLinha`: 18 + 16 por linha do nome, ~30
+caracteres, + 14 por linha de baixo, ~56 caracteres, no retrato; folha útil de 692 px, a da paisagem). Conferido:
+número de folhas do PDF igual ao de páginas do relatório nos dois formatos, maior folha em 656 de 794 px na
+paisagem e 733 de 1123 no retrato. `PADRAO_LINHAS_ATIVOS` continua sendo a escala do empacotador de páginas.
