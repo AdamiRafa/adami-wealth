@@ -2102,7 +2102,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.23";
+var VERSAO="versão 3.24";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2903,11 +2903,12 @@ function addAtivo(){
 function delAtivo(i){ S.rasc.ind.ativos.splice(i,1); render(true); }
 function baixarModeloAtivos(){
   if(typeof XLSX==="undefined"){ alert("A planilha ainda não carregou. Recarregue a página (Cmd+Shift+R) e tente de novo."); return; }
-  var HEAD=["Categoria","Subcategoria","Ativo","Instituição","Taxa (RF/COE)","Vencimento (AAAA-MM-DD)","Posição (R$)","Mês (%)","Ano (%)","12 meses (%)","Desde o início (%)"];
+  var HEAD=["Categoria","Subcategoria","Ativo","Instituição","Taxa (RF/COE)","Vencimento (AAAA-MM-DD)","Posição (R$)","Mês (%)","Ano (%)","12 meses (%)","Desde o início (%)","Data inicial (AAAA-MM-DD)"];
   var ativos=S.rasc.ind.ativos||[];
+  var pc=function(v){ return v===null||v===undefined?"":v; };
   var linhas=ativos.length?ativos.map(function(x){
-    return [x.categoria||"",x.subcategoria||"",x.nome||"",x.inst||"",x.taxa||"",x.vencimento||"",x.posicao||0,x.rentMes||0,x.rentAno||0,x.rent12m||0,x.rentInicio||0];
-  }):[["","","","","","",0,0,0,0,0]];
+    return [x.categoria||"",x.subcategoria||"",x.nome||"",x.inst||"",x.taxa||"",x.vencimento||"",x.posicao||0,pc(x.rentMes),pc(x.rentAno),pc(x.rent12m),pc(x.rentInicio),x.dataInicial||""];
+  }):[["","","","","","",0,"","","","",""]];
   var wb=XLSX.utils.book_new();
   var ws=XLSX.utils.aoa_to_sheet([HEAD].concat(linhas));
   ws['!cols']=[{wch:13},{wch:14},{wch:28},{wch:16},{wch:18},{wch:22},{wch:14},{wch:8},{wch:8},{wch:9},{wch:14}];
@@ -2916,6 +2917,9 @@ function baixarModeloAtivos(){
     ["Uma linha por ativo. Categoria e Subcategoria precisam ser exatamente uma das opções abaixo (copie e cole para não errar a digitação)."],
     ["Taxa e Vencimento só valem para Renda Fixa e COE — deixe em branco nos demais."],
     ["Vencimento no formato AAAA-MM-DD, por exemplo 2027-03-15."],
+    ["Rentabilidade em branco sai como \"—\" no relatório (por exemplo, 12 meses de um ativo com menos de um ano)."],
+    ["Com a coluna Instituição preenchida em todas as linhas, a importação troca só os ativos dessas instituições; os das outras ficam."],
+    ["Aba opcional \"Contas\": Instituição, Saldo, Aplicações, Resgates, Rendimento (R$), Rendimento (%). Preenche a conta de cada instituição."],
     ["Números podem usar vírgula ou ponto para decimal (ex.: 112,5 ou 112.5). Não use ponto nem vírgula como separador de milhar."],
     [""],["Categorias válidas"]]
     .concat(CATEGORIAS_ATIVO.map(function(c){return [c];}))
@@ -2977,8 +2981,8 @@ function importarAtivosArquivo(input){
       var taxa=String(l[4]||"").trim();
       var vencimento=parseVencPlanilha(l[5]);
       var posicao=parseNumPlanilha(l[6]);
-      var rentMes=parseNumPlanilha(l[7]),
-          rentAno=parseNumPlanilha(l[8]), rent12m=parseNumPlanilha(l[9]), rentInicio=parseNumPlanilha(l[10]);
+      var vaz=function(v){ return v===undefined||v===null||String(v).trim()===""?null:parseNumPlanilha(v); };
+      var rentMes=vaz(l[7]), rentAno=vaz(l[8]), rent12m=vaz(l[9]), rentInicio=vaz(l[10]), dataIni=parseVencPlanilha(l[11]);
       if(!nome && !categoria && !posicao) continue;
       var linhaNum=i+1;
       if(!nome){ erros.push("Linha "+linhaNum+": falta o nome do ativo."); continue; }
@@ -2986,18 +2990,49 @@ function importarAtivosArquivo(input){
       if(categoriaOk===null){ erros.push("Linha "+linhaNum+" (\""+nome+"\"): categoria \""+categoria+"\" não é válida. Use: "+CATEGORIAS_ATIVO.join(", ")+"."); continue; }
       var subcategoriaOk=subcategoria?matchOpcaoAtivo(subcategoria,SUBCATEGORIAS_ATIVO):"";
       if(subcategoria && subcategoriaOk===null){ erros.push("Linha "+linhaNum+" (\""+nome+"\"): subcategoria \""+subcategoria+"\" não é válida. Use: "+SUBCATEGORIAS_ATIVO.join(", ")+" ou deixe em branco."); continue; }
-      novos.push({nome:nome,categoria:categoriaOk,subcategoria:subcategoriaOk||"",inst:inst,taxa:taxa,vencimento:vencimento,
-        posicao:posicao,rentMes:rentMes,rentAno:rentAno,rent12m:rent12m,rentInicio:rentInicio});
+      var nv={nome:nome,categoria:categoriaOk,subcategoria:subcategoriaOk||"",inst:inst,taxa:taxa,vencimento:vencimento,
+        posicao:posicao,rentMes:rentMes,rentAno:rentAno,rent12m:rent12m,rentInicio:rentInicio};
+      if(dataIni) nv.dataInicial=dataIni;
+      novos.push(nv);
     }
     if(erros.length){
       alert("A planilha tem "+erros.length+" linha(s) com problema, então nada foi importado — corrija e tente de novo:\n\n"+erros.slice(0,12).join("\n")+(erros.length>12?"\n… e mais "+(erros.length-12)+".":""));
       input.value=""; return;
     }
     if(!novos.length){ alert("Não encontrei nenhum ativo preenchido nessa planilha."); input.value=""; return; }
-    if(!confirm("Importar "+novos.length+" ativo(s) da planilha?\n\nIsso substitui a lista de ativos que está na tela agora, mas nada é gravado até você clicar em \"Salvar mês e ver relatório\".")){ input.value=""; return; }
+    /* 3.24: troca só os ativos das instituições que vieram na planilha (os do BTG, por
+       exemplo, ficam). Planilha sem instituição nenhuma troca a lista inteira, como antes.
+       A aba "Contas", quando existe, preenche saldo, aplicações, resgates e rendimento. */
+    var insts={}; novos.forEach(function(x){ var k=instChave(x.inst); if(k) insts[k]=x.inst.split(" (")[0]; });
+    var porInst=Object.keys(insts).length>0&&novos.every(function(x){ return instChave(x.inst); });
+    var contasPl=[];
+    try{
+      var wsC=wb.Sheets["Contas"];
+      if(wsC) XLSX.utils.sheet_to_json(wsC,{header:1,defval:"",raw:true}).slice(1).forEach(function(l){
+        var ins=String(l[0]||"").trim(); if(!ins) return;
+        contasPl.push({inst:ins,saldo:parseNumPlanilha(l[1]),apl:parseNumPlanilha(l[2]),res:parseNumPlanilha(l[3]),rendRs:parseNumPlanilha(l[4]),rendPct:parseNumPlanilha(l[5])});
+      });
+    }catch(e){ contasPl=[]; }
+    var nomesInst=Object.keys(insts).map(function(k){ return insts[k]; });
+    if(!confirm("Importar "+novos.length+" ativo(s) da planilha"+(porInst?" ("+nomesInst.join(", ")+")":"")+"?\n\n"+
+      (porInst?"Troca só os ativos dessas instituições; os das outras ficam.":"Isso substitui a lista de ativos inteira.")+
+      (contasPl.length?"\nA aba Contas atualiza saldo, aplicações, resgates e rendimento de: "+contasPl.map(function(c){ return c.inst; }).join(", ")+".":"")+
+      "\n\nNada é gravado até você salvar.")){ input.value=""; return; }
     guardarAntesImportacao("planilha");
-    S.rasc.ind.ativos=novos;
+    if(porInst) S.rasc.ind.ativos=(S.rasc.ind.ativos||[]).filter(function(x){ return !insts[instChave(x.inst)]; }).concat(novos);
+    else S.rasc.ind.ativos=novos;
+    var avisoC=[];
+    contasPl.forEach(function(cp){
+      var k=instChave(cp.inst);
+      var alvo=S.rasc.contas.filter(function(x){ return curDe(x)==="BRL"&&instChave(x.inst||x.nome)===k; });
+      if(alvo.length>1){ avisoC.push(cp.inst+": há "+alvo.length+" contas dessa instituição; preencha à mão."); return; }
+      var c0=alvo[0]; if(!c0){ c0={nome:cp.inst,inst:cp.inst,saldo:0,apl:0,res:0,rendPct:0,rendRs:0,moeda:"BRL"}; S.rasc.contas.push(c0); }
+      c0.saldo=Math.round(cp.saldo*100)/100; c0.apl=Math.round(cp.apl*100)/100; c0.res=Math.round(cp.res*100)/100;
+      c0.rendRs=Math.round(cp.rendRs*100)/100; c0.rendPct=Math.round(cp.rendPct*10000)/10000;
+    });
+    atualizarVencimentos(S.rasc,S.mes,S.ano);
     render(true);
+    if(avisoC.length) alert(avisoC.join("\n"));
     input.value="";
   };
   fr.onerror=function(){ alert("Não consegui ler o arquivo."); input.value=""; };
@@ -4497,7 +4532,7 @@ function ehDerivativo(x){ return x.subcategoria==="Derivativo"||/^(op[cç][aã]o
    derivativo não têm: não cobra vencimento nem taxa deles. */
 function ehTitulo(x){
   if(CATEGORIAS_COM_PRAZO.indexOf(x.categoria)<0||ehDerivativo(x)) return false;
-  return !/\b(fi|fic\w*|fia|fim|firf\w*|fidc|fii|fip\w*|fiagro|fif|fundo|fundos|crpr|ref|rl|prev|previdencia)\b/.test(semAc(x.nome));
+  return !/\b(fi|fic\w*|fia|fim|firf\w*|fidc|fii|fip\w*|fiagro|fif|fundo|fundos|crpr|ref|rl|prev|previdencia|conta corrente|caixa)\b/.test(semAc(x.nome));
 }
 /* "a" é o mesmo ativo no mês anterior (casarAtivos). */
 function ativoHerdado(x,a){

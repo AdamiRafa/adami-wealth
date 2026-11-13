@@ -738,6 +738,9 @@ partir dos dados reais (sem os falsos alarmes), com atalho para o ativo e caixa 
  · **3.22 (13/11/2026): próximos vencimentos automáticos pela lista de ativos (janela de 12 meses, refeita a
 cada mês e a cada importação) e "12 meses" sem 0,00% falso nos ativos com menos de um ano (seção 29)**.
  · **3.23 (13/11/2026): Lista de ativos do relatório no desenho do Relatório de Performance do BTG (seção 29)**.
+ · **3.24 (13/11/2026): Importar planilha troca só os ativos das instituições da planilha (o BTG fica), lê a aba
+"Contas" (saldo, aplicações, resgates, rendimento por instituição), aceita "Data inicial" e deixa rentabilidade em
+branco como "—" (seção 29)**.
 
 ---
 
@@ -2193,3 +2196,14 @@ Corte em folhas pela altura medida com Playwright na impressão (`altLinha`: 18 
 caracteres, + 14 por linha de baixo, ~56 caracteres, no retrato; folha útil de 692 px, a da paisagem). Conferido:
 número de folhas do PDF igual ao de páginas do relatório nos dois formatos, maior folha em 656 de 794 px na
 paisagem e 733 de 1123 no retrato. `PADRAO_LINHAS_ATIVOS` continua sendo a escala do empacotador de páginas.
+
+**3.24: Importar planilha por instituição.** Para as planilhas de rendimento feitas fora do Hub (Sinosserra por
+conta reversa, Itaú e BB pelo Open Finance com as cotas da CVM): com a coluna Instituição preenchida em todas as
+linhas, a importação troca só os ativos dessas instituições (casadas por `instChave`) e mantém os demais (o BTG
+que veio do Relatório de Performance); sem instituição, troca a lista inteira, como antes. Aba opcional "Contas"
+(Instituição, Saldo, Aplicações, Resgates, Rendimento R$, Rendimento %): atualiza a conta em reais da instituição
+(cria se não houver; com duas contas da mesma instituição, avisa e não mexe). Coluna 12 "Data inicial". Célula de
+rentabilidade vazia vira `null` ("—" no relatório). Depois da importação, `atualizarVencimentos`.
+Rotina das planilhas (13/11/2026): dias úteis com os feriados nacionais de 2025 e 2026; CDI mensal do Relatório de
+Performance do BTG; fundos pelo informe diário da CVM (dados.cvm.gov.br, liberado na rede do ambiente); o Open
+Finance traz "Quantidade" e "Preço" trocados nos fundos (a quantidade é a cota).
