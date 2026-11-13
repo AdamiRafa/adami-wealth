@@ -974,6 +974,7 @@ table.form tr.lin-herd td:first-child{box-shadow:inset 3px 0 0 #E1B54A}
 @media print{ .mesnav,.st-mes,.conf-mes,.barra-salvar{display:none!important} }
 @media screen{
 .chk-txt a.conf-a{color:#12263F;text-decoration:none;border-bottom:1px dotted #8A97A8;font-weight:500}.chk-txt a.conf-a:hover{border-bottom-color:#12263F;background:#F1F4F8}
+.venc-auto{display:inline-block;margin-top:3px;font-size:11px;color:#1F6B47;background:#EAF5EE;border-radius:6px;padding:1px 7px}
 .conf-ir{margin-top:5px;font-size:12.5px;color:#5C6B7F}.conf-ir a{color:#12263F;font-weight:600;text-decoration:none;border-bottom:1px dotted #12263F}
 .chk-item{position:relative}.conf-ok{flex:none;display:flex;align-items:center;gap:6px;font-size:12.5px;color:#5C6B7F;white-space:nowrap;margin-left:auto;padding-left:12px;cursor:pointer;align-self:flex-start}
 .chk-item.conferido{opacity:.62}.conf-feitos{margin-top:8px}.conf-feitos summary{cursor:pointer;font-size:12.5px;color:#5C6B7F;padding:6px 0}
@@ -2083,7 +2084,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.21";
+var VERSAO="versão 3.22";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2245,10 +2246,59 @@ function vencDoMes(lista,mes,ano){
   });
   return {dentro:dentro,futuros:futuros};
 }
+/* Próximos vencimentos a partir da lista de ativos (3.22): todo título (CDB, CRA, NTN-B...)
+   que vence entre o começo do mês de referência e os próximos HORIZONTE_VENC_MESES meses
+   entra sozinho, marcado como automático. A cada mês o rascunho novo refaz a conta: o que
+   venceu sai, o que entrou na janela aparece, e o valor acompanha a posição. Os lançados à
+   mão nunca são apagados por aqui. */
+var HORIZONTE_VENC_MESES=12;
+function atualizarVencimentos(r,mes,ano){
+  if(!r||!r.ind) return {novos:0,removidos:0};
+  var dt=function(m,a){ while(m>12){ m-=12; a++; } return a+"-"+(m<10?"0":"")+m+"-01"; };
+  var ini=dt(mes,ano), fimMes=dt(mes+1,ano), lim=dt(mes+1+HORIZONTE_VENC_MESES,ano);
+  var titulos=((r.ind.ativos)||[]).filter(function(x){ var d=String(x.vencimento||""); return ehTitulo(x)&&d.length===10&&d>=ini&&d<lim&&n(x.posicao)>0; });
+  var mesmo=function(v,t){ return v.data===t.vencimento&&instChave(v.inst)===instChave(t.inst)&&ativoNomeChave({nome:v.ativo})===ativoNomeChave(t); };
+  var parecido=function(v,t){ if(v.data!==t.vencimento||instChave(v.inst)!==instChave(t.inst)) return false;
+    var a=ativoNomeChave({nome:v.ativo}), b=ativoNomeChave(t), w=function(p,q){ var x=p.split(" "), y=" "+q+" "; return x.every(function(k){ return y.indexOf(" "+k+" ")>=0; }); };
+    return w(a,b)||w(b,a)||(n(t.posicao)>0&&Math.abs(n(v.valor)-n(t.posicao))/n(t.posicao)<0.15); };
+  var lista=((r.ind.vencimentos)||[]).filter(function(v){ return (v.ativo||"").trim()||n(v.valor)||v.data; });
+  var removidos=0, novos=0;
+  lista=lista.filter(function(v){
+    if(!v.auto) return true;
+    if(!v.data||v.data<ini) return false;
+    if(v.data<fimMes) return true;                 /* venceu dentro do mês: fica para o "Venceu em" */
+    var fica=titulos.some(function(t){ return mesmo(v,t); });
+    /* só conta como "saiu" se nenhum título da mesma instituição vence na mesma data (troca de nome não é saída) */
+    if(!fica&&!titulos.some(function(t){ return t.vencimento===v.data&&(!instChave(v.inst)||instChave(t.inst)===instChave(v.inst)); })) removidos++;
+    return fica;
+  });
+  titulos.forEach(function(t){
+    var auto=lista.filter(function(v){ return v.auto&&mesmo(v,t); })[0];
+    if(auto){ auto.valor=Math.round(n(t.posicao)*100)/100; auto.taxa=t.taxa||auto.taxa; return; }
+    if(lista.some(function(v){ return !v.auto&&parecido(v,t); })) return;   /* já lançado à mão */
+    lista.push({ativo:t.nome,inst:t.inst||"",taxa:t.taxa||"",data:t.vencimento,valor:Math.round(n(t.posicao)*100)/100,auto:true}); novos++;
+  });
+  lista.sort(function(a,b){ return (a.data||"9999").localeCompare(b.data||"9999"); });
+  r.ind.vencimentos=lista;
+  return {novos:novos,removidos:removidos,total:lista.length};
+}
+function atualizarVencimentosTela(){
+  var x=atualizarVencimentos(S.rasc,S.mes,S.ano);
+  status("ok",x.novos||x.removidos?(x.novos+" vencimento(s) novo(s), "+x.removidos+" removido(s)"):"Vencimentos já estavam em dia");
+  render(true);
+}
 function listaVenc(ind){
   var v=(ind&&ind.vencimentos)||[];
   return v.filter(function(x){ return (x.ativo||"").trim()||n(x.valor)||x.data; })
           .sort(function(a,b){ return (a.data||"9999").localeCompare(b.data||"9999"); });
+}
+/* Ativo sem rentabilidade de 12 meses: comprado há menos de 12 meses (o BTG mostra "-").
+   Meses gravados antes da 3.22 têm 0 nesse caso; 12 meses zerado com rentabilidade desde o
+   início diferente de zero é esse caso, não um 0,00% de verdade. */
+function semDozeMeses(x){
+  var v=x.rent12m;
+  if(v===null||v===undefined||v==="") return true;
+  return n(v)===0&&n(x.rentInicio)!==0;
 }
 function listaAtivos(ind){
   var v=(ind&&ind.ativos)||[];
@@ -2355,6 +2405,7 @@ function montarRascunho(){
         S.rasc.ind.ativos=ativosTrazidos;
         S.rasc._ativosHerdados=ativosTrazidos.length;
       }
+      atualizarVencimentos(S.rasc,S.mes,S.ano);
     }
   }else{
     S.rasc={_herdado:false,contas:[contaVazia(),contaVazia()],ind:indVazio()};
@@ -2805,6 +2856,7 @@ function setEstrat(k,v){
 function setVenc(i,campo,v){
   if(!S.rasc.ind.vencimentos) S.rasc.ind.vencimentos=[];
   S.rasc.ind.vencimentos[i][campo]=(campo==="valor")?n(v):v;
+  delete S.rasc.ind.vencimentos[i].auto;   /* editado à mão: o automático não mexe mais */
 }
 function addVenc(){
   if(!S.rasc.ind.vencimentos) S.rasc.ind.vencimentos=[];
@@ -3003,6 +3055,9 @@ function pdfNum(s){
   var neg=/^-/.test(s); s=s.replace(/^-/,"").replace(/\./g,"").replace(",",".");
   var v=parseFloat(s); return isNaN(v)?0:(neg?-v:v);
 }
+/* "-" no BTG quer dizer "não existe" (ativo com menos de 12 meses não tem 12 meses): fica null,
+   e o relatório mostra "—" em vez de 0,00%. */
+function pdfNumOuVazio(t){ return String(t).trim()==="-"?null:pdfNum(t); }
 /* separa o fim numérico de uma linha: "NOME 274.552,17 39,70 4,80 12/09/2024" ->
    {texto:"NOME", nums:["274.552,17","39,70","4,80","12/09/2024"]} */
 function pdfCauda(linha){
@@ -3111,7 +3166,7 @@ function pdfParseBtgPerformance(linhas){
       var vv=""; for(var k=0;k<venc.length;k++){ if(!venc[k].usado&&Math.abs(venc[k].v-pos)<0.005){ vv=venc[k].venc; venc[k].usado=true; break; } }
       if(!vv&&anoV&&(cat==="Renda Fixa"||cat==="COE")) out.avisos.push("Vencimento de "+partes[0]+" não encontrado no detalhamento; ficou só o ano ("+anoV+").");
       out.ativos.push({nome:btgNomeCurto(partes[0]),categoria:cat,subcategoria:sub,inst:"BTG Pactual",taxa:taxa,vencimento:vv||(anoV&&(cat==="Renda Fixa"||cat==="COE")?anoV+"-12-31":""),
-        posicao:pos,rentMes:pct?pdfNum(pct[0]):0,rentAno:pct?pdfNum(pct[1]):0,rent12m:pct?pdfNum(pct[2]):0,rentInicio:pct?pdfNum(pct[3]):0,dataInicial:ini2});
+        posicao:pos,rentMes:pct?pdfNumOuVazio(pct[0]):0,rentAno:pct?pdfNumOuVazio(pct[1]):0,rent12m:pct?pdfNumOuVazio(pct[2]):0,rentInicio:pct?pdfNumOuVazio(pct[3]):0,dataInicial:ini2});
       continue;
     }
     if(/^%docdi/.test(q)){ acum=[]; continue; }
@@ -3365,6 +3420,7 @@ function aplicarAtivosExtrato(r,ativos,instNome){
   r.ind.ativos=(r.ind.ativos||[]).filter(function(x){ var kx=instChave(x.inst); return kx&&kx!==k; }).concat(ativos);
   var contas=r.contas.filter(function(x){ return curDe(x)==="BRL"&&instChave(x.inst)===k; });
   var soma=ativos.reduce(function(a,x){ return a+n(x.posicao); },0);
+  atualizarVencimentos(r,S.mes,S.ano);
   if(contas.length===1){ contas[0].saldo=Math.round(soma*100)/100; return {saldo:true,soma:soma}; }
   return {saldo:false,soma:soma,semConta:!contas.length};
 }
@@ -3399,6 +3455,8 @@ function aplicarPerformance(r,p,arquivo){
     else if(Math.abs(n(r.ind[ix])-p.ind[ix])>0.005) res.aviso.push(NOMES[ix]+" do mês já estava em "+String(n(r.ind[ix])).replace(".",",")+"% (vale para todos os clientes); o relatório do BTG diz "+String(p.ind[ix]).replace(".",",")+"%. Mantive o que estava.");
   });
   (p.avisos||[]).forEach(function(a){ res.aviso.push(a); });
+  var vx=atualizarVencimentos(r,S.mes,S.ano), vb=(r.ind.vencimentos||[]).filter(function(v){ return v.auto&&/^(btg|necton)$/.test(instChave(v.inst)); });
+  res.ok.push("Próximos vencimentos (12 meses): "+(vb.length?vb.map(function(v){ return v.ativo+" em "+dataBR(v.data); }).join(", "):"nenhum título do BTG vence nesse prazo")+(vx.removidos?"; "+vx.removidos+" que já não estão na carteira saíram":"")+".");
   r.ind.performance={arquivo:arquivo||"",conta:p.conta,nome:p.nome,mes:p.mes,ano:p.ano,em:new Date().toISOString()};
   return res;
 }
@@ -3824,8 +3882,9 @@ function viewPreencher(){
 
   var vencs=S.rasc.ind.vencimentos||[];
   var sepPrev=vencDoMes(listaVenc(S.rasc.ind),S.mes,S.ano);
-  h+='<div class="card"><div class="sec-title">Próximos vencimentos</div>'+
-     '<div class="sec-sub">Opcional. Se ficar em branco, a seção não aparece no relatório.'+
+  h+='<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start"><div class="sec-title">Próximos vencimentos</div>'+
+     '<button class="btn" onclick="atualizarVencimentosTela()" title="Traz da lista de ativos os títulos que vencem nos próximos '+HORIZONTE_VENC_MESES+' meses">Atualizar pela lista de ativos</button></div>'+
+     '<div class="sec-sub">Os títulos da lista de ativos que vencem nos próximos '+HORIZONTE_VENC_MESES+' meses entram sozinhos (marcados como automáticos) e se refazem a cada mês. Os lançados à mão ficam. Se ficar em branco, a seção não aparece no relatório.'+
        (S.rasc._vencHerdados?' <b>'+S.rasc._vencHerdados+' vencimento(s) trazido(s) do mês anterior</b> — os já vencidos ficaram para trás. Confira antes de salvar.':'')+'</div>'+
      (sepPrev.dentro.length?'<div class="note" style="margin-bottom:12px"><b>'+sepPrev.dentro.length+' vencimento(s) caem em '+MESES[S.mes-1]+', o mês deste relatório.</b> '+
        'Vão aparecer destacados como “Venceu em '+MESES[S.mes-1]+'”, separados dos futuros. '+
@@ -3836,7 +3895,7 @@ function viewPreencher(){
      '<th class="num">Valor aproximado</th><th></th></tr></thead><tbody>'+
      (vencs.length?vencs.map(function(x,i){
        return '<tr>'+
-       '<td><input class="inp" value="'+esc(x.ativo)+'" oninput="setVenc('+i+',\'ativo\',this.value)" placeholder="Ex.: CDB Banco XYZ"></td>'+
+       '<td><input class="inp" value="'+esc(x.ativo)+'" oninput="setVenc('+i+',\'ativo\',this.value)" placeholder="Ex.: CDB Banco XYZ">'+(x.auto?'<small class="venc-auto" title="Veio da lista de ativos. Se você editar, vira lançamento à mão.">automático</small>':'')+'</td>'+
        '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setVenc('+i+',\'inst\',this.value)" placeholder="Ex.: XP"></td>'+
        '<td><input class="inp" value="'+esc(x.taxa)+'" oninput="setVenc('+i+',\'taxa\',this.value)" placeholder="Ex.: 112% do CDI"></td>'+
        '<td><input class="inp" type="date" value="'+esc(x.data)+'" oninput="setVenc('+i+',\'data\',this.value)"></td>'+
@@ -4473,6 +4532,7 @@ function conferirRascunho(cOpt,rOpt){
   r.contas.forEach(function(x){ if(curDe(x)!=="BRL"||!((x.nome||"").trim()||n(x.saldo))) return; var k=instChave(x.inst)||"?"; contaInst[k]=contaInst[k]||{t:0,h:0}; contaInst[k].t++; if(contaHerdada(x,antR)) contaInst[k].h++; });
   Object.keys(contaInst).forEach(function(k){ if(contaInst[k].t&&contaInst[k].h===contaInst[k].t) herdInst[k]=1; });
   /* ativos */
+  var semRent=[];
   var vistos={}, repetidos=[], semNome=[], negativos=[], semSub=[], semVenc=[], semTaxa=[], vencidos=[], herd=[], mudouCat=[], grandes=[], novos=[];
   var corte=S.ano+"-"+String(S.mes).padStart(2,"0")+"-01", usadosAnt=[];
   todos.forEach(function(x,i){
@@ -4488,6 +4548,7 @@ function conferirRascunho(cOpt,rOpt){
     if(ehTitulo(x)&&!(x.taxa||"").trim()) semTaxa.push(alvo(i,nome));
     if(x.vencimento&&String(x.vencimento).length===10&&String(x.vencimento)<corte&&n(x.posicao)>0) vencidos.push(alvo(i,nome+" ("+dataBR(x.vencimento)+")"));
     var a=pares[i];
+    if(n(x.posicao)>0&&!ehDerivativo(x)&&!n(x.rentMes)&&!n(x.rentAno)&&!n(x.rentInicio)&&!(a&&ativoHerdado(x,a))) semRent.push(alvo(i,nome));
     if(a){
       usadosAnt.push(a);
       if(ativoHerdado(x,a)&&!herdInst[instChave(x.inst)||"?"]) herd.push(alvo(i,nome));
@@ -4503,6 +4564,7 @@ function conferirRascunho(cOpt,rOpt){
   if(repetidos.length) add("alta","Ativos","Ativo repetido",lista(repetidos)+" aparece(m) duas vezes com o mesmo vencimento e a mesma posição. Some duas vezes no relatório.",repetidos);
   if(vencidos.length) add("alta","Ativos","Vencido e ainda na carteira",lista(vencidos)+". O vencimento é anterior a "+MESES[S.mes-1].toLowerCase()+" e o ativo ainda tem posição.",vencidos);
   if(herd.length) add("atencao","Ativos","Ainda com a posição de "+refAnt,herd.length+" ativo(s) com a mesma posição do mês anterior e sem rentabilidade no mês: "+lista(herd)+".",herd);
+  if(semRent.length>=3) add("atencao","Ativos","Ativos sem rentabilidade",semRent.length+" ativo(s) com mês, ano e desde o início zerados: "+lista(semRent)+". No relatório saem como 0,00%. Se vieram de extrato sem rentabilidade, suba o Relatório de Performance do BTG.",semRent);
   if(semSub.length) add("atencao","Ativos","Sem subcategoria",semSub.length+" ativo(s): "+lista(semSub)+". A subcategoria alimenta a distribuição por estratégia.",semSub);
   if(semVenc.length) add("atencao","Ativos","Título sem vencimento",lista(semVenc)+".",semVenc);
   if(mudouCat.length) add("info","Ativos","Classificação diferente do mês anterior",lista(mudouCat)+". Se veio do relatório do banco, está certo; se não, volte ao que era para os gráficos não mudarem sozinhos.",mudouCat);
@@ -4930,7 +4992,7 @@ function viewRelatorio(){
           (comRF?'<td>'+esc(x.taxa||"—")+'</td><td class="n">'+(x.vencimento?dataBR(x.vencimento):"—")+'</td>':'')+
           '<td class="n">'+(n(x.posicao)?brl(n(x.posicao)):"—")+'</td>'+
           '<td class="n">'+rp(x.rentMes)+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
-          '<td class="n">'+rp(x.rent12m)+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
+          '<td class="n">'+(semDozeMeses(x)?"—":rp(x.rent12m))+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
         }).join("")+
         (subtotalCompleto==null?"":'<tr class="tot"><td colspan="'+(comRF?4:2)+'">Subtotal</td><td class="n">'+brl(subtotalCompleto)+'</td>'+
         '<td colspan="4"></td></tr>')+

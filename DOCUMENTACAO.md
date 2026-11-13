@@ -735,6 +735,8 @@ para Advisory no CRM e testes automáticos antes de cada publicação (`testes/v
  · **3.21 (13/11/2026): Relatório de Performance do BTG inteiro no alto do Preencher (seção 29). Lê saldo,
 entradas, saídas, resultado, índices e todos os ativos com rentabilidade e vencimento; conferência refeita a
 partir dos dados reais (sem os falsos alarmes), com atalho para o ativo e caixa "Conferido"**.
+ · **3.22 (13/11/2026): próximos vencimentos automáticos pela lista de ativos (janela de 12 meses, refeita a
+cada mês e a cada importação) e "12 meses" sem 0,00% falso nos ativos com menos de um ano (seção 29)**.
 
 ---
 
@@ -2162,3 +2164,20 @@ ainda não atualizadas (Sinosserra e offshore), PTAX em branco, reclassificaçã
 pisca. Cada apontamento tem a caixa "Conferido" (`marcarConferido`): grava em `indicadores.conferidos` (por
 cliente e mês, não replica) com data e quem marcou; sai das pendências, do contador da barra, do Fechamento e do
 aviso de "Marcar como feito". A chave inclui os nomes dos ativos: se entrar outro ativo no grupo, volta a aparecer.
+
+**3.22: próximos vencimentos e "12 meses".**
+- `atualizarVencimentos(r, mês, ano)`: todo título da lista de ativos (`ehTitulo`, vencimento com data completa,
+  posição > 0) que vence do começo do mês de referência até `HORIZONTE_VENC_MESES` (12) meses depois entra em
+  `indicadores.vencimentos` com `auto:true`, valor = posição e a taxa do ativo. Roda no rascunho novo de cada mês
+  (por isso o que entra na janela aparece sozinho e o que venceu sai), na importação do Relatório de Performance,
+  na importação de extrato e no botão "Atualizar pela lista de ativos". Lançamento à mão nunca é apagado; um
+  automático editado à mão perde o `auto`. Um título que já tem lançamento à mão parecido (mesma data e
+  instituição, nome contido ou valor até 15% diferente) não é duplicado. Automático que venceu dentro do mês fica
+  para o "Venceu em <mês>".
+- "12 meses" não puxava em dois casos, vistos nos dados reais: (1) ativo com menos de 12 meses na carteira, em que
+  o BTG mostra "-" e o Hub gravava 0, saindo 0,00% no relatório; o leitor agora grava `null` e o relatório mostra
+  "—" (`semDozeMeses`: também para meses antigos, com 12 meses zerado e "desde o início" diferente de zero);
+  (2) meses importados pelo leitor antigo (só o Detalhamento, sem rentabilidade), com tudo zerado: a conferência
+  aponta "Ativos sem rentabilidade" e a solução é subir o Relatório de Performance do mês.
+- O "12 meses" da carteira (quadro de rentabilidade) soma só os meses lançados no Hub, que começam em
+  janeiro/2026; até dezembro ele mostra quantos meses entraram.

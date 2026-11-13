@@ -43,7 +43,7 @@
       "Segurança (menu da esquerda): ligue o app autenticador para não depender do e-mail."] },
     carteiras: { nome: "Carteiras", pag: 23, itens: [
       "Escolha o cliente à esquerda e o mês no alto (setas ou calendário). Ponto verde: mês feito; amarelo: falta marcar.",
-      "Preencher: arraste o Relatório de Performance do BTG (PDF) na área do alto. Ele preenche a conta do BTG, todos os ativos com a rentabilidade e os índices do mês.",
+      "Preencher: arraste o Relatório de Performance do BTG (PDF) na área do alto. Ele preenche a conta do BTG, todos os ativos com a rentabilidade, os índices e os próximos vencimentos.",
       "A Conferência mostra o que não bate. Clique no nome para ir direto ao ativo; marque Conferido no que já viu. Com tudo certo, Salvar e marcar como feito.",
       "Fechamento (administração): todos os clientes do mês numa tela, com o que falta em cada um. Importar extratos de vários clientes sobe vários PDFs de uma vez.",
       "Relatório: confira com Conferir dados e use Gerar PDF. O arquivo sai com o nome do cliente e do mês.",
