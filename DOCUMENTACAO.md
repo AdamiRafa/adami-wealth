@@ -732,6 +732,9 @@ e-mail do cliente para relatórios e "Enviar ao cliente" pela função `relatori
 para Advisory no CRM e testes automáticos antes de cada publicação (`testes/verificar.sh`). Banco:
 `carteiras_envio.sql` (também no fim do `adami_completo.sql`), migração `carteiras_envio_320`. CRM
 `2026.11.12.2`**.
+ · **3.21 (13/11/2026): Relatório de Performance do BTG inteiro no alto do Preencher (seção 29). Lê saldo,
+entradas, saídas, resultado, índices e todos os ativos com rentabilidade e vencimento; conferência refeita a
+partir dos dados reais (sem os falsos alarmes), com atalho para o ativo e caixa "Conferido"**.
 
 ---
 
@@ -2108,3 +2111,54 @@ Conferido antes de publicar: impressão do relatório com as mesmas 18 páginas 
 dados simulados do Fechamento, da importação em lote (achado por conta, por nome, erro de banco sem leitor,
 salvar), da ligação com a ficha, dos e-mails do cliente, do envio (mês feito e bloqueio de mês não feito) e
 da régua (699 clientes Advisory espalhados por 7 meses).
+
+## 29. Relatório de Performance do BTG e conferência sem falso alarme (13/11/2026, Hub 3.21)
+
+Pedido do Emil, com um Relatório de Performance real: "quando ele aponta um erro ele pode direcionar direto pro
+ativo, inclusive abrir uma caixa pra eu marcar como feito", "tem muita coisa que aponta mas não é nada" e "o
+espaço para eu subir o relatório da carteira lá em cima, aí ele já lê a performance e tudo que precisa".
+
+**Leitor (`pdfParseBtgPerformance`).** Usado pelo leitor "btg" sempre que o PDF tem "A rentabilidade completa";
+sem ela, cai no leitor antigo do Detalhamento. Lê:
+- capa: nome, conta ("Cont Investimento"), período (o mês de referência é o fim do período);
+- linha "Mês" da tabela Rentabilidade: resultado em R$, % da carteira e os índices na ordem do cabeçalho
+  (Portfólio, CDI, Ibovespa, IMAB, IPCA);
+- "Saldo bruto" (anterior e atual), "Entradas", "Saídas";
+- "A rentabilidade completa": um bloco por ativo (linha de %, linha do nome com saldo/%/%PL/data inicial, linha
+  em R$, linha CDI, linha % do CDI). Nome quebrado em duas ou três linhas é juntado (o leitor antigo perdia esses
+  ativos: BARIGUI, VAMOS, CANUMA). Classe ("Em Renda Fixa", "Em Fundo de Investimento", "Em Previdência", "Em
+  Renda Variável", "Em Swap") vira a categoria; a estratégia vira a subcategoria; opção flexível e swap entram
+  como "Derivativo", com o nome "Opção flexível X" / "Swap X", e com posição negativa quando for o caso;
+- vencimento exato pelo Detalhamento dos Ativos, casado pelo saldo bruto;
+- nome curto no padrão da casa (`btgNomeCurto`): "BANCO ORIGINAL S/A - CDB-CDB9245OQHW" vira "CDB BANCO ORIGINAL",
+  "BACEN-... - NTNB" vira "NTN-B".
+No PDF de exemplo que o Emil mandou (outubro/2026): 51 ativos somando R$ 5.719.934,43, exatamente o total do BTG;
+a diferença para o saldo (R$ 2.157,78) é conta corrente e valor em trânsito.
+
+**Na tela.** Área "Subir o Relatório de Performance do BTG" no alto do Preencher (arrastar ou clicar).
+`aplicarPerformance` preenche a conta do BTG em reais (saldo, aplicações = entradas, resgates = saídas, resultado
+em R$ e %), troca os ativos do BTG (e os sem instituição, de importações antigas) e preenche CDI, Ibovespa e IPCA
+só se estiverem em branco (são globais; se diferirem, avisa e mantém). Confere o mês e a conta antes; mostra se
+a abertura bate com o mês anterior e se os ativos somam o saldo. Se a carteira não tinha conta BTG cadastrada, a
+conta do relatório entra em `clientes.contas_btg` ao salvar. Desfazer importação volta contas, ativos e índices.
+Na importação em lote do Fechamento, o mesmo PDF preenche a conta inteira, e um relatório de outro mês é recusado.
+Gráficos: posição negativa (opção, swap) não entra no total das fatias.
+
+**Conferência refeita** com os lançamentos reais de agosto e setembro da cliente do PDF:
+- ativos casados entre meses por `casarAtivos` (nome+instituição+vencimento, nome+vencimento, nome, nome curto
+  contido no longo, título com o mesmo vencimento/subcategoria/taxa ou posição parecida). Antes, três NTN-B com o
+  mesmo nome viravam "ativo repetido" e a troca de formato do nome virava "novos" e "saíram";
+- "repetido" só com o mesmo nome, vencimento e posição;
+- vencimento e taxa só cobrados de título (`ehTitulo`): fundo DI, FIDC, FII, previdência e derivativo não têm;
+- posição negativa só é alerta fora de opção e swap;
+- ativo sem instituição vai para a única instituição com conta e sem ativo (meses importados antes da 3.20);
+- instituição com todas as contas ainda do mês anterior: os ativos dela e a soma contra o saldo não geram
+  aviso próprio (o aviso das contas já cobre); "classificação diferente" passou a informativo.
+Resultado: setembro dessa cliente ficou com 3 apontamentos, todos reais (faltam R$ 539 mil de ativos do BTG, que
+o leitor antigo pulou; Sinosserra com R$ 15,7 mil de diferença; títulos sem taxa). Outubro, depois do PDF: contas
+ainda não atualizadas (Sinosserra e offshore), PTAX em branco, reclassificação e ativos novos.
+
+**Atalho e Conferido.** Cada nome no apontamento é um link (`irAlvo`) que rola até a linha da conta ou do ativo e
+pisca. Cada apontamento tem a caixa "Conferido" (`marcarConferido`): grava em `indicadores.conferidos` (por
+cliente e mês, não replica) com data e quem marcou; sai das pendências, do contador da barra, do Fechamento e do
+aviso de "Marcar como feito". A chave inclui os nomes dos ativos: se entrar outro ativo no grupo, volta a aparecer.
