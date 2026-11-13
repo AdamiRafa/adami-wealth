@@ -1430,8 +1430,8 @@ function fecharSeguranca(){
   var d=document.getElementById("segv"); if(d) d.style.display="none";
 }
 /* 3.27: master e financeiro precisam do app autenticador. Sem o app ligado, a tela de
-   Segurança abre sozinha e só fecha depois de ligar. Quem garante é o banco: com o app
-   ligado, o código do e-mail deixa de valer para essas pessoas (seguranca_327.sql). */
+   Segurança abre sozinha e só fecha depois de ligar. O código do e-mail continua valendo
+   para todos (3.28, seguranca_328.sql): o app é um segundo caminho. */
 function conferirAppObrigatorio(){
   api("rpc/app_obrigatorio",{method:"POST",body:{}}).then(function(r){
     if(r&&r.obrigatorio&&!r.ativo){ abrirSeguranca(true); }
@@ -1464,7 +1464,7 @@ function segLinhas(lista,comNome){
 }
 function telaSeguranca(){
   var h='<h2>Segurança</h2>'+
-    (SEG.obrigatorio&&!(SEG.app&&SEG.app.ativo)?'<div class="note err" style="margin:0 0 12px"><b>Obrigatório para master e financeiro:</b> ligue o app autenticador agora. Leva 1 minuto. A partir daí, o seu código de entrada vem só do app no celular, não do e-mail.</div>':'')+
+    (SEG.obrigatorio&&!(SEG.app&&SEG.app.ativo)?'<div class="note err" style="margin:0 0 12px"><b>Obrigatório para master e financeiro:</b> ligue o app autenticador agora. Leva 1 minuto. Depois disso, você pode entrar com o código do app no celular ou com o do e-mail, os dois valem.</div>':'')+
     '<div class="mfa-status on">Verificação em duas etapas ativa</div>'+
     '<p class="eqsub" style="margin-top:12px">Toda entrada no Hub pede, depois da senha, um código de 6 números: o do e-mail ou o do app autenticador. '+
     'O acesso vale até a meia-noite: no dia seguinte, todo mundo entra de novo. Num computador lembrado, só a senha.</p>'+
@@ -2146,7 +2146,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.27";
+var VERSAO="versão 3.28";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];

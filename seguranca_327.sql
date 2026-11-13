@@ -4,9 +4,9 @@
 -- Decisões do Emil depois da varredura de segurança (seção 30):
 -- 1. Convites só para domínios liberados. Começa com adamicaptal.com.br; o master inclui
 --    outros (tabela convites_dominios). Vale para convidar e para trocar o e-mail de alguém.
--- 2. App autenticador obrigatório para master e financeiro. Quem ainda não ligou o app
---    entra pelo código do e-mail uma última vez e o Hub obriga a ligar. Com o app ligado,
---    o código do e-mail deixa de valer para essas pessoas (não é enviado nem aceito).
+-- 2. App autenticador obrigatório para master e financeiro: quem ainda não ligou o app
+--    entra pelo código do e-mail e o Hub obriga a ligar. O código do e-mail continua
+--    chegando e valendo para todos (3.28): o app é um segundo caminho, não substitui.
 --
 -- Como instalar: SQL Editor do Supabase, colar o arquivo inteiro, Run.
 -- O aviso "Potential issues detected" é falso positivo: Run without RLS.
@@ -163,7 +163,7 @@ $$;
 revoke all on function public.app_obrigatorio() from public, anon;
 grant execute on function public.app_obrigatorio() to authenticated;
 
--- Código por e-mail: não sai para quem é obrigado a usar o app e já ligou.
+-- Código por e-mail: sai sempre, para todos (3.28). O app é um segundo caminho, não substitui.
 create or replace function public.acesso_novo_codigo(p_user uuid, p_sessao uuid, p_ip text default '', p_navegador text default '')
 returns text language plpgsql security definer set search_path = public, extensions as $$
 declare
@@ -172,9 +172,6 @@ declare
 begin
   if p_user is null or p_sessao is null then
     raise exception 'Sessão inválida. Entre de novo.';
-  end if;
-  if public.exige_app(p_user) and exists (select 1 from public.acesso_totp where user_id = p_user and ativo) then
-    raise exception 'Para master e financeiro, o código vem só do app autenticador. Abra o app no celular e digite o código que aparece nele.';
   end if;
   if (select count(*) from public.acesso_registro
        where user_id = p_user and evento = 'codigo_errado' and em > now() - interval '30 minutes') >= 10 then
@@ -197,7 +194,7 @@ begin
 end $$;
 revoke all on function public.acesso_novo_codigo(uuid, uuid, text, text) from public, anon, authenticated;
 
--- Conferência do código: para quem é obrigado e tem o app ligado, só o código do app vale.
+-- Conferência do código: vale o do app (se ligado) ou o do e-mail, para todos (3.28).
 create or replace function public.verificar_codigo(p_codigo text)
 returns json language plpgsql security definer set search_path = public, extensions as $$
 declare
@@ -207,7 +204,6 @@ declare
   v_nav text := left(public.cabecalho_req('user-agent'), 300);
   v_cod text := regexp_replace(coalesce(p_codigo, ''), '\D', '', 'g');
   v_app boolean;
-  v_so_app boolean;
   v_evento text := 'entrou';
   r public.acesso_codigos%rowtype;
 begin
@@ -221,13 +217,9 @@ begin
       'msg', 'Muitas tentativas erradas. Espere 30 minutos ou peça ajuda a um master.');
   end if;
   v_app := exists (select 1 from public.acesso_totp where user_id = v_uid and ativo);
-  v_so_app := v_app and public.exige_app(v_uid);
 
   if v_app and public.totp_confere(v_uid, v_cod, false) then
     v_evento := 'entrou_app';
-  elsif v_so_app then
-    insert into public.acesso_registro (user_id, evento, ip, navegador) values (v_uid, 'codigo_errado', v_ip, v_nav);
-    return json_build_object('ok', false, 'msg', 'Código não confere. Para master e financeiro vale só o código do app autenticador: digite o que aparece agora no app.');
   else
     select * into r from public.acesso_codigos
      where user_id = v_uid and sessao = v_sessao and usado_em is null and expira_em > now()
@@ -242,7 +234,7 @@ begin
       if not found then
         if v_app then
           insert into public.acesso_registro (user_id, evento, ip, navegador) values (v_uid, 'codigo_errado', v_ip, v_nav);
-          return json_build_object('ok', false, 'msg', 'Código não confere. Digite o código que aparece agora no app autenticador.');
+          return json_build_object('ok', false, 'msg', 'Código não confere. Digite o código que aparece agora no app autenticador ou o do e-mail.');
         end if;
         return json_build_object('ok', false, 'expirado', true, 'msg', 'Esse código expirou ou já foi usado. Peça um novo.');
       end if;

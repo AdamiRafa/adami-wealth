@@ -748,6 +748,8 @@ o resto sempre revalidado); planilha e leitor de PDF carregados só quando usado
  · **3.27 (13/11/2026): decisões do Emil depois da varredura (seção 30): convites só para domínios liberados,
 app autenticador obrigatório para master e financeiro, saída depois de 30 minutos sem uso, downloads em massa no
 Registro de atividades e backup completo só para o master. Banco: `seguranca_327.sql`**.
+ · **3.28 (13/11/2026): o código de entrada por e-mail volta a sair e valer para master e financeiro com o app
+ligado; os dois caminhos valem. Banco: `seguranca_328.sql`**.
 
 ---
 
@@ -2261,8 +2263,10 @@ por fora, mas só manda uma vez por dia e só das 6h às 11h, e não revela nome
   não pode ser retirado. Tela: Equipe > Convidar pessoa > "Domínios liberados para convite" (só master).
 - **App autenticador obrigatório para master e financeiro** (`exige_app`: `perfis.super` ou `perfis.financeiro`).
   Sem o app ligado, entram pelo código do e-mail e o Hub abre a Segurança obrigatória (`conferirAppObrigatorio`,
-  `abrirSeguranca(true)`), que só fecha depois de ligar. Com o app ligado, `acesso_novo_codigo` não gera código por
-  e-mail e `verificar_codigo` só aceita o do app. Perdeu o celular: outro master usa "Zerar app" na Equipe.
+  `abrirSeguranca(true)`), que só fecha depois de ligar. **Desde a 3.28 (`seguranca_328.sql`) o código por e-mail
+  continua saindo e valendo para todos, inclusive com o app ligado**: o Emil quer os dois caminhos. Na 3.27 o e-mail
+  parava para essas pessoas; foi desfeito no mesmo dia. Perdeu o celular: entra pelo e-mail; outro master usa
+  "Zerar app" na Equipe.
 - **Saída por inatividade** (`comum/barra.js`, em todos os módulos): 30 minutos sem mouse, teclado, rolagem ou
   toque em nenhuma aba (`localStorage.aw_ultimo_uso`); aviso aos 28; ao sair, logout também no servidor e volta
   para o login com o aviso (`index.html#inatividade`, `encerrarPorInatividade`). O login marca o uso
