@@ -750,6 +750,11 @@ app autenticador obrigatório para master e financeiro, saída depois de 30 minu
 Registro de atividades e backup completo só para o master. Banco: `seguranca_327.sql`**.
  · **3.28 (13/11/2026): o código de entrada por e-mail volta a sair e valer para master e financeiro com o app
 ligado; os dois caminhos valem. Banco: `seguranca_328.sql`**.
+ · **3.29 (13/11/2026): cliente com mais de uma conta no BTG. Cada Relatório de Performance vai para a conta do
+número dele: a conta vira "BTG conta 4567" (o nome velho fica em `antes`, para o acumulado da conta continuar), a
+conta guarda `conta_btg` e cada ativo leva `conta`. O segundo relatório troca só os ativos da conta dele; a
+Distribuição por instituição soma as contas do BTG; a Lista de ativos mostra "BTG Pactual conta 4567" quando há mais
+de uma conta. Cliente sem conta BTG anotada grava todas as contas dos relatórios aplicados (`anotarContaPerf`)**.
 
 ---
 

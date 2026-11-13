@@ -2146,7 +2146,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.28";
+var VERSAO="versão 3.29";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2435,7 +2435,7 @@ function montarRascunho(){
   var p=anterior(S.mes,S.ano),ant=null,t=0;
   while(t<24&&!ant){ ant=reg(id,p.mes,p.ano); if(!ant)p=anterior(p.mes,p.ano); t++; }
   if(ant){
-    S.rasc={_herdado:true,contas:ant.contas.map(function(c){return {nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0,moeda:curDe(c)};}),ind:indVazio()};
+    S.rasc={_herdado:true,contas:ant.contas.map(function(c){var o={nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0,moeda:curDe(c)}; if(c.conta_btg) o.conta_btg=c.conta_btg; if(c.antes) o.antes=c.antes; return o;}),ind:indVazio()};
     if(ant.ind&&ant.ind.secoes) S.rasc.ind.secoes=JSON.parse(JSON.stringify(ant.ind.secoes));
     if(ant.ind&&ant.ind.bench) S.rasc.ind.bench=JSON.parse(JSON.stringify(ant.ind.bench));
     /* vencimentos passam de um mes para o outro; os que ja venceram ficam para tras.
@@ -2459,9 +2459,11 @@ function montarRascunho(){
     if(ant.ind&&ant.ind.ativos&&ant.ind.ativos.length){
       var ativosTrazidos=ant.ind.ativos.filter(function(x){ return (x.nome||"").trim()||n(x.posicao); })
         .map(function(x){
-          return {nome:x.nome,categoria:x.categoria,subcategoria:x.subcategoria,inst:x.inst,
+          var o={nome:x.nome,categoria:x.categoria,subcategoria:x.subcategoria,inst:x.inst,
             taxa:x.taxa,vencimento:x.vencimento,posicao:x.posicao,
             rentMes:0,rentAno:0,rent12m:0,rentInicio:0};
+          if(x.conta) o.conta=x.conta;
+          return o;
         });
       if(ativosTrazidos.length){
         S.rasc.ind.ativos=ativosTrazidos;
@@ -2494,12 +2496,13 @@ function herdarOnshore(){
   }
   if(!ant) return;
   var tem={};
-  contasDe(S.rasc,"BRL").forEach(function(c){ tem[chaveConta(c)]=1; });
+  contasDe(S.rasc,"BRL").forEach(function(c){ tem[chaveConta(c)]=1; if(c.antes) tem[chaveConta({nome:c.antes,inst:c.inst})]=1; });
   contasDe(ant,"BRL").forEach(function(c){
     if(n(c.saldo)<=0) return;
     if(tem[chaveConta(c)]) return;
-    S.rasc.contas.push({nome:c.nome,inst:c.inst,saldo:n(c.saldo),
-                        apl:0,res:0,rendPct:0,rendRs:0,moeda:"BRL"});
+    var o={nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0,moeda:"BRL"};
+    if(c.conta_btg) o.conta_btg=c.conta_btg; if(c.antes) o.antes=c.antes;
+    S.rasc.contas.push(o);
     S.rasc._onHerdado++;
   });
 }
@@ -2663,11 +2666,15 @@ function benchMeses(serie,chaveInd){
   return serie.filter(function(x){ return n(x.ind&&x.ind[chaveInd])!==0; }).length;
 }
 /* rentabilidade composta de uma conta nos últimos N meses até (mes/ano) */
-function contaAcum(id,nome,mes,ano,nMeses){
+function contaAcum(id,nome,mes,ano,nMeses,antes){
   var vals=[],p={mes:mes,ano:ano};
   for(var i=0;i<nMeses;i++){
     var r=reg(id,p.mes,p.ano);
-    if(r){ r.contas.forEach(function(c){ if((c.nome||"")===nome) vals.unshift(n(c.rendPct)); }); }
+    if(r){
+      var achou=r.contas.filter(function(c){ return (c.nome||"")===nome; });
+      if(!achou.length&&antes) achou=r.contas.filter(function(c){ return (c.nome||"")===antes; });
+      achou.forEach(function(c){ vals.unshift(n(c.rendPct)); });
+    }
     p=anterior(p.mes,p.ano);
   }
   return vals.length?comp(vals):null;
@@ -2865,8 +2872,8 @@ function salvarMes(opts){
         feito_em:x.feito_em!==undefined?x.feito_em:(opts.feito?agora:antes.feito_em||null),
         feito_por:x.feito_por!==undefined?x.feito_por:(opts.feito?EU.id:antes.feito_por||null)};
       if(opts.feito) registrar("marcou mês como feito",(cli()||{}).nome||"",MESES[S.mes-1]+"/"+S.ano);
-      var cc=cli(), contaP=S.rasc&&S.rasc._contaPerf;
-      if(cc&&contaP&&!(cc.contas_btg&&cc.contas_btg.length)){ cc.contas_btg=[contaP]; api("clientes?id=eq."+cc.id,{method:"PATCH",prefer:"return=minimal",body:{contas_btg:[contaP]}}).catch(function(){}); }
+      var cc=cli(), contaP=S.rasc&&S.rasc._contaPerf&&[].concat(S.rasc._contaPerf);
+      if(cc&&contaP&&contaP.length&&!(cc.contas_btg&&cc.contas_btg.length)){ cc.contas_btg=contaP; api("clientes?id=eq."+cc.id,{method:"PATCH",prefer:"return=minimal",body:{contas_btg:contaP}}).catch(function(){}); }
       registrar("salvou lançamento",(cli()||{}).nome||"",MESES[S.mes-1]+"/"+S.ano+" · "+contas.length+(contas.length===1?" conta · ":" contas · ")+brl(totais({contas:contas}).pl));
       return replicarIndices(S.mes,S.ano,S.cliente,S.rasc.ind);
     })
@@ -3523,26 +3530,57 @@ function aplicarAtivosExtrato(r,ativos,instNome){
 /* Preenche o mês com o Relatório de Performance do BTG: conta do BTG (saldo, entradas,
    saídas, resultado em R$ e %), ativos do BTG (trocados inteiros) e os índices que estiverem
    em branco. Devolve o que conferiu e o que precisa de atenção. */
+/* 3.29: cliente com mais de uma conta no BTG. Cada relatório vai para a conta do número
+   dele ("BTG conta 4567"), e os ativos levam o número (campo conta): o segundo relatório
+   não apaga o primeiro, e a instituição soma as duas. Conta com nome sem número que já
+   recebeu um relatório guarda o número em conta_btg. */
+function semZeros(s){ return String(s||"").replace(/\D/g,"").replace(/^0+/,""); }
+function numContaNome(s){ var m=String(s||"").match(/(\d{4,})\s*$/); return m?m[1].replace(/^0+/,""):""; }
+function numDaConta(x){ return semZeros(x.conta_btg)||numContaNome(x.nome); }
+function contasBtgBrl(r){ return r.contas.filter(function(x){ return curDe(x)==="BRL"&&/^(btg|necton)$/.test(instChave(x.inst||x.nome)); }); }
 function contaDoBtg(r,p){
-  var brl=r.contas.filter(function(x){ return curDe(x)==="BRL"&&/^(btg|necton)$/.test(instChave(x.inst||x.nome)); });
-  if(brl.length<=1) return brl[0]||null;
-  var porSaldo=brl.filter(function(x){ return Math.abs(n(x.saldo)-p.saldoAnterior)<1; });
-  return porSaldo[0]||brl[0];
+  var brl=contasBtgBrl(r), cp=semZeros(p.conta);
+  var porSaldo=function(l){ return l.filter(function(x){ return Math.abs(n(x.saldo)-p.saldoAnterior)<1; })[0]||l[0]||null; };
+  if(!cp) return brl.length<=1?(brl[0]||null):porSaldo(brl);
+  var mesma=brl.filter(function(x){ return numDaConta(x)===cp; })[0]; if(mesma) return mesma;
+  return porSaldo(brl.filter(function(x){ return !numDaConta(x); }));
 }
-function aplicarPerformance(r,p,arquivo){
-  var res={ok:[],aviso:[]};
+/* põe o número no nome ("BTG" vira "BTG conta 4567"); "antes" guarda o nome velho, para o
+   acumulado no ano e em 12 meses da conta continuar achando os meses anteriores */
+function numerarConta(x,num){
+  if(!num||numContaNome(x.nome)) return;
+  var velho=(x.nome||"").trim();
+  if(velho&&!x.antes) x.antes=velho;
+  x.nome=(velho&&!/^btg( pactual)?$/i.test(velho)?velho:"BTG")+" conta "+num;
+}
+function aplicarPerformance(r,p,arquivo,cliente){
+  var res={ok:[],aviso:[]}, cp=semZeros(p.conta);
   var conta=contaDoBtg(r,p);
-  if(!conta){ conta={nome:"BTG",inst:"BTG Pactual",saldo:0,apl:0,res:0,rendPct:0,rendRs:0,moeda:"BRL"}; r.contas.push(conta); res.aviso.push("A carteira não tinha conta do BTG em reais: criei a conta \u201cBTG\u201d."); }
+  if(!conta){
+    var outras=contasBtgBrl(r).length;
+    conta={nome:(cp&&(outras||(cliente&&cliente.contas_btg&&cliente.contas_btg.length>1))?"BTG conta "+cp:"BTG"),inst:"BTG Pactual",saldo:0,apl:0,res:0,rendPct:0,rendRs:0,moeda:"BRL"};
+    r.contas.push(conta);
+    res.aviso.push(outras?"Conta nova no BTG: criei a \u201c"+conta.nome+"\u201d. As contas do BTG somam na instituição.":"A carteira não tinha conta do BTG em reais: criei a conta \u201c"+conta.nome+"\u201d.");
+  }
+  if(cp){
+    conta.conta_btg=cp;
+    var varias=contasBtgBrl(r).length>1||(cliente&&cliente.contas_btg&&cliente.contas_btg.length>1);
+    if(varias) contasBtgBrl(r).forEach(function(x){ numerarConta(x,numDaConta(x)); });
+  }
   var ant=n(conta.saldo);
   conta.saldo=Math.round(p.saldo*100)/100; conta.apl=Math.round(p.entradas*100)/100; conta.res=Math.round(p.saidas*100)/100;
   conta.rendRs=Math.round(p.rendRs*100)/100; conta.rendPct=Math.round(p.rendPct*10000)/10000;
   if(ant&&Math.abs(ant-p.saldoAnterior)<1) res.ok.push("O saldo de abertura do relatório ("+brl2(p.saldoAnterior)+") bate com o mês anterior no Hub.");
   else if(ant) res.aviso.push("O relatório começa o mês com "+brl2(p.saldoAnterior)+", e o Hub tinha "+brl2(ant)+" no mês anterior.");
   var k=instChave("BTG Pactual");
-  r.ind.ativos=(r.ind.ativos||[]).filter(function(x){ var kx=instChave(x.inst); return kx&&kx!==k&&kx!=="necton"; })
-    .concat(p.ativos.map(function(a){ var x=JSON.parse(JSON.stringify(a)); if(!x.dataInicial) delete x.dataInicial; return x; }));
+  /* com o número da conta, troca só os ativos desta conta (e os antigos sem número);
+     os da outra conta do BTG ficam */
+  r.ind.ativos=(r.ind.ativos||[]).filter(function(x){ var kx=instChave(x.inst); if(!kx) return false; if(kx!==k&&kx!=="necton") return true;
+      return !!(cp&&semZeros(x.conta)&&semZeros(x.conta)!==cp); })
+    .concat(p.ativos.map(function(a){ var x=JSON.parse(JSON.stringify(a)); if(!x.dataInicial) delete x.dataInicial; if(cp) x.conta=cp; return x; }));
   var soma=p.ativos.reduce(function(a,x){ return a+n(x.posicao); },0), dif=p.saldo-soma;
-  if(Math.abs(dif)<=Math.max(1,p.saldo*0.005)) res.ok.push("Os "+p.ativos.length+" ativos somam "+brl2(soma)+(Math.abs(dif)>=0.01?"; a diferença de "+brl2(dif)+" é conta corrente e valor em trânsito":"")+".");
+  if(cp&&contasBtgBrl(r).length>1) res.ok.push("Conta "+cp+" preenchida em \u201c"+conta.nome+"\u201d. As outras contas do BTG ficaram como estavam: "+contasBtgBrl(r).filter(function(x){ return x!==conta; }).map(function(x){ return x.nome; }).join(", ")+".");
+  if(Math.abs(dif)<=Math.max(1,p.saldo*0.005)) res.ok.push("Os "+p.ativos.length+" ativos"+(cp&&contasBtgBrl(r).length>1?" desta conta":"")+" somam "+brl2(soma)+(Math.abs(dif)>=0.01?"; a diferença de "+brl2(dif)+" é conta corrente e valor em trânsito":"")+".");
   else res.aviso.push("Os ativos somam "+brl2(soma)+" e o saldo é "+brl2(p.saldo)+": diferença de "+brl2(dif)+".");
   var NOMES={cdi:"CDI",ibov:"Ibovespa",ipca:"IPCA"};
   Object.keys(NOMES).forEach(function(ix){
@@ -3566,6 +3604,11 @@ function checarPerformance(c,p){
   return av.join("\n");
 }
 var PERF_RES=null;
+/* cliente sem conta BTG anotada: guarda o número de cada relatório aplicado, para gravar ao salvar */
+function anotarContaPerf(c,conta){
+  var cp=semZeros(conta); if(!cp||!c||(c.contas_btg&&c.contas_btg.length)) return;
+  var l=S.rasc._contaPerf=[].concat(S.rasc._contaPerf||[]); if(l.indexOf(cp)<0) l.push(cp);
+}
 function subirPerformance(arquivo){
   var c=cli(); if(!c||!arquivo) return;
   if(!/\.pdf$/i.test(arquivo.name||"")&&arquivo.type!=="application/pdf"){ alert("Escolha o PDF do Relatório de Performance."); return; }
@@ -3576,8 +3619,8 @@ function subirPerformance(arquivo){
     var av=checarPerformance(c,p);
     if(av&&!confirm(av+"\n\nAplicar mesmo assim?")){ PERF_RES=null; render(true); return; }
     guardarAntesImportacao("Relatório de Performance");
-    var rr=aplicarPerformance(S.rasc,p,arquivo.name);
-    if(p.conta&&!(c.contas_btg&&c.contas_btg.length)) S.rasc._contaPerf=p.conta;
+    var rr=aplicarPerformance(S.rasc,p,arquivo.name,c);
+    anotarContaPerf(c,p.conta);
     PERF_RES={arquivo:arquivo.name,p:p,r:rr};
     render(true);
   }).catch(function(e){ PERF_RES=null; render(true); alert(e.message||e); });
@@ -4028,7 +4071,7 @@ function viewPreencher(){
          SUBCATEGORIAS_ATIVO.map(function(s){ return '<option value="'+esc(s)+'"'+(x.subcategoria===s?" selected":"")+'>'+esc(s)+'</option>'; }).join("")+
          '</select></td>'+
        '<td><input class="inp'+fc("nome")+'" value="'+esc(x.nome)+'" oninput="setAtivo('+i+',\'nome\',this.value)" placeholder="Ex.: CDB Banco XYZ"></td>'+
-       '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setAtivo('+i+',\'inst\',this.value)" placeholder="Ex.: XP"></td>'+
+       '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setAtivo('+i+',\'inst\',this.value)" placeholder="Ex.: XP">'+(semZeros(x.conta)?'<div class="sec-sub" style="margin:2px 0 0">conta '+esc(semZeros(x.conta))+'</div>':'')+'</td>'+
        '<td><input class="inp" value="'+esc(x.taxa)+'" oninput="setAtivo('+i+',\'taxa\',this.value)" placeholder="Ex.: 112% do CDI"></td>'+
        '<td><input class="inp'+fc("vencimento")+'" type="date" value="'+esc(x.vencimento)+'" oninput="setAtivo('+i+',\'vencimento\',this.value)"></td>'+
        '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.posicao)+'" oninput="onMoeda(this,function(v){setAtivo('+i+',\'posicao\',v);})"></td>'+
@@ -5087,7 +5130,7 @@ function viewRelatorio(){
     var htmlContas=shead(nx(),"Desempenho por conta","")+
      '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% da carteira</th><th class="n">Último mês</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
      contasBRL.map(function(x){
-       var noAno=contaAcum(c.id,x.nome,S.mes,S.ano,S.mes), m12=contaAcum(c.id,x.nome,S.mes,S.ano,12);
+       var noAno=contaAcum(c.id,x.nome,S.mes,S.ano,S.mes,x.antes), m12=contaAcum(c.id,x.nome,S.mes,S.ano,12,x.antes);
        return '<tr><td>'+esc(x.nome||"—")+'</td><td class="n">'+brl(n(x.saldo))+'</td>'+
        '<td class="n">'+pct(t.pl>0?n(x.saldo)/t.pl*100:0,1)+'</td>'+
        '<td class="n '+sinal(n(x.rendPct))+'">'+pct(n(x.rendPct))+'</td>'+
@@ -5119,7 +5162,8 @@ function viewRelatorio(){
       return {mes:m,ano:benchAcum(serieAnoA,k),m12:serie12A.length>=12&&benchMeses(serie12A,k)>=12?benchAcum(serie12A,k):null}; };
     var refCdi=refInd("cdi"), refIbov=refInd("ibov");
     var ordemSub=function(s){ var i=SUBCATEGORIAS_ATIVO.indexOf(s||""); return i<0?99:i; };
-    var subLinha=function(x){ return [x.inst, x.taxa, x.vencimento?"vence "+dataBR(x.vencimento):"", x.dataInicial?"desde "+dataBR(x.dataInicial):""].filter(function(t){ return t&&String(t).trim(); }).join(" · "); };
+    var variasContas=ativosRel.map(function(x){ return semZeros(x.conta); }).filter(function(v,i,l){ return v&&l.indexOf(v)===i; }).length>1;
+    var subLinha=function(x){ return [x.inst+(variasContas&&semZeros(x.conta)?" conta "+semZeros(x.conta):""), x.taxa, x.vencimento?"vence "+dataBR(x.vencimento):"", x.dataInicial?"desde "+dataBR(x.dataInicial):""].filter(function(t){ return t&&String(t).trim(); }).join(" · "); };
     /* altura estimada (px) de cada linha, pelo formato mais estreito (retrato) */
     /* Medido com Playwright na impressão (13/11/2026): no retrato, o nome quebra a cada ~30
        caracteres e a linha de baixo a cada ~56; linha = 18 + 16 por linha de nome + 14 por
@@ -5772,7 +5816,7 @@ function blocoLote(){
 function verExtratoLote(i){
   var x=FECH.lote[i]; if(!x||!x.cliente) return;
   S.cliente=x.cliente; montarRascunho(); guardarAntesImportacao("PDF "+x.leitor.nome+" · "+x.arquivo);
-  if(x.performance){ PERF_RES={arquivo:x.arquivo,p:x.performance,r:aplicarPerformance(S.rasc,x.performance,x.arquivo)}; var cX=cli(); if(x.performance.conta&&cX&&!(cX.contas_btg&&cX.contas_btg.length)) S.rasc._contaPerf=x.performance.conta; }
+  if(x.performance){ PERF_RES={arquivo:x.arquivo,p:x.performance,r:aplicarPerformance(S.rasc,x.performance,x.arquivo,cli())}; anotarContaPerf(cli(),x.performance.conta); }
   else aplicarAtivosExtrato(S.rasc,JSON.parse(JSON.stringify(x.ativos)),x.leitor.inst);
   S.tab="preencher"; render();
 }
@@ -5789,12 +5833,14 @@ function salvarLote(){
       var r=rascunhoDe(id); if(!r) throw new Error("sem rascunho");
       /* dois extratos do mesmo banco para o mesmo cliente (duas contas): os ativos somam */
       var porInst={}, saldoOk=true, cliX=db.clientes.filter(function(c){ return c.id===id; })[0];
+      var semConta=cliX&&!(cliX.contas_btg&&cliX.contas_btg.length), novasContas=[];
       porCliente[id].forEach(function(x){
-        if(x.performance){ aplicarPerformance(r,x.performance,x.arquivo);
-          if(x.performance.conta&&cliX&&!(cliX.contas_btg&&cliX.contas_btg.length)){ cliX.contas_btg=[x.performance.conta]; api("clientes?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:{contas_btg:[x.performance.conta]}}).catch(function(){}); }
+        if(x.performance){ aplicarPerformance(r,x.performance,x.arquivo,cliX);
+          var cpL=semZeros(x.performance.conta); if(semConta&&cpL&&novasContas.indexOf(cpL)<0) novasContas.push(cpL);
           return; }
         var k=x.leitor.inst; (porInst[k]=porInst[k]||[]).push.apply(porInst[k],JSON.parse(JSON.stringify(x.ativos))); });
       Object.keys(porInst).forEach(function(k){ if(!aplicarAtivosExtrato(r,porInst[k],k).saldo) saldoOk=false; });
+      if(novasContas.length){ cliX.contas_btg=novasContas; api("clientes?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:{contas_btg:novasContas}}).catch(function(){}); }
       var contas=r.contas.filter(function(c){ return (c.nome||"").trim()||n(c.saldo); }), agora=new Date().toISOString(), ind=limparInternos(r.ind);
       return api("lancamentos?on_conflict=cliente_id,mes,ano",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
         body:{cliente_id:id,mes:S.mes,ano:S.ano,contas:contas,indicadores:ind,atualizado_em:agora}}).then(function(rows){
