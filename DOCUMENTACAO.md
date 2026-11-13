@@ -755,6 +755,14 @@ número dele: a conta vira "BTG conta 4567" (o nome velho fica em `antes`, para 
 conta guarda `conta_btg` e cada ativo leva `conta`. O segundo relatório troca só os ativos da conta dele; a
 Distribuição por instituição soma as contas do BTG; a Lista de ativos mostra "BTG Pactual conta 4567" quando há mais
 de uma conta. Cliente sem conta BTG anotada grava todas as contas dos relatórios aplicados (`anotarContaPerf`)**.
+ · **3.30 (13/11/2026): leitor do Relatório de Performance. No pé da página o BTG põe o ativo inteiro numa linha
+só (nome, saldo, %, %PL, 4 rentabilidades e data) e o resto do bloco vai para a folha seguinte ou some: o leitor
+pulava esses ativos (caso real: um COE e um FIP, R$ 262 mil a menos). Agora a linha completa vira ativo na hora
+(`montar`), a sobra só de números antes de um cabeçalho de estratégia não o esconde, e fundo "Encerrado" com saldo
+zero não entra. A tabela "detalhamento das movimentações e da rentabilidade em 12 meses" vira `p.hist`;
+`confHistPerf` compara com os meses já gravados (conta do BTG do mesmo número, ou a única) e mostra os que não
+batem, com o botão "Corrigir" (`corrigirHistPerf`: PATCH só de saldo e resultado R$/% da conta do BTG, com
+registro na auditoria). Nome curto também para COE**.
 
 ---
 

@@ -1008,7 +1008,7 @@ tr.conf-pisca td{animation:confPisca 2.2s ease}
 .perf-res{margin-top:12px}.perf-cab{font-size:13.5px;margin-bottom:8px}
 .perf-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:8px}
 .perf-nums div{border:1px solid #E2E6ED;border-radius:10px;padding:8px 12px;background:#fff}.perf-nums span{display:block;font-size:11.5px;color:#5C6B7F}.perf-nums b{font-size:14px}
-.perf-l{font-size:13px;padding:5px 10px;border-radius:8px;margin-top:4px}.perf-l.ok{background:#EAF5EE;color:#1F5F3F}.perf-l.av{background:#FDF3DF;color:#7A5A12}
+.perf-l{font-size:13px;padding:5px 10px;border-radius:8px;margin-top:4px}.perf-hist{width:100%;border-collapse:collapse;margin-top:6px;font-size:12.5px}.perf-hist th,.perf-hist td{padding:4px 6px;border-bottom:1px solid rgba(122,90,18,.18);text-align:left}.perf-hist .num{text-align:right;white-space:nowrap}.perf-l.ok{background:#EAF5EE;color:#1F5F3F}.perf-l.av{background:#FDF3DF;color:#7A5A12}
 .fech-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0 10px}
 .fech-nums div{border:1px solid #E2E6ED;border-radius:12px;padding:10px 14px;background:#fff}
 .fech-nums b{display:block;font:600 24px Georgia,serif;color:#1F6B47}
@@ -2146,7 +2146,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.29";
+var VERSAO="versão 3.30";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3181,7 +3181,7 @@ var BTG_ESTRAT=[["posxado","Pós-fixado"],["posfixado","Pós-fixado"],["prexado"
 function btgNomeCurto(nome){
   var t=String(nome||"").replace(/\s+/g," ").trim(), m;
   if((m=t.match(/^BACEN\b.*-\s*(NTN-?B|NTN-?F|LTN|LFT)\s*$/i))){ var tp=m[1].toUpperCase().replace(/^NTN-?/,"NTN-"); return tp; }
-  if(!(m=t.match(/^(.+?)\s+-\s+(CDB|CRA|CRI|CDCA|LCI|LCA|LCD|LF|LFS|LIG|DEB|DEBENTURE|CCB)-[A-Z0-9]+$/i))) return t;
+  if(!(m=t.match(/^(.+?)\s+-\s+(CDB|CRA|CRI|CDCA|LCI|LCA|LCD|LF|LFS|LIG|DEB|DEBENTURE|CCB|COE)-[A-Z0-9]+$/i))) return t;
   var gen={"S/A":1,"SA":1,"S.A":1,"S.A.":1,"BANK":1,"BANCO":0,"FINANCEIRA":1,"CREDITO":1,"LOCACAO":1,"DE":1,"-":1};
   var ws=m[1].replace(/\s+-\s+.*$/,"").split(" "), out=[];
   for(var i=0;i<ws.length&&out.length<2;i++){ var w=ws[i].toUpperCase(); if(gen[w]===1){ if(out.length) break; else continue; } out.push(ws[i]); }
@@ -3224,6 +3224,19 @@ function pdfParseBtgPerformance(linhas){
     if(/^rendimento-?[\d.,]+$/.test(q)&&!out._r){ out._rend=pdfNum(pdfCauda(l).nums[0]); out._r=1; }
   }
   if(!out.rendRs&&out._rend) out.rendRs=out._rend;
+  /* 3.30: "detalhamento das movimentações e da rentabilidade em 12 meses": uma linha por mês
+     com patrimônio inicial, movimentações, impostos, patrimônio final, ganho e %. Serve para
+     conferir os meses que já estão gravados no Hub. */
+  out.hist=[];
+  var MESN={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+  for(i=0;i<L.length;i++){
+    q=pdfSq(L[i]);
+    m=q.match(/^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\/(\d{2})-?r\$[\d.]+,\d{2}.*r\$([\d.]+,\d{2})(-?)r\$(\d{1,3}(?:\.\d{3})*,\d{2})(-?\d{1,3},\d{2})%/);
+    if(!m) continue;
+    var hm=MESN[m[1]], ha=2000+(+m[2]);
+    if(out.hist.some(function(h){ return h.mes===hm&&h.ano===ha; })) continue;
+    out.hist.push({mes:hm,ano:ha,saldo:pdfNum(m[3]),rendRs:(m[4]?-1:1)*pdfNum(m[5]),rendPct:pdfNum(m[6])});
+  }
   delete out._e; delete out._s; delete out._r; delete out._rend;
   /* vencimentos do Detalhamento, pelo saldo bruto */
   var venc=[], ini=-1, fim=L.length;
@@ -3239,6 +3252,21 @@ function pdfParseBtgPerformance(linhas){
   for(i=0;i<L.length;i++){ q=pdfSq(L[i]); if(a0<0&&q==="arentabilidadecompleta") a0=i; else if(a0>=0&&/^movimentacoesdaconta/.test(q)){ a1=i; break; } }
   if(a0<0){ out.erro="Não encontrei a seção “A rentabilidade completa” neste PDF."; return out; }
   var classe="", estrat="", acum=[];
+  var ehPctT=function(t){ return /%$/.test(t)||t==="-"; };
+  /* monta o ativo com o nome, os dados (saldo, %, %PL e talvez a data) e as 4 rentabilidades */
+  var montar=function(nome,dados,pct){
+      var nm=nome.join(" ").replace(/\s+/g," ").replace(/\*+/g,"").trim(), partes=nm.split(/\s*\|\s*/), taxa="", anoV="";
+      if(partes.length>=2){ taxa=partes[1]; anoV=(partes[2]||"").match(/\d{4}/)?partes[2].match(/\d{4}/)[0]:""; }
+      var pos=pdfNum(dados[0]), ini2=dados.length===4?pdfDataParaISO(dados[3]):"";
+      if(Math.abs(pos)<0.005) return;   // fundo encerrado no mês: saldo zero, não entra na carteira
+      var sub=estrat==="RV"?"":estrat, cat=classe||"Fundos";
+      if(estrat==="RV") cat="Renda Variável";
+      if(sub==="Derivativo") partes[0]=(cat==="Renda Variável"?"Opção flexível ":"Swap ")+partes[0];
+      var vv=""; for(var k=0;k<venc.length;k++){ if(!venc[k].usado&&Math.abs(venc[k].v-pos)<0.005){ vv=venc[k].venc; venc[k].usado=true; break; } }
+      if(!vv&&anoV&&(cat==="Renda Fixa"||cat==="COE")) out.avisos.push("Vencimento de "+partes[0]+" não encontrado no detalhamento; ficou só o ano ("+anoV+").");
+      out.ativos.push({nome:btgNomeCurto(partes[0]),categoria:cat,subcategoria:sub,inst:"BTG Pactual",taxa:taxa,vencimento:vv||(anoV&&(cat==="Renda Fixa"||cat==="COE")?anoV+"-12-31":""),
+        posicao:pos,rentMes:pct?pdfNumOuVazio(pct[0]):0,rentAno:pct?pdfNumOuVazio(pct[1]):0,rent12m:pct?pdfNumOuVazio(pct[2]):0,rentInicio:pct?pdfNumOuVazio(pct[3]):0,dataInicial:ini2});
+  };
   var ruido=function(q){ return /^relatoriodeperformance$|^periodode|^pagina\d|^porclassedeativos|^ativo|^saldo(per|bruto)|^bruto\(r\$\)|^arentabilidadecompleta|^total-?\d/.test(q); };
   for(i=a0+1;i<a1;i++){
     l=L[i]; q=pdfSq(l);
@@ -3246,7 +3274,15 @@ function pdfParseBtgPerformance(linhas){
     if((m=l.match(/^Em\s+(.+?)\s+-?[\d.]+,\d+\s*%\s*do\s*Tot/i))){ classe=pdfAchaTabela(BTG_CLASSES,m[1])||m[1].trim(); estrat=""; acum=[]; continue; }
     var cd=pdfCauda(l);
     /* cabeçalho de estratégia: nome conhecido + saldo + 100,00 + %PL */
-    if(cd.texto&&cd.nums.length===3&&!/%/.test(cd.nums.join(""))&&pdfAchaTabela(BTG_ESTRAT,cd.texto)&&!/\|/.test(cd.texto)&&acum.length===0){ estrat=pdfAchaTabela(BTG_ESTRAT,cd.texto); continue; }
+    /* (o que estiver acumulado só com números é sobra da quebra de página: não impede) */
+    if(cd.texto&&cd.nums.length===3&&!/%/.test(cd.nums.join(""))&&pdfAchaTabela(BTG_ESTRAT,cd.texto)&&!/\|/.test(cd.texto)&&acum.every(function(x){ return !pdfCauda(x).texto; })){ estrat=pdfAchaTabela(BTG_ESTRAT,cd.texto); acum=[]; continue; }
+    if(/^alternativo-?encerrados$/.test(q)){ acum=[]; continue; }
+    /* no pé da página o BTG põe o ativo inteiro numa linha só, e o resto do bloco (R$, CDI)
+       some ou vai para a folha seguinte */
+    if(cd.texto&&(cd.nums.length===7||cd.nums.length===8)&&cd.nums.slice(0,3).every(function(t){ return !/%$/.test(t)&&t!=="-"; })&&
+       cd.nums.slice(3,7).every(ehPctT)&&(cd.nums.length===7||/\//.test(cd.nums[7]))){
+      montar([cd.texto],cd.nums.slice(0,3).concat(cd.nums.length===8?[cd.nums[7]]:[]),cd.nums.slice(3,7)); acum=[]; continue;
+    }
     if(/^cdi(-|\d|$)/.test(q)){
       /* fim do bloco do ativo: monta com o que acumulou */
       var nome=[], pct=null, dados=null, rsv=null;
@@ -3261,16 +3297,7 @@ function pdfParseBtgPerformance(linhas){
       });
       acum=[];
       if(!dados||!nome.length) continue;
-      var nm=nome.join(" ").replace(/\s+/g," ").replace(/\*+/g,"").trim(), partes=nm.split(/\s*\|\s*/), taxa="", anoV="";
-      if(partes.length>=2){ taxa=partes[1]; anoV=(partes[2]||"").match(/\d{4}/)?partes[2].match(/\d{4}/)[0]:""; }
-      var pos=pdfNum(dados[0]), ini2=dados.length===4?pdfDataParaISO(dados[3]):"";
-      var sub=estrat==="RV"?"":estrat, cat=classe||"Fundos";
-      if(estrat==="RV") cat="Renda Variável";
-      if(sub==="Derivativo") partes[0]=(cat==="Renda Variável"?"Opção flexível ":"Swap ")+partes[0];
-      var vv=""; for(var k=0;k<venc.length;k++){ if(!venc[k].usado&&Math.abs(venc[k].v-pos)<0.005){ vv=venc[k].venc; venc[k].usado=true; break; } }
-      if(!vv&&anoV&&(cat==="Renda Fixa"||cat==="COE")) out.avisos.push("Vencimento de "+partes[0]+" não encontrado no detalhamento; ficou só o ano ("+anoV+").");
-      out.ativos.push({nome:btgNomeCurto(partes[0]),categoria:cat,subcategoria:sub,inst:"BTG Pactual",taxa:taxa,vencimento:vv||(anoV&&(cat==="Renda Fixa"||cat==="COE")?anoV+"-12-31":""),
-        posicao:pos,rentMes:pct?pdfNumOuVazio(pct[0]):0,rentAno:pct?pdfNumOuVazio(pct[1]):0,rent12m:pct?pdfNumOuVazio(pct[2]):0,rentInicio:pct?pdfNumOuVazio(pct[3]):0,dataInicial:ini2});
+      montar(nome,dados,pct);
       continue;
     }
     if(/^%docdi/.test(q)){ acum=[]; continue; }
@@ -3604,6 +3631,47 @@ function checarPerformance(c,p){
   return av.join("\n");
 }
 var PERF_RES=null;
+/* 3.30: o relatório traz os últimos 12 meses (saldo final, ganho em R$ e %). Compara com os
+   meses já gravados no Hub, antes do mês da tela, na conta do BTG do mesmo número (ou na única
+   conta do BTG). Devolve só os que não batem. */
+function contaBtgDoMes(r,num){
+  var brl=contasBtgBrl(r), cp=semZeros(num);
+  var mesma=cp?brl.filter(function(x){ return numDaConta(x)===cp; }):[];
+  if(mesma.length===1) return mesma[0];
+  return brl.length===1&&(!cp||!numDaConta(brl[0])||numDaConta(brl[0])===cp)?brl[0]:null;
+}
+function confHistPerf(c,p){
+  var out=[];
+  (p.hist||[]).forEach(function(h){
+    if(h.ano>S.ano||(h.ano===S.ano&&h.mes>=S.mes)) return;
+    var r=reg(c.id,h.mes,h.ano); if(!r) return;
+    var x=contaBtgDoMes(r,p.conta); if(!x) return;
+    if(Math.abs(n(x.saldo)-h.saldo)>1||Math.abs(n(x.rendRs)-h.rendRs)>1||Math.abs(n(x.rendPct)-h.rendPct)>0.005)
+      out.push({mes:h.mes,ano:h.ano,conta:p.conta,hub:{saldo:n(x.saldo),rendRs:n(x.rendRs),rendPct:n(x.rendPct)},btg:h});
+  });
+  return out;
+}
+function corrigirHistPerf(){
+  var c=cli(), l=PERF_RES&&PERF_RES.hist; if(!c||!l||!l.length) return;
+  var txt=l.map(function(d){ return MESES[d.mes-1].toLowerCase()+"/"+d.ano+": saldo "+brl2(d.btg.saldo)+", resultado "+brl2(d.btg.rendRs)+" ("+String(d.btg.rendPct).replace(".",",")+"%)"; }).join("\n");
+  if(!confirm("Corrigir a conta do BTG de "+c.nome+" com os números do relatório?\n\n"+txt+"\n\nSó mudam saldo e resultado (R$ e %) da conta do BTG nesses meses. Aplicações, resgates e as outras contas ficam como estão.")) return;
+  status("wait","Corrigindo…");
+  var passo=Promise.resolve(), feitos=[];
+  l.forEach(function(d){
+    passo=passo.then(function(){
+      var r=reg(c.id,d.mes,d.ano); if(!r) return;
+      var contas=JSON.parse(JSON.stringify(r.contas)), i=r.contas.indexOf(contaBtgDoMes(r,d.conta)); if(i<0) return;
+      contas[i].saldo=Math.round(d.btg.saldo*100)/100; contas[i].rendRs=Math.round(d.btg.rendRs*100)/100; contas[i].rendPct=Math.round(d.btg.rendPct*10000)/10000;
+      var agora=new Date().toISOString();
+      return api("lancamentos?cliente_id=eq."+c.id+"&mes=eq."+d.mes+"&ano=eq."+d.ano,{method:"PATCH",prefer:"return=minimal",body:{contas:contas,atualizado_em:agora}}).then(function(){
+        r.contas=contas; r.atualizado_em=agora; feitos.push(MESES[d.mes-1].toLowerCase()+"/"+d.ano);
+        registrar("corrigiu mês pelo relatório do BTG",c.nome,MESES[d.mes-1]+"/"+d.ano+" · saldo "+brl2(d.hub.saldo)+" → "+brl2(d.btg.saldo)+" · resultado "+brl2(d.hub.rendRs)+" → "+brl2(d.btg.rendRs));
+      });
+    });
+  });
+  passo.then(function(){ status("ok","Sincronizado"); PERF_RES.hist=confHistPerf(c,PERF_RES.p); PERF_RES.histFeitos=feitos; render(true); })
+    .catch(function(e){ status("err","Não salvou"); alert("Não consegui corrigir: "+(e.message||e)+(feitos.length?"\n\nJá corrigidos: "+feitos.join(", "):"")); PERF_RES.hist=confHistPerf(c,PERF_RES.p); render(true); });
+}
 /* cliente sem conta BTG anotada: guarda o número de cada relatório aplicado, para gravar ao salvar */
 function anotarContaPerf(c,conta){
   var cp=semZeros(conta); if(!cp||!c||(c.contas_btg&&c.contas_btg.length)) return;
@@ -3621,7 +3689,7 @@ function subirPerformance(arquivo){
     guardarAntesImportacao("Relatório de Performance");
     var rr=aplicarPerformance(S.rasc,p,arquivo.name,c);
     anotarContaPerf(c,p.conta);
-    PERF_RES={arquivo:arquivo.name,p:p,r:rr};
+    PERF_RES={arquivo:arquivo.name,p:p,r:rr,hist:confHistPerf(c,p),histN:(p.hist||[]).length};
     render(true);
   }).catch(function(e){ PERF_RES=null; render(true); alert(e.message||e); });
 }
@@ -3641,11 +3709,22 @@ function blocoPerformance(){
       '<div class="perf-nums"><div><span>Saldo</span><b>'+brl2(p.saldo)+'</b></div><div><span>Entradas</span><b>'+brl2(p.entradas)+'</b></div><div><span>Saídas</span><b>'+brl2(p.saidas)+'</b></div>'+
       '<div><span>Resultado</span><b>'+brl2(p.rendRs)+' · '+p.rendPct.toFixed(2).replace(".",",")+'%</b></div><div><span>Ativos</span><b>'+p.ativos.length+'</b></div></div>'+
       res.r.ok.map(function(x){ return '<div class="perf-l ok">'+esc(x)+'</div>'; }).join("")+
-      res.r.aviso.map(function(x){ return '<div class="perf-l av">'+esc(x)+'</div>'; }).join("")+'</div>';
+      res.r.aviso.map(function(x){ return '<div class="perf-l av">'+esc(x)+'</div>'; }).join("")+blocoHistPerf(res)+'</div>';
   } else if(info&&info.conta){
     h+='<div class="perf-res"><div class="perf-l ok">Preenchido com o Relatório de Performance'+(info.arquivo?' ('+esc(info.arquivo)+')':'')+' em '+esc(new Date(info.em).toLocaleDateString("pt-BR"))+', conta '+esc(info.conta)+'.</div></div>';
   }
   return h+'</div>';
+}
+function blocoHistPerf(res){
+  var h="", l=res.hist||[];
+  if(res.histFeitos&&res.histFeitos.length) h+='<div class="perf-l ok">Corrigido pelo relatório do BTG: '+esc(res.histFeitos.join(", "))+'.</div>';
+  if(!l.length){ return h+(res.histN>1?'<div class="perf-l ok">Os meses anteriores que o relatório traz batem com o Hub (saldo e resultado da conta do BTG).</div>':''); }
+  h+='<div class="perf-l av"><b>'+l.length+(l.length===1?' mês anterior não bate':' meses anteriores não batem')+' com o relatório do BTG</b> (conta do BTG):'+
+    '<table class="perf-hist"><thead><tr><th>Mês</th><th class="num">Saldo no Hub</th><th class="num">Saldo no BTG</th><th class="num">Resultado no Hub</th><th class="num">Resultado no BTG</th></tr></thead><tbody>'+
+    l.map(function(d){ return '<tr><td>'+MESES[d.mes-1].toLowerCase()+'/'+d.ano+'</td><td class="num">'+brl2(d.hub.saldo)+'</td><td class="num">'+brl2(d.btg.saldo)+'</td>'+
+      '<td class="num">'+brl2(d.hub.rendRs)+' · '+d.hub.rendPct.toFixed(2).replace(".",",")+'%</td><td class="num">'+brl2(d.btg.rendRs)+' · '+d.btg.rendPct.toFixed(2).replace(".",",")+'%</td></tr>'; }).join("")+
+    '</tbody></table><button type="button" class="btn pri" style="margin-top:8px" onclick="corrigirHistPerf()">Corrigir '+(l.length===1?'esse mês':'esses meses')+' com os números do BTG</button></div>';
+  return h;
 }
 function importarAtivosPdf(input){
   var f=input.files[0]; if(!f) return;
@@ -5816,7 +5895,7 @@ function blocoLote(){
 function verExtratoLote(i){
   var x=FECH.lote[i]; if(!x||!x.cliente) return;
   S.cliente=x.cliente; montarRascunho(); guardarAntesImportacao("PDF "+x.leitor.nome+" · "+x.arquivo);
-  if(x.performance){ PERF_RES={arquivo:x.arquivo,p:x.performance,r:aplicarPerformance(S.rasc,x.performance,x.arquivo,cli())}; anotarContaPerf(cli(),x.performance.conta); }
+  if(x.performance){ PERF_RES={arquivo:x.arquivo,p:x.performance,r:aplicarPerformance(S.rasc,x.performance,x.arquivo,cli()),hist:confHistPerf(cli(),x.performance),histN:(x.performance.hist||[]).length}; anotarContaPerf(cli(),x.performance.conta); }
   else aplicarAtivosExtrato(S.rasc,JSON.parse(JSON.stringify(x.ativos)),x.leitor.inst);
   S.tab="preencher"; render();
 }
