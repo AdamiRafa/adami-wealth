@@ -742,6 +742,9 @@ cada mês e a cada importação) e "12 meses" sem 0,00% falso nos ativos com men
 "Contas" (saldo, aplicações, resgates, rendimento por instituição), aceita "Data inicial" e deixa rentabilidade em
 branco como "—" (seção 29)**.
  · **3.25 (13/11/2026): Calendário de vencimentos por ano na página de vencimentos do relatório (seção 29)**.
+ · **3.26 (13/11/2026): varredura de segurança e desempenho (seção 30). Funções de cliente e de ficha exigem a
+verificação do dia; políticas calculadas uma vez por consulta; índices; cache do site (vendor/ e img/ guardados,
+o resto sempre revalidado); planilha e leitor de PDF carregados só quando usados; id de ficha fora do onclick**.
 
 ---
 
@@ -2216,3 +2219,35 @@ quantidade de títulos embaixo; o ano corrente em dourado; mais de 10 anos à fr
 `calendarioVenc` e `chartVencAno`. A página aparece também quando não há vencimento nos próximos 12 meses (título
 "Calendário de vencimentos"); com mais de 8 próximos vencimentos, o gráfico vai para a folha seguinte. Sem cupons:
 o Hub não tem o fluxo de juros de cada título.
+
+## 30. Varredura de segurança e desempenho (13/11/2026, Hub 3.26, `seguranca_326.sql`)
+
+Pedido do Emil: "varredura completa em todos os códigos buscando brechas de segurança, visando otimizar o
+sistema, rápido e seguro".
+
+**O que estava certo (conferido):** todas as tabelas com RLS e a política `exige_verificacao`; nenhuma tabela
+nem função executável por `anon`; funções `security definer` com `search_path` fixo; privilégios protegidos por
+gatilho (`proteger_privilegios`); auditoria carimbada pelo banco; Storage privado com políticas; funções do
+servidor com origem restrita (CORS), limites de envio e destinatários vindos do banco; webhook do BTG com
+senha e destino fixo; cabeçalhos de segurança (HSTS, CSP, frame-ancestors, nosniff); nenhuma biblioteca de fora.
+
+**Corrigido:**
+- `meu_cliente`, `lead_meu`, `lead_origem_minha` não conferiam `acesso_liberado()`. Como rodam como dono do banco,
+  não passam pela política das tabelas: com a senha e sem o código do dia, dava para chamar `btg_rent_cliente` e
+  `btg_sugerir_contas`. Agora exigem a verificação.
+- Tela "Ligar à ficha do CRM" (3.20) punha o id da ficha (texto) dentro de um `onclick`; `esc()` não escapa
+  aspas simples. Uma ficha criada com id malicioso executaria código na sessão de quem abrisse a lista. Agora vai
+  por índice (`LIG_VISIVEIS`). Regra: dado do banco nunca dentro de string de `onclick`; use índice.
+- Políticas: chamadas sem argumento de linha dentro de `(select ...)` (23 avisos do linter de desempenho).
+- Índices nas chaves estrangeiras usadas em filtros.
+
+**Desempenho do site:**
+- `.htaccess`: `no-store` virou `no-cache` (o navegador revalida e recebe 304 quando nada mudou; o selo de versão
+  continua confiável). `vendor/.htaccess`: um ano, `immutable` (o nome do arquivo tem a versão; nunca troque o
+  conteúdo mantendo o nome). `img/.htaccess`: 7 dias. `Options -Indexes`.
+- `index.html` não carrega mais xlsx e pdfjs na abertura (~1,2 MB): `carregarXlsx()` e `carregarPdfjs()` na hora
+  de importar ou exportar. `relCarregar` guarda a promessa e não carrega duas vezes.
+
+**Ficou como está (avaliado):** o aviso "funções security definer executáveis por authenticated" (94) é o desenho
+do sistema: elas conferem quem chama. Índices "sem uso" são de tabelas pequenas. A `agenda-manha` pode ser chamada
+por fora, mas só manda uma vez por dia e só das 6h às 11h, e não revela nomes.

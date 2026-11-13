@@ -1,0 +1,6 @@
+# Bibliotecas de terceiros (3.26). O nome de cada arquivo leva a versão (xlsx-0.18.5,
+# pdfjs-3.11.174...): versão nova = arquivo com outro nome. Por isso o navegador pode guardar
+# por um ano sem perguntar de novo. Nunca troque o conteúdo de um arquivo mantendo o nome.
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>

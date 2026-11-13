@@ -145,7 +145,8 @@ execução e fica registrado no histórico.
   ter. Função nova que devolve ou grava dado checa `acesso_liberado()` (as funções de permissão
   já checam) e nunca fica executável para `anon`: o Supabase dá EXECUTE ao `anon` por padrão,
   e `revoke ... from public` não tira. Todo módulo carrega `comum/sessao.js` no `<head>`.
-- **HTML vindo do banco** entra na tela só por `esc()` ou `limparHtmlCarta`. Endereço externo
+- **HTML vindo do banco** entra na tela só por `esc()` ou `limparHtmlCarta`. `esc()` não escapa aspas simples:
+  dado do banco (id em texto, nome) nunca vai dentro de string de `onclick`; passe um índice (seção 30). Endereço externo
   novo precisa entrar na Content-Security-Policy do `.htaccess`.
 - **A importação do BTG não cria, não exclui e não transfere carteira pelo nome.** Só o
   código do assessor autoriza transferência. Ver `DOCUMENTACAO.md` seções 6 e 7.

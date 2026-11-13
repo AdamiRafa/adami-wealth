@@ -1,12 +1,18 @@
 # Portal Adami Captal, servido pela HostGator.
 # Publicado automaticamente pelo GitHub (.github/publicar-hostgator.sh).
 
-# Nunca servir versão velha do cache: sem isso, o selo de versão do rodapé deixa de ser
-# confiável.
+# Nunca servir versão velha: o navegador sempre pergunta ao servidor se o arquivo mudou
+# (no-cache). Se não mudou, o servidor responde "304, use o que você tem" sem mandar o
+# arquivo de novo; se mudou, manda o novo. Assim o selo de versão do rodapé continua
+# confiável e o Hub abre mais rápido. Até a 3.25 era no-store, que baixava tudo a cada
+# abertura. As bibliotecas de vendor/ (nome com a versão) e as imagens de img/ têm cache
+# longo, nos .htaccess das próprias pastas.
 <IfModule mod_headers.c>
-  Header set Cache-Control "no-store, max-age=0, must-revalidate"
+  Header set Cache-Control "no-cache, must-revalidate"
   Header unset Expires
 </IfModule>
+# Sem listagem de pastas (vendor/, comum/, estilo/...).
+Options -Indexes
 <IfModule mod_expires.c>
   ExpiresActive Off
 </IfModule>

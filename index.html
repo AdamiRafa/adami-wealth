@@ -1177,8 +1177,8 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
 
 <script src="comum/carteira.js"></script>
 <script src="comum/barra.js"></script>
-<script src="vendor/xlsx-0.18.5.full.min.js"></script>
-<script src="vendor/pdfjs-3.11.174.min.js"></script>
+<!-- 3.26: a planilha (xlsx) e o leitor de PDF (pdfjs) carregam só quando alguém importa ou
+     exporta um arquivo (carregarXlsx / carregarPdfjs), não na abertura do Hub. -->
 <script>
 /* ============ conexão e sessão ============ */
 /* ============================================================
@@ -2102,7 +2102,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.25";
+var VERSAO="versão 3.26";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2902,7 +2902,7 @@ function addAtivo(){
 }
 function delAtivo(i){ S.rasc.ind.ativos.splice(i,1); render(true); }
 function baixarModeloAtivos(){
-  if(typeof XLSX==="undefined"){ alert("A planilha ainda não carregou. Recarregue a página (Cmd+Shift+R) e tente de novo."); return; }
+  if(typeof XLSX==="undefined"){ carregarXlsx().then(baixarModeloAtivos,function(e){ alert(e.message); }); return; }
   var HEAD=["Categoria","Subcategoria","Ativo","Instituição","Taxa (RF/COE)","Vencimento (AAAA-MM-DD)","Posição (R$)","Mês (%)","Ano (%)","12 meses (%)","Desde o início (%)","Data inicial (AAAA-MM-DD)"];
   var ativos=S.rasc.ind.ativos||[];
   var pc=function(v){ return v===null||v===undefined?"":v; };
@@ -2958,7 +2958,7 @@ function parseVencPlanilha(v){
 }
 function importarAtivosArquivo(input){
   var f=input.files[0]; if(!f) return;
-  if(typeof XLSX==="undefined"){ alert("A planilha ainda não carregou. Recarregue a página (Cmd+Shift+R) e tente de novo."); input.value=""; return; }
+  if(typeof XLSX==="undefined"){ carregarXlsx().then(function(){ importarAtivosArquivo(input); },function(e){ alert(e.message); input.value=""; }); return; }
   var fr=new FileReader();
   fr.onload=function(){
     var linhas;
@@ -3429,8 +3429,7 @@ var LEITORES_EXTRATO=[
 ];
 /* Lê um PDF de extrato: {leitor, ativos, texto} ou rejeita com uma mensagem clara. */
 function lerPdfExtrato(arquivo){
-  return new Promise(function(ok,erro){
-    if(typeof pdfjsLib==="undefined") return erro(new Error("O leitor de PDF ainda não carregou. Recarregue a página (Cmd+Shift+R) e tente de novo."));
+  return carregarPdfjs().then(function(){ return new Promise(function(ok,erro){
     pdfjsLib.GlobalWorkerOptions.workerSrc="vendor/pdfjs-3.11.174.worker.min.js";
     var fr=new FileReader();
     fr.onerror=function(){ erro(new Error("Não consegui ler o arquivo.")); };
@@ -3462,7 +3461,7 @@ function lerPdfExtrato(arquivo){
       }).catch(function(e){ erro(new Error("Não consegui abrir esse PDF. Confira se o arquivo não está corrompido. "+e.message)); });
     };
     fr.readAsArrayBuffer(arquivo);
-  });
+  }); });
 }
 /* Troca os ativos de uma instituição pelos do extrato e, se ela tiver uma conta só, põe
    no saldo a soma dos ativos. Resultado, aplicações e resgates ficam para preencher. */
@@ -5322,14 +5321,20 @@ function imprimir(orientacao){
    no mês, e pode gravar cada um na ficha do cliente no CRM. Para a versão em vetor
    (texto selecionável), o Imprimir continua igual. */
 var REL_PDF={cancelar:false,rodando:false};
+/* Carrega um script uma vez só; quem pedir de novo enquanto ainda baixa espera o mesmo. */
+var REL_CARREG={};
 function relCarregar(src){
-  return new Promise(function(ok,erro){
-    if(document.querySelector('script[data-rel="'+src+'"]')) return ok();
+  if(REL_CARREG[src]) return REL_CARREG[src];
+  REL_CARREG[src]=new Promise(function(ok,erro){
     var x=document.createElement("script"); x.src=src; x.setAttribute("data-rel",src);
-    x.onload=function(){ ok(); }; x.onerror=function(){ erro(new Error("Não foi possível carregar "+src)); };
+    x.onload=function(){ ok(); };
+    x.onerror=function(){ delete REL_CARREG[src]; x.remove(); erro(new Error("Não foi possível carregar "+src+". Confira a internet e tente de novo.")); };
     document.head.appendChild(x);
   });
+  return REL_CARREG[src];
 }
+function carregarXlsx(){ return typeof XLSX!=="undefined"?Promise.resolve():relCarregar("vendor/xlsx-0.18.5.full.min.js"); }
+function carregarPdfjs(){ return typeof pdfjsLib!=="undefined"?Promise.resolve():relCarregar("vendor/pdfjs-3.11.174.min.js"); }
 function relLibs(){ return relCarregar("vendor/jspdf-2.5.1.umd.min.js").then(function(){ return relCarregar("vendor/html2canvas-1.4.1.min.js"); }); }
 var REL_REGRAS=null;
 function relRegrasImpressao(){
@@ -5504,7 +5509,7 @@ function gerarPdfTodos(){
 /* ===================== Ficha do CRM ligada à carteira (3.20) =====================
    clientes.lead_id liga a carteira à ficha do CRM. Ao ligar, a conta do BTG da ficha
    entra nas contas da carteira se ainda não houver nenhuma. */
-var FICHAS=null;
+var FICHAS=null, LIG_VISIVEIS=[];
 function garantirFichas(){
   if(FICHAS) return Promise.resolve(FICHAS);
   return api("leads?select=id,cliente,conta,segmento,esteira&excluido=eq.false&funil=eq.assessor&order=cliente.asc")
@@ -5528,8 +5533,10 @@ function ligarFicha(){
 function pintarLigar(){
   var c=cli(), q=semAc(document.getElementById("ligBusca").value).trim(), qd=q.replace(/\D/g,"");
   var l=(FICHAS.lista||[]).filter(function(x){ return !q||semAc(x.cliente).indexOf(q)>=0||(qd&&String(x.conta||"").replace(/\D/g,"").indexOf(qd)>=0); }).slice(0,40);
-  document.getElementById("ligLista").innerHTML=l.length?l.map(function(x){
-    return '<button type="button" class="lig-item'+(c.lead_id===x.id?" on":"")+'" onclick="gravarFicha(\''+esc(x.id)+'\')"><b>'+esc(x.cliente||"sem nome")+'</b><span>'+esc([x.conta,x.segmento,x.esteira==="base"?"carteira":"jornada"].filter(Boolean).join(" · "))+'</span></button>';
+  /* o id da ficha é texto vindo do banco: vai por índice, nunca dentro do onclick (3.26) */
+  LIG_VISIVEIS=l;
+  document.getElementById("ligLista").innerHTML=l.length?l.map(function(x,i){
+    return '<button type="button" class="lig-item'+(c.lead_id===x.id?" on":"")+'" onclick="gravarFicha(LIG_VISIVEIS['+i+'].id)"><b>'+esc(x.cliente||"sem nome")+'</b><span>'+esc([x.conta,x.segmento,x.esteira==="base"?"carteira":"jornada"].filter(Boolean).join(" · "))+'</span></button>';
   }).join(""):'<p class="eqsub">Nenhuma ficha com esse nome ou conta.</p>';
 }
 function gravarFicha(leadId){
