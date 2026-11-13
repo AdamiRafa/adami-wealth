@@ -2102,7 +2102,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.24";
+var VERSAO="versão 3.25";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -4267,6 +4267,40 @@ function chartEvolucao(serie,cur){
   return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto">'+out+'</svg></div>'+legenda;
 }
 
+/* Calendário de vencimentos (3.25): títulos de renda fixa e COE da lista de ativos que
+   vencem a partir do mês de referência, somados por ano pela posição de hoje (sem projetar
+   juros). Mais de 11 anos à frente vira uma barra só ("2037+"). */
+function calendarioVenc(ind,mes,ano){
+  var ini=ano+"-"+(mes<10?"0":"")+mes+"-01", por={};
+  ((ind&&ind.ativos)||[]).forEach(function(x){
+    var d=String(x.vencimento||""); if(d.length!==10||d<ini||!ehTitulo(x)||n(x.posicao)<=0) return;
+    var a=+d.slice(0,4); por[a]=por[a]||{v:0,q:0}; por[a].v+=n(x.posicao); por[a].q++;
+  });
+  var anos=Object.keys(por).map(Number).sort(function(a,b){ return a-b; }), corte=ano+10, out=[];
+  anos.forEach(function(a){
+    if(a<=corte) out.push({rot:String(a),v:por[a].v,q:por[a].q});
+    else { var u=out[out.length-1]; if(!u||!u.mais){ u={rot:(corte+1)+"+",v:0,q:0,mais:true}; out.push(u); } u.v+=por[a].v; u.q+=por[a].q; }
+  });
+  return out;
+}
+function chartVencAno(lista){
+  if(!lista.length) return "";
+  var W=Math.max(420,lista.length*78+70),H=230,pt=30,pb=44;
+  /* topo redondo: 4 faixas de um passo "bonito" (1, 2, 2,5 ou 5 × 10^n) */
+  var bruto=Math.max.apply(null,lista.map(function(x){ return x.v; }))*1.12/4||1, pot=Math.pow(10,Math.floor(Math.log(bruto)/Math.LN10)), m=bruto/pot;
+  var passo=(m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*pot, vmax=passo*4;
+  var slot=(W-62)/lista.length, bw=Math.min(58,slot-22), util=H-pt-pb;
+  var out=eixoY2(0,vmax,H,pt,pb,W,function(v){ return moCurto(v); });
+  lista.forEach(function(x,i){
+    var hh=Math.max(2,x.v/vmax*util), xx=52+i*slot+(slot-bw)/2, y=H-pb-hh;
+    out+='<rect x="'+xx+'" y="'+y+'" width="'+bw+'" height="'+hh+'" rx="2" fill="'+(i===0?"#B08A2E":"#1B3A5F")+'"/>'+
+      '<text x="'+(xx+bw/2)+'" y="'+(y-7)+'" text-anchor="middle" font-size="9" fill="#3C4C60" font-family="Consolas, Menlo, monospace">'+moCurto(x.v)+'</text>'+
+      '<text x="'+(xx+bw/2)+'" y="'+(H-pb+15)+'" text-anchor="middle" font-size="9.5" fill="#16324F" font-weight="600">'+x.rot+'</text>'+
+      '<text x="'+(xx+bw/2)+'" y="'+(H-pb+28)+'" text-anchor="middle" font-size="8.5" fill="#7A8698">'+x.q+(x.q===1?" título":" títulos")+'</text>';
+  });
+  out+='<line x1="52" y1="'+(H-pb)+'" x2="'+(W-8)+'" y2="'+(H-pb)+'" stroke="#DCE2EA"/>';
+  return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto">'+out+'</svg></div>';
+}
 /* eixo com base e topo livres (a versao antiga sempre partia de zero) */
 function eixoY2(base,topo,H,pt,pb,W,fmt){
   var out="",linhas=5,faixa=(topo-base)||1;
@@ -5137,8 +5171,8 @@ function viewRelatorio(){
      '</tbody></table></div>');
 
   /* --- vencimentos (página própria quando houver) --- */
-  var venc=listaVenc(r.ind);
-  if(venc.length && secOn(r.ind,"vencimentos")){
+  var venc=listaVenc(r.ind), calV=calendarioVenc(r.ind,S.mes,S.ano);
+  if((venc.length||calV.length) && secOn(r.ind,"vencimentos")){
     var sep=vencDoMes(venc,S.mes,S.ano);
     var tabela=function(lista){
       return '<table class="rt"><thead><tr><th>Ativo</th><th>Instituição</th><th>Taxa</th><th class="n">Vencimento</th><th class="n">Valor aproximado</th></tr></thead><tbody>'+
@@ -5161,8 +5195,18 @@ function viewRelatorio(){
       corpo+=(sep.dentro.length?'<h3 class="venc-tit" style="margin-top:26px">Próximos vencimentos</h3>':'')+
              tabela(sep.futuros);
     }
-    corpo+='<p class="foot-note">Valores estimados na data de referência, sujeitos a marcação a mercado e à incidência de tributos no resgate.</p></div>';
-    pag(shead(nx(),titulo,"valores aproximados")+corpo);
+    if(venc.length) corpo+='<p class="foot-note">Valores estimados na data de referência, sujeitos a marcação a mercado e à incidência de tributos no resgate.</p>';
+    var totCal=calV.reduce(function(a,x){ return a+x.v; },0);
+    var blocoCal=calV.length?'<h3 class="venc-tit"'+(venc.length?' style="margin-top:26px"':'')+'>Calendário de vencimentos por ano</h3>'+chartVencAno(calV)+
+      '<p class="foot-note" style="margin-top:10px">Títulos de renda fixa e COE da carteira, somados pelo ano de vencimento: '+brl(totCal)+' em '+
+      calV.reduce(function(a,x){ return a+x.q; },0)+' títulos. Valor de hoje, sem projetar os juros até o vencimento. '+
+      'Fundos, previdência e renda variável não têm vencimento e ficam de fora.</p>':'';
+    if(!venc.length) titulo="Calendário de vencimentos";
+    /* lista longa de próximos vencimentos: o calendário vai para a folha seguinte */
+    if(venc.length>8&&blocoCal){
+      pag(shead(nx(),titulo,"valores aproximados")+corpo+'</div>');
+      pag('<div class="panel">'+blocoCal+'</div>');
+    } else pag(shead(nx(),titulo,"valores aproximados")+corpo+blocoCal+'</div>');
   }
 
   /* --- offshore --- */

@@ -741,6 +741,7 @@ cada mês e a cada importação) e "12 meses" sem 0,00% falso nos ativos com men
  · **3.24 (13/11/2026): Importar planilha troca só os ativos das instituições da planilha (o BTG fica), lê a aba
 "Contas" (saldo, aplicações, resgates, rendimento por instituição), aceita "Data inicial" e deixa rentabilidade em
 branco como "—" (seção 29)**.
+ · **3.25 (13/11/2026): Calendário de vencimentos por ano na página de vencimentos do relatório (seção 29)**.
 
 ---
 
@@ -2207,3 +2208,11 @@ rentabilidade vazia vira `null` ("—" no relatório). Depois da importação, `
 Rotina das planilhas (13/11/2026): dias úteis com os feriados nacionais de 2025 e 2026; CDI mensal do Relatório de
 Performance do BTG; fundos pelo informe diário da CVM (dados.cvm.gov.br, liberado na rede do ambiente); o Open
 Finance traz "Quantidade" e "Preço" trocados nos fundos (a quantidade é a cota).
+
+**3.25: Calendário de vencimentos por ano.** Pedido do Emil (item 9 da lista de melhorias do relatório). Na página
+de vencimentos, um gráfico de barras com os títulos de renda fixa e COE da lista de ativos (`ehTitulo`, vencimento
+com data completa, a partir do mês de referência), somados pela posição de hoje por ano de vencimento, com a
+quantidade de títulos embaixo; o ano corrente em dourado; mais de 10 anos à frente vira uma barra só ("2037+").
+`calendarioVenc` e `chartVencAno`. A página aparece também quando não há vencimento nos próximos 12 meses (título
+"Calendário de vencimentos"); com mais de 8 próximos vencimentos, o gráfico vai para a folha seguinte. Sem cupons:
+o Hub não tem o fluxo de juros de cada título.
