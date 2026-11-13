@@ -992,6 +992,8 @@ table.form tr.lin-herd td:first-child{box-shadow:inset 3px 0 0 #E1B54A}
 @media print{ .mesnav,.st-mes,.conf-mes,.barra-salvar{display:none!important} }
 @media screen{
 .chk-txt a.conf-a{color:#12263F;text-decoration:none;border-bottom:1px dotted #8A97A8;font-weight:500}.chk-txt a.conf-a:hover{border-bottom-color:#12263F;background:#F1F4F8}
+.dom-lista{display:flex;flex-wrap:wrap;gap:6px}.dom-chip{display:inline-flex;align-items:center;gap:4px;background:#EEF1F5;border-radius:999px;padding:4px 10px;font-size:13px}
+.dom-chip button{border:0;background:none;cursor:pointer;font-size:15px;line-height:1;color:#9B342E;padding:0 2px}
 .venc-auto{display:inline-block;margin-top:3px;font-size:11px;color:#1F6B47;background:#EAF5EE;border-radius:6px;padding:1px 7px}
 .conf-ir{margin-top:5px;font-size:12.5px;color:#5C6B7F}.conf-ir a{color:#12263F;font-weight:600;text-decoration:none;border-bottom:1px dotted #12263F}
 .chk-item{position:relative}.conf-ok{flex:none;display:flex;align-items:center;gap:6px;font-size:12.5px;color:#5C6B7F;white-space:nowrap;margin-left:auto;padding-left:12px;cursor:pointer;align-self:flex-start}
@@ -1143,7 +1145,7 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
   <div class="rail-block">
     <div class="rail-label">Dados</div>
     <button onclick="recarregar()">Atualizar da nuvem</button>
-    <button onclick="exportar()">Baixar backup (.json)</button>
+    <button onclick="exportar()" id="btnBackup" style="display:none">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
     <div class="rail-user" id="railVersao" style="opacity:.6"></div>
@@ -1237,7 +1239,7 @@ function persistirSessao(){ sessaoDeOutraAba(); try{ localStorage.setItem("aw_se
 function sessaoLiberada(){ return !!(SESSAO&&SESSAO.access_token&&SESSAO.dia===hojeBR()); }
 function codigoPendente(){ return !!(SESSAO&&SESSAO.access_token&&SESSAO.dia!==hojeBR()&&SESSAO.login_dia===hojeBR()); }
 function novaSessaoPendente(){ if(!SESSAO) return; SESSAO.login_dia=hojeBR(); SESSAO.dia=null; persistirSessao(); }
-function marcarLiberado(){ if(!SESSAO) return; SESSAO.dia=hojeBR(); SESSAO.login_dia=SESSAO.login_dia||SESSAO.dia; persistirSessao(); }
+function marcarLiberado(){ if(!SESSAO) return; SESSAO.dia=hojeBR(); SESSAO.login_dia=SESSAO.login_dia||SESSAO.dia; persistirSessao(); try{ localStorage.setItem("aw_ultimo_uso",String(Date.now())); }catch(e){} }
 function limparSessao(){
   SESSAO=null;
   try{ localStorage.removeItem("aw_sessao"); }catch(e){}
@@ -1373,7 +1375,8 @@ function abrirEquipe(){
   Promise.all([
     api("rpc/listar_equipe",{method:"POST",body:{}}).catch(function(){ return []; }),
     api("rpc/listar_convites",{method:"POST",body:{}}).catch(function(){ return []; }),
-    api("rpc/permissoes_matriz",{method:"POST",body:{}}).catch(function(){ return null; })
+    api("rpc/permissoes_matriz",{method:"POST",body:{}}).catch(function(){ return null; }),
+    carregarDominios()
   ]).then(function(r){ EQUIPE=r[0]||[]; CONVITES=r[1]||[]; MATRIZ=r[2]; pintarEquipe(); })
     .catch(function(e){ pintarEquipe("<p class='eqsub err'>"+esc(e.message||e)+"</p>"); });
 }
@@ -1404,7 +1407,7 @@ function pintarEquipe(aviso){
    (app_autenticador.sql). É um segundo caminho para o código, para quando o
    e-mail não chega (o Microsoft 365 parou em 12/11 e ninguém entrava). */
 var SEG={meus:null,equipe:null,erro:"",app:null,appNovo:null,appMsg:"",appErro:false,aparelhos:null};
-function abrirSeguranca(){
+function abrirSeguranca(obrigatorio){
   if(!document.getElementById("segv")){
     var d=document.createElement("div");
     d.id="segv"; d.className="eqv";
@@ -1413,7 +1416,7 @@ function abrirSeguranca(){
     document.body.appendChild(d);
   }
   document.getElementById("segv").style.display="flex";
-  SEG={meus:null,equipe:null,erro:"",app:null,appNovo:null,appMsg:"",appErro:false,aparelhos:null};
+  SEG={meus:null,equipe:null,erro:"",app:null,appNovo:null,appMsg:"",appErro:false,aparelhos:null,obrigatorio:obrigatorio===true};
   pintarSeguranca('<h2>Segurança</h2><p class="eqsub">Carregando…</p>');
   Promise.all([
     api("rpc/meus_acessos",{method:"POST",body:{}}).catch(function(e){ SEG.erro=String(e.message||e); return null; }),
@@ -1422,7 +1425,18 @@ function abrirSeguranca(){
     api("rpc/aparelhos_meus",{method:"POST",body:{}}).catch(function(){ return null; })
   ]).then(function(r){ SEG.meus=r[0]; SEG.equipe=r[1]; SEG.app=r[2]; SEG.aparelhos=r[3]; pintarSeguranca(telaSeguranca()); });
 }
-function fecharSeguranca(){ var d=document.getElementById("segv"); if(d) d.style.display="none"; }
+function fecharSeguranca(){
+  if(SEG.obrigatorio&&!(SEG.app&&SEG.app.ativo)){ SEG.appMsg="Para master e financeiro, o app autenticador é obrigatório. Ligue o app para continuar."; SEG.appErro=true; pintarSeguranca(telaSeguranca()); desenharQR(); return; }
+  var d=document.getElementById("segv"); if(d) d.style.display="none";
+}
+/* 3.27: master e financeiro precisam do app autenticador. Sem o app ligado, a tela de
+   Segurança abre sozinha e só fecha depois de ligar. Quem garante é o banco: com o app
+   ligado, o código do e-mail deixa de valer para essas pessoas (seguranca_327.sql). */
+function conferirAppObrigatorio(){
+  api("rpc/app_obrigatorio",{method:"POST",body:{}}).then(function(r){
+    if(r&&r.obrigatorio&&!r.ativo){ abrirSeguranca(true); }
+  }).catch(function(){});
+}
 function pintarSeguranca(html){ var x=document.getElementById("segx"); if(x) x.innerHTML=html; }
 var SEG_EVENTOS={entrou:"Entrou",entrou_app:"Entrou pelo app",codigo_enviado:"Código enviado",codigo_errado:"Código errado",bloqueado:"Bloqueado por erros",saiu_de_todos:"Saiu de todos os aparelhos",
   app_ativado:"Ligou o app autenticador",app_desativado:"Desligou o app autenticador",app_zerado:"App autenticador zerado por um master",
@@ -1450,6 +1464,7 @@ function segLinhas(lista,comNome){
 }
 function telaSeguranca(){
   var h='<h2>Segurança</h2>'+
+    (SEG.obrigatorio&&!(SEG.app&&SEG.app.ativo)?'<div class="note err" style="margin:0 0 12px"><b>Obrigatório para master e financeiro:</b> ligue o app autenticador agora. Leva 1 minuto. A partir daí, o seu código de entrada vem só do app no celular, não do e-mail.</div>':'')+
     '<div class="mfa-status on">Verificação em duas etapas ativa</div>'+
     '<p class="eqsub" style="margin-top:12px">Toda entrada no Hub pede, depois da senha, um código de 6 números: o do e-mail ou o do app autenticador. '+
     'O acesso vale até a meia-noite: no dia seguinte, todo mundo entra de novo. Num computador lembrado, só a senha.</p>'+
@@ -1553,6 +1568,7 @@ function appDesligar(){
   api("rpc/totp_desativar",{method:"POST",body:{}}).then(function(){
     esquecerAparelhoLocal(); SEG.aparelhos=[];
     SEG.app={ativo:false}; SEG.appMsg="App desligado. Para usar em outro celular, clique em Ligar."; SEG.appErro=false; pintarSeguranca(telaSeguranca());
+    api("rpc/app_obrigatorio",{method:"POST",body:{}}).then(function(r){ if(r&&r.obrigatorio){ SEG.obrigatorio=true; pintarSeguranca(telaSeguranca()); } }).catch(function(){});
   }).catch(function(e){ SEG.appMsg=String(e.message||e); SEG.appErro=true; pintarSeguranca(telaSeguranca()); });
 }
 function zerarAppPessoa(){
@@ -2012,7 +2028,35 @@ function blocoConvite(){
     });
     h+='</table>';
   }
-  return h;
+  return h+blocoDominios();
+}
+/* Domínios liberados para convite (3.27). O banco recusa convite e troca de e-mail para
+   domínio fora da lista; aqui o master vê e altera a lista. */
+var DOMINIOS=null;
+function blocoDominios(){
+  var h='<h3 class="seg-tit" style="margin-top:22px">Domínios liberados para convite</h3>';
+  if(DOMINIOS===null) return h+'<p class="eqsub">A trava de domínio ainda não foi instalada no banco (seguranca_327.sql).</p>';
+  return h+'<p class="eqsub">Só e-mails destes domínios podem ser convidados. Evita convite com erro de digitação (como .nr em vez de .br) e e-mail pessoal por engano.</p>'+
+    '<div class="dom-lista">'+DOMINIOS.map(function(d,i){ return '<span class="dom-chip">@'+esc(d)+(d!=="adamicaptal.com.br"?' <button type="button" title="Retirar" onclick="retirarDominio('+i+')">&times;</button>':'')+'</span>'; }).join("")+'</div>'+
+    '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><input class="inp" id="domNovo" placeholder="dominio.com.br" style="max-width:260px" onkeydown="if(event.key===\'Enter\')liberarDominio()">'+
+    '<button class="eqbt" onclick="liberarDominio()">Liberar domínio</button></div>';
+}
+function carregarDominios(){
+  return api("rpc/dominios_lista",{method:"POST",body:{}}).then(function(r){ DOMINIOS=(r||[]).map(function(x){ return typeof x==="string"?x:(x.dominios_lista||x.dominio||""); }).filter(Boolean); }).catch(function(){ DOMINIOS=null; });
+}
+function liberarDominio(){
+  var i=document.getElementById("domNovo"), v=((i&&i.value)||"").trim().toLowerCase().replace(/^@/,"");
+  if(!v) return;
+  if(!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(v)){ msgEq("Domínio inválido. Exemplo: adamicaptal.com.br",true); return; }
+  if(!confirm("Liberar convites para qualquer e-mail @"+v+"?")) return;
+  api("rpc/dominio_salvar",{method:"POST",body:{p_dominio:v,p_liberar:true}}).then(carregarDominios).then(function(){ pintarEquipe(); msgEq("Domínio @"+v+" liberado."); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
+}
+function retirarDominio(i){
+  var d=(DOMINIOS||[])[i]; if(!d) return;
+  if(!confirm("Retirar @"+d+"? Convites para esse domínio deixam de ser aceitos (quem já tem conta continua entrando).")) return;
+  api("rpc/dominio_salvar",{method:"POST",body:{p_dominio:d,p_liberar:false}}).then(carregarDominios).then(function(){ pintarEquipe(); msgEq("Domínio @"+d+" retirado."); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
 }
 function enviarConvite(){
   var g=function(id){ var e=document.getElementById(id); return e?e.value.trim():""; };
@@ -2102,7 +2146,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.26";
+var VERSAO="versão 3.27";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3753,6 +3797,8 @@ function restaurarBackup(id,rotulo){
   }).catch(falha);
 }
 function exportar(){
+  if(!EU.super){ alert("O backup completo das carteiras é só para o master."); return; }
+  registrar("baixou backup completo","Carteiras",db.clientes.length+" cliente(s)");
   var b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
   var a=document.createElement("a"); a.href=URL.createObjectURL(b);
   var hoje=new Date().toISOString().slice(0,10);
@@ -3761,6 +3807,7 @@ function exportar(){
 
 /* ============ view: preencher ============ */
 function renderRail(){
+  var bk=document.getElementById("btnBackup"); if(bk) bk.style.display=EU.super?"":"none";
   var ul=document.getElementById("cliList");
   if(!db.clientes.length){ ul.innerHTML='<li style="color:#7A8DA3;cursor:default">Nenhum cliente ainda</li>'; }
   else{
@@ -6657,7 +6704,12 @@ var TOKEN_RECUPERACAO=null;
    abrir: o robô de segurança do e-mail (que abre os links para conferir) gastava
    o código e o clique da pessoa caía em "link já usado". O formato antigo (#access_token)
    continua aceito para e-mails enviados antes da troca do modelo. */
-var ERRO_LINK_EMAIL="";
+var ERRO_LINK_EMAIL="", AVISO_LOGIN_OK=false;
+if(location.hash==="#inatividade"){
+  ERRO_LINK_EMAIL="Você saiu do Hub depois de 30 minutos sem uso. Entre de novo; num computador lembrado, só a senha.";
+  AVISO_LOGIN_OK=true;
+  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+}
 function detectarRecuperacaoNaUrl(){
   var q=new URLSearchParams(location.search);
   if(q.get("token_hash")&&q.get("type")==="recovery") return {token_hash:q.get("token_hash")};
@@ -6896,6 +6948,16 @@ function cancelarCodigo(){
   MODO_LOGIN="entrar";
   render();
 }
+/* Inatividade (3.27): 30 minutos sem uso em nenhuma aba. Quem decide é comum/barra.js. */
+function encerrarPorInatividade(){
+  var tk=SESSAO&&SESSAO.access_token;
+  limparSessao();
+  if(tk) fetch(SB_URL+"/auth/v1/logout",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk}}).catch(function(){});
+  db={clientes:[],dados:{},cartas:{}}; S.cliente=null; S.rasc=null; S.app=null;
+  MODO_LOGIN="entrar";
+  render();
+  document.getElementById("view").innerHTML=viewLogin("Você saiu do Hub depois de 30 minutos sem uso. Entre de novo; num computador lembrado, só a senha.",true);
+}
 /* Virada do dia: o acesso de ontem acabou. */
 function encerrarPorVirada(){
   var tk=SESSAO&&SESSAO.access_token;
@@ -7002,7 +7064,7 @@ if(TOKEN_RECUPERACAO){
 }else if(ERRO_LINK_EMAIL&&!(SESSAO&&SESSAO.access_token)){
   history.replaceState(null,"",location.pathname+location.search);
   render();
-  document.getElementById("view").innerHTML=viewLogin(ERRO_LINK_EMAIL);
+  document.getElementById("view").innerHTML=viewLogin(ERRO_LINK_EMAIL,AVISO_LOGIN_OK);
 }else if(SESSAO&&SESSAO.access_token&&!sessaoLiberada()){
   /* Senha digitada hoje, código ainda não: volta para a tela do código.
      Login de ontem: acabou, entra de novo. */
@@ -7020,6 +7082,7 @@ if(TOKEN_RECUPERACAO){
     montarRascunho(); render();
     backupAutomatico();
     abrirLinkDireto();
+    conferirAppObrigatorio();
   });
 }else{
   render();

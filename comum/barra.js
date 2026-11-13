@@ -40,7 +40,8 @@
       "Os números do alto são os mesmos do Dashboard do CRM. Clique para abrir o CRM.",
       "Hoje mostra as tarefas da Agenda do CRM. Clique num dia do calendário para ver o que há nele.",
       "Avisos da casa: abra e clique em Marcar como lido.",
-      "Segurança (menu da esquerda): ligue o app autenticador para não depender do e-mail."] },
+      "Segurança (menu da esquerda): ligue o app autenticador para não depender do e-mail. Para master e financeiro, ele é obrigatório.",
+      "Depois de 30 minutos sem uso, o Hub sai sozinho. Num computador lembrado, para voltar basta a senha."] },
     carteiras: { nome: "Carteiras", pag: 23, itens: [
       "Escolha o cliente à esquerda e o mês no alto (setas ou calendário). Ponto verde: mês feito; amarelo: falta marcar.",
       "Preencher: arraste o Relatório de Performance do BTG (PDF) na área do alto. Ele preenche a conta do BTG, todos os ativos com a rentabilidade, os índices e os próximos vencimentos.",
@@ -179,7 +180,7 @@
 
   /* ---------- Visual ---------- */
   var CSS =
-    ".awb-bt{position:fixed;right:18px;bottom:18px;z-index:99990;width:46px;height:46px;border-radius:50%;border:0;background:#12263F;color:#fff;" +
+    ".awb-inativo{position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:2147483000;background:#8A6A18;color:#fff;font:600 14px Inter,system-ui,sans-serif;padding:12px 18px;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.25);max-width:92vw;text-align:center}.awb-bt{position:fixed;right:18px;bottom:18px;z-index:99990;width:46px;height:46px;border-radius:50%;border:0;background:#12263F;color:#fff;" +
       "font:600 20px/46px Georgia,serif;cursor:pointer;box-shadow:0 6px 20px rgba(5,19,42,.28);display:flex;align-items:center;justify-content:center}" +
     ".awb-bt:hover{background:#1B3A5F}.awb-bt:focus-visible{outline:3px solid #C0A265;outline-offset:2px}" +
     ".awb-fundo{position:fixed;inset:0;z-index:99995;background:rgba(5,19,42,.32);display:flex;justify-content:flex-end}" +
@@ -430,5 +431,57 @@
   /* O Hub troca de tela sem recarregar (login, código, início): o botão acompanha. */
   setInterval(atualizarBotao, 700);
 
-  window.AWBarra = { abrir: abrir, fechar: fechar, erros: function(){ return ERROS.slice(); } };
+  /* ---------- Registro de downloads em massa (3.27) ----------
+     Quem baixou o quê fica no Registro de atividades (tabela auditoria). O banco carimba
+     o e-mail de quem chamou (auditoria_carimbo), então ninguém registra em nome de outro. */
+  function registrarAcao(acao, alvo, detalhe){
+    if(!logado()) return Promise.resolve();
+    var s = sessao() || {};
+    return chamar("/rest/v1/auditoria", { method: "POST", headers: { "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ usuario: s.email || "?", acao: String(acao).slice(0, 80), alvo: String(alvo || "").slice(0, 200), detalhe: String(detalhe || "").slice(0, 500) }) })
+      .catch(function(){});
+  }
+
+  /* ---------- Saída por inatividade (3.27) ----------
+     30 minutos sem mexer em nenhuma aba do Hub: sai da conta. O último uso fica no
+     navegador (aw_ultimo_uso) e vale para todas as abas abertas. Aos 28 minutos aparece um
+     aviso. Ao sair, a sessão é encerrada também no servidor (logout), não só na tela. */
+  var INAT_MIN = 30, INAT_AVISO = 2, CHAVE_USO = "aw_ultimo_uso", ultMarca = 0, avisoEl = null;
+  function ultimoUso(){ try{ return Number(localStorage.getItem(CHAVE_USO) || 0); }catch(e){ return 0; } }
+  function marcarUso(forcar){
+    var t = Date.now();
+    if(!forcar && t - ultMarca < 15000) return;
+    ultMarca = t;
+    try{ localStorage.setItem(CHAVE_USO, String(t)); }catch(e){}
+    if(avisoEl){ avisoEl.remove(); avisoEl = null; }
+  }
+  function sairPorInatividade(){
+    if(typeof window.encerrarPorInatividade === "function"){ window.encerrarPorInatividade(); return; }
+    var s = sessao();
+    try{ localStorage.removeItem("aw_sessao"); }catch(e){}
+    if(s && s.access_token) fetch(SB_URL + "/auth/v1/logout", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + s.access_token }, keepalive: true }).catch(function(){});
+    location.replace("index.html#inatividade");
+  }
+  function conferirInatividade(){
+    if(!logado()) return;
+    var u = ultimoUso();
+    if(!u){ marcarUso(true); return; }
+    var parado = Date.now() - u;
+    if(parado >= INAT_MIN * 60000){ sairPorInatividade(); return; }
+    if(parado >= (INAT_MIN - INAT_AVISO) * 60000 && !avisoEl){
+      avisoEl = document.createElement("div");
+      avisoEl.className = "awb-inativo";
+      avisoEl.setAttribute("role", "alert");
+      avisoEl.textContent = "Você vai sair do Hub em 2 minutos por falta de uso. Mexa o mouse ou aperte uma tecla para continuar.";
+      document.body.appendChild(avisoEl);
+    }
+  }
+  ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "wheel"].forEach(function(ev){
+    window.addEventListener(ev, function(){ if(logado()) marcarUso(false); }, { passive: true, capture: true });
+  });
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) conferirInatividade(); });
+  setInterval(conferirInatividade, 20000);
+  conferirInatividade();
+
+  window.AWBarra = { abrir: abrir, fechar: fechar, erros: function(){ return ERROS.slice(); }, registrar: registrarAcao, marcarUso: function(){ marcarUso(true); } };
 })();

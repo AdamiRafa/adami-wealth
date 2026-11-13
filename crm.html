@@ -12043,7 +12043,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.12.2';
+const CRM_VERSAO = 'versão do CRM 2026.11.13.1';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -12556,6 +12556,8 @@ function baixarExcel(nomeArquivo, colunas, linhas){
     const wb = X.utils.book_new();
     X.utils.book_append_sheet(wb, ws, 'Lista');
     X.writeFile(wb, nomeArquivo.replace(/[\\/:*?"<>|]/g, '-') + ' ' + todayISO() + '.xlsx');
+    /* 3.27: download em massa fica no Registro de atividades */
+    try{ window.AWBarra && window.AWBarra.registrar('baixou Excel do CRM', nomeArquivo, linhas.length + ' linha(s)'); }catch(e){}
   });
 }
 
@@ -14562,7 +14564,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão do CRM 2026.11.12.2";
+var VERSAO_CRM="versão do CRM 2026.11.13.1";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>

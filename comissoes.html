@@ -1323,6 +1323,8 @@ function planilhaPessoa(uid){
 }
 /* Baixa pelo próprio navegador, com o nome certo (o writeFile do SheetJS perde o nome com acento em alguns navegadores). */
 function baixarWb(wb,nome){
+  /* 3.27: download fica no Registro de atividades */
+  try{ window.AWBarra&&window.AWBarra.registrar("baixou Excel de comissões",nome,""); }catch(e){}
   var dados=XLSX.write(wb,{bookType:"xlsx",type:"array"});
   var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([dados],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
   a.download=nome; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);

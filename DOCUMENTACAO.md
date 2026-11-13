@@ -745,6 +745,9 @@ branco como "—" (seção 29)**.
  · **3.26 (13/11/2026): varredura de segurança e desempenho (seção 30). Funções de cliente e de ficha exigem a
 verificação do dia; políticas calculadas uma vez por consulta; índices; cache do site (vendor/ e img/ guardados,
 o resto sempre revalidado); planilha e leitor de PDF carregados só quando usados; id de ficha fora do onclick**.
+ · **3.27 (13/11/2026): decisões do Emil depois da varredura (seção 30): convites só para domínios liberados,
+app autenticador obrigatório para master e financeiro, saída depois de 30 minutos sem uso, downloads em massa no
+Registro de atividades e backup completo só para o master. Banco: `seguranca_327.sql`**.
 
 ---
 
@@ -2251,3 +2254,19 @@ senha e destino fixo; cabeçalhos de segurança (HSTS, CSP, frame-ancestors, nos
 **Ficou como está (avaliado):** o aviso "funções security definer executáveis por authenticated" (94) é o desenho
 do sistema: elas conferem quem chama. Índices "sem uso" são de tabelas pequenas. A `agenda-manha` pode ser chamada
 por fora, mas só manda uma vez por dia e só das 6h às 11h, e não revela nomes.
+
+**3.27: decisões do Emil (perguntas da varredura).**
+- **Convites por domínio** (`convites_dominios`, `dominio_liberado`, `dominios_lista`, `dominio_salvar`):
+  `convidar` e `equipe_editar` (troca de e-mail) recusam domínio fora da lista. Começa com adamicaptal.com.br, que
+  não pode ser retirado. Tela: Equipe > Convidar pessoa > "Domínios liberados para convite" (só master).
+- **App autenticador obrigatório para master e financeiro** (`exige_app`: `perfis.super` ou `perfis.financeiro`).
+  Sem o app ligado, entram pelo código do e-mail e o Hub abre a Segurança obrigatória (`conferirAppObrigatorio`,
+  `abrirSeguranca(true)`), que só fecha depois de ligar. Com o app ligado, `acesso_novo_codigo` não gera código por
+  e-mail e `verificar_codigo` só aceita o do app. Perdeu o celular: outro master usa "Zerar app" na Equipe.
+- **Saída por inatividade** (`comum/barra.js`, em todos os módulos): 30 minutos sem mouse, teclado, rolagem ou
+  toque em nenhuma aba (`localStorage.aw_ultimo_uso`); aviso aos 28; ao sair, logout também no servidor e volta
+  para o login com o aviso (`index.html#inatividade`, `encerrarPorInatividade`). O login marca o uso
+  (`marcarLiberado`), senão um horário velho derrubaria a pessoa logo depois de entrar.
+- **Downloads em massa no Registro de atividades** (`AWBarra.registrar`, em `comum/barra.js`): backup completo das
+  Carteiras, Excel do CRM, Excel de comissões (o PDF de todos já registrava). "Baixar backup (.json)" só aparece e
+  só funciona para o master.
