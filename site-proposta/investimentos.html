@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Adami Captal · Investimentos</title>
+<link rel="icon" href="../img/app-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F4EE}
+a{color:#1B3A5F}a:hover{color:#0E2236}
+.ac{font-family:Inter,system-ui,sans-serif;color:#2B3645;background:#F7F4EE}
+.ac *{box-sizing:border-box}
+.wrap{max-width:1200px;margin:0 auto;padding:0 32px}
+.serif{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;letter-spacing:-0.01em}
+.eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:600}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 26px;border-radius:2px;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:.02em}
+.btn-ouro{background:#C9A86A;color:#0E2236}.btn-ouro:hover{background:#D8BB82;color:#0E2236}
+.btn-linha{border:1px solid rgba(255,255,255,.45);color:#fff}.btn-linha:hover{border-color:#fff;color:#fff}
+.btn-azul{background:#12263F;color:#fff}.btn-azul:hover{background:#1B3A5F;color:#fff}
+.nav a{color:#E8EDF3;text-decoration:none;font-size:14px;letter-spacing:.04em}.nav a:hover{color:#C9A86A}
+.nav a.ativo{color:#C9A86A}
+.foto{background:#22405F;border:1px solid rgba(201,168,106,.35);display:flex;align-items:flex-end;padding:20px;color:#B9C6D6;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.frente{background:#fff;border:1px solid #E4DDD0;padding:40px;display:flex;flex-direction:column;gap:18px}
+.frente li{padding:11px 0;border-top:1px solid #EFEAE0;font-size:15px}
+.rodape a{color:#C7D2DF;text-decoration:none}.rodape a:hover{color:#C9A86A}
+@media screen and (max-width:900px){
+ .acesso{font-size:0 !important;gap:0 !important;min-width:44px;justify-content:center}
+ .nav{display:none !important}
+ .cols2,.cols3,.cols4{grid-template-columns:minmax(0,1fr) !important}
+ .heroGrid{grid-template-columns:minmax(0,1fr) !important}
+ .h1{font-size:44px !important}
+ .wrap{padding:0 20px}
+}
+.acesso{color:#C7D2DF;text-decoration:none;font-size:13px;letter-spacing:.04em;display:inline-flex;align-items:center;gap:8px;min-height:44px}.acesso:hover{color:#C9A86A}
+/* Animações (todas desligadas para quem pede menos movimento) */
+.btn svg{transition:transform .35s ease}
+@media screen and (prefers-reduced-motion: no-preference){
+ @keyframes sobe{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+ @keyframes linha{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+ .entra{animation:sobe 1s cubic-bezier(.2,.7,.2,1) both}
+ .d1{animation-delay:.05s}.d2{animation-delay:.18s}.d3{animation-delay:.34s}.d4{animation-delay:.5s}
+ .btn:hover svg{transform:translateX(5px)}
+ .porta,.perfil,.artigo .foto,.serv,.frente,.entreg,.nivel,.leva,.jur{transition:translate .45s cubic-bezier(.2,.7,.2,1),scale .45s ease,box-shadow .45s ease,border-color .3s ease}
+ .porta:hover,.perfil:hover,.serv:hover,.frente:hover,.entreg:hover,.leva:hover{translate:0 -5px;box-shadow:0 22px 44px rgba(14,34,54,.09)}
+ .nivel:hover,.jur:hover{translate:0 -5px;border-color:#C9A86A}
+ .artigo:hover .foto{scale:1.02}
+ .nav a{background-image:linear-gradient(#C9A86A,#C9A86A);background-size:0 1px;background-position:0 100%;background-repeat:no-repeat;padding-bottom:4px;transition:background-size .35s ease,color .3s}
+ .nav a:hover,.nav a.ativo{background-size:100% 1px}
+ @keyframes kb{from{transform:scale(1)}to{transform:scale(1.07)}}
+ .kb{animation:kb 24s ease-in-out infinite alternate}
+ @supports (animation-timeline: view()){
+  .revela{animation:sobe linear both;animation-timeline:view();animation-range:entry 5% entry 45%}
+  .etapa{position:relative}
+  .etapa::before{content:'';position:absolute;left:0;right:0;top:-1px;height:1px;background:#C9A86A;transform-origin:left;animation:linha linear both;animation-timeline:view();animation-range:entry 10% cover 40%}
+ }
+}
+.foto img,.pilar img{width:100%;height:100%;object-fit:cover;display:block}
+/* ---- Nível 2 (12/11): topo fixo, capa em tela cheia, mapa, calculadora, transições ---- */
+.topo{position:fixed;top:0;left:0;right:0;z-index:60;border-bottom:1px solid rgba(255,255,255,.14);transition:background-color .45s ease,box-shadow .45s ease,border-color .45s}
+.topo.solido{background:rgba(14,34,54,.97);box-shadow:0 10px 30px rgba(0,0,0,.2);border-bottom-color:transparent}
+.capa{position:relative;min-height:max(660px, min(100vh, 940px));color:#fff;display:flex;align-items:flex-end;overflow:hidden;background:#0E2236}
+.capa-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.capa-veu{position:absolute;inset:0;background:rgba(9,22,40,.5)}
+.capa-veu2{position:absolute;left:0;right:0;bottom:0;height:65%;background:linear-gradient(to top,rgba(9,22,40,.92),rgba(9,22,40,0))}
+.capa-conteudo{position:relative;width:100%;padding-top:156px;padding-bottom:72px}
+.desce{display:inline-flex;flex-direction:column;align-items:center;gap:10px;color:#C7D2DF;font-size:11px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none}
+.desce:hover{color:#C9A86A}
+.desce .l{width:1px;height:46px;background:rgba(255,255,255,.3);position:relative;overflow:hidden;display:block}
+.mapaGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:center}
+.mapa{position:relative;width:100%;max-width:520px;aspect-ratio:1/1;margin:0 auto}
+.orbita{position:absolute;inset:12%;border:1px dashed rgba(184,149,90,.6);border-radius:50%}
+.orbita2{position:absolute;inset:30%;border:1px solid rgba(184,149,90,.25);border-radius:50%}
+.centro{position:absolute;left:50%;top:50%;width:40%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;background:#12263F;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:18px;box-shadow:0 0 0 14px rgba(18,38,63,.06)}
+.no{position:absolute;transform:translate(-50%,-50%);min-height:48px;padding:0 20px;border-radius:999px;border:1px solid #CFC6B6;background:#fff;color:#12263F;font:500 15px Inter,system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:10px;white-space:nowrap;transition:background-color .3s,color .3s,border-color .3s,box-shadow .3s}
+.no:hover{border-color:#B8955A}
+.no.on{background:#C9A86A;border-color:#C9A86A;color:#0E2236;box-shadow:0 12px 30px rgba(184,149,90,.35)}
+.no .pt{width:8px;height:8px;border-radius:50%;background:#B8955A;display:block}.no.on .pt{background:#0E2236}
+.n1{left:50%;top:6%}.n2{left:91%;top:50%}.n3{left:50%;top:94%}.n4{left:9%;top:50%}
+.painel{background:#fff;border:1px solid #E4DDD0;display:flex;flex-direction:column;min-height:560px}
+.painel .pf{height:260px;overflow:hidden}
+.painel img{width:100%;height:100%;object-fit:cover;display:block}
+.painel li{padding:10px 0;border-top:1px solid #EFEAE0;font-size:15px}
+.calc{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,0.95fr);background:#fff;border:1px solid #E4DDD0}
+.calc-in{padding:48px;display:flex;flex-direction:column;gap:30px}
+.calc-out{background:#12263F;color:#fff;padding:48px;display:flex;flex-direction:column;gap:18px;justify-content:center}
+.faixa{display:flex;flex-direction:column;gap:8px}
+.faixa .lin{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.faixa label{font-size:13px;font-weight:600;color:#12263F}
+.faixa output{font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;color:#12263F;font-variant-numeric:tabular-nums}
+.faixa input[type=range]{width:100%;accent-color:#B8955A;height:28px;cursor:pointer;margin:0}
+.barra{height:8px;background:rgba(255,255,255,.14);border-radius:99px;overflow:hidden}
+.barra span{display:block;height:100%;background:#C9A86A;border-radius:99px;transition:width .5s ease}
+@view-transition{navigation:auto}
+@media screen and (prefers-reduced-motion: no-preference){
+ @keyframes chega{from{opacity:0}to{opacity:1}}
+ .ac{animation:chega .7s ease both}
+ @keyframes cai{from{transform:translateY(-100%)}to{transform:translateY(100%)}}
+ .desce .l::after{content:'';position:absolute;left:0;top:0;width:1px;height:100%;background:#C9A86A;animation:cai 2.2s ease-in-out infinite}
+ @keyframes gira{to{transform:rotate(360deg)}}
+ .orbita{animation:gira 90s linear infinite}
+ @keyframes surge{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+ .troca{animation:surge .6s cubic-bezier(.2,.7,.2,1) both}
+}
+@media screen and (max-width:900px){
+ .capa{height:auto;min-height:640px}
+ .capa-conteudo{padding-top:120px;padding-bottom:48px}
+ .capa h1{font-size:42px !important}
+ .topo .btn{padding:0 12px;font-size:12.5px;white-space:nowrap;min-height:44px}
+ .topo .wrap{gap:10px !important}
+ .topo .wrap > div{gap:6px !important}
+ .topo img{height:26px !important}
+ .mapaGrid{grid-template-columns:minmax(0,1fr) !important;gap:36px}
+ .mapa{max-width:340px}
+ .no{padding:0 12px;font-size:13px;gap:6px}
+ .n2{left:82%}.n4{left:18%}
+ .calc{grid-template-columns:minmax(0,1fr) !important}
+ .calc-in,.calc-out{padding:28px}
+ .painel{min-height:0}
+}
+</style>
+</head>
+<body>
+<div class="ac">
+
+<header class="topo">
+<div class="wrap" style="display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 88px">
+<a href="index.html" aria-label="Adami Captal, página inicial"><img src="img/bfe87fbe0af8cf3d626c5e7403ff21fc.png" alt="Adami Captal" style="height: 34px; width: auto; display: block"></a>
+<nav class="nav" aria-label="Menu principal" style="display: flex; gap: 36px; align-items: center">
+<a class="ativo" href="investimentos.html" aria-current="page">Investimentos</a>
+<a href="wealth.html">Wealth Planning</a>
+<a href="jornada.html">Como trabalhamos</a>
+<a href="index.html#conteudo">Conteúdo</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 24px"><a class="acesso" href="https://adamicaptal.com.br/hub" title="Entrar no Hub Adami" aria-label="Acesso colaborador"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Acesso colaborador</a><a class="btn btn-ouro" href="agendar.html" style="min-height: 44px; padding: 0 20px; font-size: 14px">Agendar conversa</a></div>
+</div>
+</header>
+
+<section class="capa">
+<img class="capa-img kb" src="img/57a0227d42ec73fd0f3529b1e3e71052.jpg" alt="">
+<div class="capa-veu"></div><div class="capa-veu2"></div>
+<div class="wrap capa-conteudo" style="display: flex; flex-direction: column; gap: 26px">
+<div class="eyebrow entra d1" style="color: #C9A86A">Adami Captal Investimentos</div>
+<h1 class="serif h1 entra d2" style="margin: 0; font-size: 62px; line-height: 1.06; color: #fff; max-width: 900px">O maior banco de investimento da América Latina ao seu lado, na construção da sua história.</h1>
+<p class="entra d3" style="margin: 0; font-size: 18px; line-height: 1.65; color: #C7D2DF; max-width: 560px">Pela Necton, uma empresa BTG Pactual, você tem acesso a mais de mil opções de investimento, além de conta corrente e cartão. Nós selecionamos e montamos a carteira ideal para o seu perfil.</p>
+<div class="entra d4" style="display: flex; gap: 14px; flex-wrap: wrap; padding-top: 6px">
+<a class="btn btn-ouro" href="agendar.html">Falar com um especialista</a>
+<a class="btn btn-linha" href="#frentes">Ver o que oferecemos</a>
+</div>
+
+</div>
+</section>
+
+<section style="background: #fff; border-bottom: 1px solid #E4DDD0">
+<div class="wrap cols4" data-contador style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; padding-top: 48px; padding-bottom: 48px">
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="serif" style="font-size: 46px; color: #12263F; font-variant-numeric: tabular-nums"><span data-n="0">+20 anos</span></span><span style="font-size: 14px; color: #5A6573">de experiência no mercado financeiro</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="serif" style="font-size: 46px; color: #12263F; font-variant-numeric: tabular-nums"><span data-n="1">+1.500</span></span><span style="font-size: 14px; color: #5A6573">clientes</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="serif" style="font-size: 46px; color: #12263F; font-variant-numeric: tabular-nums"><span data-n="2">+R$ 500 mi</span></span><span style="font-size: 14px; color: #5A6573">sob assessoria</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="serif" style="font-size: 46px; color: #12263F; font-variant-numeric: tabular-nums"><span data-n="3">NPS 98</span></span><span style="font-size: 14px; color: #5A6573">grau de satisfação do cliente</span></div>
+</div>
+</section>
+
+<section id="frentes" style="padding: 112px 0">
+<div class="wrap" style="display: flex; flex-direction: column; gap: 48px">
+<div style="display: flex; flex-direction: column; gap: 16px; max-width: 760px">
+<div class="eyebrow" style="color: #8A6A2E">Inteligência financeira</div>
+<h2 class="serif revela" style="margin: 0; font-size: 46px; line-height: 1.1; color: #12263F">Tudo o que a sua vida financeira precisa, em um só relacionamento.</h2>
+<p style="margin: 0; font-size: 17px; line-height: 1.65; color: #5A6573">Entendemos o seu perfil de investidor e mostramos as opções certas para você.</p>
+</div>
+<div class="cols4" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px">
+<div class="frente revela"><span class="serif" style="font-size: 30px; color: #12263F">Investimentos</span>
+<ul style="list-style: none; margin: 0; padding: 0"><li>Renda fixa</li><li>Fundos de investimento</li><li>Fundos imobiliários</li><li>Ações</li><li>Produtos estruturados</li></ul></div>
+<div class="frente revela"><span class="serif" style="font-size: 30px; color: #12263F">Conta e cartão</span>
+<ul style="list-style: none; margin: 0; padding: 0"><li>Conta corrente</li><li>Conta para os seus filhos</li><li>Conta para a sua empresa</li><li>Cartão de crédito</li><li>Carteira digital</li></ul></div>
+<div class="frente revela"><span class="serif" style="font-size: 30px; color: #12263F">Internacional</span>
+<ul style="list-style: none; margin: 0; padding: 0"><li>Câmbio instantâneo</li><li>Cartão de débito</li><li>Pagamentos, recebimentos e saques no exterior</li></ul></div>
+<div class="frente revela"><span class="serif" style="font-size: 30px; color: #12263F">Seguros e previdência</span>
+<ul style="list-style: none; margin: 0; padding: 0"><li>Vida protegida</li><li>PGBL</li><li>VGBL</li></ul></div>
+</div>
+</div>
+</section>
+
+<section style="padding: 0 0 112px">
+<div class="wrap cols2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+<a class="frente revela" href="https://digital.necton.com.br/cadastro?assessor=5414062" style="text-decoration: none; color: #2B3645"><span class="eyebrow" style="color: #8A6A2E">Já decidiu?</span><span class="serif" style="font-size: 32px; color: #12263F">Abra sua conta</span><span style="font-size: 15px; line-height: 1.6; color: #5A6573">Cadastro online, em poucos minutos, já vinculado ao seu assessor na Adami Captal.</span><span style="font-weight: 600; color: #1B3A5F">Abrir minha conta</span></a>
+<a class="frente revela" href="https://simulador.btgpactual.com/partner/5390761" style="text-decoration: none; color: #2B3645"><span class="eyebrow" style="color: #8A6A2E">Quer fazer as contas?</span><span class="serif" style="font-size: 32px; color: #12263F">Simule seus investimentos</span><span style="font-size: 15px; line-height: 1.6; color: #5A6573">Compare cenários no simulador do BTG Pactual antes da sua conversa com a gente.</span><span style="font-weight: 600; color: #1B3A5F">Abrir o simulador</span></a>
+</div>
+</section>
+
+<section style="background: #12263F; color: #fff; padding: 112px 0">
+<div class="wrap heroGrid" style="display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 72px; align-items: center">
+<div class="foto" style="height: 420px; padding: 0; overflow: hidden"><img class="kb" src="img/ede14619e115a4ce8315cce03fc3399a.jpg" alt="Aperto de mãos em reunião"></div>
+<div style="display: flex; flex-direction: column; gap: 22px">
+<div class="eyebrow" style="color: #C9A86A">Muito além dos números</div>
+<h2 class="serif revela" style="margin: 0; font-size: 44px; line-height: 1.12; color: #fff">A experiência de ser cliente Adami Captal.</h2>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; font-size: 16px; line-height: 1.6; color: #C7D2DF">
+<li style="border-top: 1px solid rgba(201,168,106,.4); padding-top: 16px"><strong style="color: #fff; font-weight: 600">Um assessor que conhece você.</strong> Sempre a mesma pessoa, que entende seus objetivos e sua família.</li>
+<li style="border-top: 1px solid rgba(201,168,106,.4); padding-top: 16px"><strong style="color: #fff; font-weight: 600">Carteira revisada com você.</strong> Mudou a vida ou o mercado, a estratégia muda junto.</li>
+<li style="border-top: 1px solid rgba(201,168,106,.4); padding-top: 16px"><strong style="color: #fff; font-weight: 600">Relatório consolidado.</strong> Evolução, alocação e rentabilidade do patrimônio em um só lugar.</li>
+</ul>
+</div>
+</div>
+</section>
+
+<section style="background: #fff; padding: 104px 0">
+<div class="wrap" style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px">
+<div class="eyebrow" style="color: #8A6A2E">Mude hoje a sua forma de investir</div>
+<h2 class="serif revela" style="margin: 0; font-size: 50px; line-height: 1.1; color: #12263F; max-width: 800px">Vamos montar a sua carteira juntos.</h2>
+<div style="display: flex; gap: 14px; flex-wrap: wrap; justify-content: center">
+<a class="btn btn-azul" href="agendar.html">Agendar uma conversa</a>
+<a class="btn" href="https://api.whatsapp.com/send?phone=5551982326300" style="border: 1px solid #12263F; color: #12263F">WhatsApp</a>
+</div>
+</div>
+</section>
+
+<footer class="rodape" style="background: #0E2236; color: #9FB0C4; padding: 64px 0 36px; font-size: 14px">
+<div class="wrap" style="display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap">
+<img src="img/765a96c6f5f0790cbcc330e45cfa7b81.png" alt="Adami Captal Investimentos e Necton, uma empresa BTG Pactual" style="height: 36px; width: auto; max-width: 100%">
+<div style="display: flex; gap: 28px; flex-wrap: wrap"><a href="index.html">Início</a><a href="wealth.html">Wealth Planning</a><a href="agendar.html">Agendar conversa</a><a href="https://digital.necton.com.br/cadastro?assessor=5414062">Abra sua conta</a><a href="https://simulador.btgpactual.com/partner/5390761">Simulador</a><a href="tel:+5551982326300">+55 51 9 8232-6300</a><a href="https://adamicaptal.com.br/hub">Acesso colaborador</a></div>
+</div>
+<p style="margin: 0; font-size: 12px; line-height: 1.7; color: #8E9FB4; border-top: 1px solid rgba(255,255,255,.12); padding-top: 24px">Porto Alegre: Av. Senador Tarso Dutra, 605, Sala 1501 · São Paulo: Av. Brig. Faria Lima, 1355, 22º andar. [Texto regulatório completo da CVM, igual ao da Home.] © 2026 Adami Captal.</p>
+</div>
+</footer>
+
+</div>
+<script src="site.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# Proposta do site novo da Adami Captal (só para navegar e avaliar).
+# Fora dos buscadores: o site oficial continua em adamicaptal.com.br.
+<IfModule mod_headers.c>
+  Header always set X-Robots-Tag "noindex, nofollow"
+</IfModule>

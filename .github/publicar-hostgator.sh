@@ -27,6 +27,7 @@ echo "::endgroup::"
 # 1. Monta a pasta que vai ao ar. Lista positiva: só HTML, vendor/, img/, estilo/, comum/, webhook/, ajuda/,
 #    app.webmanifest e .htaccess.
 #    ajuda/ guarda o PDF do manual do Hub (botão ? e Primeiros passos).
+#    site-proposta/ é a proposta navegável do site novo da Adami (adamicaptal.com.br/hub/site-proposta/).
 #    app.webmanifest deixa instalar o Hub como aplicativo no celular (3.10).
 #    comum/ guarda o script "Salvar no CRM" das ferramentas (comum/anexos.js).
 #    webhook/ guarda o repasse dos avisos do BTG para o Supabase (webhook/btg.php).
@@ -43,6 +44,7 @@ cp -R "$ORIGEM"/estilo "$SITE"/estilo
 cp -R "$ORIGEM"/comum "$SITE"/comum
 cp -R "$ORIGEM"/webhook "$SITE"/webhook
 cp -R "$ORIGEM"/ajuda "$SITE"/ajuda
+cp -R "$ORIGEM"/site-proposta "$SITE"/site-proposta
 cp "$ORIGEM"/app.webmanifest "$SITE"/
 printf 'Portal Adami Captal. Esta pasta e substituida inteira a cada publicacao pelo GitHub.\nNao guarde nada aqui.\n' > "$SITE/$MARCADOR"
 

@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Adami Captal · Agendar conversa</title>
+<link rel="icon" href="../img/app-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F4EE}
+a{color:#1B3A5F}a:hover{color:#0E2236}
+.ac{font-family:Inter,system-ui,sans-serif;color:#2B3645;background:#F7F4EE;min-height:100vh}
+.ac *{box-sizing:border-box}
+.wrap{max-width:1200px;margin:0 auto;padding:0 32px}
+.serif{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;letter-spacing:-0.01em}
+.eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 28px;border-radius:2px;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:.02em;border:0;cursor:pointer;font-family:inherit}
+.btn-ouro{background:#C9A86A;color:#0E2236}.btn-ouro:hover{background:#D8BB82;color:#0E2236}
+.btn-azul{background:#12263F;color:#fff}.btn-azul:hover{background:#1B3A5F;color:#fff}
+.nav a{color:#E8EDF3;text-decoration:none;font-size:14px;letter-spacing:.04em}.nav a:hover{color:#C9A86A}
+.campo{display:flex;flex-direction:column;gap:8px}
+.campo label,.rot{font-size:13px;font-weight:600;color:#12263F;letter-spacing:.02em}
+.campo input,.campo select,.campo textarea{font-family:inherit;font-size:16px;color:#1F2A37;background:#fff;border:1px solid #CFC6B6;border-radius:2px;padding:0 14px;min-height:50px}
+.campo textarea{padding:12px 14px;min-height:110px;resize:vertical}
+.campo input:focus,.campo select:focus,.campo textarea:focus{outline:2px solid #C9A86A;outline-offset:1px;border-color:#C9A86A}
+.pilula{min-height:46px;padding:0 18px;border-radius:999px;border:1px solid #CFC6B6;background:#fff;color:#2B3645;font-family:inherit;font-size:14px;font-weight:500;cursor:pointer}
+.pilula:hover{border-color:#12263F}
+.pilula-on{background:#12263F;border-color:#12263F;color:#fff}
+@media screen and (max-width:900px){
+ .acesso{font-size:0 !important;gap:0 !important;min-width:44px;justify-content:center}
+ .nav{display:none !important}
+ .cols2{grid-template-columns:minmax(0,1fr) !important}
+ .agGrid{grid-template-columns:minmax(0,1fr) !important}
+ .wrap{padding:0 20px}
+ .h1{font-size:42px !important}
+}
+.acesso{color:#C7D2DF;text-decoration:none;font-size:13px;letter-spacing:.04em;display:inline-flex;align-items:center;gap:8px;min-height:44px}.acesso:hover{color:#C9A86A}
+/* Animações (todas desligadas para quem pede menos movimento) */
+.btn svg{transition:transform .35s ease}
+@media screen and (prefers-reduced-motion: no-preference){
+ @keyframes sobe{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+ @keyframes linha{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+ .entra{animation:sobe 1s cubic-bezier(.2,.7,.2,1) both}
+ .d1{animation-delay:.05s}.d2{animation-delay:.18s}.d3{animation-delay:.34s}.d4{animation-delay:.5s}
+ .btn:hover svg{transform:translateX(5px)}
+ .porta,.perfil,.artigo .foto,.serv,.frente,.entreg,.nivel,.leva,.jur{transition:translate .45s cubic-bezier(.2,.7,.2,1),scale .45s ease,box-shadow .45s ease,border-color .3s ease}
+ .porta:hover,.perfil:hover,.serv:hover,.frente:hover,.entreg:hover,.leva:hover{translate:0 -5px;box-shadow:0 22px 44px rgba(14,34,54,.09)}
+ .nivel:hover,.jur:hover{translate:0 -5px;border-color:#C9A86A}
+ .artigo:hover .foto{scale:1.02}
+ .nav a{background-image:linear-gradient(#C9A86A,#C9A86A);background-size:0 1px;background-position:0 100%;background-repeat:no-repeat;padding-bottom:4px;transition:background-size .35s ease,color .3s}
+ .nav a:hover,.nav a.ativo{background-size:100% 1px}
+ @supports (animation-timeline: view()){
+  .revela{animation:sobe linear both;animation-timeline:view();animation-range:entry 5% entry 45%}
+  .etapa{position:relative}
+  .etapa::before{content:'';position:absolute;left:0;right:0;top:-1px;height:1px;background:#C9A86A;transform-origin:left;animation:linha linear both;animation-timeline:view();animation-range:entry 10% cover 40%}
+ }
+}
+/* ---- Nível 2 (12/11): topo fixo, capa em tela cheia, mapa, calculadora, transições ---- */
+.topo{position:fixed;top:0;left:0;right:0;z-index:60;border-bottom:1px solid rgba(255,255,255,.14);transition:background-color .45s ease,box-shadow .45s ease,border-color .45s}
+.topo.solido{background:rgba(14,34,54,.97);box-shadow:0 10px 30px rgba(0,0,0,.2);border-bottom-color:transparent}
+.capa{position:relative;min-height:max(660px, min(100vh, 940px));color:#fff;display:flex;align-items:flex-end;overflow:hidden;background:#0E2236}
+.capa-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.capa-veu{position:absolute;inset:0;background:rgba(9,22,40,.5)}
+.capa-veu2{position:absolute;left:0;right:0;bottom:0;height:65%;background:linear-gradient(to top,rgba(9,22,40,.92),rgba(9,22,40,0))}
+.capa-conteudo{position:relative;width:100%;padding-top:156px;padding-bottom:72px}
+.desce{display:inline-flex;flex-direction:column;align-items:center;gap:10px;color:#C7D2DF;font-size:11px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none}
+.desce:hover{color:#C9A86A}
+.desce .l{width:1px;height:46px;background:rgba(255,255,255,.3);position:relative;overflow:hidden;display:block}
+.mapaGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:center}
+.mapa{position:relative;width:100%;max-width:520px;aspect-ratio:1/1;margin:0 auto}
+.orbita{position:absolute;inset:12%;border:1px dashed rgba(184,149,90,.6);border-radius:50%}
+.orbita2{position:absolute;inset:30%;border:1px solid rgba(184,149,90,.25);border-radius:50%}
+.centro{position:absolute;left:50%;top:50%;width:40%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;background:#12263F;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:18px;box-shadow:0 0 0 14px rgba(18,38,63,.06)}
+.no{position:absolute;transform:translate(-50%,-50%);min-height:48px;padding:0 20px;border-radius:999px;border:1px solid #CFC6B6;background:#fff;color:#12263F;font:500 15px Inter,system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:10px;white-space:nowrap;transition:background-color .3s,color .3s,border-color .3s,box-shadow .3s}
+.no:hover{border-color:#B8955A}
+.no.on{background:#C9A86A;border-color:#C9A86A;color:#0E2236;box-shadow:0 12px 30px rgba(184,149,90,.35)}
+.no .pt{width:8px;height:8px;border-radius:50%;background:#B8955A;display:block}.no.on .pt{background:#0E2236}
+.n1{left:50%;top:6%}.n2{left:91%;top:50%}.n3{left:50%;top:94%}.n4{left:9%;top:50%}
+.painel{background:#fff;border:1px solid #E4DDD0;display:flex;flex-direction:column;min-height:560px}
+.painel .pf{height:260px;overflow:hidden}
+.painel img{width:100%;height:100%;object-fit:cover;display:block}
+.painel li{padding:10px 0;border-top:1px solid #EFEAE0;font-size:15px}
+.calc{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,0.95fr);background:#fff;border:1px solid #E4DDD0}
+.calc-in{padding:48px;display:flex;flex-direction:column;gap:30px}
+.calc-out{background:#12263F;color:#fff;padding:48px;display:flex;flex-direction:column;gap:18px;justify-content:center}
+.faixa{display:flex;flex-direction:column;gap:8px}
+.faixa .lin{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.faixa label{font-size:13px;font-weight:600;color:#12263F}
+.faixa output{font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;color:#12263F;font-variant-numeric:tabular-nums}
+.faixa input[type=range]{width:100%;accent-color:#B8955A;height:28px;cursor:pointer;margin:0}
+.barra{height:8px;background:rgba(255,255,255,.14);border-radius:99px;overflow:hidden}
+.barra span{display:block;height:100%;background:#C9A86A;border-radius:99px;transition:width .5s ease}
+@view-transition{navigation:auto}
+@media screen and (prefers-reduced-motion: no-preference){
+ @keyframes chega{from{opacity:0}to{opacity:1}}
+ .ac{animation:chega .7s ease both}
+ @keyframes cai{from{transform:translateY(-100%)}to{transform:translateY(100%)}}
+ .desce .l::after{content:'';position:absolute;left:0;top:0;width:1px;height:100%;background:#C9A86A;animation:cai 2.2s ease-in-out infinite}
+ @keyframes gira{to{transform:rotate(360deg)}}
+ .orbita{animation:gira 90s linear infinite}
+ @keyframes surge{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+ .troca{animation:surge .6s cubic-bezier(.2,.7,.2,1) both}
+}
+@media screen and (max-width:900px){
+ .capa{height:auto;min-height:640px}
+ .capa-conteudo{padding-top:120px;padding-bottom:48px}
+ .capa h1{font-size:42px !important}
+ .topo .btn{padding:0 12px;font-size:12.5px;white-space:nowrap;min-height:44px}
+ .topo .wrap{gap:10px !important}
+ .topo .wrap > div{gap:6px !important}
+ .topo img{height:26px !important}
+ .mapaGrid{grid-template-columns:minmax(0,1fr) !important;gap:36px}
+ .mapa{max-width:340px}
+ .no{padding:0 12px;font-size:13px;gap:6px}
+ .n2{left:82%}.n4{left:18%}
+ .calc{grid-template-columns:minmax(0,1fr) !important}
+ .calc-in,.calc-out{padding:28px}
+ .painel{min-height:0}
+}
+</style>
+</head>
+<body>
+<div class="ac">
+
+<header class="topo solido">
+<div class="wrap" style="display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 88px">
+<a href="index.html" aria-label="Adami Captal, página inicial"><img src="img/bfe87fbe0af8cf3d626c5e7403ff21fc.png" alt="Adami Captal" style="height: 34px; width: auto; display: block"></a>
+<nav class="nav" aria-label="Menu principal" style="display: flex; gap: 36px; align-items: center">
+<a href="investimentos.html">Investimentos</a>
+<a href="wealth.html">Wealth Planning</a>
+<a href="jornada.html">Como trabalhamos</a>
+<a href="index.html#conteudo">Conteúdo</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 24px"><a class="acesso" href="https://adamicaptal.com.br/hub" title="Entrar no Hub Adami" aria-label="Acesso colaborador"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Acesso colaborador</a><a href="index.html" style="color: #E8EDF3; font-size: 14px; text-decoration: none">Voltar ao site</a></div>
+</div>
+</header>
+
+<section style="padding: 168px 0 112px">
+<div class="wrap agGrid" style="display: grid; grid-template-columns: minmax(0,0.8fr) minmax(0,1.2fr); gap: 72px; align-items: start">
+
+<div style="display: flex; flex-direction: column; gap: 26px">
+<div class="eyebrow entra d1" style="color: #8A6A2E">Agendar conversa</div>
+<h1 class="serif h1 entra d2" style="margin: 0; font-size: 56px; line-height: 1.06; color: #12263F">Vamos conhecer você e o seu patrimônio.</h1>
+<p class="entra d3" style="margin: 0; font-size: 17px; line-height: 1.65; color: #5A6573">Uma primeira conversa, sem compromisso, com um especialista da Adami Captal.</p>
+<ol style="list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 22px">
+<li style="display: flex; gap: 18px"><span class="serif" style="font-size: 24px; color: #8A6A2E; min-width: 32px">01</span><span style="font-size: 15px; line-height: 1.6"><strong style="color: #12263F">Você conta o que procura.</strong> Leva menos de um minuto.</span></li>
+<li style="display: flex; gap: 18px"><span class="serif" style="font-size: 24px; color: #8A6A2E; min-width: 32px">02</span><span style="font-size: 15px; line-height: 1.6"><strong style="color: #12263F">Um especialista entra em contato</strong> para combinar dia e horário.</span></li>
+<li style="display: flex; gap: 18px"><span class="serif" style="font-size: 24px; color: #8A6A2E; min-width: 32px">03</span><span style="font-size: 15px; line-height: 1.6"><strong style="color: #12263F">Conversamos</strong> por telefone, vídeo ou no escritório, em Porto Alegre ou São Paulo.</span></li>
+</ol>
+<div style="border-top: 1px solid #E4DDD0; padding-top: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 15px">
+<span style="color: #5A6573">Prefere falar agora?</span>
+<a href="https://api.whatsapp.com/send?phone=5551982326300" style="font-weight: 600">WhatsApp +55 51 9 8232-6300</a>
+</div>
+</div>
+
+<div class="entra d3" style="background: #fff; border: 1px solid #E4DDD0; padding: 48px">
+<div id="agOk" hidden>
+<div style="display: flex; flex-direction: column; gap: 20px; align-items: flex-start; padding: 24px 0">
+<svg width="56" height="56" viewBox="0 0 56 56" fill="none" role="img" aria-label="Pedido recebido"><circle cx="28" cy="28" r="27" stroke="#C9A86A" stroke-width="1.5"></circle><path d="M17 29l7 7 15-16" stroke="#12263F" stroke-width="2"></path></svg>
+<h2 class="serif revela" style="margin: 0; font-size: 40px; line-height: 1.1; color: #12263F">Recebemos o seu pedido<span id="agNome"></span>.</h2>
+<p style="margin: 0; font-size: 16px; line-height: 1.65; color: #5A6573; max-width: 480px">Um especialista da Adami Captal vai entrar em contato pelo meio que você escolheu para combinar o melhor horário.</p>
+<a class="btn btn-azul" href="index.html">Voltar ao site</a>
+</div>
+</div>
+
+<form id="agForm" style="display: flex; flex-direction: column; gap: 26px">
+<div class="campo"><label for="ag-nome">Nome completo</label><input id="ag-nome" type="text" autocomplete="name" required=""></div>
+<div class="cols2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+<div class="campo"><label for="ag-tel">Telefone ou WhatsApp</label><input id="ag-tel" type="tel" autocomplete="tel" required=""></div>
+<div class="campo"><label for="ag-email">E-mail</label><input id="ag-email" type="email" autocomplete="email" required=""></div>
+</div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+<legend class="rot" style="padding: 0; margin-bottom: 10px">Sobre o que você quer conversar?</legend>
+<div style="display: flex; gap: 10px; flex-wrap: wrap">
+<button type="button" class="pilula pilula-on" aria-pressed="true" data-interesse>Investimentos</button>
+<button type="button" class="pilula" aria-pressed="false" data-interesse>Wealth Planning</button>
+<button type="button" class="pilula" aria-pressed="false" data-interesse>Os dois</button>
+<button type="button" class="pilula" aria-pressed="false" data-interesse>Ainda não sei</button>
+</div>
+</fieldset>
+<div class="cols2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+<div class="campo"><label for="ag-pat">Patrimônio aproximado</label>
+<select id="ag-pat"><option>Até R$ 1 milhão</option><option>De R$ 1 a 5 milhões</option><option>Acima de R$ 5 milhões</option><option>Prefiro não informar</option></select></div>
+<div class="campo"><label for="ag-forma">Como prefere a conversa?</label>
+<select id="ag-forma"><option>Telefone</option><option>WhatsApp</option><option>Vídeo</option><option>No escritório em Porto Alegre</option><option>No escritório em São Paulo</option></select></div>
+</div>
+<div class="campo"><label for="ag-msg">Quer adiantar algo? (opcional)</label><textarea id="ag-msg"></textarea></div>
+<label style="display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.6; color: #5A6573"><input type="checkbox" required="" style="width: 20px; height: 20px; margin-top: 1px; accent-color: #12263F">Autorizo a Adami Captal a entrar em contato comigo e a tratar estes dados para esse fim, conforme a Política de Privacidade.</label>
+<button type="submit" class="btn btn-ouro" style="align-self: flex-start">Pedir meu agendamento</button>
+</form>
+</sc-if>
+</div>
+
+</div>
+</section>
+
+<footer style="background: #0E2236; color: #8E9FB4; padding: 36px 0; font-size: 12px; line-height: 1.7">
+<div class="wrap">Adami Captal, escritório de assessoria de investimentos credenciado à Necton, uma empresa BTG Pactual. Porto Alegre: Av. Senador Tarso Dutra, 605, Sala 1501 · São Paulo: Av. Brig. Faria Lima, 1355, 22º andar · © 2026 Adami Captal.</div>
+</footer>
+
+</div>
+<script src="site.js"></script>
+</body>
+</html>

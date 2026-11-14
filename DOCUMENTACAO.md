@@ -763,6 +763,12 @@ zero não entra. A tabela "detalhamento das movimentações e da rentabilidade e
 `confHistPerf` compara com os meses já gravados (conta do BTG do mesmo número, ou a única) e mostra os que não
 batem, com o botão "Corrigir" (`corrigirHistPerf`: PATCH só de saldo e resultado R$/% da conta do BTG, com
 registro na auditoria). Nome curto também para COE**.
+ · **14/11/2026: proposta navegável do site novo em `site-proposta/` (adamicaptal.com.br/hub/site-proposta/). É a
+conversão do protótipo do editor de design (artifact "Site novo Adami Captal") para HTML comum: 5 páginas, imagens em
+`site-proposta/img/` e as partes interativas em `site-proposta/site.js` (sem envio de dado: o formulário só mostra a
+confirmação). Fora dos buscadores (`noindex` na página e no `.htaccess` da pasta). Não é módulo do Hub e não passa pelo
+login; entra na publicação pela linha `cp -R site-proposta` do `publicar-hostgator.sh`. Se a proposta mudar no editor,
+converter de novo; quando o site oficial for ao ar, apagar a pasta e a linha**.
 
 ---
 
