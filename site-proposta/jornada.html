@@ -200,6 +200,46 @@ body.menu-aberto .zap{display:none}
 @media screen and (max-width:900px){.menu-bt{display:inline-flex}.topo .wrap > div{display:none !important}.zap{right:16px;bottom:16px;height:56px;width:56px;min-width:0;padding:0}.zap .zap-txt{display:none}}
 @media screen and (prefers-reduced-motion: reduce){.menu-cel,.menu-links a,.zap,.zap-txt{transition:none}}
 </style>
+<style>
+/* barra do topo mais espaçada, botão "Abra sua conta" e a janela de conta nova / migração */
+@media screen and (min-width:901px){.topo .wrap{gap:40px !important}.nav{gap:44px !important;flex:1;justify-content:center}.topo .wrap > div{gap:14px !important}}
+@media screen and (min-width:901px) and (max-width:1500px){.acesso{font-size:0 !important;gap:0 !important;min-width:44px;justify-content:center}}
+.btn-conta{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);font-family:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-conta:hover{border-color:#C9A86A;color:#C9A86A}
+.conta-modal{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;padding:20px}
+.conta-modal[hidden]{display:none}
+.conta-modal *{box-sizing:border-box}
+.conta-fundo{position:absolute;inset:0;background:rgba(8,18,32,.72);opacity:0;transition:opacity .3s ease}
+.conta-caixa{position:relative;width:100%;max-width:640px;max-height:calc(100vh - 40px);overflow-y:auto;background:#F7F4EE;color:#2B3645;padding:44px;border-radius:4px;font-family:Montserrat,system-ui,sans-serif;opacity:0;transform:translateY(16px);transition:opacity .35s ease,transform .45s cubic-bezier(.2,.7,.2,1)}
+.conta-modal.aberto .conta-fundo{opacity:1}.conta-modal.aberto .conta-caixa{opacity:1;transform:none}
+.conta-x{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:#12263F;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.conta-x:hover{background:#EFEAE0}
+.conta-passo{display:flex;flex-direction:column;gap:16px}
+.conta-passo[hidden]{display:none}
+.conta-caixa h2{margin:0;font-weight:300;font-size:30px;line-height:1.15;letter-spacing:-0.02em;color:#12263F}
+.conta-sub{margin:0;font-size:15px;line-height:1.65;color:#5A6573}
+.conta-opcoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:8px}
+.conta-op{display:flex;flex-direction:column;gap:10px;text-align:left;padding:24px;background:#fff;border:1px solid #E4DDD0;border-radius:4px;color:#2B3645;text-decoration:none;font:inherit;cursor:pointer;transition:border-color .3s,transform .3s,box-shadow .3s}
+.conta-op:hover{border-color:#C9A86A;transform:translateY(-3px);box-shadow:0 16px 36px rgba(14,34,54,.1);color:#2B3645}
+.conta-op b{font-size:18px;font-weight:600;color:#12263F}.conta-op span{font-size:14px;line-height:1.6;color:#5A6573}
+.conta-op i{font-style:normal;font-weight:600;font-size:14px;color:#8A6A2E;display:inline-flex;gap:8px;align-items:center;margin-top:auto}
+.conta-volta{align-self:flex-start;background:none;border:0;padding:0;min-height:44px;font:600 14px Montserrat,system-ui,sans-serif;color:#8A6A2E;cursor:pointer}
+.conta-campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.conta-campos .campo:first-child{grid-column:1/-1}
+.conta-modal .campo{display:flex;flex-direction:column;gap:8px}
+.conta-modal .campo label{font-size:13px;font-weight:600;color:#12263F}
+.conta-modal .campo input{font:16px Montserrat,system-ui,sans-serif;color:#1F2A37;background:#fff;border:1px solid #CFC6B6;border-radius:2px;padding:0 14px;min-height:50px;width:100%}
+.conta-modal .campo input:focus{outline:2px solid #C9A86A;outline-offset:1px;border-color:#C9A86A}
+.conta-modal .campo input[aria-invalid="true"]{border-color:#B3261E}
+.conta-ok{display:flex;gap:12px;align-items:flex-start;font-size:13px;line-height:1.6;color:#5A6573}
+.conta-ok input{width:20px;height:20px;margin-top:1px;accent-color:#12263F;flex:0 0 auto}
+.conta-erro{margin:0;min-height:0;font-size:14px;color:#B3261E}.conta-erro:empty{display:none}
+.conta-envia{align-self:flex-start;border:0;cursor:pointer;font-family:inherit}
+.conta-nota{margin:0;font-size:12.5px;line-height:1.6;color:#6B7684}
+body.conta-aberta{overflow:hidden}body.conta-aberta .zap{display:none}
+@media screen and (max-width:700px){.conta-caixa{padding:28px 20px}.conta-opcoes,.conta-campos{grid-template-columns:minmax(0,1fr)}.conta-caixa h2{font-size:25px}}
+@media screen and (prefers-reduced-motion: reduce){.conta-fundo,.conta-caixa{transition:none}}
+</style>
 </head>
 <body>
 <div class="ac">
@@ -211,7 +251,7 @@ body.menu-aberto .zap{display:none}
 <a href="investimentos.html">Investimentos</a>
 <a href="wealth.html">Wealth Planning</a>
 </nav>
-<div style="display: flex; align-items: center; gap: 24px"><a class="acesso" href="https://adamicaptal.com.br/hub" title="Entrar no Hub Adami" aria-label="Acesso colaborador"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Acesso colaborador</a><a class="btn btn-ouro" href="agendar.html" style="min-height: 44px; padding: 0 20px; font-size: 14px">Agendar conversa</a></div>
+<div style="display: flex; align-items: center; gap: 24px"><a class="acesso" href="https://adamicaptal.com.br/hub" title="Entrar no Hub Adami" aria-label="Acesso colaborador"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Acesso colaborador</a><button type="button" class="btn btn-conta" data-abre-conta style="min-height: 44px; padding: 0 20px; font-size: 14px">Abra sua conta</button><a class="btn btn-ouro" href="agendar.html" style="min-height: 44px; padding: 0 20px; font-size: 14px">Agendar conversa</a></div>
 <button type="button" class="menu-bt" aria-expanded="false" aria-controls="menuCel" aria-label="Abrir menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"></path></svg></button>
 </div>
 </header>
@@ -219,7 +259,7 @@ body.menu-aberto .zap{display:none}
 <div class="menu-cel-in">
 <button type="button" class="menu-fecha" aria-label="Fechar menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
 <nav class="menu-links" aria-label="Menu principal"><a href="index.html">Início</a><a href="investimentos.html">Investimentos</a><a href="wealth.html">Wealth Planning</a><a href="jornada.html" aria-current="page">Jornada do cliente</a><a href="index.html#conteudo">Conteúdo</a></nav>
-<div class="menu-acoes"><a class="btn btn-ouro" href="agendar.html">Agendar conversa</a><a class="menu-zap" href="https://api.whatsapp.com/send?phone=5551982326300&amp;text=Ol%C3%A1%2C%20estava%20navegando%20no%20site%20da%20Adami%20Captal%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es." target="_blank" rel="noopener">WhatsApp +55 51 9 8232-6300</a><a class="menu-hub" href="https://adamicaptal.com.br/hub">Acesso colaborador</a></div>
+<div class="menu-acoes"><a class="btn btn-ouro" href="agendar.html">Agendar conversa</a><button type="button" class="btn btn-conta menu-conta" data-abre-conta>Abra sua conta</button><a class="menu-zap" href="https://api.whatsapp.com/send?phone=5551982326300&amp;text=Ol%C3%A1%2C%20estava%20navegando%20no%20site%20da%20Adami%20Captal%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es." target="_blank" rel="noopener">WhatsApp +55 51 9 8232-6300</a><a class="menu-hub" href="https://adamicaptal.com.br/hub">Acesso colaborador</a></div>
 </div>
 </div>
 
@@ -397,11 +437,46 @@ body.menu-aberto .zap{display:none}
 <div class="wrap rod-in">
 <div class="rod-topo"><img src="img/765a96c6f5f0790cbcc330e45cfa7b81.png" alt="Adami Captal Investimentos e Necton, uma empresa BTG Pactual" class="rod-logo"><div class="rod-redes"><a href="https://www.instagram.com/adamicaptal" aria-label="Instagram" title="Instagram" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor"></circle></svg></a><a href="https://www.linkedin.com/company/adami-captal-mfo/" aria-label="LinkedIn" title="LinkedIn" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M8 10v7M8 7v.01M12 17v-4a2 2 0 0 1 4 0v4M12 10v7"></path></svg></a><a href="mailto:adami@adamicaptal.com.br" aria-label="E-mail" title="E-mail"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg></a><a href="https://api.whatsapp.com/send?phone=5551982326300" aria-label="WhatsApp" title="WhatsApp" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"></path><path d="M9 9.5c.5 2 2.5 4 4.5 4.5l1-1.2 1.8.8-.4 1.6c-3 .5-7-3.4-6.6-6.5L11 8.4l.8 1.8z"></path></svg></a><a href="https://www.google.com/maps/search/?api=1&amp;query=Av.+Senador+Tarso+Dutra%2C+605+-+Petr%C3%B3polis%2C+Porto+Alegre+-+RS" aria-label="Endereço no mapa" title="Endereço no mapa" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"></path><circle cx="12" cy="9" r="2.5"></circle></svg></a></div><div class="rod-ouv">Ouvidoria BTG Pactual: <a href="tel:08007220048">0800-722-0048</a><br><a href="https://www.btgpactual.com/ouvidoria" target="_blank" rel="noopener">btgpactual.com/ouvidoria</a></div></div>
 <div class="rod-cidades"><div><span class="eyebrow" style="color: #C9A86A">Porto Alegre</span><span>Av. Senador Tarso Dutra, 605, Sala 1501<br>Petrópolis · <b>Porto Alegre - RS</b></span></div><div><span class="eyebrow" style="color: #C9A86A">São Paulo</span><span>Av. Brig. Faria Lima, 1355, 22º andar<br>Jardim Paulistano · <b>São Paulo - SP</b></span></div><div><span class="eyebrow" style="color: #C9A86A">Contato</span><span><a href="tel:+5551982326300">+55 51 9 8232-6300</a><br><a href="mailto:adami@adamicaptal.com.br">adami@adamicaptal.com.br</a></span></div></div>
-<nav class="rod-links" aria-label="Mapa do site"><a href="index.html">Início</a><a href="investimentos.html">Investimentos</a><a href="wealth.html">Wealth Planning</a><a href="jornada.html">Jornada do cliente</a><a href="agendar.html">Agendar conversa</a><a href="https://digital.necton.com.br/cadastro?assessor=5414062" target="_blank" rel="noopener">Abra sua conta</a><a href="https://simulador.btgpactual.com/partner/5390761" target="_blank" rel="noopener">Simule seus investimentos</a><a href="https://adamicaptal.com.br/hub">Acesso colaborador</a></nav>
+<nav class="rod-links" aria-label="Mapa do site"><a href="index.html">Início</a><a href="investimentos.html">Investimentos</a><a href="wealth.html">Wealth Planning</a><a href="jornada.html">Jornada do cliente</a><a href="agendar.html">Agendar conversa</a><a href="https://digital.necton.com.br/cadastro/?assessor=5414062" target="_blank" rel="noopener">Abra sua conta</a><a href="https://simulador.btgpactual.com/partner/5390761" target="_blank" rel="noopener">Simule seus investimentos</a><a href="https://adamicaptal.com.br/hub">Acesso colaborador</a></nav>
 <div class="rod-legal"><p>A Adami Captal Assessores de Investimentos S/S, inscrita sob o CNPJ nº 36.000.256/0001-46, é uma empresa de assessoria de investimento devidamente registrada na Comissão de Valores Mobiliários (CVM), na forma da Resolução CVM 178. Atuando no mercado financeiro como preposto do Banco BTG Pactual S/A, o que pode ser verificado através do site da ANCORD (<a href="https://www.ancord.org.br/certificacao-e-credenciamento/" target="_blank" rel="noopener">https://www.ancord.org.br/certificacao-e-credenciamento/</a>) ou através do site da Necton Investimentos (<a href="https://www.necton.com.br/escritorios" target="_blank" rel="noopener">https://www.necton.com.br/escritorios</a>). O Banco BTG Pactual S/A é instituição financeira integrante do sistema de distribuição de títulos e valores mobiliários, atuando como intermediário das operações de seus clientes. Na forma da legislação da CVM, o assessor de investimento não pode administrar ou gerir o patrimônio de investidores, pois é um preposto do intermediário e depende da autorização prévia do cliente para realizar operações no mercado financeiro. Na realização de operações com derivativos, existe a possibilidade de significativas perdas patrimoniais, inclusive superiores aos valores investidos. A assessoria pode exercer outras atividades relacionadas ao mercado financeiro, de capitais, securitário e de previdência e capitalização, que podem ou não ser em parceria com o BTG Pactual ou demais instituições, e que podem ou não ser realizadas pela mesma pessoa jurídica da assessoria. Especificamente quanto às atividades de gestão, consultoria e análise de valores mobiliários, estas podem vir a ser desempenhadas por empresas do grupo e nunca pela própria assessoria de investimentos, considerando que são atividades conflitantes e que exigem segregação. O investimento em ações é um investimento de risco e rentabilidade passada não é garantia de rentabilidade futura. Para reclamações, favor contatar a Ouvidoria do Banco BTG Pactual S/A no telefone nº 0800-722-0048. Para acessar nossa lista de sócios, clique aqui: <a href="https://www.necton.com.br/escritorios" target="_blank" rel="noopener">https://www.necton.com.br/escritorios</a>.</p><p>Empresas do grupo: Adami Captal Assessores de Investimentos S/S (CNPJ 36.000.256/0001-46) e Adami Captal Wealth Planning Ltda (CNPJ 55.503.633/0001-04).</p><p>© 2026 Adami Captal. Todos os direitos reservados.</p></div>
 </div>
 </footer>
 
+</div>
+<div class="conta-modal" id="contaModal" role="dialog" aria-modal="true" aria-labelledby="contaTit" hidden>
+<div class="conta-fundo" data-fecha-conta></div>
+<div class="conta-caixa">
+<button type="button" class="conta-x" data-fecha-conta aria-label="Fechar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+<div class="conta-passo" id="contaEscolha">
+<span class="eyebrow" style="color: #8A6A2E">Abra sua conta</span>
+<h2 id="contaTit">Como você quer começar?</h2>
+<div class="conta-opcoes">
+<a class="conta-op" href="https://digital.necton.com.br/cadastro/?assessor=5414062" target="_blank" rel="noopener"><b>Quero abrir uma conta</b><span>Cadastro online na Necton, uma empresa BTG Pactual, em poucos minutos e já vinculado à Adami Captal.</span><i>Abrir minha conta <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></i></a>
+<button type="button" class="conta-op" data-migrar><b>Já tenho conta no BTG</b><span>E quero trazer a minha conta atual para o atendimento da Adami Captal.</span><i>Quero migrar <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></i></button>
+</div>
+</div>
+<form class="conta-passo" id="contaForm" hidden novalidate>
+<button type="button" class="conta-volta" data-volta>Voltar</button>
+<h2>Migrar minha conta para a Adami Captal</h2>
+<p class="conta-sub">Preencha os dados abaixo. Um especialista da Adami Captal entra em contato para concluir a migração com você.</p>
+<div class="conta-campos">
+<div class="campo"><label for="cm-nome">Nome completo</label><input id="cm-nome" name="nome" type="text" autocomplete="name" required></div>
+<div class="campo"><label for="cm-cpf">CPF</label><input id="cm-cpf" name="cpf" type="text" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" maxlength="14" required></div>
+<div class="campo"><label for="cm-tel">Telefone ou WhatsApp</label><input id="cm-tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(51) 99999-9999" maxlength="16" required></div>
+<div class="campo"><label for="cm-conta">Número da conta no BTG</label><input id="cm-conta" name="conta" type="text" inputmode="numeric" autocomplete="off" placeholder="Ex.: 004181763" maxlength="12" required></div>
+</div>
+<label class="conta-ok"><input type="checkbox" id="cm-aceite" required>Autorizo a Adami Captal a usar estes dados para entrar em contato comigo sobre a migração da minha conta, conforme a Política de Privacidade.</label>
+<p class="conta-erro" id="cm-erro" role="alert"></p>
+<button type="submit" class="btn btn-ouro conta-envia">Enviar pelo WhatsApp</button>
+<p class="conta-nota">Ao enviar, abrimos uma conversa no WhatsApp da Adami Captal com os seus dados já preenchidos. É só tocar em enviar.</p>
+</form>
+<div class="conta-passo" id="contaFim" hidden>
+<span class="eyebrow" style="color: #8A6A2E">Quase lá</span>
+<h2>Abrimos o WhatsApp com os seus dados</h2>
+<p class="conta-sub">Confira a mensagem e toque em enviar. Se o WhatsApp não abriu, <a id="cm-link" href="#" target="_blank" rel="noopener">clique aqui</a>.</p>
+<button type="button" class="btn btn-azul" data-fecha-conta>Fechar</button>
+</div>
+</div>
 </div>
 <a class="zap" href="https://api.whatsapp.com/send?phone=5551982326300&amp;text=Ol%C3%A1%2C%20estava%20navegando%20no%20site%20da%20Adami%20Captal%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es." target="_blank" rel="noopener" aria-label="Conversar com a Adami Captal no WhatsApp"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"></path></svg><span class="zap-txt">Fale conosco</span></a>
 <script src="site.js"></script>

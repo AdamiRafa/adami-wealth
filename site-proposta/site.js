@@ -225,6 +225,76 @@
     menuCel.addEventListener("keydown", function(ev){ if(ev.key === "Escape") fecha(); });
   }
 
+
+  /* ---- "Abra sua conta": escolher entre conta nova (Necton) e migrar a conta do BTG.
+     A migração não grava nada: monta a mensagem e abre o WhatsApp da Adami com os dados. ---- */
+  var cm = $("#contaModal");
+  if(cm){
+    var cmEscolha = $("#contaEscolha", cm), cmForm = $("#contaForm", cm), cmFim = $("#contaFim", cm), quemAbriu = null;
+    var passo = function(el){ [cmEscolha, cmForm, cmFim].forEach(function(x){ x.hidden = x !== el; }); };
+    var abreConta = function(ev){
+      if(ev) ev.preventDefault();
+      quemAbriu = document.activeElement;
+      if(menuCel && menuCel.classList.contains("aberto")){ $(".menu-fecha", menuCel).click(); }
+      passo(cmEscolha); cm.hidden = false; void cm.offsetWidth; cm.classList.add("aberto");
+      document.body.classList.add("conta-aberta");
+      setTimeout(function(){ var f = $(".conta-op", cmEscolha); if(f) f.focus(); }, 50);
+    };
+    var fechaConta = function(){
+      cm.classList.remove("aberto"); document.body.classList.remove("conta-aberta");
+      setTimeout(function(){ if(!cm.classList.contains("aberto")) cm.hidden = true; }, reduz ? 0 : 300);
+      if(quemAbriu && quemAbriu.focus) quemAbriu.focus();
+    };
+    $$("[data-abre-conta]").forEach(function(b){ b.addEventListener("click", abreConta); });
+    $$("[data-fecha-conta]", cm).forEach(function(b){ b.addEventListener("click", fechaConta); });
+    document.addEventListener("keydown", function(ev){ if(ev.key === "Escape" && !cm.hidden) fechaConta(); });
+    $("[data-migrar]", cm).addEventListener("click", function(){ passo(cmForm); $("#cm-nome").focus(); });
+    $("[data-volta]", cm).addEventListener("click", function(){ passo(cmEscolha); $("[data-migrar]", cm).focus(); });
+    var soNum = function(v){ return String(v || "").replace(/\D/g, ""); };
+    var cpfEl = $("#cm-cpf"), telEl = $("#cm-tel"), contaEl = $("#cm-conta"), nomeEl = $("#cm-nome"), erro = $("#cm-erro");
+    cpfEl.addEventListener("input", function(){
+      var d = soNum(cpfEl.value).slice(0, 11), r = d;
+      if(d.length > 9) r = d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6, 9) + "-" + d.slice(9);
+      else if(d.length > 6) r = d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6);
+      else if(d.length > 3) r = d.slice(0, 3) + "." + d.slice(3);
+      cpfEl.value = r;
+    });
+    telEl.addEventListener("input", function(){
+      var d = soNum(telEl.value).slice(0, 11), r = d;
+      if(d.length > 10) r = "(" + d.slice(0, 2) + ") " + d.slice(2, 7) + "-" + d.slice(7);
+      else if(d.length > 6) r = "(" + d.slice(0, 2) + ") " + d.slice(2, 6) + "-" + d.slice(6);
+      else if(d.length > 2) r = "(" + d.slice(0, 2) + ") " + d.slice(2);
+      telEl.value = r;
+    });
+    contaEl.addEventListener("input", function(){ contaEl.value = soNum(contaEl.value).slice(0, 12); });
+    var cpfValido = function(c){
+      c = soNum(c); if(c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+      for(var t = 9; t < 11; t++){
+        var s = 0; for(var i = 0; i < t; i++) s += (+c[i]) * (t + 1 - i);
+        var dv = (s * 10) % 11 % 10; if(dv !== +c[t]) return false;
+      }
+      return true;
+    };
+    cmForm.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      [nomeEl, cpfEl, telEl, contaEl].forEach(function(x){ x.removeAttribute("aria-invalid"); });
+      var falta = null;
+      if(nomeEl.value.trim().split(/\s+/).length < 2) falta = [nomeEl, "Escreva o seu nome completo."];
+      else if(!cpfValido(cpfEl.value)) falta = [cpfEl, "Confira o CPF: ele não parece válido."];
+      else if(soNum(telEl.value).length < 10) falta = [telEl, "Confira o telefone, com DDD."];
+      else if(soNum(contaEl.value).length < 4) falta = [contaEl, "Informe o número da sua conta no BTG."];
+      else if(!$("#cm-aceite").checked) falta = [$("#cm-aceite"), "Marque a autorização para podermos entrar em contato."];
+      if(falta){ erro.textContent = falta[1]; if(falta[0].type !== "checkbox") falta[0].setAttribute("aria-invalid", "true"); falta[0].focus(); return; }
+      erro.textContent = "";
+      var msg = "Olá! Quero migrar a minha conta do BTG para a Adami Captal.\n\n" +
+        "Nome: " + nomeEl.value.trim() + "\nCPF: " + cpfEl.value + "\nTelefone: " + telEl.value + "\nConta BTG: " + contaEl.value;
+      var url = "https://api.whatsapp.com/send?phone=5551982326300&text=" + encodeURIComponent(msg);
+      $("#cm-link").href = url;
+      window.open(url, "_blank", "noopener");
+      passo(cmFim); cmForm.reset();
+    });
+  }
+
   /* ---- agendar conversa: escolha do assunto e confirmação (nada é enviado) ---- */
   var form = $("#agForm");
   if(form){
