@@ -26,8 +26,8 @@
     var n = function(v, p){ return Math.round(v * p); };
     var fmt = spans.length === 2
       ? [function(p){ return "+" + n(300, p); }, function(p){ return "+R$ " + (1.29 * p).toFixed(2).replace(".", ",") + " bi"; }]
-      : [function(p){ return "+" + n(20, p) + " anos"; }, function(p){ return "+" + n(1500, p).toLocaleString("pt-BR"); },
-         function(p){ return "+R$ " + n(500, p) + " mi"; }, function(p){ return "NPS " + n(98, p); }];
+      : [function(p){ return "+" + n(20, p) + " anos"; }, function(p){ return "+" + n(2100, p).toLocaleString("pt-BR"); },
+         function(p){ return "+R$ " + (1.1 * p).toFixed(1).replace(".", ",") + " bi"; }, function(p){ return "NPS " + n(98, p); }];
     var pinta = function(p){ spans.forEach(function(s, i){ if(fmt[i]) s.textContent = fmt[i](p); }); };
     var foi = false;
     var vai = function(){
@@ -102,11 +102,11 @@
   var trilho = $("#trilho");
   if(trilho){
     var E = [
-      { t: "Descoberta", modo: "Presencial, no escritório", texto: "Um café no escritório para conhecer você, sua família, sua empresa e o que você espera do seu patrimônio. Apresentamos a Adami e como trabalhamos com a Necton, uma empresa BTG Pactual.", leva: "Uma conta aberta na Necton, uma empresa BTG Pactual, e a data da próxima reunião." },
+      { t: "Descoberta", modo: "Presencial, no escritório", texto: "Um café no escritório para conhecer você, sua família, sua empresa e o que você espera do seu patrimônio. Apresentamos a Adami Captal bem como nosso modelo de trabalho que propomos implementar.", leva: "Um direcionamento para abertura de cadastro junto ao BTG Pactual e a data para a próxima reunião." },
       { t: "Proposta", modo: "Presencial ou por vídeo", texto: "A proposta para o seu perfil, com o modelo de remuneração explicado com transparência, e uma prévia do relatório que você vai receber todo mês.", leva: "Proposta de investimentos e modelo do Relatório Consolidado. Nos clientes Private, também os modelos de Plano Patrimonial e de Análise de Enquadramento." },
       { t: "Consolidação", modo: "Presencial, no escritório", texto: "Reunimos o que você tem em todos os bancos em uma só visão. É aqui que aparecem sobreposições, custos escondidos e oportunidades.", leva: "O seu Relatório Consolidado real. Nos clientes Private, o Plano Patrimonial e a Análise de Enquadramento feitos para a sua família." },
       { t: "Liberdade Financeira", modo: "Presencial ou por vídeo", texto: "Mostramos quando o seu patrimônio passa a sustentar o padrão de vida que você quer, e o que muda esse prazo.", leva: "O seu Plano de Liberdade Financeira. Nos clientes Private, também o Planejamento Imobiliário e a apresentação do Wealth Planning." },
-      { t: "Soluções sob medida", modo: "Presencial ou por vídeo", texto: "Para cada lacuna encontrada no caminho, um especialista da casa: proteção, previdência ou consórcio.", leva: "A recomendação do especialista para fechar a lacuna, com números e alternativas." }
+      { t: "Soluções sob medida", modo: "Presencial ou por vídeo", texto: "Para cada lacuna encontrada no caminho, um especialista da casa: proteção, previdência ou consórcio.", leva: "A proposta do especialista para fechar a lacuna, com números e alternativas." }
     ];
     var etapa = 0, marcos = $$(".marco", trilho);
     var total = function(){ return Math.max(1, trilho.offsetHeight - Math.min(window.innerHeight, 900)); };

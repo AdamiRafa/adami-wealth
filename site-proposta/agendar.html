@@ -120,17 +120,42 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
  .painel{min-height:0}
 }
 </style>
+<style>
+/* rodapé único (modelo 2026), igual em todas as páginas */
+.rod{background:#0E2236;color:#9FB0C4;padding:72px 0 40px;font-size:14px}
+.rod-in{display:flex;flex-direction:column;gap:36px}
+.rod-topo{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.rod-logo{height:40px;width:auto;max-width:100%}
+.rod-redes{display:flex;gap:10px;flex-wrap:wrap}
+.rod-redes a{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.2);display:inline-flex;align-items:center;justify-content:center;color:#E8EDF3}
+.rod-redes a:hover{border-color:#C9A86A;color:#C9A86A}
+.rod-ouv{font-size:13px;line-height:1.6;color:#C7D2DF;text-align:right}
+.rod-cidades{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;border-top:1px solid rgba(255,255,255,.12);padding-top:32px}
+.rod-cidades > div{display:flex;flex-direction:column;gap:10px;line-height:1.6}
+.rod-cidades b{color:#fff;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.rod-links{display:flex;flex-wrap:wrap;gap:8px 26px;font-size:13px}
+.rod-links a{min-height:32px;display:inline-flex;align-items:center}
+.rod-legal{border-top:1px solid rgba(255,255,255,.12);padding-top:26px;font-size:11.5px;line-height:1.75;color:#8E9FB4}
+.rod-legal p{margin:0 0 10px}.rod-legal a{word-break:break-all}
+@media screen and (max-width:900px){.rod-cidades{grid-template-columns:minmax(0,1fr);gap:22px}.rod-ouv{text-align:left}.rod{padding:56px 0 32px}}
+</style>
+<style>
+/* menu em uma linha só, mesmo com o logo compartilhado (mais largo) */
+.nav a,.acesso,.topo .btn{white-space:nowrap}
+@media screen and (min-width:901px){.nav{gap:28px !important}}
+@media screen and (min-width:901px) and (max-width:1500px){.topo-larga .acesso{font-size:0 !important;gap:0 !important;min-width:44px;justify-content:center}.topo-larga .nav{gap:24px !important}}
+</style>
 </head>
 <body>
 <div class="ac">
 
 <header class="topo solido">
 <div class="wrap" style="display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 88px">
-<a href="index.html" aria-label="Adami Captal, página inicial"><img src="img/bfe87fbe0af8cf3d626c5e7403ff21fc.png" alt="Adami Captal" style="height: 34px; width: auto; display: block"></a>
+<a href="index.html" aria-label="Adami Captal, página inicial"><img src="img/logo-adami-captal.png" alt="Adami Captal" style="height: 32px; width: auto; max-width: 62vw; display: block"></a>
 <nav class="nav" aria-label="Menu principal" style="display: flex; gap: 36px; align-items: center">
 <a href="investimentos.html">Investimentos</a>
 <a href="wealth.html">Wealth Planning</a>
-<a href="jornada.html">Como trabalhamos</a>
+<a href="jornada.html">Jornada do cliente</a>
 <a href="index.html#conteudo">Conteúdo</a>
 </nav>
 <div style="display: flex; align-items: center; gap: 24px"><a class="acesso" href="https://adamicaptal.com.br/hub" title="Entrar no Hub Adami" aria-label="Acesso colaborador"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Acesso colaborador</a><a href="index.html" style="color: #E8EDF3; font-size: 14px; text-decoration: none">Voltar ao site</a></div>
@@ -196,8 +221,13 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 </div>
 </section>
 
-<footer style="background: #0E2236; color: #8E9FB4; padding: 36px 0; font-size: 12px; line-height: 1.7">
-<div class="wrap">Adami Captal, escritório de assessoria de investimentos credenciado à Necton, uma empresa BTG Pactual. Porto Alegre: Av. Senador Tarso Dutra, 605, Sala 1501 · São Paulo: Av. Brig. Faria Lima, 1355, 22º andar · © 2026 Adami Captal.</div>
+<footer class="rodape rod">
+<div class="wrap rod-in">
+<div class="rod-topo"><img src="img/765a96c6f5f0790cbcc330e45cfa7b81.png" alt="Adami Captal Investimentos e Necton, uma empresa BTG Pactual" class="rod-logo"><div class="rod-redes"><a href="https://www.instagram.com/adamicaptal" aria-label="Instagram" title="Instagram" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor"></circle></svg></a><a href="https://www.linkedin.com/company/adami-captal-mfo/" aria-label="LinkedIn" title="LinkedIn" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M8 10v7M8 7v.01M12 17v-4a2 2 0 0 1 4 0v4M12 10v7"></path></svg></a><a href="mailto:adami@adamicaptal.com.br" aria-label="E-mail" title="E-mail"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg></a><a href="https://api.whatsapp.com/send?phone=5551982326300" aria-label="WhatsApp" title="WhatsApp" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"></path><path d="M9 9.5c.5 2 2.5 4 4.5 4.5l1-1.2 1.8.8-.4 1.6c-3 .5-7-3.4-6.6-6.5L11 8.4l.8 1.8z"></path></svg></a><a href="https://www.google.com/maps/search/?api=1&amp;query=Av.+Senador+Tarso+Dutra%2C+605+-+Petr%C3%B3polis%2C+Porto+Alegre+-+RS" aria-label="Endereço no mapa" title="Endereço no mapa" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"></path><circle cx="12" cy="9" r="2.5"></circle></svg></a></div><div class="rod-ouv">Ouvidoria BTG Pactual: <a href="tel:08007220048">0800-722-0048</a><br><a href="https://www.btgpactual.com/ouvidoria" target="_blank" rel="noopener">btgpactual.com/ouvidoria</a></div></div>
+<div class="rod-cidades"><div><span class="eyebrow" style="color: #C9A86A">Porto Alegre</span><span>Av. Senador Tarso Dutra, 605, Sala 1501<br>Petrópolis · <b>Porto Alegre - RS</b></span></div><div><span class="eyebrow" style="color: #C9A86A">São Paulo</span><span>Av. Brig. Faria Lima, 1355, 22º andar<br>Jardim Paulistano · <b>São Paulo - SP</b></span></div><div><span class="eyebrow" style="color: #C9A86A">Contato</span><span><a href="tel:+5551982326300">+55 51 9 8232-6300</a><br><a href="mailto:adami@adamicaptal.com.br">adami@adamicaptal.com.br</a></span></div></div>
+<nav class="rod-links" aria-label="Mapa do site"><a href="index.html">Início</a><a href="investimentos.html">Investimentos</a><a href="wealth.html">Wealth Planning</a><a href="jornada.html">Jornada do cliente</a><a href="agendar.html">Agendar conversa</a><a href="https://digital.necton.com.br/cadastro?assessor=5414062" target="_blank" rel="noopener">Abra sua conta</a><a href="https://simulador.btgpactual.com/partner/5390761" target="_blank" rel="noopener">Simule seus investimentos</a><a href="https://adamicaptal.com.br/hub">Acesso colaborador</a></nav>
+<div class="rod-legal"><p>A Adami Captal Assessores de Investimentos S/S, inscrita sob o CNPJ nº 36.000.256/0001-46, é uma empresa de assessoria de investimento devidamente registrada na Comissão de Valores Mobiliários (CVM), na forma da Resolução CVM 178. Atuando no mercado financeiro como preposto do Banco BTG Pactual S/A, o que pode ser verificado através do site da ANCORD (<a href="https://www.ancord.org.br/certificacao-e-credenciamento/" target="_blank" rel="noopener">https://www.ancord.org.br/certificacao-e-credenciamento/</a>) ou através do site da Necton Investimentos (<a href="https://www.necton.com.br/escritorios" target="_blank" rel="noopener">https://www.necton.com.br/escritorios</a>). O Banco BTG Pactual S/A é instituição financeira integrante do sistema de distribuição de títulos e valores mobiliários, atuando como intermediário das operações de seus clientes. Na forma da legislação da CVM, o assessor de investimento não pode administrar ou gerir o patrimônio de investidores, pois é um preposto do intermediário e depende da autorização prévia do cliente para realizar operações no mercado financeiro. Na realização de operações com derivativos, existe a possibilidade de significativas perdas patrimoniais, inclusive superiores aos valores investidos. A assessoria pode exercer outras atividades relacionadas ao mercado financeiro, de capitais, securitário e de previdência e capitalização, que podem ou não ser em parceria com o BTG Pactual ou demais instituições, e que podem ou não ser realizadas pela mesma pessoa jurídica da assessoria. Especificamente quanto às atividades de gestão, consultoria e análise de valores mobiliários, estas podem vir a ser desempenhadas por empresas do grupo e nunca pela própria assessoria de investimentos, considerando que são atividades conflitantes e que exigem segregação. O investimento em ações é um investimento de risco e rentabilidade passada não é garantia de rentabilidade futura. Para reclamações, favor contatar a Ouvidoria do Banco BTG Pactual S/A no telefone nº 0800-722-0048. Para acessar nossa lista de sócios, clique aqui: <a href="https://www.necton.com.br/escritorios" target="_blank" rel="noopener">https://www.necton.com.br/escritorios</a>.</p><p>Empresas do grupo: Adami Captal Assessores de Investimentos S/S (CNPJ 36.000.256/0001-46) e Adami Captal Wealth Planning Ltda (CNPJ 55.503.633/0001-04).</p><p>© 2026 Adami Captal. Todos os direitos reservados.</p></div>
+</div>
 </footer>
 
 </div>

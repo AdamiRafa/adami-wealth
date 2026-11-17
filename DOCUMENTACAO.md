@@ -769,6 +769,18 @@ conversão do protótipo do editor de design (artifact "Site novo Adami Captal")
 confirmação). Fora dos buscadores (`noindex` na página e no `.htaccess` da pasta). Não é módulo do Hub e não passa pelo
 login; entra na publicação pela linha `cp -R site-proposta` do `publicar-hostgator.sh`. Se a proposta mudar no editor,
 converter de novo; quando o site oficial for ao ar, apagar a pasta e a linha**.
+ · **17/11/2026: ajustes do Emil na proposta (documento "Ajustes Site Adami Captal - versão nov 2026") e o Manual do
+AI de Compliance 2026 (seção 23). Desde aqui `site-proposta/` é editada direto (não volta a ser convertida do editor).
+Logo por página como no site oficial: Home e Agendar só "ADAMI captal" (`img/logo-adami-captal.png`), Investimentos
+o logo compartilhado Adami Investimentos + Necton, Wealth e Jornada o Adami Wealth. "Como trabalhamos" virou "Jornada
+do cliente". Capa da Home: mar e veleiro animados em CSS/SVG (`.mar`, sem foto; trocar por vídeo quando o Emil mandar).
+Números 2.100 clientes e R$ 1,1 bi sob assessoria. Calculadora de Liberdade Financeira saiu da Home e foi para Wealth
+(o manual veda simulador próprio no site da assessoria; a Wealth é outra empresa do grupo). Wealth sem contadores e
+com o quadro "Resumo prático de acompanhamento". Palavras vetadas trocadas: "Advisory" virou "Essencial",
+"recomendação do especialista" virou "proposta", "gestão do patrimônio" virou "planejamento". Rodapé único em todas
+as páginas no modelo 2026 da Necton (CNPJ 36.000.256/0001-46, "como preposto", lista de sócios em
+necton.com.br/escritorios), com as razões sociais das duas empresas do grupo. O site ainda passa pelo MyCompliance
+antes de ir ao ar**.
 
 ---
 
