@@ -1798,9 +1798,8 @@ início) e os índices do mês.
   com instituição BTG (categoria pelo `market_id`), a alocação por estratégia e os índices que
   estavam vazios (CDI, IMA-B, Ibovespa, Dólar, IFIX). Outros bancos ficam como estão. Grava só no
   "Salvar mês".
-- **A calibrar com o primeiro arquivo real:** valores de `market_id` (mapa em `categoriaBtg`),
-  nomes de estratégia (`estratBtg`), se `reference_month` do mês pedido é o mês fechado, e o tempo
-  de processamento do arquivo por produto (limite da função em segundo plano).
+- **Calibrado em 17/11/2026 (3.31, ver 23.10):** `market_id`, nomes de estratégia e mês de referência.
+  O arquivo por produto (6.400 linhas) é processado em poucos segundos.
 - **Instalado em 06/11/2026** pelo conector (migrações `perfis_e_acessos_2_94` e
   `btg_fase3_rentabilidade_mensal`; funções btg-sync e btg-webhook versão 2). Conferido no banco
   real: o que cada uma das 12 pessoas enxerga (leads, clientes, lançamentos, fluxo, política e as
@@ -1846,6 +1845,11 @@ quem sumiu, saldo nunca vira movimentação, faixa de 0,5%, nada grava antes de 
 - **account-link e account-base** pedidos fora da janela voltam com "Relatório não disponível. Por favor,
   aguarde a próxima janela de execução." (gravado como erro em `btg_arquivos`). O agendamento da manhã já pede
   na hora certa.
+- **Calibrado com o arquivo real (3.31):** `market_id` vem em código curto (RF, FN, RV, OF, PV, CRY, DRV);
+  mapa em `MERCADO_BTG` no index.html. Antes, FN e PV caíam em Renda Fixa (na conta 004181763 eram 5,9 mi de
+  9,7 mi). COE vem como RF com nome "COE...". Previdência, cripto e derivativo vêm sem nome; `nomeProdutoBtg`
+  monta um. Estratégias: Pós-fixado, Pré-fixado, Inflação, Retorno Absoluto (MM), Renda Variável, Alternativo
+  e "Outros" (saldo em conta e provisões, fica fora da alocação). A soma das estratégias bate com `auc_end`.
 - Pedido manual do SQL Editor (não depende de login):
   `select net.http_post(url := 'https://ghxjqmjtmbqzvogwzylo.supabase.co/functions/v1/btg-sync', headers :=
   jsonb_build_object('Content-Type','application/json','x-btg-sync',(select decrypted_secret from
