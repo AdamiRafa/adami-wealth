@@ -182,7 +182,7 @@ h1.serif,h2.serif{letter-spacing:-0.025em}
 <style>
 /* menu do celular e botão do WhatsApp */
 .menu-bt{display:none;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto}
-.menu-cel{position:fixed;inset:0;z-index:90;background:#0B1A2C;color:#fff;overflow-y:auto;opacity:0;transition:opacity .35s ease}
+.menu-cel *{box-sizing:border-box}.menu-cel{position:fixed;inset:0;z-index:90;background:#0B1A2C;color:#fff;overflow-y:auto;opacity:0;transition:opacity .35s ease}
 .menu-cel.aberto{opacity:1}
 .menu-cel-in{min-height:100%;display:flex;flex-direction:column;gap:36px;padding:24px 24px 40px}
 .menu-fecha{align-self:flex-end;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
@@ -194,7 +194,7 @@ h1.serif,h2.serif{letter-spacing:-0.025em}
 .menu-acoes{display:flex;flex-direction:column;gap:16px;margin-top:auto}
 .menu-acoes .btn{width:100%}
 .menu-zap,.menu-hub{color:#C7D2DF;text-decoration:none;font-size:15px;min-height:44px;display:inline-flex;align-items:center}
-.zap{position:fixed;right:20px;bottom:20px;z-index:70;height:58px;min-width:58px;border-radius:999px;background:#25D366;color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:0;padding:0 15px;box-shadow:0 10px 30px rgba(0,0,0,.25);text-decoration:none;font:600 14px Montserrat,system-ui,sans-serif;transition:gap .35s ease,padding .35s ease,transform .3s ease}
+.zap{box-sizing:border-box;position:fixed;right:20px;bottom:20px;z-index:70;height:58px;min-width:58px;border-radius:999px;background:#25D366;color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:0;padding:0 15px;box-shadow:0 10px 30px rgba(0,0,0,.25);text-decoration:none;font:600 14px Montserrat,system-ui,sans-serif;transition:gap .35s ease,padding .35s ease,transform .3s ease}
 .zap-txt{display:inline-block;max-width:0;overflow:hidden;white-space:nowrap;vertical-align:middle;transition:max-width .4s ease}
 .zap:hover{gap:10px;padding:0 20px;color:#fff}.zap:hover .zap-txt{max-width:140px}
 .zap:focus-visible{outline:3px solid #C9A86A;outline-offset:3px}
@@ -277,7 +277,7 @@ body.menu-aberto .zap{display:none}
 <button type="button" class="no n4" data-pilar="3" aria-pressed="false"><span class="pt" aria-hidden="true"></span>Família</button>
 </div>
 <div class="painel" aria-live="polite">
-<div class="pf"><img class="troca" id="pFoto" src="img/9dec044863cc37053989e54cbe873b2f.jpg" alt="Edifícios corporativos"></div>
+<div class="pf"><img class="troca" id="pFoto" src="img/sp-por-do-sol.jpg" alt="São Paulo ao pôr do sol"></div>
 <div class="troca" id="pTexto" style="padding: 36px; display: flex; flex-direction: column; gap: 14px">
 <span class="eyebrow" style="color: #8A6A2E"><span id="pNum">01</span> · de 04</span>
 <span class="serif" style="font-size: 27px; line-height: 1.1; color: #12263F"><span id="pTitulo">Patrimônio financeiro</span></span>
@@ -363,9 +363,9 @@ body.menu-aberto .zap{display:none}
 <a href="#conteudo" style="font-weight: 600; font-size: 15px">Ver todos os artigos</a>
 </div>
 <div class="cols3" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px">
-<a class="artigo revela" href="#conteudo"><div class="foto" style="height: 220px; padding: 0; overflow: hidden"><img class="" src="img/7aec8de551da29cfd7843b700b4e1e69.jpg" alt="Sala de estar"></div><span class="eyebrow" style="color: #8A6A2E">Wealth</span><h3 class="serif" style="margin: 0; font-size: 19px; line-height: 1.2; color: #12263F">Planejamento patrimonial e o legado familiar</h3></a>
-<a class="artigo revela" href="#conteudo"><div class="foto" style="height: 220px; padding: 0; overflow: hidden"><img class="" src="img/08255a5e2be9889cee73762fe769a74d.jpg" alt="Declaração de imposto de renda"></div><span class="eyebrow" style="color: #8A6A2E">Planejamento</span><h3 class="serif" style="margin: 0; font-size: 19px; line-height: 1.2; color: #12263F">Como otimizar a sua declaração do Imposto de Renda</h3></a>
-<a class="artigo revela" href="#conteudo"><div class="foto" style="height: 220px; padding: 0; overflow: hidden"><img class="" src="img/d3b6e1dc3a9ec69144c9a278bed423a2.jpg" alt="Chaves de imóvel"></div><span class="eyebrow" style="color: #8A6A2E">Investimentos</span><h3 class="serif" style="margin: 0; font-size: 19px; line-height: 1.2; color: #12263F">Conquiste o mundo com seus investimentos</h3></a>
+<a class="artigo revela" href="#conteudo"><div class="foto" style="height: 220px; padding: 0; overflow: hidden"><img class="" src="img/rei-xadrez.jpg" alt="Rei do xadrez em madeira"></div><span class="eyebrow" style="color: #8A6A2E">Wealth</span><h3 class="serif" style="margin: 0; font-size: 19px; line-height: 1.2; color: #12263F">Planejamento patrimonial e o legado familiar</h3></a>
+<a class="artigo revela" href="#conteudo"><div class="foto" style="height: 220px; padding: 0; overflow: hidden"><img class="" src="img/reuniao-notebook.jpg" alt="Reunião com notebook junto à janela"></div><span class="eyebrow" style="color: #8A6A2E">Planejamento</span><h3 class="serif" style="margin: 0; font-size: 19px; line-height: 1.2; color: #12263F">Como otimizar a sua declaração do Imposto de Renda</h3></a>
+<a class="artigo revela" href="#conteudo"><div class="foto" style="height: 220px; padding: 0; overflow: hidden"><img class="" src="img/iate.jpg" alt="Iate em mar turquesa visto de cima"></div><span class="eyebrow" style="color: #8A6A2E">Investimentos</span><h3 class="serif" style="margin: 0; font-size: 19px; line-height: 1.2; color: #12263F">Conquiste o mundo com seus investimentos</h3></a>
 </div>
 </div>
 </section>

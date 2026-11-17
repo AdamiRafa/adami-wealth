@@ -165,7 +165,7 @@ h1.serif,h2.serif{letter-spacing:-0.025em}
 <style>
 /* menu do celular e botão do WhatsApp */
 .menu-bt{display:none;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto}
-.menu-cel{position:fixed;inset:0;z-index:90;background:#0B1A2C;color:#fff;overflow-y:auto;opacity:0;transition:opacity .35s ease}
+.menu-cel *{box-sizing:border-box}.menu-cel{position:fixed;inset:0;z-index:90;background:#0B1A2C;color:#fff;overflow-y:auto;opacity:0;transition:opacity .35s ease}
 .menu-cel.aberto{opacity:1}
 .menu-cel-in{min-height:100%;display:flex;flex-direction:column;gap:36px;padding:24px 24px 40px}
 .menu-fecha{align-self:flex-end;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
@@ -177,7 +177,7 @@ h1.serif,h2.serif{letter-spacing:-0.025em}
 .menu-acoes{display:flex;flex-direction:column;gap:16px;margin-top:auto}
 .menu-acoes .btn{width:100%}
 .menu-zap,.menu-hub{color:#C7D2DF;text-decoration:none;font-size:15px;min-height:44px;display:inline-flex;align-items:center}
-.zap{position:fixed;right:20px;bottom:20px;z-index:70;height:58px;min-width:58px;border-radius:999px;background:#25D366;color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:0;padding:0 15px;box-shadow:0 10px 30px rgba(0,0,0,.25);text-decoration:none;font:600 14px Montserrat,system-ui,sans-serif;transition:gap .35s ease,padding .35s ease,transform .3s ease}
+.zap{box-sizing:border-box;position:fixed;right:20px;bottom:20px;z-index:70;height:58px;min-width:58px;border-radius:999px;background:#25D366;color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:0;padding:0 15px;box-shadow:0 10px 30px rgba(0,0,0,.25);text-decoration:none;font:600 14px Montserrat,system-ui,sans-serif;transition:gap .35s ease,padding .35s ease,transform .3s ease}
 .zap-txt{display:inline-block;max-width:0;overflow:hidden;white-space:nowrap;vertical-align:middle;transition:max-width .4s ease}
 .zap:hover{gap:10px;padding:0 20px;color:#fff}.zap:hover .zap-txt{max-width:140px}
 .zap:focus-visible{outline:3px solid #C9A86A;outline-offset:3px}

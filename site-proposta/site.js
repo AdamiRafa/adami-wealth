@@ -48,10 +48,10 @@
   var mapa = $("#mapa");
   if(mapa){
     var P = [
-      { titulo: "Patrimônio financeiro", foto: "img/9dec044863cc37053989e54cbe873b2f.jpg", alt: "Edifícios corporativos", texto: "Investimentos no Brasil e no exterior, em todos os bancos, organizados em uma carteira só e acompanhados de perto.", itens: ["Relatório Consolidado de todos os bancos", "Carteira guiada pela Política de Alocação", "Conta internacional e offshore"] },
-      { titulo: "Patrimônio imobilizado", foto: "img/7aec8de551da29cfd7843b700b4e1e69.jpg", alt: "Sala de estar de um imóvel", texto: "Os imóveis da família com valor atualizado, rentabilidade dos aluguéis e a estrutura certa para cada um.", itens: ["Relatório Imobiliário", "Impostos e viabilidade de holding", "Simulação de divisão de bens"] },
-      { titulo: "Empresa", foto: "img/0ef4bf731904827f23308efd76e639d7.jpg", alt: "Escritório com vista para a cidade", texto: "A empresa e a família andam juntas: caixa, conta e estrutura societária alinhados ao patrimônio pessoal.", itens: ["Conta e investimentos da empresa", "Estrutura societária", "Proteção dos sócios"] },
-      { titulo: "Família e legado", foto: "img/9275fe4e30616515bf173545abf48bda.jpg", alt: "Família reunida na praia ao pôr do sol", texto: "Os objetivos de cada geração, com proteção para hoje e um plano para a sucessão.", itens: ["Plano Patrimonial e sucessório", "Seguros e previdência", "Planejamento para quem vai morar fora"] }
+      { titulo: "Patrimônio financeiro", foto: "img/sp-por-do-sol.jpg", alt: "São Paulo ao pôr do sol", texto: "Investimentos no Brasil e no exterior, em todos os bancos, organizados em uma carteira só e acompanhados de perto.", itens: ["Relatório Consolidado de todos os bancos", "Carteira guiada pela Política de Alocação", "Conta internacional e offshore"] },
+      { titulo: "Patrimônio imobilizado", foto: "img/casa-noite.jpg", alt: "Casa moderna iluminada à noite", texto: "Os imóveis da família com valor atualizado, rentabilidade dos aluguéis e a estrutura certa para cada um.", itens: ["Relatório Imobiliário", "Impostos e viabilidade de holding", "Simulação de divisão de bens"] },
+      { titulo: "Empresa", foto: "img/reuniao-notebook.jpg", alt: "Reunião com notebook junto à janela", texto: "A empresa e a família andam juntas: caixa, conta e estrutura societária alinhados ao patrimônio pessoal.", itens: ["Conta e investimentos da empresa", "Estrutura societária", "Proteção dos sócios"] },
+      { titulo: "Família e legado", foto: "img/avo-neta.jpg", alt: "Avô e neta de mãos dadas na beira do mar", texto: "Os objetivos de cada geração, com proteção para hoje e um plano para a sucessão.", itens: ["Plano Patrimonial e sucessório", "Seguros e previdência", "Planejamento para quem vai morar fora"] }
     ];
     var botoes = $$("[data-pilar]", mapa), atual = 0, parado = false;
     var mostra = function(i){
