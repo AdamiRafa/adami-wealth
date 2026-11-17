@@ -198,6 +198,29 @@ h1.serif,h2.serif{letter-spacing:-0.025em}
 @media screen and (prefers-reduced-motion: reduce){.vit-fundo,.vit-item,.vit-item.on{transition:opacity .3s ease}.vit-fundo{transform:none}.vit-aba.on .vit-barra i{animation:none;width:100%}}
 @media screen and (max-width:900px){.vitrine{min-height:0}.vit-in{padding-top:88px;padding-bottom:40px;gap:36px}.vit-cab h2{font-size:26px}.vit-item h3{font-size:40px}.vit-item p{font-size:16px}.vit-veu{background:rgba(11,26,44,.82)}.vit-abas{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.vit-aba{font-size:11.5px;gap:10px}}
 </style>
+<style>
+/* menu do celular e botão do WhatsApp */
+.menu-bt{display:none;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto}
+.menu-cel{position:fixed;inset:0;z-index:90;background:#0B1A2C;color:#fff;overflow-y:auto;opacity:0;transition:opacity .35s ease}
+.menu-cel.aberto{opacity:1}
+.menu-cel-in{min-height:100%;display:flex;flex-direction:column;gap:36px;padding:24px 24px 40px}
+.menu-fecha{align-self:flex-end;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.menu-links{display:flex;flex-direction:column}
+.menu-links a{font-family:Montserrat,system-ui,sans-serif;font-weight:300;font-size:30px;letter-spacing:-0.02em;color:#fff;text-decoration:none;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.1);transform:translateY(12px);opacity:0;transition:transform .5s cubic-bezier(.2,.7,.2,1),opacity .5s ease}
+.menu-cel.aberto .menu-links a{transform:none;opacity:1}
+.menu-cel.aberto .menu-links a:nth-child(2){transition-delay:.04s}.menu-cel.aberto .menu-links a:nth-child(3){transition-delay:.08s}.menu-cel.aberto .menu-links a:nth-child(4){transition-delay:.12s}.menu-cel.aberto .menu-links a:nth-child(5){transition-delay:.16s}
+.menu-links a[aria-current="page"]{color:#C9A86A}
+.menu-acoes{display:flex;flex-direction:column;gap:16px;margin-top:auto}
+.menu-acoes .btn{width:100%}
+.menu-zap,.menu-hub{color:#C7D2DF;text-decoration:none;font-size:15px;min-height:44px;display:inline-flex;align-items:center}
+.zap{position:fixed;right:20px;bottom:20px;z-index:70;height:58px;min-width:58px;border-radius:999px;background:#25D366;color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:0;padding:0 15px;box-shadow:0 10px 30px rgba(0,0,0,.25);text-decoration:none;font:600 14px Montserrat,system-ui,sans-serif;transition:gap .35s ease,padding .35s ease,transform .3s ease}
+.zap-txt{display:inline-block;max-width:0;overflow:hidden;white-space:nowrap;vertical-align:middle;transition:max-width .4s ease}
+.zap:hover{gap:10px;padding:0 20px;color:#fff}.zap:hover .zap-txt{max-width:140px}
+.zap:focus-visible{outline:3px solid #C9A86A;outline-offset:3px}
+body.menu-aberto .zap{display:none}
+@media screen and (max-width:900px){.menu-bt{display:inline-flex}.topo .wrap > div{display:none !important}.zap{right:16px;bottom:16px;height:56px;width:56px;min-width:0;padding:0}.zap .zap-txt{display:none}}
+@media screen and (prefers-reduced-motion: reduce){.menu-cel,.menu-links a,.zap,.zap-txt{transition:none}}
+</style>
 </head>
 <body>
 <div class="ac">
@@ -210,8 +233,17 @@ h1.serif,h2.serif{letter-spacing:-0.025em}
 <a href="wealth.html">Wealth Planning</a>
 </nav>
 <div style="display: flex; align-items: center; gap: 24px"><a class="acesso" href="https://adamicaptal.com.br/hub" title="Entrar no Hub Adami" aria-label="Acesso colaborador"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Acesso colaborador</a><a class="btn btn-ouro" href="agendar.html" style="min-height: 44px; padding: 0 20px; font-size: 14px">Agendar conversa</a></div>
+<button type="button" class="menu-bt" aria-expanded="false" aria-controls="menuCel" aria-label="Abrir menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"></path></svg></button>
 </div>
 </header>
+<div class="menu-cel" id="menuCel" role="dialog" aria-modal="true" aria-label="Menu" hidden>
+<div class="menu-cel-in">
+<button type="button" class="menu-fecha" aria-label="Fechar menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+<nav class="menu-links" aria-label="Menu principal"><a href="index.html">Início</a><a href="investimentos.html" aria-current="page">Investimentos</a><a href="wealth.html">Wealth Planning</a><a href="jornada.html">Jornada do cliente</a><a href="index.html#conteudo">Conteúdo</a></nav>
+<div class="menu-acoes"><a class="btn btn-ouro" href="agendar.html">Agendar conversa</a><a class="menu-zap" href="https://api.whatsapp.com/send?phone=5551982326300&amp;text=Ol%C3%A1%2C%20estava%20navegando%20no%20site%20da%20Adami%20Captal%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es." target="_blank" rel="noopener">WhatsApp +55 51 9 8232-6300</a><a class="menu-hub" href="https://adamicaptal.com.br/hub">Acesso colaborador</a></div>
+</div>
+</div>
+
 
 <section class="capa">
 <img class="capa-img kb" src="img/57a0227d42ec73fd0f3529b1e3e71052.jpg" alt="">
@@ -294,6 +326,7 @@ h1.serif,h2.serif{letter-spacing:-0.025em}
 </footer>
 
 </div>
+<a class="zap" href="https://api.whatsapp.com/send?phone=5551982326300&amp;text=Ol%C3%A1%2C%20estava%20navegando%20no%20site%20da%20Adami%20Captal%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es." target="_blank" rel="noopener" aria-label="Conversar com a Adami Captal no WhatsApp"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4.5C9.6 4.5 4.5 9.5 4.5 15.8c0 2.1.6 4.1 1.6 5.8L4.5 27.5l6.1-1.6c1.6.9 3.5 1.4 5.4 1.4 6.4 0 11.5-5 11.5-11.3S22.4 4.5 16 4.5z" fill="none" stroke="#fff" stroke-width="2"></path><path d="M12.2 10.6c-.3-.6-.6-.6-.9-.6h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 3.9 1.7 4.2c.2.3 2.9 4.6 7.1 6.2 3.5 1.4 4.2 1.1 5 1 .8-.1 2.4-1 2.8-1.9.3-.9.3-1.7.2-1.9-.1-.2-.4-.3-.8-.5s-2.4-1.2-2.7-1.3c-.4-.1-.6-.2-.9.2-.3.4-1 1.3-1.3 1.5-.2.3-.5.3-.9.1-.4-.2-1.7-.6-3.2-2-1.2-1-2-2.3-2.2-2.7-.2-.4 0-.6.2-.8l.6-.7c.2-.2.3-.4.4-.7.1-.3.1-.5 0-.7-.1-.2-.9-2.2-1.2-3z" fill="#fff"></path></svg><span class="zap-txt">Fale conosco</span></a>
 <script src="site.js"></script>
 </body>
 </html>

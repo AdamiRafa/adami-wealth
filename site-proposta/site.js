@@ -204,6 +204,27 @@
     poe(0);
   });
 
+
+  /* ---- menu do celular: abre em tela cheia, fecha no X, no Esc ou ao escolher um link ---- */
+  var menuBt = $(".menu-bt"), menuCel = $("#menuCel");
+  if(menuBt && menuCel){
+    var abre = function(){
+      menuCel.hidden = false; void menuCel.offsetWidth; menuCel.classList.add("aberto");
+      document.body.classList.add("menu-aberto"); document.body.style.overflow = "hidden";
+      menuBt.setAttribute("aria-expanded", "true"); $(".menu-fecha", menuCel).focus();
+    };
+    var fecha = function(){
+      menuCel.classList.remove("aberto"); document.body.classList.remove("menu-aberto"); document.body.style.overflow = "";
+      menuBt.setAttribute("aria-expanded", "false");
+      setTimeout(function(){ if(!menuCel.classList.contains("aberto")) menuCel.hidden = true; }, reduz ? 0 : 350);
+      menuBt.focus();
+    };
+    menuBt.addEventListener("click", abre);
+    $(".menu-fecha", menuCel).addEventListener("click", fecha);
+    $$("a", menuCel).forEach(function(a){ a.addEventListener("click", function(){ if(a.getAttribute("href").indexOf("#") >= 0) fecha(); }); });
+    menuCel.addEventListener("keydown", function(ev){ if(ev.key === "Escape") fecha(); });
+  }
+
   /* ---- agendar conversa: escolha do assunto e confirmação (nada é enviado) ---- */
   var form = $("#agForm");
   if(form){
