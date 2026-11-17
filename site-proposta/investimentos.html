@@ -146,6 +146,37 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 @media screen and (min-width:901px){.nav{gap:28px !important}}
 @media screen and (min-width:901px) and (max-width:1500px){.topo-larga .acesso{font-size:0 !important;gap:0 !important;min-width:44px;justify-content:center}.topo-larga .nav{gap:24px !important}}
 </style>
+<style>
+/* celular: logo compartilhado mais baixo e sem o cadeado, para o botão caber */
+@media screen and (max-width:900px){.topo-larga img{height:22px !important}.topo-larga .acesso{display:none !important}}
+</style>
+<style>
+/* carrossel "O que oferecemos" (Investimentos) */
+.carro{display:flex;flex-direction:column;gap:22px}
+.carro-abas{display:flex;gap:6px;border-bottom:1px solid #E4DDD0;overflow-x:auto;scrollbar-width:none}
+.carro-abas::-webkit-scrollbar{display:none}
+.carro-aba{flex:0 0 auto;min-height:52px;padding:0 20px;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;font:500 15px Inter,system-ui,sans-serif;color:#5A6573;cursor:pointer;display:inline-flex;align-items:center;gap:10px;white-space:nowrap}
+.carro-aba b{font-family:"Cormorant Garamond",Georgia,serif;font-size:20px;font-weight:500;color:#8A6A2E}
+.carro-aba:hover{color:#12263F}.carro-aba.on{color:#12263F;border-bottom-color:#C9A86A}
+.carro-trilho{display:flex;gap:24px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;outline-offset:6px}
+.carro-trilho::-webkit-scrollbar{display:none}
+.carro-slide{flex:0 0 88%;scroll-snap-align:start;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:#fff;border:1px solid #E4DDD0;min-height:470px}
+.carro-foto{overflow:hidden;position:relative}.carro-foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1.2s ease}
+.carro-slide:hover .carro-foto img{transform:scale(1.04)}
+.carro-txt{padding:48px;display:flex;flex-direction:column;gap:16px;justify-content:center}
+.carro-txt h3{margin:0;font-size:44px;line-height:1.05;color:#12263F}
+.carro-txt p{margin:0;font-size:16px;line-height:1.7;color:#5A6573}
+.carro-lista{list-style:none;margin:4px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}
+.carro-lista li{padding:10px 0;border-top:1px solid #EFEAE0;font-size:15px}
+.carro-link{font-weight:600;display:inline-flex;gap:8px;align-items:center;margin-top:8px;min-height:44px;align-self:flex-start}
+.carro-ctrl{display:flex;align-items:center;gap:16px}
+.carro-seta{width:52px;height:52px;border-radius:50%;border:1px solid #CFC6B6;background:#fff;color:#12263F;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto}
+.carro-seta:hover:not(:disabled){background:#12263F;border-color:#12263F;color:#fff}.carro-seta:disabled{opacity:.35;cursor:default}
+.carro-prog{flex:1;height:2px;background:#E4DDD0;position:relative;overflow:hidden}.carro-prog span{position:absolute;left:0;top:0;bottom:0;width:25%;background:#C9A86A;transition:width .4s ease}
+.carro-cont{font-size:13px;color:#5A6573;font-variant-numeric:tabular-nums;min-width:40px;text-align:center}
+@media screen and (prefers-reduced-motion: reduce){.carro-trilho{scroll-behavior:auto}.carro-foto img{transition:none}}
+@media screen and (max-width:900px){.carro-slide{flex-basis:90%;grid-template-columns:minmax(0,1fr);min-height:0}.carro-foto{height:200px}.carro-txt{padding:26px 22px}.carro-txt h3{font-size:32px}.carro-lista{grid-template-columns:minmax(0,1fr)}.carro-aba{padding:0 14px}}
+</style>
 </head>
 <body>
 <div class="ac">
@@ -194,15 +225,15 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 <h2 class="serif revela" style="margin: 0; font-size: 46px; line-height: 1.1; color: #12263F">Tudo o que a sua vida financeira precisa, em um só relacionamento.</h2>
 <p style="margin: 0; font-size: 17px; line-height: 1.65; color: #5A6573">Entendemos o seu perfil de investidor e mostramos as opções certas para você.</p>
 </div>
-<div class="cols4" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px">
-<div class="frente revela"><span class="serif" style="font-size: 30px; color: #12263F">Investimentos</span>
-<ul style="list-style: none; margin: 0; padding: 0"><li>Renda fixa</li><li>Fundos de investimento</li><li>Fundos imobiliários</li><li>Ações</li><li>Produtos estruturados</li></ul></div>
-<div class="frente revela"><span class="serif" style="font-size: 30px; color: #12263F">Conta e cartão</span>
-<ul style="list-style: none; margin: 0; padding: 0"><li>Conta corrente</li><li>Conta para os seus filhos</li><li>Conta para a sua empresa</li><li>Cartão de crédito</li><li>Carteira digital</li></ul></div>
-<div class="frente revela"><span class="serif" style="font-size: 30px; color: #12263F">Internacional</span>
-<ul style="list-style: none; margin: 0; padding: 0"><li>Câmbio instantâneo</li><li>Cartão de débito</li><li>Pagamentos, recebimentos e saques no exterior</li></ul></div>
-<div class="frente revela"><span class="serif" style="font-size: 30px; color: #12263F">Seguros e previdência</span>
-<ul style="list-style: none; margin: 0; padding: 0"><li>Vida protegida</li><li>PGBL</li><li>VGBL</li></ul></div>
+<div class="carro" data-carrossel>
+<div class="carro-abas" role="tablist" aria-label="O que oferecemos"><button type="button" role="tab" class="carro-aba on" aria-selected="true" aria-controls="cs0" data-ir-slide="0"><b>01</b>Investimentos</button><button type="button" role="tab" class="carro-aba" aria-selected="false" aria-controls="cs1" data-ir-slide="1"><b>02</b>Conta e cartão</button><button type="button" role="tab" class="carro-aba" aria-selected="false" aria-controls="cs2" data-ir-slide="2"><b>03</b>Internacional</button><button type="button" role="tab" class="carro-aba" aria-selected="false" aria-controls="cs3" data-ir-slide="3"><b>04</b>Seguros e previdência</button></div>
+<div class="carro-trilho" tabindex="0" aria-label="O que oferecemos: use as setas para navegar">
+<article class="carro-slide" id="cs0" role="tabpanel" aria-roledescription="slide" aria-label="1 de 4: Investimentos"><div class="carro-foto"><img src="img/9dec044863cc37053989e54cbe873b2f.jpg" alt="Edifícios corporativos vistos de baixo" loading="lazy"></div><div class="carro-txt"><span class="eyebrow" style="color: #8A6A2E">01 · de 04</span><h3 class="serif">Investimentos</h3><p>A plataforma aberta do BTG Pactual, com mais de mil opções, e a carteira montada junto com você, de acordo com o seu perfil, objetivos e horizonte.</p><ul class="carro-lista"><li>Renda fixa</li><li>Fundos de investimento</li><li>Fundos imobiliários</li><li>Ações</li><li>Produtos estruturados</li></ul><a class="carro-link" href="agendar.html">Falar com um especialista <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div></article>
+<article class="carro-slide" id="cs1" role="tabpanel" aria-roledescription="slide" aria-label="2 de 4: Conta e cartão"><div class="carro-foto"><img src="img/08255a5e2be9889cee73762fe769a74d.jpg" alt="Mãos organizando documentos e celular" loading="lazy"></div><div class="carro-txt"><span class="eyebrow" style="color: #8A6A2E">02 · de 04</span><h3 class="serif">Conta e cartão</h3><p>Conta corrente para você, seus filhos e sua empresa, com cartão de crédito e carteira digital no mesmo relacionamento.</p><ul class="carro-lista"><li>Conta corrente</li><li>Conta para os seus filhos</li><li>Conta para a sua empresa</li><li>Cartão de crédito</li><li>Carteira digital</li></ul><a class="carro-link" href="agendar.html">Falar com um especialista <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div></article>
+<article class="carro-slide" id="cs2" role="tabpanel" aria-roledescription="slide" aria-label="3 de 4: Internacional"><div class="carro-foto"><img src="img/0ef4bf731904827f23308efd76e639d7.jpg" alt="Escritório com vista para a cidade" loading="lazy"></div><div class="carro-txt"><span class="eyebrow" style="color: #8A6A2E">03 · de 04</span><h3 class="serif">Internacional</h3><p>Para quem viaja, tem custos ou investe fora do Brasil: câmbio na hora, cartão de débito internacional e movimentações no exterior.</p><ul class="carro-lista"><li>Câmbio instantâneo</li><li>Cartão de débito internacional</li><li>Pagamentos, recebimentos e saques no exterior</li></ul><a class="carro-link" href="agendar.html">Falar com um especialista <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div></article>
+<article class="carro-slide" id="cs3" role="tabpanel" aria-roledescription="slide" aria-label="4 de 4: Seguros e previdência"><div class="carro-foto"><img src="img/9275fe4e30616515bf173545abf48bda.jpg" alt="Família reunida na praia ao pôr do sol" loading="lazy"></div><div class="carro-txt"><span class="eyebrow" style="color: #8A6A2E">04 · de 04</span><h3 class="serif">Seguros e previdência</h3><p>Proteção para a família e planejamento de longo prazo, com seguro de vida e previdência PGBL e VGBL.</p><ul class="carro-lista"><li>Vida protegida</li><li>PGBL</li><li>VGBL</li></ul><a class="carro-link" href="agendar.html">Falar com um especialista <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div></article>
+</div>
+<div class="carro-ctrl"><button type="button" class="carro-seta" data-dir="-1" aria-label="Opção anterior"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg></button><div class="carro-prog" aria-hidden="true"><span></span></div><span class="carro-cont" aria-live="polite">1 / 4</span><button type="button" class="carro-seta" data-dir="1" aria-label="Próxima opção"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button></div>
 </div>
 </div>
 </section>

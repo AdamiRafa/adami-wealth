@@ -134,6 +134,34 @@
     });
   }
 
+
+  /* ---- carrossel "O que oferecemos" (Investimentos): setas, abas, arrastar no celular ---- */
+  $$("[data-carrossel]").forEach(function(c){
+    var trilho = $(".carro-trilho", c), slides = $$(".carro-slide", c), abas = $$("[data-ir-slide]", c);
+    var setas = $$(".carro-seta", c), prog = $(".carro-prog span", c), cont = $(".carro-cont", c), atualS = -1;
+    var pos = function(i){ return slides[i].offsetLeft - slides[0].offsetLeft; };
+    var ir = function(i){ i = Math.max(0, Math.min(slides.length - 1, i)); trilho.scrollTo({ left: pos(i), behavior: reduz ? "auto" : "smooth" }); };
+    var marca = function(){
+      var x = trilho.scrollLeft, i = 0, melhor = Infinity;
+      slides.forEach(function(s, k){ var d = Math.abs(pos(k) - x); if(d < melhor){ melhor = d; i = k; } });
+      if(trilho.scrollLeft + trilho.clientWidth >= trilho.scrollWidth - 4) i = slides.length - 1;
+      if(i === atualS) return; atualS = i;
+      abas.forEach(function(a, k){ a.classList.toggle("on", k === i); a.setAttribute("aria-selected", k === i ? "true" : "false"); });
+      prog.style.width = ((i + 1) / slides.length * 100) + "%";
+      cont.textContent = (i + 1) + " / " + slides.length;
+      setas[0].disabled = i === 0; setas[1].disabled = i === slides.length - 1;
+    };
+    abas.forEach(function(a){ a.addEventListener("click", function(){ ir(+a.getAttribute("data-ir-slide")); }); });
+    setas.forEach(function(b){ b.addEventListener("click", function(){ ir(atualS + (+b.getAttribute("data-dir"))); }); });
+    trilho.addEventListener("keydown", function(ev){
+      if(ev.key === "ArrowRight"){ ev.preventDefault(); ir(atualS + 1); }
+      else if(ev.key === "ArrowLeft"){ ev.preventDefault(); ir(atualS - 1); }
+    });
+    var t0; trilho.addEventListener("scroll", function(){ clearTimeout(t0); t0 = setTimeout(marca, 60); }, { passive: true });
+    window.addEventListener("resize", function(){ atualS = -1; marca(); });
+    marca();
+  });
+
   /* ---- agendar conversa: escolha do assunto e confirmação (nada é enviado) ---- */
   var form = $("#agForm");
   if(form){
