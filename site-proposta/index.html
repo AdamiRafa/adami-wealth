@@ -150,25 +150,11 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 @media screen and (max-width:900px){.rod-cidades{grid-template-columns:minmax(0,1fr);gap:22px}.rod-ouv{text-align:left}.rod{padding:56px 0 32px}}
 </style>
 <style>
-/* capa: mar e veleiro, animados (substitui a foto da casa; dá para trocar por vídeo depois) */
-.mar{overflow:hidden;background:#0E2236}
-.mar-ceu{position:absolute;inset:0;background:linear-gradient(180deg,#081627 0%,#12294A 30%,#3E5878 47%,#B99566 56%,#E2C089 58.5%,#2C4C72 59%,#183558 72%,#0E2236 100%)}
-.mar-sol{position:absolute;left:70%;top:58%;width:46vw;max-width:760px;aspect-ratio:2/1;transform:translate(-50%,-62%);background:radial-gradient(ellipse at center,rgba(255,226,170,.75) 0%,rgba(233,190,120,.35) 22%,rgba(201,168,106,0) 62%);pointer-events:none}
-.mar-brilho{position:absolute;left:70%;top:59%;width:14vw;max-width:220px;height:34%;transform:translateX(-50%);background:repeating-linear-gradient(180deg,rgba(255,224,170,.55) 0 2px,rgba(255,224,170,0) 2px 9px);-webkit-mask-image:linear-gradient(180deg,#000,transparent);mask-image:linear-gradient(180deg,#000,transparent);opacity:.7}
-.mar-barco{position:absolute;left:61%;top:58.6%;width:clamp(56px,7vw,118px);transform:translateY(-92%);transform-origin:50% 90%}
-.onda{position:absolute;left:0;width:200%;height:22%}
-.o1{top:57.5%}.o2{top:63%;height:24%}.o3{bottom:0;height:30%}
-.mar ~ .capa-veu{background:linear-gradient(90deg,rgba(9,22,40,.72) 0%,rgba(9,22,40,.35) 45%,rgba(9,22,40,0) 70%)}
-@media screen and (prefers-reduced-motion: no-preference){
- @keyframes rola{from{transform:translateX(0)}to{transform:translateX(-50%)}}
- .o1{animation:rola 70s linear infinite}.o2{animation:rola 46s linear infinite reverse}.o3{animation:rola 32s linear infinite}
- @keyframes balanca{0%{transform:translateY(-92%) rotate(-2deg)}50%{transform:translateY(-88%) rotate(1.6deg)}100%{transform:translateY(-92%) rotate(-2deg)}}
- @keyframes navega{from{left:58%}to{left:66%}}
- .mar-barco{animation:balanca 7s ease-in-out infinite,navega 90s ease-in-out infinite alternate}
- @keyframes cintila{0%,100%{opacity:.45}50%{opacity:.85}}
- .mar-brilho{animation:cintila 5s ease-in-out infinite}
-}
-@media screen and (max-width:900px){.mar-barco{left:72%;width:54px}.mar-sol{left:78%;width:90vw}.mar-brilho{left:78%;width:30vw}.mar ~ .capa-veu{background:rgba(9,22,40,.55)}}
+/* capa: quadra de saibro vista de cima (foto Pexels, uso livre). Véu azul do lado do texto. */
+.capa-tenis{object-position:82% 50%}
+.capa-tenis ~ .capa-veu, picture ~ .capa-veu{background:linear-gradient(90deg,rgba(9,22,40,.9) 0%,rgba(9,22,40,.72) 38%,rgba(9,22,40,.25) 72%,rgba(9,22,40,.1) 100%)}
+picture ~ .capa-veu2{height:55%}
+@media screen and (max-width:900px){picture ~ .capa-veu{background:rgba(9,22,40,.68)}}
 </style>
 <style>
 /* menu em uma linha só, mesmo com o logo compartilhado (mais largo) */
@@ -196,13 +182,7 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 
 <!-- Hero -->
 <section class="capa">
-<div class="capa-img mar" aria-hidden="true">
-<div class="mar-ceu"></div><div class="mar-sol"></div><div class="mar-brilho"></div>
-<svg class="mar-barco" viewBox="0 0 100 124"><path d="M49 6 L49 98" stroke="#0A1726" stroke-width="2.2"></path><path d="M51.5 10 L51.5 92 L90 92 Q84 52 51.5 10 Z" fill="#0A1726"></path><path d="M46.5 20 L46.5 90 L13 90 Q22 56 46.5 20 Z" fill="#0A1726" opacity=".92"></path><path d="M6 97 L94 97 L84 110 L17 110 Z" fill="#0A1726"></path></svg>
-<svg class="onda o1" viewBox="0 0 2880 220" preserveAspectRatio="none"><path d="M0,220 L0.0,70.0 L30.0,77.1 L60.0,81.9 L90.0,83.4 L120.0,82.1 L150.0,80.1 L180.0,79.1 L210.0,80.1 L240.0,82.1 L270.0,83.4 L300.0,81.9 L330.0,77.1 L360.0,70.0 L390.0,62.9 L420.0,58.1 L450.0,56.6 L480.0,57.9 L510.0,59.9 L540.0,60.9 L570.0,59.9 L600.0,57.9 L630.0,56.6 L660.0,58.1 L690.0,62.9 L720.0,70.0 L750.0,77.1 L780.0,81.9 L810.0,83.4 L840.0,82.1 L870.0,80.1 L900.0,79.1 L930.0,80.1 L960.0,82.1 L990.0,83.4 L1020.0,81.9 L1050.0,77.1 L1080.0,70.0 L1110.0,62.9 L1140.0,58.1 L1170.0,56.6 L1200.0,57.9 L1230.0,59.9 L1260.0,60.9 L1290.0,59.9 L1320.0,57.9 L1350.0,56.6 L1380.0,58.1 L1410.0,62.9 L1440.0,70.0 L1470.0,77.1 L1500.0,81.9 L1530.0,83.4 L1560.0,82.1 L1590.0,80.1 L1620.0,79.1 L1650.0,80.1 L1680.0,82.1 L1710.0,83.4 L1740.0,81.9 L1770.0,77.1 L1800.0,70.0 L1830.0,62.9 L1860.0,58.1 L1890.0,56.6 L1920.0,57.9 L1950.0,59.9 L1980.0,60.9 L2010.0,59.9 L2040.0,57.9 L2070.0,56.6 L2100.0,58.1 L2130.0,62.9 L2160.0,70.0 L2190.0,77.1 L2220.0,81.9 L2250.0,83.4 L2280.0,82.1 L2310.0,80.1 L2340.0,79.1 L2370.0,80.1 L2400.0,82.1 L2430.0,83.4 L2460.0,81.9 L2490.0,77.1 L2520.0,70.0 L2550.0,62.9 L2580.0,58.1 L2610.0,56.6 L2640.0,57.9 L2670.0,59.9 L2700.0,60.9 L2730.0,59.9 L2760.0,57.9 L2790.0,56.6 L2820.0,58.1 L2850.0,62.9 L2880.0,70.0 L2880,220 Z" fill="#24466D" opacity=".55"></path></svg>
-<svg class="onda o2" viewBox="0 0 2880 220" preserveAspectRatio="none"><path d="M0,220 L0.0,118.4 L30.0,116.7 L60.0,107.6 L90.0,99.8 L120.0,98.1 L150.0,97.8 L180.0,91.6 L210.0,80.1 L240.0,71.6 L270.0,73.3 L300.0,82.4 L330.0,90.2 L360.0,91.9 L390.0,92.2 L420.0,98.4 L450.0,109.9 L480.0,118.4 L510.0,116.7 L540.0,107.6 L570.0,99.8 L600.0,98.1 L630.0,97.8 L660.0,91.6 L690.0,80.1 L720.0,71.6 L750.0,73.3 L780.0,82.4 L810.0,90.2 L840.0,91.9 L870.0,92.2 L900.0,98.4 L930.0,109.9 L960.0,118.4 L990.0,116.7 L1020.0,107.6 L1050.0,99.8 L1080.0,98.1 L1110.0,97.8 L1140.0,91.6 L1170.0,80.1 L1200.0,71.6 L1230.0,73.3 L1260.0,82.4 L1290.0,90.2 L1320.0,91.9 L1350.0,92.2 L1380.0,98.4 L1410.0,109.9 L1440.0,118.4 L1470.0,116.7 L1500.0,107.6 L1530.0,99.8 L1560.0,98.1 L1590.0,97.8 L1620.0,91.6 L1650.0,80.1 L1680.0,71.6 L1710.0,73.3 L1740.0,82.4 L1770.0,90.2 L1800.0,91.9 L1830.0,92.2 L1860.0,98.4 L1890.0,109.9 L1920.0,118.4 L1950.0,116.7 L1980.0,107.6 L2010.0,99.8 L2040.0,98.1 L2070.0,97.8 L2100.0,91.6 L2130.0,80.1 L2160.0,71.6 L2190.0,73.3 L2220.0,82.4 L2250.0,90.2 L2280.0,91.9 L2310.0,92.2 L2340.0,98.4 L2370.0,109.9 L2400.0,118.4 L2430.0,116.7 L2460.0,107.6 L2490.0,99.8 L2520.0,98.1 L2550.0,97.8 L2580.0,91.6 L2610.0,80.1 L2640.0,71.6 L2670.0,73.3 L2700.0,82.4 L2730.0,90.2 L2760.0,91.9 L2790.0,92.2 L2820.0,98.4 L2850.0,109.9 L2880.0,118.4 L2880,220 Z" fill="#163152" opacity=".8"></path></svg>
-<svg class="onda o3" viewBox="0 0 2880 220" preserveAspectRatio="none"><path d="M0,220 L0.0,155.6 L30.0,147.4 L60.0,137.0 L90.0,128.1 L120.0,123.2 L150.0,122.2 L180.0,122.8 L210.0,121.8 L240.0,117.5 L270.0,110.7 L300.0,104.1 L330.0,101.3 L360.0,104.4 L390.0,112.6 L420.0,123.0 L450.0,131.9 L480.0,136.8 L510.0,137.8 L540.0,137.2 L570.0,138.2 L600.0,142.5 L630.0,149.3 L660.0,155.9 L690.0,158.7 L720.0,155.6 L750.0,147.4 L780.0,137.0 L810.0,128.1 L840.0,123.2 L870.0,122.2 L900.0,122.8 L930.0,121.8 L960.0,117.5 L990.0,110.7 L1020.0,104.1 L1050.0,101.3 L1080.0,104.4 L1110.0,112.6 L1140.0,123.0 L1170.0,131.9 L1200.0,136.8 L1230.0,137.8 L1260.0,137.2 L1290.0,138.2 L1320.0,142.5 L1350.0,149.3 L1380.0,155.9 L1410.0,158.7 L1440.0,155.6 L1470.0,147.4 L1500.0,137.0 L1530.0,128.1 L1560.0,123.2 L1590.0,122.2 L1620.0,122.8 L1650.0,121.8 L1680.0,117.5 L1710.0,110.7 L1740.0,104.1 L1770.0,101.3 L1800.0,104.4 L1830.0,112.6 L1860.0,123.0 L1890.0,131.9 L1920.0,136.8 L1950.0,137.8 L1980.0,137.2 L2010.0,138.2 L2040.0,142.5 L2070.0,149.3 L2100.0,155.9 L2130.0,158.7 L2160.0,155.6 L2190.0,147.4 L2220.0,137.0 L2250.0,128.1 L2280.0,123.2 L2310.0,122.2 L2340.0,122.8 L2370.0,121.8 L2400.0,117.5 L2430.0,110.7 L2460.0,104.1 L2490.0,101.3 L2520.0,104.4 L2550.0,112.6 L2580.0,123.0 L2610.0,131.9 L2640.0,136.8 L2670.0,137.8 L2700.0,137.2 L2730.0,138.2 L2760.0,142.5 L2790.0,149.3 L2820.0,155.9 L2850.0,158.7 L2880.0,155.6 L2880,220 Z" fill="#0E2236"></path></svg>
-</div>
+<picture><source media="(max-width: 700px)" srcset="img/capa-tenis-cel.jpg"><img class="capa-img kb capa-tenis" src="img/capa-tenis.jpg" alt=""></picture>
 <div class="capa-veu"></div><div class="capa-veu2"></div>
 <div class="wrap capa-conteudo" style="display: flex; flex-direction: column; gap: 26px">
 <div class="eyebrow entra d1" style="color: #C9A86A">Investimentos, família e legado</div>
