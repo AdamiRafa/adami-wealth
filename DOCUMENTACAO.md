@@ -781,6 +781,12 @@ com o quadro "Resumo prático de acompanhamento". Palavras vetadas trocadas: "Ad
 as páginas no modelo 2026 da Necton (CNPJ 36.000.256/0001-46, "como preposto", lista de sócios em
 necton.com.br/escritorios), com as razões sociais das duas empresas do grupo. O site ainda passa pelo MyCompliance
 antes de ir ao ar**.
+ · **18/11/2026: proposta do site menos com cara de modelo pronto. Tipografia Montserrat (a do site atual da Adami) no lugar
+da serifa + Inter; rótulos sem caixa-alta espaçada. Menu do topo só com Investimentos e Wealth Planning (Jornada e Conteúdo
+ficam no rodapé). Fotos sem moldura: máscara que esfuma as bordas no fundo da seção. Investimentos: o carrossel de cartões
+virou a vitrine em tela cheia (`data-vitrine`: fundo que troca com transição, troca sozinha a cada 7 s, pausa com o mouse,
+arrastar no celular). Wealth: "Nossos serviços" virou a roda vertical (`data-roda`: nomes que giram, foto redonda e anel
+de marcações, setas e teclado). Jornada: saíram as caixas cinzas "Prévia"**.
 
 ---
 

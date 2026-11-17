@@ -135,31 +135,73 @@
   }
 
 
-  /* ---- carrossel "O que oferecemos" (Investimentos): setas, abas, arrastar no celular ---- */
-  $$("[data-carrossel]").forEach(function(c){
-    var trilho = $(".carro-trilho", c), slides = $$(".carro-slide", c), abas = $$("[data-ir-slide]", c);
-    var setas = $$(".carro-seta", c), prog = $(".carro-prog span", c), cont = $(".carro-cont", c), atualS = -1;
-    var pos = function(i){ return slides[i].offsetLeft - slides[0].offsetLeft; };
-    var ir = function(i){ i = Math.max(0, Math.min(slides.length - 1, i)); trilho.scrollTo({ left: pos(i), behavior: reduz ? "auto" : "smooth" }); };
-    var marca = function(){
-      var x = trilho.scrollLeft, i = 0, melhor = Infinity;
-      slides.forEach(function(s, k){ var d = Math.abs(pos(k) - x); if(d < melhor){ melhor = d; i = k; } });
-      if(trilho.scrollLeft + trilho.clientWidth >= trilho.scrollWidth - 4) i = slides.length - 1;
-      if(i === atualS) return; atualS = i;
-      abas.forEach(function(a, k){ a.classList.toggle("on", k === i); a.setAttribute("aria-selected", k === i ? "true" : "false"); });
-      prog.style.width = ((i + 1) / slides.length * 100) + "%";
-      cont.textContent = (i + 1) + " / " + slides.length;
-      setas[0].disabled = i === 0; setas[1].disabled = i === slides.length - 1;
+
+
+  /* ---- vitrine "O que oferecemos" (Investimentos): troca sozinha a cada 7 s, pausa com o mouse,
+     abas clicáveis e arrastar para o lado no celular ---- */
+  $$("[data-vitrine]").forEach(function(v){
+    var fundos = $$(".vit-fundo", v), itens = $$(".vit-item", v), abas = $$(".vit-aba", v), atualV = 0;
+    var mostra = function(i){
+      i = (i + itens.length) % itens.length; atualV = i;
+      fundos.forEach(function(f, k){ f.classList.toggle("on", k === i); });
+      itens.forEach(function(it, k){ it.classList.toggle("on", k === i); if(k === i) it.removeAttribute("aria-hidden"); else it.setAttribute("aria-hidden", "true"); });
+      abas.forEach(function(a, k){
+        a.classList.remove("on"); a.classList.toggle("feito", k < i); a.setAttribute("aria-selected", k === i ? "true" : "false");
+        if(k === i){ void a.offsetWidth; a.classList.add("on"); }
+      });
     };
-    abas.forEach(function(a){ a.addEventListener("click", function(){ ir(+a.getAttribute("data-ir-slide")); }); });
-    setas.forEach(function(b){ b.addEventListener("click", function(){ ir(atualS + (+b.getAttribute("data-dir"))); }); });
-    trilho.addEventListener("keydown", function(ev){
-      if(ev.key === "ArrowRight"){ ev.preventDefault(); ir(atualS + 1); }
-      else if(ev.key === "ArrowLeft"){ ev.preventDefault(); ir(atualS - 1); }
+    abas.forEach(function(a, k){ a.addEventListener("click", function(){ mostra(k); }); });
+    v.addEventListener("animationend", function(ev){ if(ev.animationName === "enche") mostra(atualV + 1); });
+    v.addEventListener("mouseenter", function(){ v.classList.add("parado"); });
+    v.addEventListener("mouseleave", function(){ v.classList.remove("parado"); });
+    v.addEventListener("focusin", function(){ v.classList.add("parado"); });
+    v.addEventListener("focusout", function(){ v.classList.remove("parado"); });
+    $(".vit-abas", v).addEventListener("keydown", function(ev){
+      if(ev.key === "ArrowRight" || ev.key === "ArrowLeft"){ ev.preventDefault(); mostra(atualV + (ev.key === "ArrowRight" ? 1 : -1)); abas[atualV].focus(); }
     });
-    var t0; trilho.addEventListener("scroll", function(){ clearTimeout(t0); t0 = setTimeout(marca, 60); }, { passive: true });
-    window.addEventListener("resize", function(){ atualS = -1; marca(); });
-    marca();
+    var x0 = null;
+    v.addEventListener("touchstart", function(ev){ x0 = ev.touches[0].clientX; }, { passive: true });
+    v.addEventListener("touchend", function(ev){
+      if(x0 === null) return; var dx = ev.changedTouches[0].clientX - x0; x0 = null;
+      if(Math.abs(dx) > 50) mostra(atualV + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+    if("IntersectionObserver" in window){
+      new IntersectionObserver(function(es){ v.classList.toggle("parado", !es[0].isIntersecting); }, { threshold: 0.35 }).observe(v);
+    }
+  });
+
+  /* ---- roda de serviços (Wealth): lista vertical que gira, foto redonda e anel de marcações ---- */
+  $$("[data-roda]").forEach(function(r){
+    var nomes = $$(".roda-nome", r), fotos = $$(".roda-foto img", r), infos = $$(".roda-info-i", r);
+    var trilhoR = $(".roda-trilho", r), lista = $(".roda-lista", r), dial = $(".roda-dial g", r);
+    var cima = $(".roda-seta.cima", r), baixo = $(".roda-seta.baixo", r), atualR = 0, ALT = 70;
+    var poe = function(i){
+      i = Math.max(0, Math.min(nomes.length - 1, i)); atualR = i;
+      nomes.forEach(function(nm, k){
+        var d = Math.min(3, Math.abs(k - i)); nm.setAttribute("data-d", String(d));
+        nm.classList.toggle("on", k === i); nm.setAttribute("aria-selected", k === i ? "true" : "false");
+        nm.tabIndex = k === i ? 0 : -1;
+      });
+      fotos.forEach(function(f, k){ f.classList.toggle("on", k === i); });
+      infos.forEach(function(it, k){ it.classList.toggle("on", k === i); if(k === i) it.removeAttribute("aria-hidden"); else it.setAttribute("aria-hidden", "true"); });
+      trilhoR.style.transform = "translateY(" + (lista.clientHeight / 2 - ALT / 2 - i * ALT) + "px)";
+      dial.style.transform = "rotate(" + (-i * 36) + "deg)";
+      cima.disabled = i === 0; baixo.disabled = i === nomes.length - 1;
+    };
+    nomes.forEach(function(nm, k){ nm.addEventListener("click", function(){ poe(k); }); });
+    cima.addEventListener("click", function(){ poe(atualR - 1); });
+    baixo.addEventListener("click", function(){ poe(atualR + 1); });
+    trilhoR.addEventListener("keydown", function(ev){
+      if(ev.key === "ArrowDown" || ev.key === "ArrowUp"){ ev.preventDefault(); poe(atualR + (ev.key === "ArrowDown" ? 1 : -1)); nomes[atualR].focus(); }
+    });
+    var y0 = null, x1 = null;
+    r.addEventListener("touchstart", function(ev){ y0 = ev.touches[0].clientY; x1 = ev.touches[0].clientX; }, { passive: true });
+    r.addEventListener("touchend", function(ev){
+      if(y0 === null) return; var dx = ev.changedTouches[0].clientX - x1; y0 = null;
+      if(Math.abs(dx) > 50) poe(atualR + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+    window.addEventListener("resize", function(){ poe(atualR); });
+    poe(0);
   });
 
   /* ---- agendar conversa: escolha do assunto e confirmação (nada é enviado) ---- */

@@ -7,15 +7,15 @@
 <title>Adami Captal · Agendar conversa</title>
 <link rel="icon" href="../img/app-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700&amp;display=swap" rel="stylesheet">
 <style>
 body{margin:0;background:#F7F4EE}
 a{color:#1B3A5F}a:hover{color:#0E2236}
-.ac{font-family:Inter,system-ui,sans-serif;color:#2B3645;background:#F7F4EE;min-height:100vh}
+.ac{font-family:Montserrat,system-ui,sans-serif;color:#2B3645;background:#F7F4EE;min-height:100vh}
 .ac *{box-sizing:border-box}
 .wrap{max-width:1200px;margin:0 auto;padding:0 32px}
-.serif{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;letter-spacing:-0.01em}
-.eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:600}
+.serif{font-family:Montserrat,system-ui,sans-serif;font-weight:300;letter-spacing:-0.02em}
+.eyebrow{font-size:13px;letter-spacing:.02em;font-weight:600}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 28px;border-radius:2px;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:.02em;border:0;cursor:pointer;font-family:inherit}
 .btn-ouro{background:#C9A86A;color:#0E2236}.btn-ouro:hover{background:#D8BB82;color:#0E2236}
 .btn-azul{background:#12263F;color:#fff}.btn-azul:hover{background:#1B3A5F;color:#fff}
@@ -34,7 +34,7 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
  .cols2{grid-template-columns:minmax(0,1fr) !important}
  .agGrid{grid-template-columns:minmax(0,1fr) !important}
  .wrap{padding:0 20px}
- .h1{font-size:42px !important}
+ .h1{font-size:31px !important}
 }
 .acesso{color:#C7D2DF;text-decoration:none;font-size:13px;letter-spacing:.04em;display:inline-flex;align-items:center;gap:8px;min-height:44px}.acesso:hover{color:#C9A86A}
 /* Animações (todas desligadas para quem pede menos movimento) */
@@ -65,7 +65,7 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 .capa-veu{position:absolute;inset:0;background:rgba(9,22,40,.5)}
 .capa-veu2{position:absolute;left:0;right:0;bottom:0;height:65%;background:linear-gradient(to top,rgba(9,22,40,.92),rgba(9,22,40,0))}
 .capa-conteudo{position:relative;width:100%;padding-top:156px;padding-bottom:72px}
-.desce{display:inline-flex;flex-direction:column;align-items:center;gap:10px;color:#C7D2DF;font-size:11px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none}
+.desce{display:inline-flex;flex-direction:column;align-items:center;gap:10px;color:#C7D2DF;font-size:13px;letter-spacing:.02em;text-decoration:none}
 .desce:hover{color:#C9A86A}
 .desce .l{width:1px;height:46px;background:rgba(255,255,255,.3);position:relative;overflow:hidden;display:block}
 .mapaGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:center}
@@ -73,7 +73,7 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 .orbita{position:absolute;inset:12%;border:1px dashed rgba(184,149,90,.6);border-radius:50%}
 .orbita2{position:absolute;inset:30%;border:1px solid rgba(184,149,90,.25);border-radius:50%}
 .centro{position:absolute;left:50%;top:50%;width:40%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;background:#12263F;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:18px;box-shadow:0 0 0 14px rgba(18,38,63,.06)}
-.no{position:absolute;transform:translate(-50%,-50%);min-height:48px;padding:0 20px;border-radius:999px;border:1px solid #CFC6B6;background:#fff;color:#12263F;font:500 15px Inter,system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:10px;white-space:nowrap;transition:background-color .3s,color .3s,border-color .3s,box-shadow .3s}
+.no{position:absolute;transform:translate(-50%,-50%);min-height:48px;padding:0 20px;border-radius:999px;border:1px solid #CFC6B6;background:#fff;color:#12263F;font:500 15px Montserrat,system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:10px;white-space:nowrap;transition:background-color .3s,color .3s,border-color .3s,box-shadow .3s}
 .no:hover{border-color:#B8955A}
 .no.on{background:#C9A86A;border-color:#C9A86A;color:#0E2236;box-shadow:0 12px 30px rgba(184,149,90,.35)}
 .no .pt{width:8px;height:8px;border-radius:50%;background:#B8955A;display:block}.no.on .pt{background:#0E2236}
@@ -88,7 +88,7 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 .faixa{display:flex;flex-direction:column;gap:8px}
 .faixa .lin{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .faixa label{font-size:13px;font-weight:600;color:#12263F}
-.faixa output{font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;color:#12263F;font-variant-numeric:tabular-nums}
+.faixa output{font-family:Montserrat,system-ui,sans-serif;font-weight:300;font-size:22px;color:#12263F;font-variant-numeric:tabular-nums}
 .faixa input[type=range]{width:100%;accent-color:#B8955A;height:28px;cursor:pointer;margin:0}
 .barra{height:8px;background:rgba(255,255,255,.14);border-radius:99px;overflow:hidden}
 .barra span{display:block;height:100%;background:#C9A86A;border-radius:99px;transition:width .5s ease}
@@ -106,7 +106,7 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 @media screen and (max-width:900px){
  .capa{height:auto;min-height:640px}
  .capa-conteudo{padding-top:120px;padding-bottom:48px}
- .capa h1{font-size:42px !important}
+ .capa h1{font-size:31px !important}
  .topo .btn{padding:0 12px;font-size:12.5px;white-space:nowrap;min-height:44px}
  .topo .wrap{gap:10px !important}
  .topo .wrap > div{gap:6px !important}
@@ -145,6 +145,23 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 @media screen and (min-width:901px){.nav{gap:28px !important}}
 @media screen and (min-width:901px) and (max-width:1500px){.topo-larga .acesso{font-size:0 !important;gap:0 !important;min-width:44px;justify-content:center}.topo-larga .nav{gap:24px !important}}
 </style>
+<style>
+/* 18/11: tipografia da marca (Montserrat, a do site atual) e imagens fundidas na página, sem moldura */
+.ac{font-size:15px}
+h1.serif,h2.serif{letter-spacing:-0.025em}
+.serif b,.serif strong{font-weight:600}
+.foto{border:0 !important;background:transparent !important}
+.artigo .foto{height:250px !important}
+.artigo .foto{border-radius:22px;overflow:hidden}
+.artigo .foto img{transition:transform 1.2s cubic-bezier(.2,.7,.2,1);-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent 100%);mask-image:linear-gradient(180deg,#000 55%,transparent 100%)}
+.artigo:hover .foto img{transform:scale(1.05)}
+.painel{background:transparent !important;border:0 !important;min-height:0 !important}
+.painel .pf{height:320px !important}
+.painel .pf img{-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 22%,#000 78%,transparent 100%),linear-gradient(180deg,transparent 0%,#000 20%,#000 80%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent 0%,#000 22%,#000 78%,transparent 100%),linear-gradient(180deg,transparent 0%,#000 20%,#000 80%,transparent 100%);mask-composite:intersect}
+.painel #pTexto{padding:0 8px !important}
+.heroGrid .foto{height:480px !important}
+.heroGrid .foto img{-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 22%,#000 78%,transparent 100%),linear-gradient(180deg,transparent 0%,#000 20%,#000 80%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent 0%,#000 22%,#000 78%,transparent 100%),linear-gradient(180deg,transparent 0%,#000 20%,#000 80%,transparent 100%);mask-composite:intersect}
+</style>
 </head>
 <body>
 <div class="ac">
@@ -155,8 +172,6 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 <nav class="nav" aria-label="Menu principal" style="display: flex; gap: 36px; align-items: center">
 <a href="investimentos.html">Investimentos</a>
 <a href="wealth.html">Wealth Planning</a>
-<a href="jornada.html">Jornada do cliente</a>
-<a href="index.html#conteudo">Conteúdo</a>
 </nav>
 <div style="display: flex; align-items: center; gap: 24px"><a class="acesso" href="https://adamicaptal.com.br/hub" title="Entrar no Hub Adami" aria-label="Acesso colaborador"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Acesso colaborador</a><a href="index.html" style="color: #E8EDF3; font-size: 14px; text-decoration: none">Voltar ao site</a></div>
 </div>
@@ -167,12 +182,12 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 
 <div style="display: flex; flex-direction: column; gap: 26px">
 <div class="eyebrow entra d1" style="color: #8A6A2E">Agendar conversa</div>
-<h1 class="serif h1 entra d2" style="margin: 0; font-size: 56px; line-height: 1.06; color: #12263F">Vamos conhecer você e o seu patrimônio.</h1>
+<h1 class="serif h1 entra d2" style="margin: 0; font-size: 41px; line-height: 1.06; color: #12263F">Vamos conhecer você e o seu patrimônio.</h1>
 <p class="entra d3" style="margin: 0; font-size: 17px; line-height: 1.65; color: #5A6573">Uma primeira conversa, sem compromisso, com um especialista da Adami Captal.</p>
 <ol style="list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 22px">
-<li style="display: flex; gap: 18px"><span class="serif" style="font-size: 24px; color: #8A6A2E; min-width: 32px">01</span><span style="font-size: 15px; line-height: 1.6"><strong style="color: #12263F">Você conta o que procura.</strong> Leva menos de um minuto.</span></li>
-<li style="display: flex; gap: 18px"><span class="serif" style="font-size: 24px; color: #8A6A2E; min-width: 32px">02</span><span style="font-size: 15px; line-height: 1.6"><strong style="color: #12263F">Um especialista entra em contato</strong> para combinar dia e horário.</span></li>
-<li style="display: flex; gap: 18px"><span class="serif" style="font-size: 24px; color: #8A6A2E; min-width: 32px">03</span><span style="font-size: 15px; line-height: 1.6"><strong style="color: #12263F">Conversamos</strong> por telefone, vídeo ou no escritório, em Porto Alegre ou São Paulo.</span></li>
+<li style="display: flex; gap: 18px"><span class="serif" style="font-size: 18px; color: #8A6A2E; min-width: 32px">01</span><span style="font-size: 15px; line-height: 1.6"><strong style="color: #12263F">Você conta o que procura.</strong> Leva menos de um minuto.</span></li>
+<li style="display: flex; gap: 18px"><span class="serif" style="font-size: 18px; color: #8A6A2E; min-width: 32px">02</span><span style="font-size: 15px; line-height: 1.6"><strong style="color: #12263F">Um especialista entra em contato</strong> para combinar dia e horário.</span></li>
+<li style="display: flex; gap: 18px"><span class="serif" style="font-size: 18px; color: #8A6A2E; min-width: 32px">03</span><span style="font-size: 15px; line-height: 1.6"><strong style="color: #12263F">Conversamos</strong> por telefone, vídeo ou no escritório, em Porto Alegre ou São Paulo.</span></li>
 </ol>
 <div style="border-top: 1px solid #E4DDD0; padding-top: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 15px">
 <span style="color: #5A6573">Prefere falar agora?</span>
@@ -184,7 +199,7 @@ a{color:#1B3A5F}a:hover{color:#0E2236}
 <div id="agOk" hidden>
 <div style="display: flex; flex-direction: column; gap: 20px; align-items: flex-start; padding: 24px 0">
 <svg width="56" height="56" viewBox="0 0 56 56" fill="none" role="img" aria-label="Pedido recebido"><circle cx="28" cy="28" r="27" stroke="#C9A86A" stroke-width="1.5"></circle><path d="M17 29l7 7 15-16" stroke="#12263F" stroke-width="2"></path></svg>
-<h2 class="serif revela" style="margin: 0; font-size: 40px; line-height: 1.1; color: #12263F">Recebemos o seu pedido<span id="agNome"></span>.</h2>
+<h2 class="serif revela" style="margin: 0; font-size: 30px; line-height: 1.1; color: #12263F">Recebemos o seu pedido<span id="agNome"></span>.</h2>
 <p style="margin: 0; font-size: 16px; line-height: 1.65; color: #5A6573; max-width: 480px">Um especialista da Adami Captal vai entrar em contato pelo meio que você escolheu para combinar o melhor horário.</p>
 <a class="btn btn-azul" href="index.html">Voltar ao site</a>
 </div>
