@@ -7,8 +7,9 @@
 //   "tarde" 15h30: NNM (captação líquida);
 //   "noite" 20h30: movimentação do fim do dia.
 //   "rentabilidade" (dias 2 e 5 do mês, 9h): os três relatórios de Rentabilidade Mensal
-//                 (carteira, produto, estratégia) do mês corrente, que trazem o histórico
-//                 até o dia 1, ou seja, o mês anterior fechado (btg_rentabilidade.sql).
+//                 (carteira, produto, estratégia) do MÊS ANTERIOR, já fechado. Conferido em
+//                 17/11/2026: a API devolve só o mês pedido (o corrente vem parcial, até o
+//                 último dia útil), em arquivo .zip, com os valores em fração (0,0122 = 1,22%).
 // O BTG responde 202 e entrega o arquivo depois, na função btg-webhook.
 // Cada pedido fica registrado em btg_pedidos, com a resposta do BTG.
 //
@@ -51,10 +52,11 @@ function diaUtilAnterior(): { refDay: string; refMonth: string; refYear: string 
   return { refDay: p(d.getDate()), refMonth: p(d.getMonth() + 1), refYear: String(d.getFullYear()) };
 }
 
-// Mês corrente em Brasília, no formato da API de Rentabilidade ("11", "2026").
-function mesCorrente(): { referenceMonth: string; referenceYear: string } {
+// Mês anterior em Brasília, no formato da API de Rentabilidade ("10", "2026"). Em janeiro, dezembro do ano anterior.
+function mesAnterior(): { referenceMonth: string; referenceYear: string } {
   const hoje = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  return { referenceMonth: String(hoje.getMonth() + 1).padStart(2, "0"), referenceYear: String(hoje.getFullYear()) };
+  const d = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+  return { referenceMonth: String(d.getMonth() + 1).padStart(2, "0"), referenceYear: String(d.getFullYear()) };
 }
 
 function plano(janela: string, ref?: { referenceMonth: string; referenceYear: string }): Pedido[] {
@@ -70,7 +72,7 @@ function plano(janela: string, ref?: { referenceMonth: string; referenceYear: st
   if (janela === "noite") return [{ servico: "rm-reports-movement", metodo: "GET", caminho: rm + "/movement" }];
   if (janela === "rentabilidade") {
     const pf = "/iaas-profitability/api/v1/profitability/monthly";
-    const corpo = ref ?? mesCorrente();
+    const corpo = ref ?? mesAnterior();
     return [
       { servico: "monthly-customer-profitability", metodo: "POST", caminho: pf + "/customer-profitability", corpo },
       { servico: "monthly-product-profitability", metodo: "POST", caminho: pf + "/product-profitability", corpo },

@@ -1638,7 +1638,7 @@ e-mail. TOTP padrão (RFC 6238: HMAC-SHA1, passos de 30 s, 6 dígitos), conferid
   do e-mail ainda valendo, zerar sem ser master, anon recusado) e na tela com o banco simulado (o QR desenhado foi
   lido de volta por um leitor de QR).
 
-## 23. Integração com a API do BTG (em levantamento, 06/11/2026)
+## 23. Integração com a API do BTG (ligada em 17/11/2026)
 
 Regras de negócio já decididas: seção 14 e `CLAUDE.md`. Portal do BTG:
 `developer-partner.btgpactual.com` (login da Bibiana; CGE 5390761). Documentação recebida do
@@ -1743,8 +1743,8 @@ de `adami_completo.sql`) e funções `btg-webhook` e `btg-sync` (Verify JWT desl
 - **btg-webhook:** endereço `.../functions/v1/btg-webhook/<serviço>`, um por serviço. Exige a
   senha `BTG_WEBHOOK_KEY` (Secrets) em algum cabeçalho; sem ela, 401, e sem o segredo
   cadastrado responde 503. Só baixa de `https://invest-reports*.amazonaws.com`; aceita só os
-  serviços da lista (nenhum dos da Protego). Lê CSV com `,` ou `;`, BOM, latin1 e gzip; zip ainda
-  não (fica guardado e marcado como erro).
+  serviços da lista (nenhum dos da Protego). Lê CSV com `,` ou `;`, BOM, latin1, gzip e zip
+  (desde 17/11/2026, versão 4: o BTG manda a rentabilidade em .zip; ver 23.10).
 - **btg-sync:** chamada pelo pg_cron (`btg-manha` 11h30 UTC, `btg-tarde` 18h30, `btg-noite`
   23h30, dias úteis) com o token do Vault `btg_sync_token`, que nunca sai do banco. Não faz nada
   com `btg_config.ligado = false`. Renova o token do BTG sozinha quando ele vence.
@@ -1776,12 +1776,16 @@ o pedido (a data de criação não muda). A Protego deve ser a Quantum, forneced
 API de Rentabilidade Mensal (`iaas-profitability`, spec enviada pelo Emil em 06/11): três `POST`
 assíncronos com `{referenceMonth, referenceYear}`, entregues pelo btg-webhook nos serviços
 `monthly-customer-profitability` (conta), `monthly-product-profitability` (produto) e
-`monthly-strategy-profitability` (estratégia). Pedir o mês M traz o histórico até o dia 1 de M (o
-mês anterior fechado), até 12 meses; limite de 12 meses pedidos por dia e 30 chamadas por minuto.
-Rentabilidade vem em fração (0,0105 = 1,05%).
+`monthly-strategy-profitability` (estratégia). **Pedir o mês M traz só o mês M** (conferido em
+17/11/2026; a spec dava a entender histórico de 12 meses e não é assim). O mês corrente vem parcial,
+até o último dia útil. Limite de 12 meses pedidos por dia e 30 chamadas por minuto. Rentabilidade vem
+em fração (0,0105 = 1,05%). Cada linha também traz os acumulados prontos (3m, 6m, 12m, ano, desde o
+início) e os índices do mês.
 
 - **Pedido:** btg-sync, janela `rentabilidade`, agendamento `btg-rentabilidade` nos dias 2 e 5, 9h
-  de Brasília (mês corrente). Master pode pedir na hora com `btg_pedir_agora('rentabilidade')`.
+  de Brasília (mês ANTERIOR, desde a versão 4 do btg-sync). Master pode pedir na hora com
+  `btg_pedir_agora('rentabilidade')`; para outro mês, chamar o btg-sync com `{"janela":"rentabilidade",
+  "mes":10,"ano":2026}` (do SQL Editor, por `net.http_post` com o token do Vault, como em 23.10).
 - **Recebimento:** arquivo grande (todas as contas, 12 meses, um registro por produto). O
   btg-webhook lê em pedaços (`LeitorCsv`, testado com 1.600 cortes aleatórios) e grava em lotes de
   1.000 (`btg_rent_receber`), sem carregar tudo na memória. Do relatório por produto guarda só as
@@ -1823,6 +1827,30 @@ quem sumiu, saldo nunca vira movimentação, faixa de 0,5%, nada grava antes de 
   (registration-data), cujas colunas só saberemos no primeiro arquivo real.
 - Testado: função no Postgres local (master lê, assessor recusado) e tela com Playwright (prévia,
   base vazia, menus de admin por permissão nos dois sentidos).
+
+
+### 23.10. Ligada (17/11/2026)
+
+- **Webhooks cadastrados pelo Emil** no portal, no domínio da Adami (`adamicaptal.com.br/hub/webhook/btg/<serviço>`),
+  autenticação API Key com a senha `BTG_WEBHOOK_KEY`: as três rentabilidades mensais, `rm-reports-account-link`
+  e `rm-reports-account-base`. O domínio foi aceito. Os 5 da Protego não foram tocados. `btg_config.ligado = true`.
+- **Ainda sem webhook** (o pedido volta 404 "Webhook not registered", inofensivo): `rm-reports-registration-data`,
+  `rm-reports-movement`, `rm-reports-position-by-date` e `rm-reports-nnm`. O btg-webhook já aceita os quatro;
+  basta cadastrar no portal com o mesmo padrão de endereço.
+- **Arquivos em .zip.** A rentabilidade chega como .zip com um CSV dentro. O btg-webhook (versão 4) lê o
+  diretório central do zip, aceita entradas sem compressão ou deflate (sem zip64), descompacta em fluxo com
+  `DecompressionStream("deflate-raw")` e guarda o original como `.zip`. Testado com Deno (60.000 linhas em
+  pedaços, latin1, UTF-8, zip cortado).
+- **Conferido contra o PDF do BTG, outubro/2026:** conta 004181763, saldo 9.742.602,87, resultado 110.937,01,
+  1,224%; conta 004181148, 19.191.168,14, 191.674,54, 1,075%. Idênticos ao centavo.
+- **account-link e account-base** pedidos fora da janela voltam com "Relatório não disponível. Por favor,
+  aguarde a próxima janela de execução." (gravado como erro em `btg_arquivos`). O agendamento da manhã já pede
+  na hora certa.
+- Pedido manual do SQL Editor (não depende de login):
+  `select net.http_post(url := 'https://ghxjqmjtmbqzvogwzylo.supabase.co/functions/v1/btg-sync', headers :=
+  jsonb_build_object('Content-Type','application/json','x-btg-sync',(select decrypted_secret from
+  vault.decrypted_secrets where name='btg_sync_token')), body := jsonb_build_object('janela','rentabilidade',
+  'mes',10,'ano',2026), timeout_milliseconds := 60000);`
 
 ## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)
 

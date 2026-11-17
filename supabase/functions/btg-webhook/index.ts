@@ -148,15 +148,65 @@ export function lerCsv(texto: string): { colunas: string[]; linhas: Record<strin
   return { colunas: l.colunas ?? [], linhas };
 }
 
-async function decodificar(bytes: Uint8Array): Promise<string> {
+// .zip (17/11/2026: o BTG manda os relatórios assim). Lê o diretório central e devolve as
+// entradas de arquivo (CSV primeiro), cada uma como fluxo já descompactado. Só "guardado" (0) e
+// "deflate" (8), que é o que qualquer gerador de zip usa; zip64 não (arquivos acima de 4 GB).
+export type EntradaZip = { nome: string; fluxo: () => ReadableStream<Uint8Array> };
+export function entradasZip(z: Uint8Array): EntradaZip[] {
+  const dv = new DataView(z.buffer, z.byteOffset, z.byteLength);
+  let fim = -1;
+  for (let i = z.length - 22; i >= Math.max(0, z.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { fim = i; break; }
+  if (fim < 0) throw new Error("zip sem diretório central (arquivo cortado?)");
+  const total = dv.getUint16(fim + 10, true);
+  let p = dv.getUint32(fim + 16, true);
+  const lista: (EntradaZip & { csv: boolean })[] = [];
+  for (let k = 0; k < total; k++) {
+    if (p + 46 > z.length || dv.getUint32(p, true) !== 0x02014b50) throw new Error("zip corrompido (diretório)");
+    const metodo = dv.getUint16(p + 10, true), comp = dv.getUint32(p + 20, true);
+    const ln = dv.getUint16(p + 28, true), lx = dv.getUint16(p + 30, true), lc = dv.getUint16(p + 32, true);
+    const local = dv.getUint32(p + 42, true);
+    const nome = new TextDecoder().decode(z.subarray(p + 46, p + 46 + ln));
+    p += 46 + ln + lx + lc;
+    if (nome.endsWith("/") || /(^|\/)(__MACOSX|\.)/.test(nome)) continue;
+    if (comp === 0xffffffff || local === 0xffffffff) throw new Error("zip64 não suportado");
+    if (metodo !== 0 && metodo !== 8) throw new Error("zip com compressão não suportada (método " + metodo + ")");
+    if (dv.getUint32(local, true) !== 0x04034b50) throw new Error("zip corrompido (entrada " + nome + ")");
+    const ini = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+    const dados = z.subarray(ini, ini + comp);
+    lista.push({
+      nome, csv: /\.(csv|txt)$/i.test(nome),
+      fluxo: () => {
+        // Entrega o compactado em partes de 64 KB, para o descompactado também sair em pedaços.
+        let pos = 0;
+        const s = new ReadableStream<Uint8Array>({
+          pull(c) { if (pos >= dados.length) { c.close(); return; } c.enqueue(dados.slice(pos, pos + 65536)); pos += 65536; },
+        });
+        return metodo === 8 ? s.pipeThrough(new DecompressionStream("deflate-raw" as CompressionFormat) as unknown as ReadableWritablePair<Uint8Array, Uint8Array>) : s;
+      },
+    });
+  }
+  if (!lista.length) throw new Error("zip sem arquivos");
+  const csvs = lista.filter((e) => e.csv);
+  return csvs.length ? csvs : lista;
+}
+const ehZip = (b: Uint8Array) => b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
+
+function textoDe(bytes: Uint8Array): string {
+  const utf8 = new TextDecoder("utf-8").decode(bytes);
+  return utf8.includes("\uFFFD") ? new TextDecoder("windows-1252").decode(bytes) : utf8;
+}
+
+// Devolve um texto por arquivo (o zip pode trazer mais de um CSV; cada um com o seu cabeçalho).
+async function decodificar(bytes: Uint8Array): Promise<string[]> {
   if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
     const fluxo = new Blob([bytes as unknown as BlobPart]).stream().pipeThrough(new DecompressionStream("gzip"));
     bytes = new Uint8Array(await new Response(fluxo).arrayBuffer());
-  } else if (bytes[0] === 0x50 && bytes[1] === 0x4b) {
-    throw new Error("o BTG mandou um arquivo .zip; falta o suporte a zip (o original ficou guardado no Storage)");
+  } else if (ehZip(bytes)) {
+    const textos: string[] = [];
+    for (const e of entradasZip(bytes)) textos.push(textoDe(new Uint8Array(await new Response(e.fluxo()).arrayBuffer())));
+    return textos;
   }
-  const utf8 = new TextDecoder("utf-8").decode(bytes);
-  return utf8.includes("\uFFFD") ? new TextDecoder("windows-1252").decode(bytes) : utf8;
+  return [textoDe(bytes)];
 }
 
 async function processar(id: number, servico: string, url: string): Promise<void> {
@@ -170,15 +220,22 @@ async function processar(id: number, servico: string, url: string): Promise<void
     if (bytes.length > LIMITE_BYTES) throw new Error("arquivo maior que 200 MB");
 
     const dia = new Date().toISOString().slice(0, 10);
-    const caminho = `${servico}/${dia}/${id}.csv`;
+    const zip = ehZip(bytes);
+    const caminho = `${servico}/${dia}/${id}.${zip ? "zip" : "csv"}`;
     const up = await fetch(`${SB_URL}/storage/v1/object/btg/${caminho}`, {
       method: "POST",
-      headers: { apikey: CHAVE, Authorization: "Bearer " + CHAVE, "Content-Type": "text/csv", "x-upsert": "true" },
+      headers: { apikey: CHAVE, Authorization: "Bearer " + CHAVE, "Content-Type": zip ? "application/zip" : "text/csv", "x-upsert": "true" },
       body: bytes,
     });
     if (!up.ok) throw new Error("storage " + up.status + " " + (await up.text()).slice(0, 200));
 
-    const { colunas, linhas } = lerCsv(await decodificar(bytes));
+    let colunas: string[] = [];
+    const linhas: Record<string, string>[] = [];
+    for (const texto of await decodificar(bytes)) {
+      const r = lerCsv(texto);
+      if (!colunas.length) colunas = r.colunas;
+      for (const l of r.linhas) linhas.push(l);
+    }
     await rpc("btg_receber", { p_arquivo_id: id, p_caminho: caminho, p_tamanho: bytes.length, p_colunas: colunas, p_linhas: linhas });
     console.log("btg-webhook", servico, id, linhas.length, "linhas");
   } catch (e) {
@@ -201,32 +258,22 @@ async function processarEmLotes(id: number, servico: string, url: string): Promi
     const leitorBruto = r.body.getReader();
     const primeiro = await leitorBruto.read();
     const b0 = primeiro.value ?? new Uint8Array();
-    if (b0[0] === 0x50 && b0[1] === 0x4b) throw new Error("o BTG mandou um arquivo .zip; falta o suporte a zip");
     const guardar = (b: Uint8Array) => {
       tamanho += b.length;
       if (tamanho > LIMITE_BYTES * 2) throw new Error("arquivo maior que 400 MB");
       if (!grande) { if (tamanho > LIMITE_ORIGINAL) { grande = true; brutos.length = 0; } else brutos.push(b); }
     };
-    const fonte = new ReadableStream<Uint8Array>({
-      start(c) { if (!primeiro.done && b0.length) { guardar(b0); c.enqueue(b0); } if (primeiro.done) c.close(); },
-      async pull(c) {
-        const x = await leitorBruto.read();
-        if (x.done) { c.close(); return; }
-        guardar(x.value); c.enqueue(x.value);
-      },
-    });
+    const zip = ehZip(b0);
     const gzip = b0[0] === 0x1f && b0[1] === 0x8b;
-    const leitor = (gzip
-      ? fonte.pipeThrough(new DecompressionStream("gzip") as unknown as ReadableWritablePair<Uint8Array, Uint8Array>)
-      : fonte).getReader();
 
     const lote: Record<string, string>[] = [];
     const ehProduto = servico === "monthly-product-profitability";
-    const csv = new LeitorCsv((o) => {
+    const aoLer = (o: Record<string, string>) => {
       if (ehProduto) { const f: Record<string, string> = {}; for (const k of CAMPOS_PRODUTO) if (k in o) f[k] = o[k]; lote.push(f); }
       else lote.push(o);
-    });
+    };
     let total = 0;
+    let colunas: string[] = [];
     const enviar = async (tudo: boolean) => {
       while (lote.length >= LOTE || (tudo && lote.length)) {
         const parte = lote.splice(0, LOTE);
@@ -234,38 +281,64 @@ async function processarEmLotes(id: number, servico: string, url: string): Promi
         await rpc("btg_rent_receber", { p_arquivo_id: id, p_linhas: parte });
       }
     };
-
-    // Codificação: UTF-8, a não ser que o começo do arquivo não seja UTF-8 válido (aí, latin1).
-    let dec: TextDecoder | null = null;
-    for (;;) {
-      const x = await leitor.read();
-      if (x.done) break;
-      if (!dec) {
-        const teste = new TextDecoder("utf-8").decode(x.value.subarray(0, Math.max(0, x.value.length - 4)));
-        dec = new TextDecoder(teste.includes("\uFFFD") ? "windows-1252" : "utf-8");
+    // Lê um CSV em pedaços. Codificação: UTF-8, a não ser que o começo não seja UTF-8 válido (aí, latin1).
+    const consumir = async (leitor: ReadableStreamDefaultReader<Uint8Array>) => {
+      const csv = new LeitorCsv(aoLer);
+      let dec: TextDecoder | null = null;
+      for (;;) {
+        const x = await leitor.read();
+        if (x.done) break;
+        if (!dec) {
+          const teste = new TextDecoder("utf-8").decode(x.value.subarray(0, Math.max(0, x.value.length - 4)));
+          dec = new TextDecoder(teste.includes("�") ? "windows-1252" : "utf-8");
+        }
+        csv.ler(dec.decode(x.value, { stream: true }));
+        await enviar(false);
       }
-      csv.ler(dec.decode(x.value, { stream: true }));
-      await enviar(false);
+      if (dec) csv.ler(dec.decode());
+      csv.fim();
+      if (!colunas.length && csv.colunas) colunas = csv.colunas;
+    };
+
+    if (zip) {
+      // O zip só abre inteiro (o índice fica no fim). O compactado é bem menor que o CSV, e cada
+      // arquivo de dentro continua sendo lido em pedaços.
+      if (!primeiro.done) guardar(b0);
+      const partes: Uint8Array[] = primeiro.done ? [] : [b0];
+      for (;;) { const x = await leitorBruto.read(); if (x.done) break; guardar(x.value); partes.push(x.value); }
+      const z = new Uint8Array(tamanho); let q = 0; for (const b of partes) { z.set(b, q); q += b.length; }
+      partes.length = 0;
+      for (const e of entradasZip(z)) await consumir(e.fluxo().getReader());
+    } else {
+      const fonte = new ReadableStream<Uint8Array>({
+        start(c) { if (!primeiro.done && b0.length) { guardar(b0); c.enqueue(b0); } if (primeiro.done) c.close(); },
+        async pull(c) {
+          const x = await leitorBruto.read();
+          if (x.done) { c.close(); return; }
+          guardar(x.value); c.enqueue(x.value);
+        },
+      });
+      await consumir((gzip
+        ? fonte.pipeThrough(new DecompressionStream("gzip") as unknown as ReadableWritablePair<Uint8Array, Uint8Array>)
+        : fonte).getReader());
     }
     clearTimeout(prazo);
-    if (dec) csv.ler(dec.decode());
-    csv.fim();
     await enviar(true);
 
     let caminho: string | null = null;
     if (!grande && tamanho) {
       const dia = new Date().toISOString().slice(0, 10);
-      caminho = `${servico}/${dia}/${id}.csv${gzip ? ".gz" : ""}`;
+      caminho = `${servico}/${dia}/${id}.${zip ? "zip" : gzip ? "csv.gz" : "csv"}`;
       const tudo = new Uint8Array(tamanho); let p = 0; for (const b of brutos) { tudo.set(b, p); p += b.length; }
       const up = await fetch(`${SB_URL}/storage/v1/object/btg/${caminho}`, {
         method: "POST",
-        headers: { apikey: CHAVE, Authorization: "Bearer " + CHAVE, "Content-Type": gzip ? "application/gzip" : "text/csv", "x-upsert": "true" },
+        headers: { apikey: CHAVE, Authorization: "Bearer " + CHAVE, "Content-Type": zip ? "application/zip" : gzip ? "application/gzip" : "text/csv", "x-upsert": "true" },
         body: tudo,
       });
       if (!up.ok) { console.warn("btg-webhook: original não guardado", up.status); caminho = null; }
     }
     await rpc("btg_rent_receber", { p_arquivo_id: id, p_linhas: [], p_final: true, p_total: total,
-      p_caminho: caminho ?? (grande ? "(original maior que 45 MB, não guardado)" : null), p_tamanho: tamanho, p_colunas: csv.colunas ?? [] });
+      p_caminho: caminho ?? (grande ? "(original maior que 45 MB, não guardado)" : null), p_tamanho: tamanho, p_colunas: colunas });
     console.log("btg-webhook", servico, id, total, "linhas", tamanho, "bytes");
   } catch (e) {
     const msg = String((e as Error)?.message ?? e);
