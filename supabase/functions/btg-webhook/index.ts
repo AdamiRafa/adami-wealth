@@ -237,7 +237,16 @@ async function processar(id: number, servico: string, url: string): Promise<void
       if (!colunas.length) colunas = r.colunas;
       for (const l of r.linhas) linhas.push(l);
     }
-    await rpc("btg_receber", { p_arquivo_id: id, p_caminho: caminho, p_tamanho: bytes.length, p_colunas: colunas, p_linhas: linhas });
+    // Arquivo grande (a posição por data passa de dezenas de milhares de linhas): grava em lotes de 1.000, senão o
+    // banco corta por tempo (8 s por chamada; 18/11/2026). A base de contas e o vínculo têm tratamento próprio.
+    if (linhas.length > 1500 && servico !== "rm-reports-account-base" && servico !== "rm-reports-account-link") {
+      for (let i = 0; i < linhas.length; i += LOTE) {
+        await rpc("btg_linhas_lote", { p_arquivo_id: id, p_inicio: i, p_linhas: linhas.slice(i, i + LOTE) });
+      }
+      await rpc("btg_linhas_fim", { p_arquivo_id: id, p_caminho: caminho, p_tamanho: bytes.length, p_colunas: colunas, p_total: linhas.length });
+    } else {
+      await rpc("btg_receber", { p_arquivo_id: id, p_caminho: caminho, p_tamanho: bytes.length, p_colunas: colunas, p_linhas: linhas });
+    }
     console.log("btg-webhook", servico, id, linhas.length, "linhas");
   } catch (e) {
     const msg = String((e as Error)?.message ?? e);

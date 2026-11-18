@@ -1972,8 +1972,13 @@ relatório fica fixo por 3 horas depois de pedido.
 - Ligação Carteiras → ficha do CRM: `clientes.lead_id` ou, sem ele, a conta vinculada no Cadastro (`contas_btg` = `leads.conta`).
   Os 9 clientes das Carteiras não tinham ficha ligada; pela conta, todos ligaram.
 - Só fichas que a pessoa pode ver (`pode_ver_lead`), com `acesso_liberado()`. Na tela, segue a visão escolhida (casa ou assessor).
-- Pendente: resgate de fundo com data de cotização (deve vir do relatório de movimentação do BTG, ainda não recebido) e
-  vencimentos de quem não está nas Carteiras (posição por data do BTG, ainda não recebida).
+- **19/11 (CRM 2026.11.19.3): fonte principal é a posição do BTG** (`rm-reports-position-by-date`, ~8 mil linhas, todas as
+  contas, com `dt_vencimento`). O Emil estranhou "só 6 vencimentos": eram só os 9 clientes das Carteiras. Pela posição, na
+  janela de 90 dias são ~261 itens ligados a fichas (renda fixa bancária 232, crédito privado 15, COE 9, Tesouro e
+  título público 7) e os resgates em cotização (valor em trânsito FN/PN, com a data em que liberam). Valor em trânsito de
+  bolsa (D+2) fica fora. Das Carteiras só entra o que não é do BTG (Sinosserra etc.). O cartão mostra também o valor.
+- A primeira posição recebida falhou ("statement timeout"): a btg-webhook (versão 7) grava arquivo com mais de 1.500
+  linhas em lotes de 1.000 (`btg_linhas_lote` e `btg_linhas_fim`, `btg_linhas_lote.sql`).
 - "Em captação" passou a "Pipeline" em todo o CRM (cartão, pílula, KPIs, offshore e listas).
 
 ## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)

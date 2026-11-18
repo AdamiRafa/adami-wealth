@@ -12181,7 +12181,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.19.2';
+const CRM_VERSAO = 'versão do CRM 2026.11.19.3';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -12334,8 +12334,9 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
       .filter(x => x.valor >= 100).sort((a, b) => b.valor - a.valor);
   }, [caixa, st]);
   const totalParado = parados ? parados.reduce((s, x) => s + x.valor, 0) : 0;
-  /* Vencimentos (19/11/2026): além dos alertas lançados no cliente, o que vence nas carteiras consolidadas
-     (renda fixa, COE e os ativos com data), dos últimos 7 dias aos próximos 90 (crm_vencimentos). */
+  /* Vencimentos (19/11/2026): além dos alertas lançados no cliente, o que vence de 7 dias atrás aos próximos 90
+     (crm_vencimentos): pela posição do BTG de todas as contas (renda fixa, COE, Tesouro, e resgate de fundo ou
+     previdência em cotização) e, das carteiras consolidadas, o que é de outro banco (ex.: Sinosserra). */
   const [vencCart, setVencCart] = useState(null);
   useEffect(() => {
     if(MODO_DEMO) return;
@@ -12350,10 +12351,12 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
     const daCarteira = (vencCart || []).filter(v => naVisao.has(v.lead_id)).map((v, i) => {
       const c = naVisao.get(v.lead_id);
       return { carteira: true, chave: 'vc' + i, leadId: v.lead_id, cliente: c.nome, assessor: c.assessor,
-        texto: (v.ativo || 'Título') + (Number(v.valor) ? ' · ' + fmtBRL(Number(v.valor)) : ''), data: v.data, diasAtraso: -dias(v.data) };
+        cotizacao: v.tipo === 'cotizacao', valor: Number(v.valor) || 0,
+        texto: (v.tipo === 'cotizacao' ? 'Resgate em cotização · ' : '') + (v.ativo || 'Título') + (Number(v.valor) ? ' · ' + fmtBRL(Number(v.valor)) : ''), data: v.data, diasAtraso: -dias(v.data) };
     });
     return st.vencimentos.concat(daCarteira.sort((a, b) => String(a.data).localeCompare(String(b.data))));
   }, [st, vencCart]);
+  const valorVencendo = vencimentos.reduce((s, v) => s + (v.carteira ? v.valor : 0), 0);
   const baseCaixaEm = caixa && caixa.atualizado_em ? new Date(caixa.atualizado_em).toLocaleDateString('pt-BR') : '';
   const por = agrupar || (casa ? 'assessor' : 'segmento');
   const grupos = useMemo(() => pnGrupos(st.carteira, por), [st, por]);
@@ -12456,7 +12459,7 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
         sub: st.semAtivar.length + (st.semAtivar.length === 1 ? ' ainda sem ativar' : ' ainda sem ativar'),
         aberto: aberto === 'contas', onClick: () => toggle('contas') }),
       h(PainelCard, { key: 'venc', tom: vencimentos.length ? 'ruim' : '', label: 'Vencimentos', valor: vencimentos.length,
-        sub: 'renda fixa e COE das carteiras nos próximos 90 dias' + (st.vencimentos.length ? ' · ' + st.vencimentos.length + ' lançado(s) como alerta' : ''),
+        sub: (valorVencendo ? fmtBRLCompact(valorVencendo) + ' em ' : '') + 'renda fixa, COE e resgates nos próximos 90 dias' + (st.vencimentos.length ? ' · ' + st.vencimentos.length + ' lançado(s) como alerta' : ''),
         aberto: aberto === 'venc', onClick: () => toggle('venc') }),
       parados ? h(PainelCard, { key: 'parado', tom: parados.length ? 'atencao' : '', label: 'Dinheiro parado em conta', valor: fmtBRLCompact(totalParado),
         sub: parados.length + (parados.length === 1 ? ' cliente com saldo em conta' : ' clientes com saldo em conta') + (baseCaixaEm ? ' · BTG de ' + baseCaixaEm : ''),
@@ -12478,7 +12481,7 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
         linha: (v) => v.carteira ? h('div', { className: 'pn-linha', key: v.chave },
           h('button', { className: 'pn-linha-nome', onClick: () => abrirLead(v.leadId) }, v.cliente, quem(v),
             h('span', { className: 'pn-linha-quem' }, ' · ' + v.texto)),
-          h('span', { className: 'pn-linha-meta' + (v.diasAtraso > 0 ? ' atrasado' : '') }, pnData(v.data) + ' · ' + (v.diasAtraso > 0 ? 'venceu há ' + v.diasAtraso + 'd' : atraso(v.diasAtraso))))
+          h('span', { className: 'pn-linha-meta' + (v.diasAtraso > 0 ? ' atrasado' : '') }, pnData(v.data) + ' · ' + (v.diasAtraso > 0 ? (v.cotizacao ? 'liberou há ' : 'venceu há ') + v.diasAtraso + 'd' : atraso(v.diasAtraso))))
         : h('div', { className: 'pn-linha', key: v.alertaId },
           h('button', { className: 'pn-linha-nome', onClick: () => abrirLead(v.leadId) }, v.cliente, quem(v),
             v.texto ? h('span', { className: 'pn-linha-quem' }, ' · ' + v.texto) : null),
