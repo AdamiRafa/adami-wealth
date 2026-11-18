@@ -10,6 +10,9 @@
 //                 (carteira, produto, estratégia) do MÊS ANTERIOR, já fechado. Conferido em
 //                 17/11/2026: a API devolve só o mês pedido (o corrente vem parcial, até o
 //                 último dia útil), em arquivo .zip, com os valores em fração (0,0122 = 1,22%).
+//   "performance" (dias 2 e 5, depois da rentabilidade): o Relatório de Performance em PDF do mês anterior
+//                 de cada conta vinculada no cadastro das Carteiras (clientes.contas_btg), uma por vez
+//                 (limite do BTG: 60 por minuto). {"conta": "..."} pede só uma conta (teste).
 // O BTG responde 202 e entrega o arquivo depois, na função btg-webhook.
 // Cada pedido fica registrado em btg_pedidos, com a resposta do BTG.
 //
@@ -26,7 +29,7 @@ const BTG = Deno.env.get("BTG_API_URL") ?? "https://api.btgpactual.com";
 const ID = (Deno.env.get("BTG_CLIENT_ID") ?? "").trim();
 const SEGREDO = (Deno.env.get("BTG_CLIENT_SECRET") ?? "").trim();
 
-type Pedido = { servico: string; metodo: "GET" | "POST"; caminho: string; corpo?: Record<string, string> };
+type Pedido = { servico: string; metodo: "GET" | "POST"; caminho: string; corpo?: Record<string, string>; pausa?: number };
 
 function resposta(corpo: unknown, status = 200): Response {
   return new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json; charset=utf-8" } });
@@ -57,6 +60,26 @@ function mesAnterior(): { referenceMonth: string; referenceYear: string } {
   const hoje = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   const d = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
   return { referenceMonth: String(d.getMonth() + 1).padStart(2, "0"), referenceYear: String(d.getFullYear()) };
+}
+
+// Contas vinculadas no cadastro das Carteiras, sem repetir, com 9 dígitos.
+async function contasVinculadas(): Promise<string[]> {
+  const r = await fetch(`${SB_URL}/rest/v1/clientes?select=contas_btg&contas_btg=not.is.null`, { headers: { apikey: CHAVE, Authorization: "Bearer " + CHAVE } });
+  if (!r.ok) throw new Error("clientes: " + r.status);
+  const out = new Set<string>();
+  for (const c of await r.json()) for (const k of (c.contas_btg || [])) {
+    const s = String(k).replace(/\D/g, "").replace(/^0+/, "");
+    if (s) out.add(s.padStart(9, "0"));
+  }
+  return [...out];
+}
+function planoPerformance(contas: string[], ref?: { referenceMonth: string; referenceYear: string }): Pedido[] {
+  const m = ref ?? mesAnterior();
+  const ano = Number(m.referenceYear), mes = Number(m.referenceMonth);
+  const ultimo = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
+  const startDate = `${ano}-${m.referenceMonth}-01`, endDate = `${ano}-${m.referenceMonth}-${String(ultimo).padStart(2, "0")}`;
+  return contas.map((accountNumber) => ({ servico: "performance-report", metodo: "POST" as const,
+    caminho: "/iaas-profitability/api/v1/performance-report/account", corpo: { startDate, endDate, accountNumber }, pausa: 1100 }));
 }
 
 function plano(janela: string, ref?: { referenceMonth: string; referenceYear: string }): Pedido[] {
@@ -118,12 +141,17 @@ Deno.serve(async (req: Request) => {
   const chave = req.headers.get("x-btg-sync") ?? "";
   if (!(await rpc("btg_sync_token_ok", { p: chave }))) return resposta({ erro: "não autorizado" }, 401);
 
-  const corpo = await req.json().catch(() => ({})) as { janela?: string; forcar?: boolean; mes?: number; ano?: number };
+  const corpo = await req.json().catch(() => ({})) as { janela?: string; forcar?: boolean; mes?: number; ano?: number; conta?: string };
   const janela = String(corpo.janela ?? "");
   const m = Number(corpo.mes), a = Number(corpo.ano);
   const ref = m >= 1 && m <= 12 && a >= 2020 && a <= 2100
     ? { referenceMonth: String(m).padStart(2, "0"), referenceYear: String(a) } : undefined;
-  const pedidos = plano(janela, ref);
+  let pedidos = plano(janela, ref);
+  if (janela === "performance") {
+    const uma = String(corpo.conta ?? "").replace(/\D/g, "").replace(/^0+/, "");
+    pedidos = planoPerformance(uma ? [uma.padStart(9, "0")] : await contasVinculadas(), ref);
+    if (!pedidos.length) return resposta({ ok: true, janela, nada: "nenhuma conta vinculada nas Carteiras" });
+  }
   if (!pedidos.length) return resposta({ erro: "janela desconhecida: " + janela }, 400);
   if (!(await rpc("btg_ligado", {})) && !corpo.forcar) return resposta({ ok: true, desligado: true });
   if (!ID || !SEGREDO) return resposta({ erro: "Faltam BTG_CLIENT_ID e BTG_CLIENT_SECRET nos Secrets." }, 500);
@@ -140,11 +168,11 @@ Deno.serve(async (req: Request) => {
         p_origem: corpo.forcar ? "manual" : "agendado", p_http: r.status, p_x_id: r.headers.get("x-id-pactual"),
         p_resposta: texto.slice(0, 2000),
       });
-      resultado[p.servico] = r.status;
+      resultado[p.servico + (p.corpo?.accountNumber ? " " + p.corpo.accountNumber : "")] = r.status;
     } catch (e) {
-      resultado[p.servico] = "erro: " + String((e as Error)?.message ?? e).slice(0, 200);
+      resultado[p.servico + (p.corpo?.accountNumber ? " " + p.corpo.accountNumber : "")] = "erro: " + String((e as Error)?.message ?? e).slice(0, 200);
     }
-    await new Promise((ok) => setTimeout(ok, 400));
+    await new Promise((ok) => setTimeout(ok, p.pausa ?? 400));
   }
   console.log("btg-sync", janela, JSON.stringify(resultado));
   return resposta({ ok: true, janela, resultado });

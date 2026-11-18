@@ -1912,6 +1912,31 @@ BTG dava outro nome à mesma conta.
 - Testado: regra em Node com 6 cenários (o do André, renomear, 3 contas com linha sem número, conta fora do cadastro,
   sem cadastro, Necton) e a janela em Chromium com Supabase simulado.
 
+### 23.13. Relatório de Performance pela API (Hub 3.33, 19/11/2026, `carteiras_performance.sql`)
+
+O portal de desenvolvedor tem 27 APIs (print de 19/11); nenhuma de conta offshore. A **API de Performance**
+(`btg/openapi/performance-report.yaml`) devolve o próprio Relatório de Performance em PDF, por conta e período (até 30
+dias), assíncrono, pelo webhook `performance-report` (cadastrado pelo Emil em 18/11). Limite 60 pedidos por minuto; o
+relatório fica fixo por 3 horas depois de pedido.
+
+- **Aviso do BTG:** só `url`, `fileSize`, `lastModified`, `signedURLExpirationDate`. Conta e período vêm no nome do
+  arquivo: `performance_004180373_2026-10-01_2026-10-31.zip`, com o PDF `performance_004180373_2026-10-01_2026-10-31<ruído>.pdf`
+  dentro (conferido em 18/11). `contaDoNome` (9 dígitos) e `periodoDoNome` leem o nome; o código do pedido
+  (`x-id-pactual`) não volta no aviso.
+- **btg-webhook (versão 6):** guarda o zip original e cada PDF em `btg/performance-report/pdf/AAAA-MM/<conta>.pdf` e grava
+  uma linha em `btg_linhas` (nr_conta, arquivo, caminho, inicio, fim, tamanho).
+- **btg-sync (versão 5), janela `performance`:** pede o mês anterior (ou `mes`/`ano`) de cada conta vinculada nos cadastros
+  das Carteiras (`clientes.contas_btg`), uma a cada 1,1 s; `{"conta": "..."}` pede uma só. Agendamento `btg-performance`
+  dias 2 e 5, 12h10 UTC. Em 18/11 foram pedidas as 10 contas vinculadas de outubro.
+- **Carteiras:** no Preencher, acima da área de subir PDF, "O Relatório de Performance do BTG de <mês> chegou · conta X ·
+  Aplicar relatório do BTG" (`btg_performance_cliente`, o mais recente de cada conta vinculada no mês). O botão baixa pelo
+  Storage com o login da pessoa (`/storage/v1/object/authenticated/btg/...`) e passa pelo mesmo `subirPerformance` do PDF
+  arrastado. Política `btg_performance_ler` em `storage.objects`: só baixa quem enxerga um cliente com aquela conta
+  (`btg_pode_ler_pdf`, com `acesso_liberado()`); a restritiva `exige_verificacao` já vale para `storage.objects`.
+- Testado: receptor com zip montado de um PDF real (o PDF sai idêntico, conta e período certos), pedido real de uma conta
+  (chegou em segundos), tela com Supabase simulado (faixa, download, leitura do PDF: conta 004181763, saldo 9.742.602,87,
+  51 ativos; mês sem relatório mostra o aviso).
+
 ## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)
 
 - **Números:** 4 cartões abaixo da saudação, para quem tem a ferramenta CRM. Da casa para quem tem

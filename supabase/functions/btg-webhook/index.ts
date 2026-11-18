@@ -32,6 +32,7 @@ const SERVICOS = new Set([
   "rm-reports-movement", "rm-reports-monthly-movement", "rm-reports-position-by-date",
   "rm-reports-nnm", "rm-reports-monthly-nnm", "rm-reports-monthly-account-base", "rm-reports-monthly-tir",
   "monthly-customer-profitability", "monthly-product-profitability", "monthly-strategy-profitability",
+  "performance-report",
 ]);
 
 // Rentabilidade Mensal (btg_rentabilidade.sql): arquivos que podem passar de 100 MB (todas as
@@ -245,6 +246,73 @@ async function processar(id: number, servico: string, url: string): Promise<void
   }
 }
 
+// Relatório de Performance (API de Performance, 19/11/2026): o PDF que o Emil baixava do BTG e subia nas
+// Carteiras, um por conta, dentro de um zip. O aviso não diz a conta nem o período (só url, fileSize,
+// lastModified): os dois vêm no nome do arquivo, no link e no PDF de dentro
+// ("performance_004180373_2026-10-01_2026-10-31.zip", conferido em 18/11/2026). Cada PDF vai para o Storage privado "btg" em
+// performance-report/pdf/<AAAA-MM>/<conta>.pdf e vira uma linha em btg_linhas (nr_conta, caminho, período),
+// que as Carteiras usam para achar o relatório do cliente.
+export function periodoDoNome(nome: string): { inicio: string; fim: string } {
+  const m = String(nome).match(/(\d{4}-\d{2}-\d{2})\D+(\d{4}-\d{2}-\d{2})/);
+  return m ? { inicio: m[1], fim: m[2] } : { inicio: "", fim: "" };
+}
+export function contaDoNome(nome: string): string {
+  const base = String(nome).replace(/^.*\//, "");
+  const m = base.match(/(?<!\d)(\d{9})(?!\d)/) || base.match(/(\d{6,12})/); // a conta do BTG tem 9 dígitos
+  return m ? m[1] : "";
+}
+async function processarPerformance(id: number, url: string, info: Record<string, unknown>): Promise<void> {
+  try {
+    const controle = new AbortController();
+    const prazo = setTimeout(() => controle.abort(), 90_000);
+    const r = await fetch(url, { signal: controle.signal, redirect: "error" });
+    clearTimeout(prazo);
+    if (!r.ok) throw new Error("download " + r.status);
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    if (bytes.length > LIMITE_ORIGINAL) throw new Error("arquivo maior que 45 MB");
+    const dia = new Date().toISOString().slice(0, 10);
+    const zip = ehZip(bytes);
+    const ehPdf = (b: Uint8Array) => b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46; // %PDF
+    if (!zip && !ehPdf(bytes)) throw new Error("o BTG mandou um arquivo que não é zip nem PDF");
+    const guardar = async (caminho: string, corpo: Uint8Array, tipo: string) => {
+      const up = await fetch(`${SB_URL}/storage/v1/object/btg/${caminho}`, {
+        method: "POST", headers: { apikey: CHAVE, Authorization: "Bearer " + CHAVE, "Content-Type": tipo, "x-upsert": "true" }, body: corpo,
+      });
+      if (!up.ok) throw new Error("storage " + up.status + " " + (await up.text()).slice(0, 200));
+    };
+    const caminho = `performance-report/${dia}/${id}.${zip ? "zip" : "pdf"}`;
+    await guardar(caminho, bytes, zip ? "application/zip" : "application/pdf");
+    let nomeLink = "";
+    try { nomeLink = decodeURIComponent(new URL(url).pathname.split("/").pop() ?? ""); } catch (_) { /* sem nome */ }
+    const perLink = periodoDoNome(nomeLink);
+    const pdfs: { nome: string; bytes: Uint8Array }[] = [];
+    if (zip) {
+      for (const e of entradasZip(bytes)) {
+        if (!/\.pdf$/i.test(e.nome)) continue;
+        pdfs.push({ nome: e.nome, bytes: new Uint8Array(await new Response(e.fluxo()).arrayBuffer()) });
+      }
+    } else pdfs.push({ nome: "relatorio.pdf", bytes });
+    if (!pdfs.length) throw new Error("o zip não tem PDF");
+    const linhas: Record<string, string>[] = [];
+    for (let i = 0; i < pdfs.length; i++) {
+      const conta = contaDoNome(pdfs[i].nome) || contaDoNome(nomeLink);
+      const perPdf = periodoDoNome(pdfs[i].nome);
+      const inicio = perPdf.inicio || perLink.inicio || String(info.startDate ?? "").slice(0, 10);
+      const fim = perPdf.fim || perLink.fim || String(info.endDate ?? "").slice(0, 10);
+      const destino = `performance-report/pdf/${(fim || inicio || dia).slice(0, 7)}/${conta || ("sem-conta-" + id + "-" + i)}.pdf`;
+      await guardar(destino, pdfs[i].bytes, "application/pdf");
+      linhas.push({ nr_conta: conta, arquivo: pdfs[i].nome, caminho: destino, inicio, fim, tamanho: String(pdfs[i].bytes.length) });
+    }
+    await rpc("btg_receber", { p_arquivo_id: id, p_caminho: caminho, p_tamanho: bytes.length,
+      p_colunas: ["nr_conta", "arquivo", "caminho", "inicio", "fim", "tamanho"], p_linhas: linhas });
+    console.log("btg-webhook performance-report", id, linhas.map((l) => l.nr_conta || l.arquivo).join(","));
+  } catch (e) {
+    const msg = String((e as Error)?.message ?? e);
+    console.error("btg-webhook performance-report", id, msg);
+    try { await rpc("btg_marcar_erro", { p_arquivo_id: id, p_erro: msg }); } catch (_) { /* melhor esforço */ }
+  }
+}
+
 async function processarEmLotes(id: number, servico: string, url: string): Promise<void> {
   try {
     const controle = new AbortController();
@@ -392,7 +460,8 @@ Deno.serve(async (req: Request) => {
 
   const id = await rpc("btg_aviso", { p_servico: servico, p_aviso: corpo, p_status: "recebido" }) as number;
   // Responde logo ao BTG e baixa em segundo plano (o link expira, mas em minutos, não segundos).
-  const tarefa = RENTABILIDADE.has(servico) ? processarEmLotes(id, servico, url) : processar(id, servico, url);
+  const tarefa = servico === "performance-report" ? processarPerformance(id, url, info)
+    : RENTABILIDADE.has(servico) ? processarEmLotes(id, servico, url) : processar(id, servico, url);
   const er = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
   if (er?.waitUntil) er.waitUntil(tarefa); else await tarefa;
   return resposta({ ok: true, id });
