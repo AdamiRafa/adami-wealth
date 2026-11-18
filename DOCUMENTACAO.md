@@ -1856,6 +1856,39 @@ quem sumiu, saldo nunca vira movimentação, faixa de 0,5%, nada grava antes de 
   vault.decrypted_secrets where name='btg_sync_token')), body := jsonb_build_object('janela','rentabilidade',
   'mes',10,'ano',2026), timeout_milliseconds := 60000);`
 
+### 23.11. Atualização automática da base do CRM (18/11/2026, CRM 2026.11.18.1, `btg_base_auto.sql`)
+
+Pedido do Emil depois de ver os números da tela inicial parados: a base do CRM só tinha sido atualizada
+em 07/10. Desde 17/11 o BTG manda a base todo dia útil às 8h30, mas ela só entrava com o botão
+**Atualizar do BTG** + **Aplicar**. Agora entra sozinha.
+
+- **Função `btg-base-auto`** (Edge Functions, Verify JWT desligado, mesmo token do Vault da btg-sync):
+  lê `btg_base` + `btg_vinculos` (no formato da `btg_base_crm`), a Equipe (`profiles` + códigos de
+  `perfis`), os clientes (`leads`), a faixa (`btg_ultima_onshore`) e as movimentações do BTG
+  (`btg_movimentos_calc`, nova, só `service_role`), roda `reconciliarBaseBTG` e `montarAplicacaoBase`
+  e grava em blocos de 100 com 3 tentativas. Autor no histórico: "Atualização automática do BTG".
+- **Mesma regra da tela, sem cópia à mão:** `supabase/functions/btg-base-auto/regras.js` é GERADO do
+  `crm.html` por `gerar-regras.js` (acorn + eslint-scope: pega as funções e tudo que elas chamam, e
+  recusa se passarem a usar algo do navegador). `testes/verificar.sh` roda `gerar-regras.js --conferir`
+  e barra a publicação se o CRM mudou e o regras.js não. **Mudou a regra no CRM: gere de novo e
+  republique a função** (pelo conector, com `index.ts` e `regras.js`).
+- **Agendamento** `btg-base-auto`: 9h15 e 11h15 de Brasília, dias úteis. Cada base é aplicada uma vez só
+  (`configuracoes.btg_auto_base_aplicada`); base com mais de 20 h não é aplicada (o BTG não mandou a do dia).
+  Resultado em `configuracoes.btg_auto_resultado` (JSON), mostrado na tela Atualizar base do CRM.
+- `{"simular": true}` no corpo: calcula e devolve o que faria, sem gravar. Na base de 18/11, já aplicada
+  à mão, a simulação deu 0 alterações (depois das duas correções abaixo).
+- **Correções na regra, que valem para a tela também:** (1) cliente fora da carteira (perdido) com saldo no
+  BTG era comparado pelo potencial e gravado no saldo, então a diferença nunca fechava; agora compara com o
+  campo que grava (`btgCampoValor`). (2) Saldo negativo no BTG vale 0, como a carteira. Sem isso, 5 clientes
+  teriam alerta repetido todo dia.
+- **Erro "TypeError: Load failed" (18/11, celular):** a conexão caiu no meio da gravação (699 de 857
+  gravados); o Emil tentou de novo e a segunda vez completou, mas repetiu o registro no histórico de 699
+  clientes e o alerta em 177. Limpo no banco (backup em `backup.leads_20261118_dup`). Para não acontecer de
+  novo: cada aplicação tem um `lote` (o histórico e o alerta não se repetem numa nova tentativa, a conta nova
+  não nasce duas vezes) e `upsertLeads` tenta cada bloco até 3 vezes.
+- Testado com Deno contra PostgREST falso: simular não grava; aplica saldo e alerta, cria conta nova com
+  código, ignora conta sem código; segunda chamada "já aplicada"; reaplicar à força não duplica nada.
+
 ## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)
 
 - **Números:** 4 cartões abaixo da saudação, para quem tem a ferramenta CRM. Da casa para quem tem

@@ -4426,7 +4426,13 @@ function faixaBTG(ultimaMs, agoraMs){
   return { faixa: Math.max(BTG_FAIXA_RENDIMENTO, BTG_FAIXA_RENDIMENTO * dias / 7), dias: Math.round(dias) };
 }
 function btgSaldoAtual(lead){
-  if(valorInicialEmCarteira(lead) === null) return parseValor(lead.valorPotencial) || 0;
+  if(valorInicialEmCarteira(lead) === null){
+    /* Fora da carteira (perdido, por exemplo): compara com o mesmo campo que a importação grava
+       (btgCampoValor). Comparar com o potencial e gravar no saldo fazia a diferença nunca fechar, e o
+       alerta voltaria todo dia na atualização automática (18/11/2026: 4 clientes perdidos com saldo). */
+    const v = parseValor(lead[btgCampoValor(lead)]);
+    return v === null ? (parseValor(lead.valorPotencial) || 0) : v;
+  }
   return valorEmCarteira(lead);
 }
 
@@ -4556,7 +4562,9 @@ function reconciliarBaseBTG(linhas, leads, users, opc){
     if(!conta){ semConta.push(d); continue; }
     vistas.add(chaveConta(conta));
     const nome = norm(d['Nome']);
-    const saldoBTG = Math.round((parseFloat(d['Sob Gestão'] ?? d['PL Total']) || 0) * 100) / 100;
+    /* Nunca negativo, como a carteira (valorEmCarteira): conta com saldo devedor no BTG vale 0 aqui,
+       senão a diferença para o 0 gravado nunca fecharia e o alerta voltaria todo dia (18/11/2026). */
+    const saldoBTG = Math.max(0, Math.round((parseFloat(d['Sob Gestão'] ?? d['PL Total']) || 0) * 100) / 100);
     const assessorBTG = norm(d['Assessor']);
 
     /* O código, quando a planilha traz. Célula vazia não é erro: é linha que
@@ -5485,6 +5493,109 @@ function leadToRow(l){
   };
 }
 
+/* O que a atualização da base grava, montado sem gravar nada. Pura e fora do componente porque o
+   servidor (função btg-base-auto, atualização automática de todo dia útil) usa exatamente esta
+   mesma regra: supabase/functions/btg-base-auto/regras.js é gerado a partir deste arquivo. */
+function montarAplicacaoBase(res, leads, autor, agora, hoje){
+  /* Offshore e Pershing gravam e escrevem em dólar: é a moeda de valorOffshore. */
+  const off = res.tipo === 'offshore';
+  const dolar = off || res.tipo === 'pershing';
+  const fmt = dolar ? fmtUSD : fmtBRL;
+  /* Lote: marca as entradas desta aplicação. Se a gravação cair no meio (celular perdeu a
+     conexão, 18/11/2026) e alguém tentar de novo, o histórico e o alerta já gravados não se
+     repetem, e a conta nova já criada não nasce duas vezes. */
+  if(!res.lote) res.lote = uid('lote');
+  const lote = res.lote;
+  const doLote = (lista) => (lista || []).some(x => x && x.lote === lote);
+  const porContaAtual = mapaPorConta(leads);
+  const novos = res.atualizacoes.map((a) => {
+    const l = leads.find(x => x.id === a.lead.id) || a.lead;
+    const novo = { ...l, ...a.patch };
+    const notas = [];
+
+    if(Math.abs(a.delta) >= 0.01){
+      /* O que se grava é o valor INICIAL, não o saldo do arquivo: as
+         movimentações lançadas pelo assessor continuam somando por cima e
+         seriam contadas duas vezes. Ver btgValorAlvo e btgCampoValor. */
+      novo[a.campoValor] = fmt(a.valorAlvo);
+      notas.push(a.vinculo ? 'saldo inicial ' + fmt(a.saldoBTG)
+        : 'saldo ' + fmt(a.saldoAtual) + ' → ' + fmt(a.saldoBTG)
+          + ' (' + (a.delta >= 0 ? '+' : '−') + fmt(Math.abs(a.delta)) + ')');
+    }
+    for(const c of a.campos) notas.unshift(!c.de && a.vinculo
+      ? c.rotulo.toLowerCase() + ' ' + c.para + ' vinculada'
+      : c.rotulo.toLowerCase() + ': ' + (c.de || '—') + ' → ' + c.para);
+
+    /* Histórico só quando há o que contar: divergência fora da faixa ou
+       mudança de cadastro. Rendimento dentro de 0,5% atualiza o saldo em
+       silêncio.
+
+       O motivo é de escala, e só aparece no volume real: quase toda conta
+       rende alguma coisa toda semana, então registrar a variação de todas
+       somaria ~52 entradas por cliente por ano, todas dizendo "rendeu
+       0,2%". O histórico da ficha é cronológico — em um ano as transições
+       que importam (R1→R2, a captação efetivada, a indicação na R4)
+       ficariam soterradas sob extrato de rendimento.
+
+       Nada se perde em auditoria: o saldo continua sendo o do arquivo, e o
+       que se descarta é o registro de uma variação que ninguém iria ler. */
+    if((a.alerta || a.campos.length) && !doLote(l.historico)){
+      novo.historico = [...(l.historico || []), {
+        id: uid('h'), lote, de: l.etapa, para: l.etapa, data: agora,
+        resumo: (off ? 'Base BTG offshore · ' : 'Base BTG · ') + notas.join(' · ') + (a.alerta ? ' · fora da faixa de rendimento' : ''),
+        autor,
+        /* Marca como reconciliação pra timeline poder recolher esta
+           entrada: é diferença de importação, não um fato que alguém
+           contou — não deve competir em destaque com o que o assessor
+           de fato escreveu. */
+        reconciliacao: true,
+      }];
+    }
+
+    /* O alerta é o que devolve a divergência para quem consegue explicá-la.
+       O admin vê o número no resumo; quem liga para o cliente é o assessor,
+       e é no card dele que o aviso precisa estar. */
+    if(a.alerta && !doLote(l.alertas)){
+      novo.alertas = [...(l.alertas || []), {
+        id: uid('al'), lote, tipo: 'divergencia',
+        texto: (off ? 'Saldo offshore do BTG variou ' : 'Saldo do BTG variou ') + (a.delta >= 0 ? '+' : '−') + fmt(Math.abs(a.delta))
+          + ' sem movimentação lançada que explique. Confirmar com o cliente se houve aporte ou resgate.',
+        data: hoje, autor, criadoEm: agora, resolvido: false,
+      }];
+    }
+    return stampLead(novo);
+  });
+
+  /* Conta nova com código reconhecido: nasce card, na hora, com o
+     assessor já vinculado pelo código — é a mesma autorização que já
+     valia para transferir carteira existente. Sem código, a conta
+     continua só listada; cadastro manual, como sempre foi.
+     Só o onshore cria: offshore e Pershing nunca criam cliente — a conta
+     lá fora só existe depois que a onshore existe (ou, na Pershing, depois
+     que alguém liga o número na ficha manualmente). */
+  const criados = res.tipo !== 'onshore' ? [] : (res.novas || []).filter(n => n.donoPorCodigo && !porContaAtual.has(chaveConta(n.conta))).map((n) => {
+    /* Cliente da base já é carteira de verdade — veio com saldo do BTG,
+       não é prospect a triar. Por isso entra direto na R2, apresentação
+       da proposta, pulando o Cliente Novo: esteira 'base' já autoriza esse
+       pulo (ver TRAJETOS — de Cliente Novo só se vai para R2 quando a
+       esteira é 'base'). */
+    const historico = [{ id: uid('h'), de: null, para: 'R2', data: agora,
+      resumo: 'Cadastrado pela importação da base BTG · vínculo pelo código ' + n.codigo,
+      autor }];
+    return stampLead(congelarSaldoInicialOffshore(null, congelarSaldoInicial(null, {
+      ...emptyLead(n.donoPorCodigo.id),
+      cliente: n.nome, conta: n.conta,
+      etapa: 'R2', funil: 'assessor', esteira: 'base',
+      segmento: segmentoPorPatrimonio(n.saldo) || 'Advisory',
+      saldoInicial: fmtBRL(n.saldo),
+      tipoPessoa: n.tipoPessoa || 'PF', nascimento: n.nascimento || '',
+      origem: 'Base BTG', criadoEm: agora, etapaDesde: agora,
+      historico, atividades: [],
+    })));
+  });
+  return { novos, criados };
+}
+
 function stampLead(lead){ return { ...lead, atualizadoEm: Date.now() }; }
 const ativos = (leads) => (leads || []).filter(l => !l.excluido);
 
@@ -5626,8 +5737,16 @@ async function upsertLeads(lista){
   }
   const BLOCO = 100;
   for(let i = 0; i < lista.length; i += BLOCO){
-    const { error } = await sb.from('leads').upsert(lista.slice(i, i + BLOCO).map(leadToRow));
-    if(error) throw error;
+    /* Até 3 tentativas por bloco: no celular a conexão cai no meio ("Load failed", 18/11/2026) e
+       o bloco que faltou ficava sem gravar. Regravar o mesmo bloco é seguro (upsert pelo id). */
+    for(let t = 1; ; t++){
+      let erro = null;
+      try { const r = await sb.from('leads').upsert(lista.slice(i, i + BLOCO).map(leadToRow)); erro = r.error; }
+      catch(e){ erro = e; }
+      if(!erro) break;
+      if(t >= 3) throw erro;
+      await new Promise(ok => setTimeout(ok, 1500 * t));
+    }
   }
 }
 
@@ -9880,6 +9999,24 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
 
   const abrir = (k) => setAbertas(a => ({ ...a, [k]: !a[k] }));
 
+  /* Última atualização automática (função btg-base-auto, todo dia útil às 9h15): o servidor grava o
+     resumo em configuracoes "btg_auto_resultado". Só mostra; quem aplica é o servidor. */
+  const [auto, setAuto] = useState(null);
+  useEffect(() => {
+    if(MODO_DEMO) return;
+    sb.from('configuracoes').select('valor').eq('chave', 'btg_auto_resultado').maybeSingle()
+      .then(({ data }) => { try { setAuto(data && data.valor ? JSON.parse(data.valor) : null); } catch(e){ setAuto(null); } })
+      .catch(() => {});
+  }, []);
+  const textoAuto = (() => {
+    if(!auto || !auto.quando) return 'Atualização automática: ainda não rodou. Ela aplica sozinha a base do BTG todo dia útil, às 9h15.';
+    const q = new Date(auto.quando).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    if(auto.erro) return 'Atualização automática de ' + q + ' falhou: ' + auto.erro;
+    return 'Atualização automática: ' + q + ' · ' + (auto.atualizados || 0) + ' cliente(s) atualizado(s)'
+      + (auto.criados ? ' · ' + auto.criados + ' cadastrado(s)' : '') + (auto.alertas ? ' · ' + auto.alertas + ' divergência(s) sinalizada(s)' : '')
+      + '. Roda sozinha todo dia útil às 9h15; o botão abaixo é só para conferir ou aplicar fora de hora.';
+  })();
+
   /* Fase 2 da integração com o BTG: a mesma prévia, mas a base vem do banco (relatório
      account-base que o BTG manda todo dia útil, com o assessor de cada conta do
      account-link), sem planilha. O código do assessor só entra se pelo menos um código da
@@ -9983,6 +10120,7 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
       h('label',{htmlFor:'imp-file', className:'btn btn-primary imp-botao'}, 'Escolher arquivo'),
       h('button',{type:'button', className:'btn imp-botao', onClick:doBtg,
         title:'Usa a base que o BTG manda todo dia útil, sem planilha. Mesma prévia, nada grava antes de você aplicar.'}, 'Atualizar do BTG')),
+    h('p',{className:'imp-auto', style:{fontSize:'12.5px',marginTop:'14px',fontWeight:600}}, textoAuto),
     h('p',{style:{fontSize:'12.5px',marginTop:'10px'}}, '"Atualizar do BTG" faz a mesma comparação com a base que o próprio BTG manda todo dia útil (8h30), sem planilha. '
       + 'Para o BTG trocar o assessor sozinho, o código de cada assessor na Equipe do Hub precisa ser o código dele no BTG.'),
     erro ? h('p',{className:'imp-erro'}, erro) : null
@@ -12043,7 +12181,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.13.1';
+const CRM_VERSAO = 'versão do CRM 2026.11.18.1';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -13644,96 +13782,7 @@ function App(){
      e deixaria a carteira do escritório meio atualizada se a conexão caísse
      no meio. */
   const aplicarImportacaoBase = async (res) => {
-    const agora = Date.now(), hoje = todayISO();
-    /* Offshore e Pershing gravam e escrevem em dólar: é a moeda de valorOffshore. */
-    const off = res.tipo === 'offshore';
-    const dolar = off || res.tipo === 'pershing';
-    const fmt = dolar ? fmtUSD : fmtBRL;
-    const novos = res.atualizacoes.map((a) => {
-      const l = leads.find(x => x.id === a.lead.id) || a.lead;
-      const novo = { ...l, ...a.patch };
-      const notas = [];
-
-      if(Math.abs(a.delta) >= 0.01){
-        /* O que se grava é o valor INICIAL, não o saldo do arquivo: as
-           movimentações lançadas pelo assessor continuam somando por cima e
-           seriam contadas duas vezes. Ver btgValorAlvo e btgCampoValor. */
-        novo[a.campoValor] = fmt(a.valorAlvo);
-        notas.push(a.vinculo ? 'saldo inicial ' + fmt(a.saldoBTG)
-          : 'saldo ' + fmt(a.saldoAtual) + ' → ' + fmt(a.saldoBTG)
-            + ' (' + (a.delta >= 0 ? '+' : '−') + fmt(Math.abs(a.delta)) + ')');
-      }
-      for(const c of a.campos) notas.unshift(!c.de && a.vinculo
-        ? c.rotulo.toLowerCase() + ' ' + c.para + ' vinculada'
-        : c.rotulo.toLowerCase() + ': ' + (c.de || '—') + ' → ' + c.para);
-
-      /* Histórico só quando há o que contar: divergência fora da faixa ou
-         mudança de cadastro. Rendimento dentro de 0,5% atualiza o saldo em
-         silêncio.
-
-         O motivo é de escala, e só aparece no volume real: quase toda conta
-         rende alguma coisa toda semana, então registrar a variação de todas
-         somaria ~52 entradas por cliente por ano, todas dizendo "rendeu
-         0,2%". O histórico da ficha é cronológico — em um ano as transições
-         que importam (R1→R2, a captação efetivada, a indicação na R4)
-         ficariam soterradas sob extrato de rendimento.
-
-         Nada se perde em auditoria: o saldo continua sendo o do arquivo, e o
-         que se descarta é o registro de uma variação que ninguém iria ler. */
-      if(a.alerta || a.campos.length){
-        novo.historico = [...(l.historico || []), {
-          id: uid('h'), de: l.etapa, para: l.etapa, data: agora,
-          resumo: (off ? 'Base BTG offshore · ' : 'Base BTG · ') + notas.join(' · ') + (a.alerta ? ' · fora da faixa de rendimento' : ''),
-          autor: currentUser.nome,
-          /* Marca como reconciliação pra timeline poder recolher esta
-             entrada: é diferença de importação, não um fato que alguém
-             contou — não deve competir em destaque com o que o assessor
-             de fato escreveu. */
-          reconciliacao: true,
-        }];
-      }
-
-      /* O alerta é o que devolve a divergência para quem consegue explicá-la.
-         O admin vê o número no resumo; quem liga para o cliente é o assessor,
-         e é no card dele que o aviso precisa estar. */
-      if(a.alerta){
-        novo.alertas = [...(l.alertas || []), {
-          id: uid('al'), tipo: 'divergencia',
-          texto: (off ? 'Saldo offshore do BTG variou ' : 'Saldo do BTG variou ') + (a.delta >= 0 ? '+' : '−') + fmt(Math.abs(a.delta))
-            + ' sem movimentação lançada que explique. Confirmar com o cliente se houve aporte ou resgate.',
-          data: hoje, autor: currentUser.nome, criadoEm: agora, resolvido: false,
-        }];
-      }
-      return stampLead(novo);
-    });
-
-    /* Conta nova com código reconhecido: nasce card, na hora, com o
-       assessor já vinculado pelo código — é a mesma autorização que já
-       valia para transferir carteira existente. Sem código, a conta
-       continua só listada; cadastro manual, como sempre foi.
-       Só o onshore cria: offshore e Pershing nunca criam cliente — a conta
-       lá fora só existe depois que a onshore existe (ou, na Pershing, depois
-       que alguém liga o número na ficha manualmente). */
-    const criados = res.tipo !== 'onshore' ? [] : (res.novas || []).filter(n => n.donoPorCodigo).map((n) => {
-      /* Cliente da base já é carteira de verdade — veio com saldo do BTG,
-         não é prospect a triar. Por isso entra direto na R2, apresentação
-         da proposta, pulando o Cliente Novo: esteira 'base' já autoriza esse
-         pulo (ver TRAJETOS — de Cliente Novo só se vai para R2 quando a
-         esteira é 'base'). */
-      const historico = [{ id: uid('h'), de: null, para: 'R2', data: agora,
-        resumo: 'Cadastrado pela importação da base BTG · vínculo pelo código ' + n.codigo,
-        autor: currentUser.nome }];
-      return stampLead(congelarSaldoInicialOffshore(null, congelarSaldoInicial(null, {
-        ...emptyLead(n.donoPorCodigo.id),
-        cliente: n.nome, conta: n.conta,
-        etapa: 'R2', funil: 'assessor', esteira: 'base',
-        segmento: segmentoPorPatrimonio(n.saldo) || 'Advisory',
-        saldoInicial: fmtBRL(n.saldo),
-        tipoPessoa: n.tipoPessoa || 'PF', nascimento: n.nascimento || '',
-        origem: 'Base BTG', criadoEm: agora, etapaDesde: agora,
-        historico, atividades: [],
-      })));
-    });
+    const { novos, criados } = montarAplicacaoBase(res, leads, currentUser.nome, Date.now(), todayISO());
 
     /* Data desta atualização: a próxima mede a faixa de rendimento a partir dela (faixaBTG). */
     const marcarAtualizacao = () => upsertConfig('btg_ultima_' + (res.tipo || 'onshore'), Date.now()).catch(() => {});

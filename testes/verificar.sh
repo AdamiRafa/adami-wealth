@@ -31,6 +31,9 @@ echo "== 1 e 2. Sintaxe e escopo"
 for f in *.html; do node testes/escopo.js "$f" --estrito; done
 for f in comum/*.js; do node --check "$f"; done
 echo "comum/*.js: sintaxe ok"
+# A atualização automática da base (btg-base-auto) usa as regras copiadas do crm.html: se o CRM
+# mudou e regras.js não foi gerado de novo, o servidor estaria aplicando outra regra.
+node supabase/functions/btg-base-auto/gerar-regras.js --conferir
 
 echo "== 3. SQL"
 python3 - <<'PY'
