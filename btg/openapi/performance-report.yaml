@@ -1,0 +1,55 @@
+# Copiado do portal de desenvolvedor do BTG (API de Performance, versão 3.1.2.0) em 19/11/2026.
+openapi: 3.0.1
+info:
+  title: "API de Performance"
+  description: API de consulta de relatorio de Informação de performance das contas.
+  version: 3.1.2.0
+servers:
+  - url: https://api.btgpactual.com/iaas-profitability
+paths:
+  /api/v1/performance-report/account:
+    post:
+      tags: [post-performance-report-by-account]
+      summary: Endpoint que busca o relatório de performance por conta e período.
+      description: |
+        Busca do arquivo de relatório de performance, por conta e período.
+        Uma vez solicitado, o relatório gerado para aquele período fica estático por 3 horas.
+        O relatório é entregue em formato PDF dentro de um arquivo ZIP.
+        Assíncrona: o retorno vem pelo webhook "Relatório de Performance (performance-report)",
+        cadastrado em Webhooks > Manutenção > Cadastrar Webhook. Sem o webhook cadastrado, erro síncrono:
+        "Webhook not registered for partner cnpj [{CNPJ}], cge [{CGE}]."
+        Limite: 60 requisições por minuto. Janela: data final menos inicial no máximo 30 dias.
+      parameters:
+        - { name: x-id-partner-request, in: header, required: true, schema: { type: string }, description: "UUID novo a cada requisição" }
+        - { name: access_token, in: header, required: true, schema: { type: string }, description: "Token OAuth2 client credentials" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PerformanceRequestFilter" }
+      responses:
+        "202": { description: Requisição recebida com sucesso. }
+        "400": { description: Header ou Body incorretos, content: { application/json: { schema: { $ref: "#/components/schemas/ResponseError" } } } }
+        "401": { description: Requisição não autorizada, content: { application/json: { schema: { $ref: "#/components/schemas/ResponseError" } } } }
+        "403": { description: Erro no body da requisição, content: { application/json: { schema: { $ref: "#/components/schemas/ResponseError" } } } }
+components:
+  schemas:
+    Error: { type: object, properties: { code: { type: string }, message: { type: string } } }
+    ErrorMetadata:
+      type: object
+      properties:
+        globalErrors: { type: array, items: { $ref: "#/components/schemas/Error" } }
+        fieldErrors: { type: object, additionalProperties: { type: object } }
+    ResponseError:
+      type: object
+      properties:
+        status: { type: integer, format: int32 }
+        title: { type: string }
+        meta: { $ref: "#/components/schemas/ErrorMetadata" }
+    PerformanceRequestFilter:
+      title: Request - Performance por conta e data
+      type: object
+      properties:
+        startDate: { type: string, example: "2022-08-19", description: "Data início (YYYY-MM-DD)" }
+        endDate: { type: string, example: "2024-08-19", description: "Data fim (YYYY-MM-DD)" }
+        accountNumber: { type: string, example: "000000000", description: "Número da conta" }
