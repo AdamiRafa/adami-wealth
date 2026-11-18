@@ -7682,13 +7682,13 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
           ),
           h('div',{className:'grupo-sub'},
             grupo.membros.length, ' membros · ',
-            grupo.captacao > 0 ? fmtBRLCompact(grupo.captacao) + ' ainda em captação' : 'tudo sob gestão'),
+            grupo.captacao > 0 ? fmtBRLCompact(grupo.captacao) + ' ainda no pipeline' : 'tudo sob gestão'),
           h('div',{className:'grupo-membros'},
             grupo.outros.map(m => h('div',{key:m.id, className:'grupo-membro'},
               h('span',{className:'grupo-membro-nome'},
                 m.tipoPessoa === 'PJ' ? h('span',{className:'pj-tag'},'PJ') : null, nomeCliente(m)),
               h('span',{className:'grupo-membro-valor'},
-                valorEmCarteira(m) > 0 ? fmtBRLCompact(valorEmCarteira(m)) : 'em captação')
+                valorEmCarteira(m) > 0 ? fmtBRLCompact(valorEmCarteira(m)) : 'no pipeline')
             ))
           )
         ) : null,
@@ -9780,7 +9780,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
 
       captacaoTemp.total === 0
         ? h('div',{className:'painel-caixa'},
-            h('div',{className:'empty-kpi'},'Nada em captação neste recorte. Cliente da base entra aqui quando tem valor em negociação na ficha.'))
+            h('div',{className:'empty-kpi'},'Nada no pipeline neste recorte. Cliente da base entra aqui quando tem valor em negociação na ficha.'))
         : h(Fragment, null,
             /* "Sem classificação" é um dos quatro, não nota de rodapé: é o que
                mostra se a temperatura virou rotina ou ficou no papel. */
@@ -9951,7 +9951,7 @@ function OffshoreGraficos({ s, evolucao, admin }){
               : s.clientes.slice(0,8).map((c,i) => h(BarRow,{
                   drill: DR.cli(c.id, c.cliente, 'offshore'), key:c.id, label:c.cliente, value:c.usd, posicao:i+1,
                   max: Math.max(1, ...s.clientes.map(x => x.usd)),
-                  display: c.emFormacao ? 'em captação' : fmtUSDCompact(c.usd),
+                  display: c.emFormacao ? 'no pipeline' : fmtUSDCompact(c.usd),
                   secundario: s.temCotacao && !c.emFormacao ? (c.fatia*100).toFixed(0) + '% do patrimônio' : null,
                   color:'#0F766E', semDados: c.emFormacao,
                 })))
@@ -10393,7 +10393,7 @@ function OffshoreView({ leads, users, filtros, currentUser, isAdmin, onOpen, onS
           h(Indicador,{ drill: DR.off(), rotulo:'Total offshore', largo:true,
             valor: s.totalUsd, formato: fmtUSDCompact,
             contexto: s.clientes.length + (s.clientes.length === 1 ? ' cliente' : ' clientes')
-              + (s.emFormacao ? ' · ' + s.emFormacao + ' ainda em captação' : '') }),
+              + (s.emFormacao ? ' · ' + s.emFormacao + ' ainda no pipeline' : '') }),
           h(Indicador,{ rotulo:'Equivalente em reais', tom:'ouro',
             valor: s.totalBrl === null ? 0 : s.totalBrl,
             formato: s.temCotacao ? fmtBRLCompact : () => '—',
@@ -10458,7 +10458,7 @@ function OffshoreView({ leads, users, filtros, currentUser, isAdmin, onOpen, onS
                     ' ', c.cliente,
                     /* Valor declarado que ainda nao e carteira: fica fora da
                        soma e precisa dizer por que, senao parece erro de conta. */
-                    c.emFormacao ? h('span',{className:'lista-nota'},'em captação') : null),
+                    c.emFormacao ? h('span',{className:'lista-nota'},'no pipeline') : null),
                   isAdmin ? h('td',null, nomeDe(c.responsavelId)) : null,
                   h('td',{className:'num'}, c.onshore > 0 ? fmtBRLCompact(c.onshore) : '—'),
                   h('td',{className:'num forte'}, fmtUSDCompact(c.usd)),
@@ -10691,7 +10691,7 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
           h('div',{className:'kpi-num'}, fmtUSDCompact(off.totalUsd)),
           h('div',{className:'kpi-sub'},
             off.clientes.length, off.clientes.length === 1 ? ' cliente' : ' clientes',
-            off.emFormacao ? ' · ' + off.emFormacao + ' em captação' : '')
+            off.emFormacao ? ' · ' + off.emFormacao + ' no pipeline' : '')
         ),
         h('div',{className:'kpi-tile span2'},
           h('div',{className:'kpi-label'},'Equivalente em reais'),
@@ -11021,7 +11021,7 @@ function PipelineOverview({ leads, onOpen, funil, users }){
           leads.length === 1 ? t.sing : t.plur,
           jornada ? ' na jornada' : ' ativos',
           jornada && totalCaptacao > 0
-            ? h(Fragment, null, ' · ', h('strong',null, fmtBRLCompact(totalCaptacao)), ' em captação')
+            ? h(Fragment, null, ' · ', h('strong',null, fmtBRLCompact(totalCaptacao)), ' no pipeline')
             : (valores.length < leads.length
                 ? ' · ' + (leads.length - valores.length) + ' sem valor informado'
                 : null)
@@ -12181,7 +12181,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.19.1';
+const CRM_VERSAO = 'versão do CRM 2026.11.19.2';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -12334,6 +12334,26 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
       .filter(x => x.valor >= 100).sort((a, b) => b.valor - a.valor);
   }, [caixa, st]);
   const totalParado = parados ? parados.reduce((s, x) => s + x.valor, 0) : 0;
+  /* Vencimentos (19/11/2026): além dos alertas lançados no cliente, o que vence nas carteiras consolidadas
+     (renda fixa, COE e os ativos com data), dos últimos 7 dias aos próximos 90 (crm_vencimentos). */
+  const [vencCart, setVencCart] = useState(null);
+  useEffect(() => {
+    if(MODO_DEMO) return;
+    let vivo = true;
+    sb.rpc('crm_vencimentos', { p_dias: 90 }).then(({ data, error }) => { if(vivo) setVencCart(error ? [] : (data || [])); }, () => { if(vivo) setVencCart([]); });
+    return () => { vivo = false; };
+  }, []);
+  const vencimentos = useMemo(() => {
+    const naVisao = new Map(st.carteira.map(c => [c.id, c]));
+    const hoje = todayISO();
+    const dias = (d) => Math.round((new Date(d + 'T12:00:00') - new Date(hoje + 'T12:00:00')) / 864e5);
+    const daCarteira = (vencCart || []).filter(v => naVisao.has(v.lead_id)).map((v, i) => {
+      const c = naVisao.get(v.lead_id);
+      return { carteira: true, chave: 'vc' + i, leadId: v.lead_id, cliente: c.nome, assessor: c.assessor,
+        texto: (v.ativo || 'Título') + (Number(v.valor) ? ' · ' + fmtBRL(Number(v.valor)) : ''), data: v.data, diasAtraso: -dias(v.data) };
+    });
+    return st.vencimentos.concat(daCarteira.sort((a, b) => String(a.data).localeCompare(String(b.data))));
+  }, [st, vencCart]);
   const baseCaixaEm = caixa && caixa.atualizado_em ? new Date(caixa.atualizado_em).toLocaleDateString('pt-BR') : '';
   const por = agrupar || (casa ? 'assessor' : 'segmento');
   const grupos = useMemo(() => pnGrupos(st.carteira, por), [st, por]);
@@ -12387,8 +12407,8 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
     ),
     h('div', { className: 'pn-pilulas' },
       h('span', { className: 'pn-pilula ' + (nnm.liquido >= 0 ? 'boa' : 'ruim') }, (nnm.liquido >= 0 ? '▲ ' : '▼ ') + pnSinal(nnm.liquido) + ' de NNM no mês'),
-      h('span', { className: 'pn-pilula' }, fmtBRLCompact(st.emCaptacao) + ' em captação'),
-      st.vencimentos.length ? h('span', { className: 'pn-pilula alerta' }, st.vencimentos.length + (st.vencimentos.length === 1 ? ' vencimento aberto' : ' vencimentos abertos')) : null
+      h('span', { className: 'pn-pilula' }, fmtBRLCompact(st.emCaptacao) + ' no pipeline'),
+      vencimentos.length ? h('span', { className: 'pn-pilula alerta' }, vencimentos.length + (vencimentos.length === 1 ? ' vencimento' : ' vencimentos') + ' em 90 dias') : null
     ),
     h('div', { className: 'pn-meta' },
       nomeVisao + ' · ' + st.clientes + (st.clientes === 1 ? ' cliente' : ' clientes') + ' sob gestão' +
@@ -12416,15 +12436,15 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
       h(PainelCard, { key: 'saidas', tom: nnm.retiradas > 0 ? 'ruim' : '', label: 'Saídas no mês', valor: fmtBRLCompact(nnm.retiradas),
         sub: nnm.comRetirada + (nnm.comRetirada === 1 ? ' cliente resgatou' : ' clientes resgataram'),
         aberto: aberto === 'saidas', onClick: () => toggle('saidas') }),
-      h(PainelCard, { key: 'pipe', tom: 'ouro', label: 'Em captação', valor: fmtBRLCompact(st.emCaptacao),
-        sub: st.captacoes.length + (st.captacoes.length === 1 ? ' cliente em captação' : ' clientes em captação'),
+      h(PainelCard, { key: 'pipe', tom: 'ouro', label: 'Pipeline', valor: fmtBRLCompact(st.emCaptacao),
+        sub: st.captacoes.length + (st.captacoes.length === 1 ? ' cliente no pipeline' : ' clientes no pipeline'),
         aberto: aberto === 'pipe', onClick: () => toggle('pipe') })
     ], [
       aberto === 'nnm' ? h(PainelLista, { key: 'l', itens: movimentos, vazio: 'Nenhuma movimentação lançada este mês.',
         linha: (m, i) => linhaCliente(m, (m.sinal > 0 ? '+' : '−') + (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'mv' + i) }) : null,
       aberto === 'aportes' ? h(PainelLista, { key: 'l', itens: st.aportes, vazio: 'Nenhum aporte lançado este mês.',
         linha: (m, i) => linhaCliente(m, (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'ap' + i) }) : null,
-      aberto === 'pipe' ? h(PainelLista, { key: 'l', itens: st.captacoes, vazio: 'Ninguém em captação nesta visão.',
+      aberto === 'pipe' ? h(PainelLista, { key: 'l', itens: st.captacoes, vazio: 'Ninguém no pipeline nesta visão.',
         linha: (c) => linhaCliente(c, (temperaturaInfo(c.temperatura) ? temperaturaInfo(c.temperatura).label : 'sem temperatura')
           + ' · ' + (c.tipo === 'novo' ? 'novo' : 'carteira') + ' · '
           + (c.custodia === 'offshore' ? fmtUSDCompact : fmtBRLCompact)(c.valorMoeda)) }) : null,
@@ -12435,8 +12455,9 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
       h(PainelCard, { key: 'contas', tom: st.semAtivar.length ? 'atencao' : '', label: 'Contas abertas vs. ativadas', valor: st.abertas + ' / ' + st.ativadas,
         sub: st.semAtivar.length + (st.semAtivar.length === 1 ? ' ainda sem ativar' : ' ainda sem ativar'),
         aberto: aberto === 'contas', onClick: () => toggle('contas') }),
-      h(PainelCard, { key: 'venc', tom: st.vencimentos.length ? 'ruim' : '', label: 'Vencimentos', valor: st.vencimentos.length,
-        sub: 'lançados como alerta no cliente', aberto: aberto === 'venc', onClick: () => toggle('venc') }),
+      h(PainelCard, { key: 'venc', tom: vencimentos.length ? 'ruim' : '', label: 'Vencimentos', valor: vencimentos.length,
+        sub: 'renda fixa e COE das carteiras nos próximos 90 dias' + (st.vencimentos.length ? ' · ' + st.vencimentos.length + ' lançado(s) como alerta' : ''),
+        aberto: aberto === 'venc', onClick: () => toggle('venc') }),
       parados ? h(PainelCard, { key: 'parado', tom: parados.length ? 'atencao' : '', label: 'Dinheiro parado em conta', valor: fmtBRLCompact(totalParado),
         sub: parados.length + (parados.length === 1 ? ' cliente com saldo em conta' : ' clientes com saldo em conta') + (baseCaixaEm ? ' · BTG de ' + baseCaixaEm : ''),
         aberto: aberto === 'parado', onClick: () => toggle('parado') })
@@ -12453,8 +12474,12 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
         linha: (x) => linhaCliente(x, fmtBRL(x.valor)) }) : null,
       aberto === 'contas' ? h(PainelLista, { key: 'l', itens: st.semAtivar, vazio: 'Todas as contas abertas já estão ativadas.',
         linha: (c) => linhaCliente(c, c.diasNaCarteira === null ? '—' : 'há ' + c.diasNaCarteira + 'd na carteira') }) : null,
-      aberto === 'venc' ? h(PainelLista, { key: 'l', itens: st.vencimentos, vazio: 'Nenhum vencimento em aberto.',
-        linha: (v) => h('div', { className: 'pn-linha', key: v.alertaId },
+      aberto === 'venc' ? h(PainelLista, { key: 'l', itens: vencimentos, vazio: 'Nenhum vencimento nos próximos 90 dias.',
+        linha: (v) => v.carteira ? h('div', { className: 'pn-linha', key: v.chave },
+          h('button', { className: 'pn-linha-nome', onClick: () => abrirLead(v.leadId) }, v.cliente, quem(v),
+            h('span', { className: 'pn-linha-quem' }, ' · ' + v.texto)),
+          h('span', { className: 'pn-linha-meta' + (v.diasAtraso > 0 ? ' atrasado' : '') }, pnData(v.data) + ' · ' + (v.diasAtraso > 0 ? 'venceu há ' + v.diasAtraso + 'd' : atraso(v.diasAtraso))))
+        : h('div', { className: 'pn-linha', key: v.alertaId },
           h('button', { className: 'pn-linha-nome', onClick: () => abrirLead(v.leadId) }, v.cliente, quem(v),
             v.texto ? h('span', { className: 'pn-linha-quem' }, ' · ' + v.texto) : null),
           h('span', { className: 'pn-linha-meta' + (v.diasAtraso > 0 ? ' atrasado' : '') }, atraso(v.diasAtraso)),
@@ -12843,7 +12868,7 @@ function KpiPanorama({ jornada, users, admin, onOpen }){
           metricas: [{ titulo: 'Pipe', soma: soma('pipe'), formatar: fmtBRLCompact }, contar],
           folha: { ...folha, meta: c => [c.tipo === 'novo' ? 'cliente novo' : 'carteira', admin ? c.assessor : null,
             c.custodiaPipe === 'offshore' ? fmtUSDCompact(c.pipeMoeda) + ' offshore' : null].filter(Boolean).join(' · ') },
-          colunasExcel: colunasBase, nomeExcel: 'Pipe por temperatura', vazio: 'Nada em captação neste recorte.' }))),
+          colunasExcel: colunasBase, nomeExcel: 'Pipe por temperatura', vazio: 'Nada no pipeline neste recorte.' }))),
     admin ? h('div', { className: 'kp-caixa' },
       h(Arvore, { titulo: 'Ranking de assessores', desc: 'assessor → cliente · clique para abrir a carteira de cada um',
         linhas: dados.clientes.filter(c => c.onshore > 0 || c.offshore > 0 || c.pipeMoeda > 0), niveis: [nivelAssessor],

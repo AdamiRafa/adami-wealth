@@ -1963,6 +1963,19 @@ relatório fica fixo por 3 horas depois de pedido.
   "relatório não disponível, aguarde a próxima janela": o BTG só gera nos horários dele; o Hub já pede nesses horários.
   NNM, captação bruta e saídas do painel pelo BTG ficam para quando chegar o primeiro arquivo (calibrar colunas).
 
+### 23.16. Vencimentos das carteiras no painel do CRM; "Em captação" vira "Pipeline" (CRM 2026.11.19.2, `crm_vencimentos.sql`)
+
+- O cartão Vencimentos contava só os alertas lançados no cliente. Agora soma também o que vence nas carteiras consolidadas
+  (`crm_vencimentos(p_dias)`): ativos com data de vencimento e a lista de vencimentos do último mês lançado de cada cliente,
+  dos últimos 7 dias aos próximos 90. O mesmo título nos ativos e na lista fica uma vez só (vale o dos ativos, valor de hoje;
+  a lista só entra quando o título, mesmo cliente, data e tipo, não está nos ativos).
+- Ligação Carteiras → ficha do CRM: `clientes.lead_id` ou, sem ele, a conta vinculada no Cadastro (`contas_btg` = `leads.conta`).
+  Os 9 clientes das Carteiras não tinham ficha ligada; pela conta, todos ligaram.
+- Só fichas que a pessoa pode ver (`pode_ver_lead`), com `acesso_liberado()`. Na tela, segue a visão escolhida (casa ou assessor).
+- Pendente: resgate de fundo com data de cotização (deve vir do relatório de movimentação do BTG, ainda não recebido) e
+  vencimentos de quem não está nas Carteiras (posição por data do BTG, ainda não recebida).
+- "Em captação" passou a "Pipeline" em todo o CRM (cartão, pílula, KPIs, offshore e listas).
+
 ## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)
 
 - **Números:** 4 cartões abaixo da saudação, para quem tem a ferramenta CRM. Da casa para quem tem
