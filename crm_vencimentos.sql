@@ -15,8 +15,10 @@ returns jsonb language plpgsql stable security definer set search_path = public 
 declare
   v_ini text := to_char(current_date - 7, 'YYYY-MM-DD');
   v_fim text := to_char(current_date + greatest(1, least(coalesce(p_dias, 90), 400)), 'YYYY-MM-DD');
+  v_vis text[];
 begin
   if not public.acesso_liberado() then raise exception 'Acesso não liberado.'; end if;
+  v_vis := public.crm_fichas_visiveis();
   return coalesce((
     with ult as (
       select distinct on (l.cliente_id) l.cliente_id, l.indicadores
@@ -71,7 +73,7 @@ begin
                             and split_part(upper(coalesce(x.ativo, '')), ' ', 1) = split_part(upper(coalesce(l.ativo, '')), ' ', 1))
     )
     select jsonb_agg(jsonb_build_object('lead_id', lead_id, 'ativo', ativo, 'inst', inst, 'data', data, 'valor', valor, 'tipo', tipo) order by data)
-      from unicos where public.pode_ver_lead(lead_id)
+      from unicos where v_vis is null or lead_id = any(v_vis)
   ), '[]'::jsonb);
 end $$;
 revoke all on function public.crm_vencimentos(int) from public, anon;

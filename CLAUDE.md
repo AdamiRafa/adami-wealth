@@ -171,6 +171,9 @@ execução e fica registrado no histórico.
 - **`@media (max-width:…)` sem `screen` vale também na impressão.** A folha A4 tem menos
   de 900 px: uma regra de celular mudou o PDF dos KPIs de 5 para 6 páginas. Use
   `@media screen and (max-width:…)` para regra que é só de tela.
+- **Função testada como dono do banco não prova nada.** O navegador roda como `authenticated`, com limite de 8 s e
+  as checagens de permissão. `pode_ver_lead()` por linha zerou Vencimentos e Dinheiro parado no painel (seção 23.18).
+  Teste com `set local role authenticated`, claims de usuário real e `statement_timeout = '8s'`.
 - **Cache do navegador engana.** Peça Cmd+Shift+R e confira o selo de versão antes de
   investigar qualquer coisa.
 

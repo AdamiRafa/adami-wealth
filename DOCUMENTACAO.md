@@ -2011,6 +2011,20 @@ Auditoria pedida pelo Emil ("quero que seja tudo automatizado"). O dia, em Bras�
 - `btg_saude()` (só quem vê todos os clientes): último recebimento ok, último aviso e erro de cada relatório.
 - Testado em 18/11: `limpeza-arquivos` respondeu 0 apagados (nada tem 60 dias); `reforco` de tarde pediu só o NNM (202).
 
+### 23.18. Vencimentos e Dinheiro parado zerados para o Emil (18/11/2026, `crm_painel_rapido.sql`)
+
+- Sintoma: no painel do CRM, Vencimentos 0 e Dinheiro parado preso em "buscando na base do BTG...".
+- Causa: `crm_vencimentos` e `btg_caixa_crm` conferiam `pode_ver_lead()` linha a linha (~3 ms por chamada) e passavam
+  do limite de 8 s que o Supabase dá a quem está logado (`authenticator`). No teste da 23.16 a função rodou como dono do
+  banco, sem esse limite e sem a conferência por pessoa, e por isso pareceu rápida.
+- Correção: `crm_fichas_visiveis()` (interna, sem EXECUTE para ninguém de fora) calcula uma vez as fichas visíveis: null
+  para administrador com o CRM liberado, senão os ids que `pode_ver_lead()` aceita. As duas funções filtram por essa lista.
+- Medido com o login do Emil e limite de 8 s: Vencimentos 265 itens (R$ 21,9 mi) em 1,4 s; Dinheiro parado 857 fichas
+  em 0,3 s.
+- **Regra:** função nova chamada pelo navegador se testa com `set local role authenticated`, `request.jwt.claims` de um
+  usuário real com sessão do dia e `set local statement_timeout = '8s'`. Nunca chamar `pode_ver_lead()` por linha de
+  tabela grande; calcular a lista antes.
+
 ## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)
 
 - **Números:** 4 cartões abaixo da saudação, para quem tem a ferramenta CRM. Da casa para quem tem
