@@ -1981,6 +1981,36 @@ relatório fica fixo por 3 horas depois de pedido.
   linhas em lotes de 1.000 (`btg_linhas_lote` e `btg_linhas_fim`, `btg_linhas_lote.sql`).
 - "Em captação" passou a "Pipeline" em todo o CRM (cartão, pílula, KPIs, offshore e listas).
 
+### 23.17. Automação sem cuidado manual: segunda tentativa, feriados e limpeza (18/11/2026, `btg_saude.sql`, btg-sync versão 7)
+
+Auditoria pedida pelo Emil ("quero que seja tudo automatizado"). O dia, em Brasília, dias úteis:
+
+| Hora | Agendamento | O que faz |
+|---|---|---|
+| 8h30 | `btg-manha` | vínculo, base, cadastro, movimentação e posição do dia útil anterior |
+| 9h15 | `btg-base-auto` | aplica a base no CRM (23.11) |
+| 10h | `btg-reforco-manha` | pede de novo só o relatório da manhã que não chegou processado hoje |
+| 11h15 | `btg-base-auto` | segunda passada da base |
+| 15h30 | `btg-tarde` | NNM |
+| 17h | `btg-reforco-tarde` | NNM de novo, se não chegou |
+| 20h30 | `btg-noite` | movimentação e cadastro do fim do dia |
+| 3h40 (todo dia) | `btg-limpeza` | dados velhos no banco |
+| 3h50 (domingo) | `btg-limpeza-arquivos` | originais com mais de 60 dias no Storage |
+
+- **Por que deu erro no dia 18 cedo:** às 8h30 o BTG respondeu 404 ("webhook não cadastrado") para cadastro, movimentação e
+  posição, cadastrados depois, à tarde. Depois disso tudo responde 202. O primeiro arquivo de um webhook novo só existe na
+  janela seguinte: cadastro e movimentação a partir das 20h, NNM a partir das 15h do dia seguinte. Até lá o BTG devolve
+  "Relatório não disponível. Por favor, aguarde a próxima janela de execução." Isso não é falha.
+- **Feriados:** a posição por data pedia o dia útil anterior sem olhar feriado (na segunda 23/11 pediria 20/11, Consciência
+  Negra). `diaUtilAnterior()` agora pula os feriados nacionais da B3 (fixos, Carnaval, Sexta-feira Santa e Corpus Christi
+  calculados pela Páscoa). Feriado estadual ou municipal não entra; a B3 não fecha neles.
+- **Retenção:** a posição por data (~8 mil linhas por dia) e o cadastro ficam 10 dias no banco (só o mais recente é usado);
+  o resto, 120 dias. A limpeza passou de semanal para diária. Sem isso a posição passaria de 1 GB em alguns meses.
+- **Storage:** os originais dos relatórios diários (~1,4 MB por dia) saem depois de 60 dias. PDFs do Relatório de
+  Performance e a Rentabilidade Mensal ficam.
+- `btg_saude()` (só quem vê todos os clientes): último recebimento ok, último aviso e erro de cada relatório.
+- Testado em 18/11: `limpeza-arquivos` respondeu 0 apagados (nada tem 60 dias); `reforco` de tarde pediu só o NNM (202).
+
 ## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)
 
 - **Números:** 4 cartões abaixo da saudação, para quem tem a ferramenta CRM. Da casa para quem tem
