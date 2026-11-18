@@ -12181,7 +12181,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.18.1';
+const CRM_VERSAO = 'versão do CRM 2026.11.19.1';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -12317,6 +12317,24 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
   const assessorId = isAdmin ? (vendorFilter === 'all' ? null : vendorFilter) : (currentUser && currentUser.id);
   const casa = !assessorId;
   const st = useMemo(() => pnStats(leads, users, assessorId, cotacao), [leads, users, assessorId, cotacao]);
+  /* Dinheiro parado em conta (19/11/2026): saldo em conta corrente de cada cliente, da base de contas que o BTG
+     manda todo dia útil (btg_caixa_crm; só os clientes que a pessoa pode ver). Abaixo de R$ 100 é sobra de
+     tarifa e centavo, não entra na lista. */
+  const [caixa, setCaixa] = useState(null);
+  useEffect(() => {
+    if(MODO_DEMO) return;
+    let vivo = true;
+    sb.rpc('btg_caixa_crm').then(({ data, error }) => { if(vivo) setCaixa(error ? { erro: true } : (data || { leads: {} })); }, () => { if(vivo) setCaixa({ erro: true }); });
+    return () => { vivo = false; };
+  }, []);
+  const parados = useMemo(() => {
+    if(!caixa || caixa.erro) return null;
+    const m = caixa.leads || {};
+    return st.carteira.map(c => ({ leadId: c.id, cliente: c.nome, assessor: c.assessor, valor: Number((m[c.id] || {}).cc) || 0 }))
+      .filter(x => x.valor >= 100).sort((a, b) => b.valor - a.valor);
+  }, [caixa, st]);
+  const totalParado = parados ? parados.reduce((s, x) => s + x.valor, 0) : 0;
+  const baseCaixaEm = caixa && caixa.atualizado_em ? new Date(caixa.atualizado_em).toLocaleDateString('pt-BR') : '';
   const por = agrupar || (casa ? 'assessor' : 'segmento');
   const grupos = useMemo(() => pnGrupos(st.carteira, por), [st, por]);
 
@@ -12419,8 +12437,11 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
         aberto: aberto === 'contas', onClick: () => toggle('contas') }),
       h(PainelCard, { key: 'venc', tom: st.vencimentos.length ? 'ruim' : '', label: 'Vencimentos', valor: st.vencimentos.length,
         sub: 'lançados como alerta no cliente', aberto: aberto === 'venc', onClick: () => toggle('venc') }),
-      h(PainelCard, { key: 'parado', label: 'Dinheiro parado em conta', valor: '—', disabled: true,
-        sub: 'chega com a API do BTG · vai avisar qualquer valor' }),
+      parados ? h(PainelCard, { key: 'parado', tom: parados.length ? 'atencao' : '', label: 'Dinheiro parado em conta', valor: fmtBRLCompact(totalParado),
+        sub: parados.length + (parados.length === 1 ? ' cliente com saldo em conta' : ' clientes com saldo em conta') + (baseCaixaEm ? ' · BTG de ' + baseCaixaEm : ''),
+        aberto: aberto === 'parado', onClick: () => toggle('parado') })
+      : h(PainelCard, { key: 'parado', label: 'Dinheiro parado em conta', valor: '—', disabled: true,
+        sub: caixa && caixa.erro ? 'não consegui ler a base do BTG' : 'buscando na base do BTG…' }),
       /* Receita gerada no mês: um número só, que se abre em PJ1 (a receita
          da carteira no BTG, que chega com a API) e PJ2 (consórcio e seguro).
          Enquanto o PJ1 não chega, o total é só o PJ2 e o card diz isso. */
@@ -12428,6 +12449,8 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
         sub: 'PJ2 ' + fmtBRLCompact(st.receitaPJ2) + ' · PJ1 chega com a API do BTG',
         aberto: aberto === 'receita', onClick: () => toggle('receita') })
     ], [
+      aberto === 'parado' && parados ? h(PainelLista, { key: 'l', itens: parados, vazio: 'Ninguém com dinheiro parado em conta nesta visão.',
+        linha: (x) => linhaCliente(x, fmtBRL(x.valor)) }) : null,
       aberto === 'contas' ? h(PainelLista, { key: 'l', itens: st.semAtivar, vazio: 'Todas as contas abertas já estão ativadas.',
         linha: (c) => linhaCliente(c, c.diasNaCarteira === null ? '—' : 'há ' + c.diasNaCarteira + 'd na carteira') }) : null,
       aberto === 'venc' ? h(PainelLista, { key: 'l', itens: st.vencimentos, vazio: 'Nenhum vencimento em aberto.',

@@ -1952,6 +1952,17 @@ relatório fica fixo por 3 horas depois de pedido.
 - Webhooks: em 18/11 o Emil cadastrou os 8 que faltavam. O de `rm-reports-movement` ficou com o endereço de
   `rm-reports-registration-data` (a movimentação chegaria como cadastro); corrigir no portal.
 
+### 23.15. Dinheiro parado em conta no painel do CRM (CRM 2026.11.19.1, `crm_caixa.sql`)
+
+- Cartão "Dinheiro parado em conta" (Resumo > Carteira) ligado: soma o saldo em conta corrente (`pl_conta_corrente` da base
+  de contas que o BTG manda todo dia útil) dos clientes da visão, e abre a lista do maior para o menor. Abaixo de R$ 100
+  não entra (sobra de tarifa e centavo). Em 19/11 eram R$ 4,7 mi em 295 contas acima de R$ 100.
+- `btg_caixa_crm()`: devolve, por cliente do CRM, conta corrente e valores em trânsito, só dos clientes que a pessoa pode
+  ver (`pode_ver_lead`), com `acesso_liberado()`. Não executável por `anon`.
+- Webhooks: os 13 do Hub cadastrados e conferidos em 18/11 (todos respondem 202). Movimentação, cadastro e NNM voltaram
+  "relatório não disponível, aguarde a próxima janela": o BTG só gera nos horários dele; o Hub já pede nesses horários.
+  NNM, captação bruta e saídas do painel pelo BTG ficam para quando chegar o primeiro arquivo (calibrar colunas).
+
 ## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)
 
 - **Números:** 4 cartões abaixo da saudação, para quem tem a ferramenta CRM. Da casa para quem tem
