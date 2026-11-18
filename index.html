@@ -2146,7 +2146,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.31";
+var VERSAO="versão 3.32";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2431,7 +2431,7 @@ function montarRascunho(){
   PERF_RES=null;
   var id=S.cliente; if(!id){S.rasc=null;return;}
   var r=reg(id,S.mes,S.ano);
-  if(r){ S.rasc=JSON.parse(JSON.stringify(r)); if(!S.rasc.ind) S.rasc.ind=indVazio(); S.rasc._herdado=false; aplicarIndices(); herdarOnshore(); herdarOffshore(); return; }
+  if(r){ S.rasc=JSON.parse(JSON.stringify(r)); if(!S.rasc.ind) S.rasc.ind=indVazio(); S.rasc._herdado=false; aplicarIndices(); herdarOnshore(); herdarOffshore(); alinharContasBtg(S.rasc,cli(),true); return; }
   var p=anterior(S.mes,S.ano),ant=null,t=0;
   while(t<24&&!ant){ ant=reg(id,p.mes,p.ano); if(!ant)p=anterior(p.mes,p.ano); t++; }
   if(ant){
@@ -2474,7 +2474,7 @@ function montarRascunho(){
   }else{
     S.rasc={_herdado:false,contas:[contaVazia(),contaVazia()],ind:indVazio()};
   }
-  aplicarIndices(); herdarOnshore(); herdarOffshore();
+  aplicarIndices(); herdarOnshore(); herdarOffshore(); alinharContasBtg(S.rasc,cli());
 }
 /* Conta em reais que existe no mes anterior mas nao neste. Acontece quando
    uma conta e cadastrada depois que os meses seguintes ja foram salvos: sem
@@ -2496,10 +2496,12 @@ function herdarOnshore(){
   }
   if(!ant) return;
   var tem={};
-  contasDe(S.rasc,"BRL").forEach(function(c){ tem[chaveConta(c)]=1; if(c.antes) tem[chaveConta({nome:c.antes,inst:c.inst})]=1; });
+  contasDe(S.rasc,"BRL").forEach(function(c){ tem[chaveConta(c)]=1; if(c.antes) tem[chaveConta({nome:c.antes,inst:c.inst})]=1; var k=ehLinhaBtg(c)&&numDaConta(c); if(k) tem["#"+k]=1; });
   contasDe(ant,"BRL").forEach(function(c){
     if(n(c.saldo)<=0) return;
     if(tem[chaveConta(c)]) return;
+    /* 3.32: a mesma conta do BTG com outro nome ("BTG" e "BTG 004180373") não volta repetida */
+    var kc=ehLinhaBtg(c)&&numDaConta(c); if(kc&&tem["#"+kc]) return;
     var o={nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0,moeda:"BRL"};
     if(c.conta_btg) o.conta_btg=c.conta_btg; if(c.antes) o.antes=c.antes;
     S.rasc.contas.push(o);
@@ -2666,12 +2668,14 @@ function benchMeses(serie,chaveInd){
   return serie.filter(function(x){ return n(x.ind&&x.ind[chaveInd])!==0; }).length;
 }
 /* rentabilidade composta de uma conta nos últimos N meses até (mes/ano) */
-function contaAcum(id,nome,mes,ano,nMeses,antes){
+function contaAcum(id,nome,mes,ano,nMeses,antes,num){
   var vals=[],p={mes:mes,ano:ano};
   for(var i=0;i<nMeses;i++){
     var r=reg(id,p.mes,p.ano);
     if(r){
-      var achou=r.contas.filter(function(c){ return (c.nome||"")===nome; });
+      /* 3.32: conta do BTG pelo número primeiro (o nome mudou de "BTG" para "BTG 004180373") */
+      var achou=num?r.contas.filter(function(c){ return ehLinhaBtg(c)&&numDaConta(c)===num; }):[];
+      if(!achou.length) achou=r.contas.filter(function(c){ return (c.nome||"")===nome; });
       if(!achou.length&&antes) achou=r.contas.filter(function(c){ return (c.nome||"")===antes; });
       achou.forEach(function(c){ vals.unshift(n(c.rendPct)); });
     }
@@ -2737,20 +2741,88 @@ function estratBtg(nome){
   if(/altern/.test(t)) return "alt";
   return null;
 }
-function editarContasBtg(){
+/* ===== Cadastro do cliente (3.32, 19/11/2026) =====
+   As contas do BTG vinculadas aqui (clientes.contas_btg) são as que entram em todos os meses, uma linha
+   por conta, sem repetir (alinharContasBtg). Ao vincular, mostra de quem é a conta no BTG e o saldo de hoje
+   (btg_conta_info, só para quem pode ver aquela conta). Dado do banco entra só por esc(); os botões
+   passam índice, nunca o texto. */
+var CAD=null;
+function editarContasBtg(){ abrirCadastro(); }
+function abrirCadastro(){
   var c=cli(); if(!c) return;
-  var atual=(c.contas_btg||[]).join(", ");
-  api("rpc/btg_sugerir_contas",{method:"POST",body:{p_cliente:c.id}}).catch(function(){ return []; }).then(function(sug){
-    var txt="Contas BTG de "+c.nome+" (só os números; mais de uma, separe por vírgula):";
-    if(sug&&sug.length) txt+="\n\nEncontrei pelo nome:\n"+sug.map(function(x){ return "  "+x.nr_conta+"  ("+x.nome+", "+(x.fonte==="CRM"?"conta anotada no CRM":"base do BTG")+")"; }).join("\n");
-    var v=prompt(txt, atual||(sug&&sug.length?sug.map(function(x){return x.nr_conta;}).filter(function(x,i,a){return a.indexOf(x)===i;}).join(", "):""));
-    if(v===null) return;
-    var lista=String(v).split(/[,;\s]+/).map(function(x){ return x.replace(/\D/g,""); }).filter(Boolean);
-    status("wait","Salvando…");
-    api("clientes?id=eq."+c.id,{method:"PATCH",prefer:"return=representation",body:{contas_btg:lista}})
-      .then(function(r){ c.contas_btg=(r&&r[0]&&r[0].contas_btg)||lista; registrar("contas BTG",c.nome,c.contas_btg.join(", ")); status("ok","Sincronizado"); render(true); })
-      .catch(function(e){ status("err","Não salvou"); alert("Não foi possível salvar as contas: "+(e.message||e)+"\n\nSe o erro falar de \"contas_btg\", falta instalar o btg_rentabilidade.sql no Supabase."); });
-  });
+  CAD={id:c.id,nome:c.nome,lista:(c.contas_btg||[]).map(pad9).filter(function(k,i,a){ return k&&a.indexOf(k)===i; }),info:{},sug:null,sugVis:[],erro:""};
+  desenharCadastro(); buscarInfoCad();
+  api("rpc/btg_sugerir_contas",{method:"POST",body:{p_cliente:c.id}}).then(function(l){ if(CAD){ CAD.sug=l||[]; desenharCadastro(); } }).catch(function(){ if(CAD){ CAD.sug=[]; desenharCadastro(); } });
+}
+function buscarInfoCad(){
+  if(!CAD) return;
+  var falta=CAD.lista.filter(function(k){ return !(k in CAD.info); });
+  if(!falta.length) return;
+  falta.forEach(function(k){ CAD.info[k]=undefined; });
+  api("rpc/btg_conta_info",{method:"POST",body:{p_contas:falta}}).then(function(l){
+    if(!CAD) return; falta.forEach(function(k){ CAD.info[k]=null; });
+    (l||[]).forEach(function(x){ CAD.info[pad9(x.nr_conta)]=x; }); desenharCadastro();
+  }).catch(function(){ if(!CAD) return; falta.forEach(function(k){ CAD.info[k]=null; }); desenharCadastro(); });
+}
+function desenharCadastro(){
+  if(!CAD) return;
+  var d=document.getElementById("cadv");
+  if(!d){ d=document.createElement("div"); d.id="cadv"; d.className="eqv no-print"; document.body.appendChild(d); }
+  d.style.display="flex";
+  var linhas=CAD.lista.map(function(k,i){
+    var inf=CAD.info[k];
+    var quem=inf===undefined?'<span class="eqmail">buscando no BTG…</span>'
+      :inf===null?'<span class="eqmail">não achei na base do BTG (confira o número)</span>'
+      :'<div class="eqnome">'+esc(inf.nome||"")+'</div><div class="eqmail">'+(inf.assessor?"assessor "+esc(inf.assessor):"")+'</div>';
+    var pl=inf&&inf.pl!=null?brl2(Number(inf.pl)||0):"";
+    return '<tr><td><b>'+esc(k)+'</b></td><td>'+quem+'</td><td style="text-align:right;white-space:nowrap">'+pl+'</td>'+
+      '<td class="c" style="width:40px"><button type="button" class="btn" title="Desvincular" onclick="cadTirar('+i+')">&times;</button></td></tr>';
+  }).join("");
+  CAD.sugVis=(CAD.sug||[]).filter(function(x,i,a){ var k=pad9(x.nr_conta); return k&&CAD.lista.indexOf(k)<0&&a.findIndex(function(y){ return pad9(y.nr_conta)===k; })===i; });
+  var sug=CAD.sug===null?'<p class="eqsub">Procurando contas com o mesmo nome…</p>'
+    :CAD.sugVis.length?'<div class="sec-sub" style="margin:14px 0 6px">Achei pelo nome do cliente:</div>'+CAD.sugVis.map(function(x,i){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #F1F4F8">'+
+          '<span><b>'+esc(pad9(x.nr_conta))+'</b> &middot; '+esc(x.nome||"")+' <span class="eqmail">('+(x.fonte==="CRM"?"conta anotada no CRM":"base do BTG")+')</span></span>'+
+          '<button type="button" class="btn" onclick="cadSug('+i+')">Vincular</button></div>'; }).join("")
+    :'';
+  d.innerHTML='<div class="eqx" role="dialog" aria-modal="true" aria-label="Cadastro do cliente">'+
+    '<h2>Cadastro de '+esc(CAD.nome)+'</h2>'+
+    '<p class="eqsub">Contas do BTG vinculadas a este cliente. São elas que entram em todos os meses da carteira, uma linha por conta, sem repetir. Conta que não está aqui não entra.</p>'+
+    (CAD.lista.length?'<table><thead><tr><th>Conta</th><th>Titular no BTG</th><th style="text-align:right">Saldo hoje</th><th></th></tr></thead><tbody>'+linhas+'</tbody></table>'
+      :'<p class="eqsub"><b>Nenhuma conta vinculada.</b> Sem conta vinculada, o Hub não sabe quais contas do BTG são deste cliente.</p>')+
+    '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><input id="cadNova" inputmode="numeric" placeholder="Número da conta no BTG" style="flex:1;min-width:180px" onkeydown="if(event.key===\'Enter\')cadAdd()">'+
+    '<button type="button" class="btn" onclick="cadAdd()">+ Vincular conta</button></div>'+
+    (CAD.erro?'<p class="eqsub" style="color:#B3261E;margin-top:8px">'+esc(CAD.erro)+'</p>':'')+
+    sug+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:22px"><button type="button" class="btn" onclick="fecharCadastro()">Cancelar</button>'+
+    '<button type="button" class="btn pri" onclick="cadSalvar()">Salvar cadastro</button></div></div>';
+}
+function cadAdd(){
+  if(!CAD) return;
+  var el=document.getElementById("cadNova"), v=semZeros(el&&el.value);
+  CAD.erro="";
+  if(!v||v.length<4||v.length>12){ CAD.erro="Digite só os números da conta (ex.: 004180373)."; desenharCadastro(); return; }
+  var k=pad9(v);
+  if(CAD.lista.indexOf(k)<0) CAD.lista.push(k);
+  desenharCadastro(); buscarInfoCad();
+}
+function cadSug(i){ if(!CAD||!CAD.sugVis[i]) return; var k=pad9(CAD.sugVis[i].nr_conta); if(CAD.lista.indexOf(k)<0) CAD.lista.push(k); desenharCadastro(); buscarInfoCad(); }
+function cadTirar(i){ if(!CAD) return; CAD.lista.splice(i,1); desenharCadastro(); }
+function fecharCadastro(){ CAD=null; var d=document.getElementById("cadv"); if(d) d.style.display="none"; }
+function cadSalvar(){
+  if(!CAD) return;
+  var c=db.clientes.filter(function(x){ return x.id===CAD.id; })[0]; if(!c){ fecharCadastro(); return; }
+  var lista=CAD.lista.slice();
+  status("wait","Salvando…");
+  api("clientes?id=eq."+c.id,{method:"PATCH",prefer:"return=representation",body:{contas_btg:lista}})
+    .then(function(r){
+      c.contas_btg=(r&&r[0]&&r[0].contas_btg)||lista;
+      registrar("contas BTG",c.nome,c.contas_btg.join(", ")||"nenhuma");
+      fecharCadastro(); status("ok","Sincronizado");
+      if(S.rasc&&S.cliente===c.id) alinharContasBtg(S.rasc,c);
+      render(true);
+    })
+    .catch(function(e){ status("err","Não salvou"); CAD.erro="Não foi possível salvar: "+(e.message||e); desenharCadastro(); });
 }
 function puxarBtg(){
   var c=cli(); if(!c||!S.rasc) return;
@@ -2772,7 +2844,7 @@ function puxarBtg(){
     }
     var contas=d.carteira.map(function(x){
       var k=x.dados||{}, liq=numBtg(k.inflow_and_outflow);
-      return {nome:"BTG "+x.nr_conta, inst:"BTG Pactual", saldo:numBtg(k.auc_end), apl:liq>0?liq:0, res:liq<0?-liq:0,
+      return {nome:nomeBtg(x.nr_conta), inst:"BTG Pactual", conta_btg:pad9(x.nr_conta), saldo:numBtg(k.auc_end), apl:liq>0?liq:0, res:liq<0?-liq:0,
               rendRs:numBtg(k.profit_mtd), rendPct:pctBtg(k.profitability_mtd), moeda:"BRL"};
     });
     var ativos=(d.produtos||[]).filter(function(x){ return Math.abs(numBtg((x.dados||{}).auc_end))>0.005; }).map(function(x){
@@ -2807,7 +2879,15 @@ function puxarBtg(){
     if(!confirm(txt)) return;
 
     guardarAntesImportacao("BTG");
+    /* 3.32: a linha que sai passa o nome velho para a nova ("antes"), para o acumulado no ano e em
+       12 meses continuar achando os meses em que a conta se chamava só "BTG" */
+    var velhas=contasBtgBrl(S.rasc);
+    contas.forEach(function(x){
+      var v=velhas.filter(function(y){ return numDaConta(y)===semZeros(x.conta_btg); })[0]||(velhas.length===1&&contas.length===1?velhas[0]:null);
+      if(v){ var nv=(v.antes||v.nome||"").trim(); if(nv&&nv!==x.nome) x.antes=nv; }
+    });
     S.rasc.contas=S.rasc.contas.filter(function(x){ return !(curDe(x)==="BRL"&&ehBtg(x.inst)); }).concat(contas);
+    alinharContasBtg(S.rasc,c);
     S.rasc.ind.ativos=(S.rasc.ind.ativos||[]).filter(function(x){ return !ehBtg(x.inst); }).concat(ativos);
     if(totEst){ var e={}; ESTRAT.forEach(function(x){ e[x[0]]=porEst[x[0]]?Math.round(porEst[x[0]]/totEst*10000)/100:0; }); S.rasc.ind.estrategias=e; }
     indNovos.forEach(function(x){ S.rasc.ind[x]=pctBtg(indBtg[x]); });
@@ -3580,7 +3660,61 @@ function aplicarAtivosExtrato(r,ativos,instNome){
 function semZeros(s){ return String(s||"").replace(/\D/g,"").replace(/^0+/,""); }
 function numContaNome(s){ var m=String(s||"").match(/(\d{4,})\s*$/); return m?m[1].replace(/^0+/,""):""; }
 function numDaConta(x){ return semZeros(x.conta_btg)||numContaNome(x.nome); }
-function contasBtgBrl(r){ return r.contas.filter(function(x){ return curDe(x)==="BRL"&&/^(btg|necton)$/.test(instChave(x.inst||x.nome)); }); }
+function ehLinhaBtg(x){ return curDe(x)==="BRL"&&/^(btg|necton)$/.test(instChave(x.inst||x.nome)); }
+function contasBtgBrl(r){ return r.contas.filter(ehLinhaBtg); }
+/* 3.32: número da conta como o BTG escreve (9 dígitos) e o nome padrão da linha: "BTG 004180373" */
+function pad9(num){ var s=semZeros(num); return s?(s.length<9?("000000000"+s).slice(-9):s):""; }
+function nomeBtg(num){ return "BTG "+pad9(num); }
+function dadosConta(x){ return [x.apl,x.res,x.rendRs,x.rendPct].filter(function(v){ return Math.abs(n(v))>0.00001; }).length; }
+/* 3.32 (19/11/2026): o cadastro do cliente (clientes.contas_btg) manda nas contas do BTG em reais do mês.
+   Cada conta vinculada aparece uma vez só, com o nome "BTG <número>"; a linha sem número que é a mesma
+   conta (vinda do mês anterior com outro nome) sai, e o nome velho fica em "antes" para o acumulado no
+   ano e em 12 meses continuar achando os meses anteriores; conta vinculada que faltar entra zerada;
+   conta do BTG que não está no cadastro e não tem lançamento no mês sai. Nada grava até "Salvar mês".
+   semNovas: mês já salvo; a conta vinculada que falta nele não entra zerada sozinha. */
+function alinharContasBtg(r,c,semNovas){
+  if(!r) return;
+  r._avisoBtg=[];
+  var cad=[]; ((c&&c.contas_btg)||[]).forEach(function(k){ var s=semZeros(k); if(s&&cad.indexOf(s)<0) cad.push(s); });
+  if(!cad.length) return;
+  var porNum={}, gen=[], fora=[], sai=[];
+  contasBtgBrl(r).forEach(function(x){ var k=numDaConta(x); if(!k) gen.push(x); else if(cad.indexOf(k)>=0) (porNum[k]=porNum[k]||[]).push(x); else fora.push(x); });
+  var faltando=cad.filter(function(k){ return !porNum[k]; });
+  var semDono=function(x){ r._avisoBtg.push("A linha \u201c"+(x.nome||"BTG")+"\u201d não tem número de conta e não dá para saber de qual conta do cadastro ela é. Se for repetida, apague no \u00d7; se for outra conta, vincule no Cadastro."); };
+  /* Linha sem número: só vira uma conta do cadastro quando sobra exatamente uma conta sem linha e uma
+     linha sem número. Se todas as contas já têm linha, a sem número é repetida e sai, a não ser que
+     tenha lançamento no mês (aí avisa e não mexe: linha com lançamento nunca some sozinha). */
+  var unicaSemNum=null;
+  if(gen.length===1&&faltando.length===1) unicaSemNum=gen[0];
+  gen.forEach(function(x){
+    if(x===unicaSemNum){ porNum[faltando[0]]=[x]; return; }
+    if(!faltando.length&&!dadosConta(x)){
+      sai.push(x);
+      var dono=cad.length===1?porNum[cad[0]][0]:null;
+      if(dono&&!dono.antes&&(x.nome||"").trim()&&(x.nome||"").trim()!==(dono.nome||"").trim()) dono.antes=x.nome.trim();
+      r._avisoBtg.push("Saiu a linha \u201c"+(x.nome||"BTG")+"\u201d ("+brl2(n(x.saldo))+"): todas as contas do cadastro já estão no mês, então ela era repetida.");
+      return;
+    }
+    semDono(x);
+  });
+  cad.forEach(function(k){
+    var l=porNum[k]||[];
+    if(!l.length){ if(semNovas) return; r.contas.push({nome:nomeBtg(k),inst:"BTG Pactual",conta_btg:pad9(k),saldo:0,apl:0,res:0,rendPct:0,rendRs:0,moeda:"BRL"}); r._avisoBtg.push("Entrou a conta "+pad9(k)+" do cadastro, ainda sem saldo neste mês."); return; }
+    /* fica a que tem lançamento do mês; empate, a que já tem número */
+    l.sort(function(a,b){ return (dadosConta(b)-dadosConta(a))||((numDaConta(b)?1:0)-(numDaConta(a)?1:0)); });
+    var fica=l[0];
+    l.slice(1).forEach(function(x){ sai.push(x); if(!fica.antes&&(x.nome||"").trim()&&(x.nome||"").trim()!==(fica.nome||"").trim()) fica.antes=x.nome.trim();
+      r._avisoBtg.push("Saiu a linha repetida \u201c"+(x.nome||"BTG")+"\u201d ("+brl2(n(x.saldo))+"): é a mesma conta "+pad9(k)+"."); });
+    var nome=nomeBtg(k), velho=(fica.nome||"").trim();
+    if(velho!==nome){ if(velho&&!fica.antes) fica.antes=velho; fica.nome=nome; }
+    fica.conta_btg=pad9(k);
+  });
+  fora.forEach(function(x){
+    if(dadosConta(x)) r._avisoBtg.push("A conta \u201c"+x.nome+"\u201d tem lançamento neste mês mas não está no cadastro do cliente. Se ela é dele, vincule no Cadastro; se não é, apague no \u00d7.");
+    else { sai.push(x); r._avisoBtg.push("Saiu \u201c"+x.nome+"\u201d ("+brl2(n(x.saldo))+"): a conta não está no cadastro do cliente."); }
+  });
+  if(sai.length) r.contas=r.contas.filter(function(x){ return sai.indexOf(x)<0; });
+}
 function contaDoBtg(r,p){
   var brl=contasBtgBrl(r), cp=semZeros(p.conta);
   var porSaldo=function(l){ return l.filter(function(x){ return Math.abs(n(x.saldo)-p.saldoAnterior)<1; })[0]||l[0]||null; };
@@ -3594,14 +3728,14 @@ function numerarConta(x,num){
   if(!num||numContaNome(x.nome)) return;
   var velho=(x.nome||"").trim();
   if(velho&&!x.antes) x.antes=velho;
-  x.nome=(velho&&!/^btg( pactual)?$/i.test(velho)?velho:"BTG")+" conta "+num;
+  x.nome=nomeBtg(num);
 }
 function aplicarPerformance(r,p,arquivo,cliente){
   var res={ok:[],aviso:[]}, cp=semZeros(p.conta);
   var conta=contaDoBtg(r,p);
   if(!conta){
     var outras=contasBtgBrl(r).length;
-    conta={nome:(cp&&(outras||(cliente&&cliente.contas_btg&&cliente.contas_btg.length>1))?"BTG conta "+cp:"BTG"),inst:"BTG Pactual",saldo:0,apl:0,res:0,rendPct:0,rendRs:0,moeda:"BRL"};
+    conta={nome:(cp&&(outras||(cliente&&cliente.contas_btg&&cliente.contas_btg.length>1))?nomeBtg(cp):"BTG"),inst:"BTG Pactual",saldo:0,apl:0,res:0,rendPct:0,rendRs:0,moeda:"BRL"};
     r.contas.push(conta);
     res.aviso.push(outras?"Conta nova no BTG: criei a \u201c"+conta.nome+"\u201d. As contas do BTG somam na instituição.":"A carteira não tinha conta do BTG em reais: criei a conta \u201c"+conta.nome+"\u201d.");
   }
@@ -3635,6 +3769,7 @@ function aplicarPerformance(r,p,arquivo,cliente){
   var vx=atualizarVencimentos(r,S.mes,S.ano), vb=(r.ind.vencimentos||[]).filter(function(v){ return v.auto&&/^(btg|necton)$/.test(instChave(v.inst)); });
   res.ok.push("Próximos vencimentos (12 meses): "+(vb.length?vb.map(function(v){ return v.ativo+" em "+dataBR(v.data); }).join(", "):"nenhum título do BTG vence nesse prazo")+(vx.removidos?"; "+vx.removidos+" que já não estão na carteira saíram":"")+".");
   r.ind.performance={arquivo:arquivo||"",conta:p.conta,nome:p.nome,mes:p.mes,ano:p.ano,em:new Date().toISOString()};
+  alinharContasBtg(r,cliente);
   return res;
 }
 /* confere mês e conta antes de aplicar; devolve o texto do aviso ou "" */
@@ -4062,13 +4197,14 @@ function viewPreencher(){
   h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
      '<div><div class="sec-title">'+esc(c.nome)+'</div><div class="sec-sub">Lançamento de '+MESES[S.mes-1]+' de '+S.ano+'</div></div>'+
      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" onclick="puxarBtg()" title="Preenche a conta BTG, os ativos do BTG, a alocação e os índices com a Rentabilidade Mensal do BTG">Puxar do BTG</button>'+
+     '<button class="btn" onclick="abrirCadastro()" title="Contas do BTG vinculadas a este cliente">Cadastro</button>'+
      '<button class="btn" onclick="renomear()">Renomear</button>'+
      (reg(c.id,S.mes,S.ano)?'<button class="btn" onclick="excluirMes()">Excluir mês</button>':'')+
      (EU.admin?'<button class="btn" onclick="transferirCliente()">Assessor</button>':'')+
      '<button class="btn" onclick="excluirCliente()">Excluir cliente</button></div></div></div>'+
      (EU.admin&&c.assessor_id!==EU.id?'<div class="sec-sub" style="margin-top:-8px">Cliente de '+esc(nomeAssessor(c.assessor_id))+'.</div>':'')+
-     '<div class="sec-sub" style="margin-top:-8px">Contas BTG: '+((c.contas_btg&&c.contas_btg.length)?esc(c.contas_btg.join(", ")):'<b>nenhuma informada</b>')+
-       ' &middot; <a href="#" onclick="editarContasBtg();return false">'+((c.contas_btg&&c.contas_btg.length)?"alterar":"informar")+'</a>'+
+     '<div class="sec-sub" style="margin-top:-8px">Contas BTG vinculadas: '+((c.contas_btg&&c.contas_btg.length)?esc(c.contas_btg.map(pad9).join(", ")):'<b>nenhuma</b>')+
+       ' &middot; <a href="#" onclick="abrirCadastro();return false">'+((c.contas_btg&&c.contas_btg.length)?"alterar no cadastro":"vincular no cadastro")+'</a>'+
        ' &nbsp;|&nbsp; Ficha no CRM: '+(c.lead_id?'<a href="crm.html#ficha='+encodeURIComponent(c.lead_id)+'">'+esc(nomeFicha(c))+'</a> &middot; ':'<b>não ligada</b> &middot; ')+
        '<a href="#" onclick="ligarFicha();return false">'+(c.lead_id?"trocar":"ligar")+'</a>'+
        ' &nbsp;|&nbsp; E-mail para relatórios: '+((c.emails_relatorio&&c.emails_relatorio.length)?esc(c.emails_relatorio.join(", ")):'<b>nenhum</b>')+
@@ -4079,6 +4215,10 @@ function viewPreencher(){
     h+='<div class="note" style="margin-bottom:14px"><b>'+r._onHerdado+' conta(s) em reais trazida(s) do m\u00eas anterior.</b> '+
        'Elas existiam no m\u00eas anterior com saldo, mas n\u00e3o estavam neste. Atualize os saldos e salve. '+
        'Se alguma foi encerrada, lance o resgate e zere o saldo para que ela n\u00e3o volte.</div>';
+  }
+  if(r._avisoBtg&&r._avisoBtg.length){
+    h+='<div class="note" style="margin-bottom:14px"><b>Contas do BTG conferidas com o cadastro do cliente.</b><br>'+
+       r._avisoBtg.map(esc).join('<br>')+'<br>Nada é gravado até você clicar em “Salvar mês”.</div>';
   }
   h+=cardContas(r,"BRL")+cardContas(r,"USD");
   h+='<div class="card"><div class="sec-title">Indicadores do mês</div>'+
@@ -5225,7 +5365,7 @@ function viewRelatorio(){
     var htmlContas=shead(nx(),"Desempenho por conta","")+
      '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% da carteira</th><th class="n">Último mês</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
      contasBRL.map(function(x){
-       var noAno=contaAcum(c.id,x.nome,S.mes,S.ano,S.mes,x.antes), m12=contaAcum(c.id,x.nome,S.mes,S.ano,12,x.antes);
+       var nx=ehLinhaBtg(x)?numDaConta(x):"", noAno=contaAcum(c.id,x.nome,S.mes,S.ano,S.mes,x.antes,nx), m12=contaAcum(c.id,x.nome,S.mes,S.ano,12,x.antes,nx);
        return '<tr><td>'+esc(x.nome||"—")+'</td><td class="n">'+brl(n(x.saldo))+'</td>'+
        '<td class="n">'+pct(t.pl>0?n(x.saldo)/t.pl*100:0,1)+'</td>'+
        '<td class="n '+sinal(n(x.rendPct))+'">'+pct(n(x.rendPct))+'</td>'+

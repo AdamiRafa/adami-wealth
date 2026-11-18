@@ -1889,6 +1889,29 @@ em 07/10. Desde 17/11 o BTG manda a base todo dia útil às 8h30, mas ela só en
 - Testado com Deno contra PostgREST falso: simular não grava; aplica saldo e alerta, cria conta nova com
   código, ignora conta sem código; segunda chamada "já aplicada"; reaplicar à força não duplica nada.
 
+### 23.12. Cadastro do cliente nas Carteiras: contas do BTG vinculadas (Hub 3.32, 19/11/2026, `carteiras_cadastro.sql`)
+
+Pedido do Emil com print do André: em novembro a conta do BTG apareceu duas vezes ("BTG 004180373", vinda do
+Puxar do BTG, e "BTG", trazida de outubro). Causa: `herdarOnshore` reconhecia a conta só pelo nome, e o Puxar do
+BTG dava outro nome à mesma conta.
+
+- **Botão Cadastro** (e o link "alterar no cadastro" abaixo do nome): janela com as contas do BTG vinculadas
+  (`clientes.contas_btg`), vincular por número ou pelas sugestões por nome (`btg_sugerir_contas`), mostrando titular,
+  assessor e saldo de hoje no BTG (`btg_conta_info`, nova: só quem vê todos os clientes ou o assessor da conta pelo
+  código; checa `acesso_liberado()`). Substitui o `prompt()` antigo.
+- **`alinharContasBtg(r, cliente, semNovas)`**: o cadastro manda nas contas do BTG em reais do mês. Roda ao abrir o
+  mês, depois do Puxar do BTG, do Relatório de Performance e ao salvar o cadastro. Cada conta vinculada fica uma
+  vez só, com o nome padrão "BTG 004180373" (`nomeBtg`, 9 dígitos) e `conta_btg`; repetida sai (fica a que tem
+  lançamento no mês); a linha sem número sai se todas as contas já têm linha, ou vira a conta que falta se sobrar uma
+  só; linha com lançamento nunca sai sozinha (vira aviso); conta do BTG fora do cadastro sem lançamento sai; conta
+  vinculada que falta entra zerada (não em mês já salvo). O que mudou aparece numa nota acima das contas. Sem
+  cadastro, nada muda.
+- **Continuidade do acumulado:** a linha que fica guarda o nome velho em `antes`, e `contaAcum` acha a conta do BTG
+  pelo número primeiro. O Puxar do BTG passa o nome velho para a linha nova.
+- `herdarOnshore` também reconhece pelo número. `numerarConta` passou a usar o mesmo nome padrão.
+- Testado: regra em Node com 6 cenários (o do André, renomear, 3 contas com linha sem número, conta fora do cadastro,
+  sem cadastro, Necton) e a janela em Chromium com Supabase simulado.
+
 ## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)
 
 - **Números:** 4 cartões abaixo da saudação, para quem tem a ferramenta CRM. Da casa para quem tem
