@@ -787,6 +787,11 @@ ficam no rodapé). Fotos sem moldura: máscara que esfuma as bordas no fundo da 
 virou a vitrine em tela cheia (`data-vitrine`: fundo que troca com transição, troca sozinha a cada 7 s, pausa com o mouse,
 arrastar no celular). Wealth: "Nossos serviços" virou a roda vertical (`data-roda`: nomes que giram, foto redonda e anel
 de marcações, setas e teclado). Jornada: saíram as caixas cinzas "Prévia"**.
+ · **18/11/2026 (noite): "Jornada do cliente" volta ao menu do topo, depois de Wealth Planning, nas 5 páginas (na
+própria Jornada, marcado como página atual). Com o link a mais, o topo não cabia em notebook estreito: de 901 a 1180 px
+os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
+Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
+versão de 18/11/2026), gerado fora do repositório**.
 
 ---
 

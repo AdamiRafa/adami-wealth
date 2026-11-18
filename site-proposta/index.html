@@ -252,6 +252,11 @@ body.conta-aberta{overflow:hidden}body.conta-aberta .zap{display:none}
 .porta-wealth li{border-top-color:rgba(14,34,54,.16) !important}.porta-wealth > span{color:#0E2236 !important}
 .porta-inv:hover{border-color:#C9A86A !important}.porta-wealth:hover{border-color:#0E2236 !important}
 </style>
+<style>
+/* menu do topo com Jornada do cliente: em notebook estreito os links vão para o botão de menu (os botões ficam) */
+@media screen and (min-width:901px) and (max-width:1180px){.topo .nav{display:none !important}.menu-bt{display:inline-flex}}
+@media screen and (min-width:1181px) and (max-width:1320px){.topo .nav{gap:26px !important}.topo .wrap{gap:24px !important}}
+</style>
 </head>
 <body>
 <div class="ac">
@@ -263,6 +268,7 @@ body.conta-aberta{overflow:hidden}body.conta-aberta .zap{display:none}
 <nav class="nav" aria-label="Menu principal" style="display: flex; gap: 36px; align-items: center">
 <a href="investimentos.html">Investimentos</a>
 <a href="wealth.html">Wealth Planning</a>
+<a href="jornada.html">Jornada do cliente</a>
 </nav>
 <div style="display: flex; align-items: center; gap: 24px"><a class="acesso" href="https://adamicaptal.com.br/hub" title="Entrar no Hub Adami" aria-label="Acesso colaborador"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Acesso colaborador</a><button type="button" class="btn btn-conta" data-abre-conta style="min-height: 44px; padding: 0 20px; font-size: 14px">Abra sua conta</button><a class="btn btn-ouro" href="agendar.html" style="min-height: 44px; padding: 0 20px; font-size: 14px">Agendar conversa</a></div>
 <button type="button" class="menu-bt" aria-expanded="false" aria-controls="menuCel" aria-label="Abrir menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"></path></svg></button>
