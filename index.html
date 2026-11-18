@@ -2149,7 +2149,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.33";
+var VERSAO="versão 3.34";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2725,6 +2725,21 @@ function categoriaBtg(m,nome){
   if(/FUND|^FI/.test(t)) return "Fundos";
   return "Renda Fixa";
 }
+/* 3.34: a Rentabilidade Mensal não diz a estratégia de cada ativo. Usa a do mesmo ativo no mês anterior; senão,
+   o nome: IPCA/IMA-B/NTN-B é Inflação, prefixado/LTN/NTN-F é Pré, o resto de renda fixa é Pós; derivativo é
+   Derivativo; fundo multimercado é Multimercado. Fundo que não dá para saber fica sem (aparece na Conferência). */
+function subcatBtg(nome,cat,mkt,ant){
+  var k=semAc(nome||"").replace(/[^a-z0-9]/g,""); if(ant&&ant[k]) return ant[k];
+  var t=semAc(nome||"").toUpperCase(), m=String(mkt||"").toUpperCase();
+  if(m==="DRV") return "Derivativo";
+  if(cat==="Renda Fixa"||cat==="COE"){
+    if(/IPCA|IPC-A|IMA-?B|NTN-?B|INFLA/.test(t)) return "Inflação";
+    if(/PRE\b|PREFIX|\bLTN\b|NTN-?F/.test(t)) return "Pré-fixado";
+    return "Pós-fixado";
+  }
+  if(cat==="Fundos"&&/MULTI|\bMM\b|MACRO|LONG BIAS|HEDGE|RETORNO ABSOLUTO/.test(t)) return "Multimercado";
+  return "";
+}
 function nomeProdutoBtg(k){
   var nm=String(k.product_name||"").trim(); if(nm) return nm;
   var id=String(k.product_id||"").trim(), m=String(k.market_id||"").toUpperCase();
@@ -2827,13 +2842,48 @@ function cadSalvar(){
     })
     .catch(function(e){ status("err","Não salvou"); CAD.erro="Não foi possível salvar: "+(e.message||e); desenharCadastro(); });
 }
+/* 3.34: o Puxar do BTG usa o Relatório de Performance que o Hub pediu pela API (todos os ativos com subcategoria,
+   taxa e vencimento, e a conta com os mesmos números da Rentabilidade Mensal). Sem o relatório do mês (mês
+   corrente, ou antes dos dias 2 e 5), cai na Rentabilidade Mensal (puxarBtgApi). */
 function puxarBtg(){
   var c=cli(); if(!c||!S.rasc) return;
   if(!c.contas_btg||!c.contas_btg.length){
-    if(confirm("Informe antes a conta BTG de "+c.nome+". Abrir agora?")) editarContasBtg();
+    if(confirm("Vincule antes as contas do BTG de "+c.nome+" no Cadastro. Abrir agora?")) abrirCadastro();
     return;
   }
   status("wait","Buscando no BTG…");
+  api("rpc/btg_performance_cliente",{method:"POST",body:{p_cliente:c.id,p_mes:S.mes,p_ano:S.ano}}).catch(function(){ return []; }).then(function(l){
+    if(l&&l.length) aplicarPdfsBtg(c,l); else puxarBtgApi();
+  });
+}
+function aplicarPdfsBtg(c,lista){
+  var mesTxt=MESES[S.mes-1].toLowerCase()+"/"+S.ano;
+  if(!confirm("Puxar do BTG o Relatório de Performance de "+mesTxt+" ("+lista.length+(lista.length===1?" conta: ":" contas: ")+lista.map(function(x){ return x.conta; }).join(", ")+")?\n\nSubstitui a conta e os ativos do BTG deste mês. Outros bancos ficam como estão. Nada é gravado até você clicar em \"Salvar mês\".")){ status("ok","Sincronizado"); return; }
+  guardarAntesImportacao("Relatório de Performance do BTG");
+  var feitos=[], avisos=[], ultimo=null, passo=Promise.resolve();
+  lista.forEach(function(x){
+    passo=passo.then(function(){ return baixarPdfBtg(x.caminho); }).then(function(b){
+      var f=new File([b],"RelatorioDePerformance-"+x.conta+".pdf",{type:"application/pdf"});
+      return lerPdfExtrato(f).then(function(res){
+        var p=res.performance;
+        if(!p){ avisos.push("Conta "+x.conta+": o PDF veio sem a parte de rentabilidade."); return; }
+        var av=checarPerformance(c,p); if(av) avisos.push(av);
+        var rr=aplicarPerformance(S.rasc,p,f.name,c);
+        anotarContaPerf(c,p.conta);
+        ultimo={arquivo:f.name,p:p,r:rr,hist:confHistPerf(c,p),histN:(p.hist||[]).length};
+        feitos.push(x.conta);
+      });
+    });
+  });
+  passo.then(function(){
+    PERF_RES=ultimo; status("ok","Sincronizado");
+    registrar("puxou do BTG",c.nome,mesTxt+" · Relatório de Performance · "+feitos.join(", "));
+    render(true);
+    alert((feitos.length?"Pronto: Relatório de Performance aplicado ("+feitos.join(", ")+"). A Conferência, no alto, mostra o que mudou. Confira e salve.":"Nenhum relatório foi aplicado.")+(avisos.length?"\n\nAtenção:\n"+avisos.join("\n"):""));
+  }).catch(function(e){ status("err","Erro"); PERF_RES=ultimo; render(true); alert("Não consegui aplicar o relatório do BTG: "+(e.message||e)+(feitos.length?"\n\nJá aplicados: "+feitos.join(", "):"")); });
+}
+function puxarBtgApi(){
+  var c=cli(); if(!c||!S.rasc) return;
   api("rpc/btg_rent_cliente",{method:"POST",body:{p_cliente:c.id,p_mes:S.mes,p_ano:S.ano}}).then(function(d){
     status("ok","Sincronizado");
     var mesTxt=MESES[S.mes-1]+"/"+S.ano;
@@ -2850,9 +2900,13 @@ function puxarBtg(){
       return {nome:nomeBtg(x.nr_conta), inst:"BTG Pactual", conta_btg:pad9(x.nr_conta), saldo:numBtg(k.auc_end), apl:liq>0?liq:0, res:liq<0?-liq:0,
               rendRs:numBtg(k.profit_mtd), rendPct:pctBtg(k.profitability_mtd), moeda:"BRL"};
     });
+    /* subcategoria que o mesmo ativo tinha no último mês lançado (o relatório do BTG traz; a API não) */
+    var subAnt={}; (function(){ var pp=anterior(S.mes,S.ano), t=0, rr=null; while(t<12&&!rr){ rr=reg(c.id,pp.mes,pp.ano); pp=anterior(pp.mes,pp.ano); t++; }
+      ((rr&&rr.ind&&rr.ind.ativos)||[]).forEach(function(a){ if(a.subcategoria) subAnt[semAc(a.nome||"").replace(/[^a-z0-9]/g,"")]=a.subcategoria; }); })();
     var ativos=(d.produtos||[]).filter(function(x){ return Math.abs(numBtg((x.dados||{}).auc_end))>0.005; }).map(function(x){
       var k=x.dados||{};
-      return {nome:nomeProdutoBtg(k), categoria:categoriaBtg(k.market_id,k.product_name), subcategoria:"",
+      var nomeA=nomeProdutoBtg(k), catA=categoriaBtg(k.market_id,k.product_name);
+      return {nome:nomeA, categoria:catA, subcategoria:subcatBtg(nomeA,catA,k.market_id,subAnt),
               inst:"BTG Pactual", taxa:"", vencimento:"", posicao:numBtg(k.auc_end),
               rentMes:pctBtg(k.profitability_mtd), rentAno:pctBtg(k.profitability_ytd), rent12m:pctBtg(k.profitability_12m), rentInicio:pctBtg(k.profitability_ttd)};
     });
@@ -3887,18 +3941,19 @@ function faixaPerfBtg(){
   carregarPerfBtg();
   var l=PERF_BTG.lista; if(!l) return "";
   var mesTxt=MESES[S.mes-1].toLowerCase()+"/"+S.ano;
-  if(l.length) return l.map(function(x,i){
-    return '<div class="perf-btg-l"><span><b>O Relatório de Performance do BTG de '+mesTxt+' chegou</b> &middot; conta '+esc(x.conta)+'</span>'+
-      '<button type="button" class="btn pri" onclick="aplicarPdfBtg('+i+')">Aplicar relatório do BTG</button></div>'; }).join("");
+  if(l.length) return '<div class="perf-btg-l"><span><b>O Relatório de Performance do BTG de '+mesTxt+' chegou</b> &middot; conta'+(l.length>1?'s ':' ')+
+      l.map(function(x){ return esc(x.conta); }).join(", ")+'</span>'+
+      '<button type="button" class="btn pri" onclick="puxarBtg()">Puxar do BTG</button></div>';
   var hoje=new Date(), fechado=(S.ano*12+S.mes)<(hoje.getFullYear()*12+hoje.getMonth()+1);
-  return fechado?'<div class="perf-btg-nada">O Relatório de Performance do BTG de '+mesTxt+' ainda não chegou. O Hub pede sozinho nos dias 2 e 5 do mês seguinte, para cada conta vinculada no Cadastro.</div>':"";
+  return fechado?'<div class="perf-btg-nada">O Relatório de Performance do BTG de '+mesTxt+' ainda não chegou. O Hub pede sozinho nos dias 2 e 5 do mês seguinte, para cada conta vinculada no Cadastro. Até lá, o Puxar do BTG usa a Rentabilidade Mensal (sem taxa e vencimento dos ativos).</div>'
+    :'<div class="perf-btg-nada">Mês em andamento: o Relatório de Performance do BTG de '+mesTxt+' chega nos dias 2 e 5 do mês seguinte. O Puxar do BTG agora traz números parciais.</div>';
 }
 function blocoPerformance(){
   var r=S.rasc, info=r.ind&&r.ind.performance, res=PERF_RES;
-  var h='<div class="card perf-card no-print">'+faixaPerfBtg()+'<div class="perf-zona" id="perfZona" ondragover="event.preventDefault();this.classList.add(\'sobre\')" ondragleave="this.classList.remove(\'sobre\')" ondrop="soltarPerformance(event)" onclick="document.getElementById(\'perfArq\').click()">'+
-    '<div class="perf-ic">PDF</div><div><b>'+(res&&res.lendo?"Lendo "+esc(res.arquivo)+"…":"Subir o Relatório de Performance do BTG")+'</b>'+
-    '<span>Arraste o PDF aqui ou clique para escolher. Preenche a conta do BTG (saldo, entradas, saídas e resultado), todos os ativos com a rentabilidade e os índices do mês. Nada é gravado até salvar.</span></div>'+
-    '<input type="file" id="perfArq" accept=".pdf,application/pdf" style="display:none" onchange="subirPerformance(this.files[0]);this.value=\'\'"></div>';
+  /* 3.34: sem área para subir o PDF; o relatório vem pela API e entra pelo Puxar do BTG */
+  var faixa=faixaPerfBtg();
+  if(!faixa&&!(res&&(res.p||res.lendo))&&!(info&&info.conta)) return "";
+  var h='<div class="card perf-card no-print">'+faixa+(res&&res.lendo?'<div class="perf-btg-nada">Lendo '+esc(res.arquivo)+'…</div>':'');
   if(res&&res.p){
     var p=res.p;
     h+='<div class="perf-res"><div class="perf-cab"><b>'+esc(p.nome||"Cliente")+'</b> · conta '+esc(p.conta||"—")+' · '+(p.mes?MESES[p.mes-1].toLowerCase()+"/"+p.ano:"")+'</div>'+
@@ -4272,16 +4327,8 @@ function viewPreencher(){
      '<div class="grid-ind">';
   IND.forEach(function(p){ h+='<div><label>'+p[1]+' (%)</label><input class="inp num" type="number" step="0.01" value="'+(r.ind[p[0]]||"")+'" oninput="setInd(\''+p[0]+'\',this.value)"></div>'; });
   h+='</div></div>';
-  var est=S.rasc.ind.estrategias||{};
-  var somaEst=ESTRAT.reduce(function(a,e){return a+n(est[e[0]]);},0);
-  h+='<div class="card"><div class="sec-title">Alocação por estratégia</div>'+
-     '<div class="sec-sub">Opcional. Percentual da carteira em cada estratégia. Se todos ficarem zerados, a seção não aparece no relatório.</div>'+
-     '<div class="grid-ind">'+
-     ESTRAT.map(function(e){
-       return '<div><label>'+e[1]+' (%)</label><input class="inp num" type="number" step="0.01" value="'+(est[e[0]]||"")+'" oninput="setEstrat(\''+e[0]+'\',this.value)"></div>';
-     }).join("")+
-     '</div><div id="somaEstrat" style="margin-top:12px;font-size:12.5px;color:'+((somaEst===0||Math.abs(somaEst-100)<0.05)?'var(--muted)':'var(--alert)')+'">Soma: '+pct(somaEst,1)+'</div></div>';
-
+  /* 3.34: a alocação por estratégia não é mais digitada: vem das subcategorias dos ativos do Relatório de
+     Performance do BTG, ou do total por estratégia da Rentabilidade Mensal (Puxar do BTG). */
   h+='<div class="card"><div class="sec-title">Se\u00e7\u00f5es do relat\u00f3rio</div>'+
      '<div class="sec-sub">Desmarque o que n\u00e3o deve sair no relat\u00f3rio deste cliente. A escolha \u00e9 salva com o m\u00eas e segue para os meses seguintes.</div>'+
      '<div class="grid-ind">'+

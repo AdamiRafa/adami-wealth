@@ -1937,6 +1937,21 @@ relatório fica fixo por 3 horas depois de pedido.
   (chegou em segundos), tela com Supabase simulado (faixa, download, leitura do PDF: conta 004181763, saldo 9.742.602,87,
   51 ativos; mês sem relatório mostra o aviso).
 
+### 23.14. Puxar do BTG pelo relatório; sem PDF manual e sem alocação digitada (Hub 3.34, 19/11/2026)
+
+- Subcategorias "zeradas" (pedido do Emil): os meses preenchidos pelo PDF (outubro) tinham todas; os preenchidos pelo Puxar
+  do BTG (novembro de Alex e André) vinham sem nenhuma, porque a Rentabilidade Mensal não diz a estratégia de cada ativo.
+- **Puxar do BTG** agora usa primeiro o Relatório de Performance que chegou pela API (`aplicarPdfsBtg`: todas as contas
+  vinculadas do mês, pelo mesmo `aplicarPerformance` do PDF; subcategoria, taxa e vencimento vêm do PDF). Sem relatório do
+  mês, cai na Rentabilidade Mensal (`puxarBtgApi`), com `subcatBtg`: a subcategoria do mesmo ativo no último mês lançado,
+  senão pelo nome (IPCA/IMA-B/NTN-B = Inflação; prefixado/LTN/NTN-F = Pré; o resto da renda fixa = Pós; DRV = Derivativo;
+  fundo MULTI/MACRO = Multimercado; fundo sem pista fica sem e aparece na Conferência).
+- Saiu a área de subir o PDF do BTG (o relatório vem pela API; a faixa verde avisa que chegou e tem o botão Puxar do BTG) e
+  saiu o card "Alocação por estratégia": a distribuição vem das subcategorias dos ativos ou, sem elas, do total por
+  estratégia da Rentabilidade Mensal (`ind.estrategias`, preenchido pelo Puxar do BTG).
+- Webhooks: em 18/11 o Emil cadastrou os 8 que faltavam. O de `rm-reports-movement` ficou com o endereço de
+  `rm-reports-registration-data` (a movimentação chegaria como cadastro); corrigir no portal.
+
 ## 24. Tela inicial 2.96 (07/11/2026, `painel_inicio.sql`, `comum/carteira.js`)
 
 - **Números:** 4 cartões abaixo da saudação, para quem tem a ferramenta CRM. Da casa para quem tem
