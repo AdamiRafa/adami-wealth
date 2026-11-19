@@ -792,6 +792,8 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026 (noite): 3.42. Hub fechado até o lançamento: até 25/11 0h só Emil, Rafael e Bibiana entram
+(seção 37, `lancamento_2511.sql`)**.
  · **19/11/2026 (noite): 3.41. Conferência 360 (seção 36): CRM do assessor rápido de novo (NNM, Captação, Vencimentos,
 Dinheiro parado e Agenda BTG estouravam 8 s), e-mail da manhã só pelo agendamento, carta do mês só o master, registro de
 atividades com o autor real, Planos Patrimoniais em tela de 1280 px e abas da Carteira no celular**.
@@ -2836,4 +2838,17 @@ Pedido do Emil: "confere 360 no detalhe em TODAS funções, usabilidade, acessos
 - Valores dentro de `onclick` gerado por texto: todos são ids `uuid`/`bigint` do banco ou datas formatadas (seguros).
 - `@media (max-width)` sem `screen` em alguns módulos: ficaram como estão, porque hoje também valem na impressão e os
   PDFs atuais foram validados assim. Trocar mudaria o PDF; só mexer junto com a medição página a página.
+
+## 37. Hub fechado até o lançamento (19/11/2026, Hub 3.42, `lancamento_2511.sql`)
+
+Pedido do Emil: "deixa só eu, o Rafael e a Bibiana com acesso até quarta-feira, vamos soltar para todo mundo na quarta".
+- `acesso_config.restrito_ate` (25/11/2026 0h de Brasília) e `restrito_a` (ids do Emil, Rafael e Bibiana).
+  `acesso_fechado(uid)` diz se a pessoa ainda está de fora.
+- `acesso_liberado()` passa a responder "não" para quem está de fora: nenhuma política nem função devolve ou grava dado.
+- `liberar_sessao_do_dia()` recusa o login com `fechado: true` e a mensagem de quando o Hub abre; a tela de entrada mostra
+  essa mensagem (`encerrarPorVirada(msg)`) e não guarda a sessão.
+- E-mail da manhã: o gatilho `agenda_emails_so_liberados` recusa a reserva do envio de quem está de fora; a função
+  `agenda-manha` registra "já enviado hoje" e pula a pessoa. Assim os e-mails de 23 e 24/11 vão só para os três.
+- Abre sozinho na hora marcada. Abrir antes: `update public.acesso_config set restrito_ate = now();`.
+  Mudar a hora: `update public.acesso_config set restrito_ate = '2026-11-25 14:00-03';`.
 
