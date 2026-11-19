@@ -792,6 +792,9 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026: 3.35 e CRM 2026.11.19.7. Ficha de cadastro da pessoa na Equipe (preenchível já no convite); Outlook
+preparado na Agenda e no e-mail da manhã (aguarda o Microsoft 365); certificações da ficha viram aviso na Agenda;
+Primeiros passos do assessor com Agenda, Outlook e celular; manual com o capítulo da Agenda novo (seção 31)**.
 
 ---
 
@@ -835,8 +838,10 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 - **Instalado no Supabase (06/11/2026):** `instalar-novidades.sql` (agendamento "agenda-manha"
   ativo) e as funções `enviar-senha` e `agenda-manha` com Verify JWT desligado (conferido
   chamando as duas). O primeiro e-mail da manhã sai no dia útil seguinte, 6h50.
-- **Outlook na Agenda:** só leitura, decidido; depende de o administrador do Microsoft 365
-  registrar um aplicativo (Microsoft Graph, permissão de leitura de calendário).
+- **Outlook na Agenda (pronto do nosso lado desde 19/11/2026, seção 31.2):** só leitura. Falta o administrador do
+  Microsoft 365 registrar o aplicativo (Microsoft Graph, permissão de aplicativo `Calendars.Read` com consentimento
+  do administrador) e cadastrar `M365_TENANT_ID`, `M365_CLIENT_ID` e `M365_CLIENT_SECRET` em Supabase > Edge
+  Functions > Secrets. Depois: ligar o agendamento `outlook-agenda` e rodar a função uma vez à mão.
 - **Importador de extrato BTG** no Gerador de Planos Patrimoniais nunca foi calibrado
   contra um arquivo real. Sem ele não há enquadramento por produto.
 - **IPCA contra IMA-B nos meses históricos.** Os rótulos mudaram, os valores antigos não.
@@ -1365,7 +1370,7 @@ Pedido do Emil em 05/11/2026; protótipo aprovado no mesmo dia. Decisões:
 3. **Tarefas automáticas na mesma lista**, lidas da ficha e nunca gravadas como tarefa:
    próximo contato (`proximoContato`), vencimento (alerta aberto do tipo vencimento) e
    régua de relacionamento (`reguaStatus`). Assim a ficha e a agenda não discordam.
-4. **Outlook só leitura**, ainda não ligado (pendência na seção 14).
+4. **Outlook só leitura**, pronto desde 19/11/2026 e aguardando o Microsoft 365 (seções 14 e 31.2).
 5. **Recorrência**: não repete, todo dia útil, toda semana (dias escolhidos) ou todo mês
    (dia 31 cai no último dia do mês curto). A repetição começa no dia de "data".
 6. **E-mail da manhã** nos dias úteis, por volta das 7h, só para quem tem algo no dia.
@@ -2576,3 +2581,53 @@ por fora, mas só manda uma vez por dia e só das 6h às 11h, e não revela nome
 - **Downloads em massa no Registro de atividades** (`AWBarra.registrar`, em `comum/barra.js`): backup completo das
   Carteiras, Excel do CRM, Excel de comissões (o PDF de todos já registrava). "Baixar backup (.json)" só aparece e
   só funciona para o master.
+
+---
+
+## 31. Ficha de cadastro, Outlook e primeiros passos do assessor (19/11/2026, Hub 3.35, CRM 2026.11.19.7)
+
+### 31.1 Ficha de cadastro da pessoa (`equipe_cadastro.sql`)
+Pedido do Emil: ao criar o acesso de um assessor, ter a ficha completa, como o Financeiro já tem os dados de pagamento.
+- Tabela `equipe_cadastro` (chave: e-mail em minúsculas; `user_id` liga sozinho quando a conta existe; `dados` jsonb).
+  A ficha é por e-mail para poder ser preenchida **no convite**, antes do primeiro acesso.
+- Campos (`CAD_GRUPOS` no `index.html`): dados pessoais (nome completo, CPF, RG, nascimento, estado civil, celular,
+  e-mail pessoal), endereço, vínculo com a Adami (cargo, área, tipo de vínculo, entrada, PJ e CNPJ, gestor, código do
+  BTG, registro Ancord/CVM), contato de emergência, observações e validades das certificações (`CAD_CERTS`: CPA-10,
+  CPA-20, CEA, CFP, Ancord, CNPI, CGA), guardadas em `dados.certificacoes` como `{"CPA-20":"AAAA-MM-DD"}`.
+- Quem lê e grava: master e Financeiro (`equipe_cadastro_pode`: `eh_super` ou `com_pode_ver`). A própria pessoa só lê
+  a sua (RLS). Gravação só por `equipe_cadastro_salvar` (security definer); a auditoria registra **quais campos**
+  mudaram, nunca os valores. `equipe_cadastro_conta` é interna (sem EXECUTE para authenticated).
+- Tela: Hub > Equipe > clique no nome > **Ficha de cadastro**; em Convidar pessoa, o bloco recolhido "Ficha de
+  cadastro (opcional)" é salvo logo depois do `convidar`; na lista de convites, botão **Ficha de cadastro** abre a ficha
+  de quem ainda não entrou. Se a ficha falhar no convite, o convite segue e o aviso fica na tela.
+- `equipe_certificacoes()` devolve `[{pessoa, cert, vence}]`: a própria pessoa, ou todos para master e admin. O CRM
+  junta com a lista manual do gatilho **Certificação vencendo** (`cap_certificacao`), e o e-mail da manhã também.
+- Testado como `authenticated` com sessão liberada: master grava e lê; assessor comum não vê linha de ninguém e recebe
+  `[]` nas certificações dos outros; `anon` sem EXECUTE em nenhuma função.
+
+### 31.2 Outlook na Agenda (`agenda_outlook.sql`, função `outlook-agenda`)
+- Função `supabase/functions/outlook-agenda` (Verify JWT desligado; exige o cabeçalho `x-btg-sync` conferido por
+  `btg_sync_token_ok`, o mesmo token do cofre usado pelo BTG). Pega um token do Microsoft Graph por
+  *client credentials* e, para cada perfil ativo com e-mail @adamicaptal.com.br, lê `/users/{email}/calendarView` de
+  ontem a +15 dias. Evento particular ou confidencial vira "Compromisso particular"; cancelado não entra. 403/404 conta
+  como `sem_acesso` daquela pessoa. Apaga a janela da pessoa e regrava; limpa o que tem mais de 45 dias.
+- Sem os três Secrets, responde `{ok:false, motivo}` e não faz nada.
+- Tabela `agenda_outlook` (RLS: a própria pessoa, admin do CRM e master; `exige_verificacao` e `exige_ferramenta`).
+- Agendamento `outlook-agenda` (`*/30 9-23 * * 1-5`, UTC: a cada 30 min das 6h às 20h de Brasília) **nasce desligado**.
+- CRM: `fetchOutlook` lê a tabela; os itens entram em **Compromissos de hoje** com a etiqueta Outlook (azul), hora de
+  Brasília, "até HH:MM", local e "online"; não têm círculo de concluir e não contam no placar nem no número do menu.
+- E-mail da manhã (`agenda-manha`, versão 6): mesmos compromissos, hoje e a prévia de amanhã.
+- **Como ligar** (depois do Microsoft 365): cadastrar os três Secrets; `select cron.alter_job(job_id := (select jobid
+  from cron.job where jobname = 'outlook-agenda'), active := true);`; rodar uma vez à mão e conferir a resposta
+  (`pessoas`, `lidas`, `compromissos`, `sem_acesso`, `falhas`).
+
+### 31.3 Primeiros passos do assessor e manual
+- `meu_checklist()` ganhou `agenda` (concluiu algum aviso em `agenda_resolvidos` ou alguma tarefa), `outlook_ligado`
+  (há linhas em `agenda_outlook`) e `outlook_meu`. O quadro da tela inicial ganhou: **Abra a Agenda e conclua a
+  primeira tarefa do dia**, **Confira suas reuniões do Outlook** (só aparece com o Outlook ligado) e **Instale o Hub no
+  celular** (`hbComoInstalar`: passo a passo iPhone e Android; marca em `localStorage.aw_celular`, e sozinho quando o
+  Hub é aberto pelo ícone instalado). Quem já tinha ocultado o quadro não o vê de novo.
+- Manual 3.35: capítulo da Agenda reescrito (missão do dia, compromissos e tarefas, origens, círculo de concluir,
+  Indicar clientes), tela nova `imgj/11-crm-agenda.jpg` com dados fictícios, checklist do primeiro dia com Agenda e
+  Outlook. Páginas dos capítulos não mudaram (`AJUDA[...].pag` igual). Margens medidas: corpo a 20 mm ou mais.
+

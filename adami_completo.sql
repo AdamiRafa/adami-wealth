@@ -5358,7 +5358,12 @@ begin
                  where l.responsavel_id = v_uid and l.esteira = 'novo'
                    and not coalesce(l.excluido, false) and not coalesce(l.perdido, false) and not coalesce(l.ganho, false)
                    and l.proximo_contato is null),
-    'aparelho', exists (select 1 from public.acesso_aparelhos where user_id = v_uid and expira_em > now()));
+    'aparelho', exists (select 1 from public.acesso_aparelhos where user_id = v_uid and expira_em > now()),
+    -- 3.35: Agenda (concluiu ao menos uma tarefa ou aviso) e Outlook (integração ligada e o calendário da pessoa chegando).
+    'agenda', exists (select 1 from public.agenda_resolvidos r where r.resolvido_por = v_uid)
+           or exists (select 1 from public.tarefas t where t.dono_id = v_uid and cardinality(t.concluidas) > 0),
+    'outlook_ligado', exists (select 1 from public.agenda_outlook),
+    'outlook_meu', exists (select 1 from public.agenda_outlook o where o.user_id = v_uid));
 end $$;
 
 -- ---------- 3. Reportar problema ----------
@@ -7091,3 +7096,155 @@ begin
 end $$;
 revoke all on function public.agenda_btg_itens(uuid) from public, anon;
 grant execute on function public.agenda_btg_itens(uuid) to authenticated;
+
+-- ===================================================================
+-- equipe_cadastro.sql (19/11/2026, Hub 3.35): ficha de cadastro da pessoa da equipe
+-- ===================================================================
+-- Ficha de cadastro da pessoa (19/11/2026, Hub 3.35). Pedido do Emil: ao criar o acesso de um assessor, ter a ficha
+-- completa (dados pessoais, vínculo, certificações, contato de emergência), como o Financeiro já tem os dados de
+-- pagamento. A ficha é guardada pelo e-mail para poder ser preenchida já no convite, antes de a conta existir; o
+-- user_id é ligado sozinho quando a conta aparece.
+-- Quem lê e grava: master e quem opera Comissões (Financeiro). A própria pessoa lê a sua. A auditoria registra quais
+-- campos mudaram, nunca os valores (CPF, RG, endereço).
+-- As validades das certificações alimentam o gatilho "Certificação vencendo" da Agenda (equipe_certificacoes).
+-- Rodar inteiro no SQL Editor (Run without RLS).
+
+create table if not exists public.equipe_cadastro (
+  email          text primary key check (email = lower(btrim(email)) and email like '%@%'),
+  user_id        uuid,
+  dados          jsonb not null default '{}'::jsonb check (jsonb_typeof(dados) = 'object'),
+  atualizado_em  timestamptz not null default now(),
+  atualizado_por text
+);
+create index if not exists equipe_cadastro_user on public.equipe_cadastro (user_id);
+alter table public.equipe_cadastro enable row level security;
+drop policy if exists equipe_cadastro_ler on public.equipe_cadastro;
+create policy equipe_cadastro_ler on public.equipe_cadastro for select to authenticated
+  using (user_id = (select auth.uid()) or (select public.eh_super()) or (select public.com_pode_ver()));
+drop policy if exists exige_verificacao on public.equipe_cadastro;
+create policy exige_verificacao on public.equipe_cadastro as restrictive for all to authenticated
+  using ((select public.acesso_liberado())) with check ((select public.acesso_liberado()));
+
+create or replace function public.equipe_cadastro_pode()
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.acesso_liberado() and (public.eh_super() or public.com_pode_ver());
+$$;
+revoke all on function public.equipe_cadastro_pode() from public, anon;
+grant execute on function public.equipe_cadastro_pode() to authenticated;
+
+-- Liga o e-mail à conta (quando ela já existe).
+create or replace function public.equipe_cadastro_conta(p_email text)
+returns uuid language sql stable security definer set search_path = public, auth as $$
+  select id from auth.users where lower(email) = lower(btrim(p_email)) limit 1;
+$$;
+revoke all on function public.equipe_cadastro_conta(text) from public, anon, authenticated;
+
+create or replace function public.equipe_cadastro_ler(p_email text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare v_email text := lower(btrim(coalesce(p_email, ''))); v_uid uuid; r public.equipe_cadastro;
+begin
+  if not public.acesso_liberado() then raise exception 'Acesso não liberado.'; end if;
+  v_uid := public.equipe_cadastro_conta(v_email);
+  if not (public.equipe_cadastro_pode() or (v_uid is not null and v_uid = auth.uid())) then
+    raise exception 'Só o master e o Financeiro veem a ficha de cadastro.';
+  end if;
+  select * into r from public.equipe_cadastro c where c.email = v_email or (v_uid is not null and c.user_id = v_uid)
+   order by (c.email = v_email) desc limit 1;
+  return jsonb_build_object('email', v_email, 'dados', coalesce(r.dados, '{}'::jsonb),
+    'atualizado_em', r.atualizado_em, 'atualizado_por', r.atualizado_por);
+end $$;
+revoke all on function public.equipe_cadastro_ler(text) from public, anon;
+grant execute on function public.equipe_cadastro_ler(text) to authenticated;
+
+create or replace function public.equipe_cadastro_salvar(p_email text, p_dados jsonb)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare v_email text := lower(btrim(coalesce(p_email, ''))); v_uid uuid; v_antes jsonb; v_mudou text;
+begin
+  if not public.equipe_cadastro_pode() then raise exception 'Só o master e o Financeiro editam a ficha de cadastro.'; end if;
+  if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'E-mail inválido.'; end if;
+  if p_dados is null or jsonb_typeof(p_dados) <> 'object' then raise exception 'Ficha inválida.'; end if;
+  if length(p_dados::text) > 30000 then raise exception 'Ficha grande demais.'; end if;
+  v_uid := public.equipe_cadastro_conta(v_email);
+  -- quem trocou de e-mail na Equipe: a ficha segue a conta
+  if v_uid is not null then
+    update public.equipe_cadastro set email = v_email where user_id = v_uid and email <> v_email
+      and not exists (select 1 from public.equipe_cadastro x where x.email = v_email);
+  end if;
+  select dados into v_antes from public.equipe_cadastro where email = v_email;
+  insert into public.equipe_cadastro (email, user_id, dados, atualizado_em, atualizado_por)
+  values (v_email, v_uid, p_dados, now(), coalesce((select email from auth.users where id = auth.uid()), auth.uid()::text))
+  on conflict (email) do update set user_id = coalesce(excluded.user_id, equipe_cadastro.user_id), dados = excluded.dados,
+    atualizado_em = now(), atualizado_por = excluded.atualizado_por;
+  select string_agg(k, ', ' order by k) into v_mudou from (
+    select k from jsonb_object_keys(coalesce(v_antes, '{}'::jsonb) || p_dados) k
+     where (coalesce(v_antes, '{}'::jsonb) -> k) is distinct from (p_dados -> k)) x;
+  insert into public.auditoria (quando, usuario, acao, alvo, detalhe)
+  values (now(), coalesce((select email from auth.users where id = auth.uid()), auth.uid()::text), 'equipe_cadastro', v_email,
+          'campos alterados: ' || coalesce(v_mudou, 'nenhum'));
+  return true;
+end $$;
+revoke all on function public.equipe_cadastro_salvar(text, jsonb) from public, anon;
+grant execute on function public.equipe_cadastro_salvar(text, jsonb) to authenticated;
+
+-- Certificações com validade, para o gatilho da Agenda: a própria pessoa vê as suas; master e admin do CRM, as de todos.
+create or replace function public.equipe_certificacoes()
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.acesso_liberado() then raise exception 'Acesso não liberado.'; end if;
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('pessoa', u, 'cert', c.key, 'vence', c.value #>> '{}'))
+      from (select coalesce(e.user_id, public.equipe_cadastro_conta(e.email)) u, e.dados from public.equipe_cadastro e) x
+     cross join lateral jsonb_each(coalesce(x.dados -> 'certificacoes', '{}'::jsonb)) c
+     where x.u is not null and (c.value #>> '{}') ~ '^\d{4}-\d{2}-\d{2}$'
+       and (x.u = auth.uid() or public.eh_super() or public.is_admin())), '[]'::jsonb);
+end $$;
+revoke all on function public.equipe_certificacoes() from public, anon;
+grant execute on function public.equipe_certificacoes() to authenticated;
+
+
+-- ===================================================================
+-- agenda_outlook.sql (19/11/2026): compromissos do Outlook na Agenda (agendamento nasce desligado)
+-- ===================================================================
+-- Compromissos do Outlook na Agenda (19/11/2026, preparado; liga quando o administrador do Microsoft 365 autorizar).
+-- A função outlook-agenda (Edge Function) lê, só para leitura, o calendário de cada pessoa do Hub com e-mail
+-- @adamicaptal.com.br, do dia anterior até 14 dias à frente, pelo Microsoft Graph com a credencial do aplicativo
+-- (M365_TENANT_ID, M365_CLIENT_ID, M365_CLIENT_SECRET nos Secrets do Supabase). Guarda aqui; a Agenda do CRM e o
+-- e-mail da manhã mostram como Compromissos. Quem lê: a própria pessoa, o admin do CRM e o master.
+-- O agendamento "outlook-agenda" nasce DESLIGADO; liga-se depois de cadastrar os três Secrets.
+-- Rodar inteiro no SQL Editor (Run without RLS).
+
+create table if not exists public.agenda_outlook (
+  id           text primary key,              -- <user_id>:<id do evento no Outlook>
+  user_id      uuid not null,
+  inicio       timestamptz not null,
+  fim          timestamptz,
+  dia_inteiro  boolean not null default false,
+  assunto      text not null default '',
+  local        text not null default '',
+  online       boolean not null default false,
+  organizador  text not null default '',
+  mostrar_como text not null default '',
+  atualizado_em timestamptz not null default now()
+);
+create index if not exists agenda_outlook_user on public.agenda_outlook (user_id, inicio);
+alter table public.agenda_outlook enable row level security;
+drop policy if exists agenda_outlook_ler on public.agenda_outlook;
+create policy agenda_outlook_ler on public.agenda_outlook for select to authenticated
+  using ((select public.is_ativo()) and (user_id = (select auth.uid()) or (select public.is_admin()) or (select public.eh_super())));
+drop policy if exists exige_verificacao on public.agenda_outlook;
+create policy exige_verificacao on public.agenda_outlook as restrictive for all to authenticated
+  using ((select public.acesso_liberado())) with check ((select public.acesso_liberado()));
+drop policy if exists exige_ferramenta on public.agenda_outlook;
+create policy exige_ferramenta on public.agenda_outlook as restrictive for all to authenticated
+  using ((select public.tem_permissao('ferramenta.crm'))) with check ((select public.tem_permissao('ferramenta.crm')));
+
+-- Agendamento: a cada 30 minutos, das 6h às 20h30 de Brasília, dias úteis. Nasce desligado.
+do $$ begin perform cron.unschedule('outlook-agenda'); exception when others then null; end $$;
+select cron.schedule('outlook-agenda', '*/30 9-23 * * 1-5', $c$
+  select net.http_post(
+    url := 'https://ghxjqmjtmbqzvogwzylo.supabase.co/functions/v1/outlook-agenda',
+    headers := jsonb_build_object('Content-Type', 'application/json',
+      'x-btg-sync', (select decrypted_secret from vault.decrypted_secrets where name = 'btg_sync_token')),
+    body := '{}'::jsonb, timeout_milliseconds := 60000);
+$c$);
+select cron.alter_job(job_id := (select jobid from cron.job where jobname = 'outlook-agenda'), active := false);

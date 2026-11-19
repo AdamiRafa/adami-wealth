@@ -115,7 +115,7 @@ td b{color:var(--navy)}
   <p>Este manual mostra o caminho completo: como entrar pela primeira vez, como proteger a sua conta, o que cada ferramenta faz, quando usar e como preencher. As telas que aparecem aqui usam dados fictícios (a "Família Exemplo" e a assessora "Ana Ribeiro"). Os números são ilustrativos.</p>
   <div class="ficha">
     <div><span>Endereço</span><b>adamicaptal.com.br/hub</b></div>
-    <div><span>Versão do Hub</span><b>3.11 · novembro de 2026</b></div>
+    <div><span>Versão do Hub</span><b>3.35 · novembro de 2026</b></div>
     <div><span>Funciona em</span><b>Computador, tablet e celular</b></div>
   </div>
 
@@ -404,16 +404,29 @@ td b{color:var(--navy)}
 <p>As abas <b>Resumo</b>, <b>Carteira</b> e <b>Rotina</b> mostram a mesma carteira por ângulos diferentes: os números do mês, a distribuição por segmento e temperatura, e a disciplina de contatos.</p>
 <figure class="m80"><img src="imgj/21-crm-dash-carteira.jpg"><figcaption>Aba Carteira: distribuição do patrimônio por cliente e por segmento.</figcaption></figure>
 
-<h2>Agenda</h2>
-<p>Suas tarefas e reuniões em visão de hoje, semana ou mês. Cada item tem uma cor conforme a origem: <b>Própria</b> (criada por você), <b>Atribuída</b> (passada pelo head comercial ou por um master), <b>Próximo contato</b> (a data marcada na ficha do cliente), <b>Vencimento</b> (alerta de vencimento de ativo) e <b>Régua</b> (contato previsto pela régua de relacionamento).</p>
-<figure class="m80"><img src="imgj/11-crm-agenda.jpg"><figcaption>Agenda do dia, com a opção de compartilhar com a equipe.</figcaption></figure>
+<h2>Agenda: a missão do dia</h2>
+<p>A Agenda é a primeira tela do dia. Ela junta, numa lista só, o que você precisa fazer hoje, em duas partes:</p>
+<ul>
+  <li><b>Compromissos de hoje</b>: reuniões e ligações com hora marcada, as rotinas fixas da casa (reunião semanal, comitê) e, quando o Microsoft 365 estiver ligado, as reuniões do seu <b>Outlook</b> (só leitura: para mudar, mude no Outlook).</li>
+  <li><b>Tarefas de hoje</b>: o que o Hub encontrou para você, em ordem de prioridade. Até 12 por dia; o dinheiro parado em conta acima de R$ 10 mil entra sempre, mesmo passando do limite. O que sobrar aparece no dia seguinte.</li>
+</ul>
+<figure class="m80"><img src="imgj/11-crm-agenda.jpg"><figcaption>Agenda de hoje: compromissos em cima (com o Outlook), tarefas embaixo e os próximos 7 dias ao lado.</figcaption></figure>
+<p>A cor da faixa de cada item diz de onde ele veio:</p>
+<ul>
+  <li><b>Carteira</b>: avisos dos dados do BTG do último dia útil: dinheiro parado em conta, vencimentos nos próximos 15 dias, aniversário do cliente, saída de recursos, concentração acima do FGC.</li>
+  <li><b>Processo</b>: etapas do processo comercial que pedem ação: primeiro contato com o lead novo, follow-up de proposta sem retorno, boas-vindas ao cliente captado.</li>
+  <li><b>Especialista</b>: um especialista de produto (seguro, consórcio) indicou um cliente seu com perfil para o produto. Fale com o cliente e responda.</li>
+  <li><b>Rotina</b> e <b>Capacitação</b>: tarefas fixas definidas pela gestão (ler o cenário, conteúdo da semana) e o aviso de certificação perto de vencer.</li>
+  <li><b>Própria</b>, <b>Atribuída</b>, <b>Próximo contato</b> e <b>Régua</b>: as suas tarefas, as passadas pelo head comercial, a data de próximo contato da ficha do cliente e a régua de relacionamento.</li>
+</ul>
 <ol class="passos">
-  <li>Clique em <b>+ Nova tarefa</b>.</li>
-  <li>Dê um título, escolha o tipo (ligação, reunião, e-mail ou tarefa interna), a data e o horário. Se for recorrente, escolha a repetição: todo dia útil, toda semana ou todo mês.</li>
-  <li>Se quiser, vincule a um cliente. Salve.</li>
-  <li>Ao concluir, marque a tarefa como feita. Se ela estiver vinculada a um cliente, a conclusão vira uma atividade na ficha dele.</li>
+  <li>Comece o dia pelos <b>Compromissos</b> e depois desça pelas <b>Tarefas</b>, de cima para baixo.</li>
+  <li>Clique no nome do cliente para abrir a ficha dele.</li>
+  <li>Fez? Marque o <b>círculo</b> à esquerda. O item vai para <b>Feitas hoje</b>; se estiver ligado a um cliente, vira uma atividade na ficha. Marcou sem querer, é só desfazer em Feitas hoje.</li>
+  <li>Para criar a sua própria tarefa, clique em <b>+ Nova tarefa</b>: título, tipo (ligação, reunião, e-mail ou tarefa interna), data, horário, repetição e, se quiser, o cliente.</li>
 </ol>
-<p>Todo dia de manhã, o Hub manda para o seu e-mail um resumo da agenda do dia. A opção <b>Compartilhar minha agenda com a equipe</b> deixa os colegas verem os seus compromissos, só para leitura.</p>
+<p>As abas <b>Semana</b> e <b>Mês</b> mostram o que vem pela frente. A opção <b>Compartilhar minha agenda com a equipe</b> deixa os colegas verem os seus compromissos, só para leitura; o head comercial e os masters veem sempre. Quem é master escolhe em <b>Gatilhos</b> quais avisos automáticos a casa usa.</p>
+<p><b>Indicar clientes</b> (para especialistas de produto): no menu do CRM, filtre a base por patrimônio, idade, profissão ou cidade, marque os clientes com perfil, escreva o porquê e envie. Cada indicação vira uma tarefa na Agenda do assessor do cliente.</p>
 
 <h2>Minha carteira, Captados e Desqualificados</h2>
 <ul>
@@ -791,6 +804,8 @@ td b{color:var(--navy)}
     <tr><td>☐</td><td>Escolher o visual (Dia, Noite ou Sistema)</td><td>04 Tela inicial</td></tr>
     <tr><td>☐</td><td>Conferir no CRM se a sua carteira está completa</td><td>06 CRM</td></tr>
     <tr><td>☐</td><td>Marcar o próximo contato de cada cliente ativo</td><td>06 CRM</td></tr>
+    <tr><td>☐</td><td>Abrir a Agenda e concluir a primeira tarefa do dia</td><td>06 CRM</td></tr>
+    <tr><td>☐</td><td>Conferir se as reuniões do Outlook aparecem nos Compromissos</td><td>06 CRM</td></tr>
     <tr><td>☐</td><td>Decidir se compartilha a agenda com a equipe</td><td>06 CRM</td></tr>
     <tr><td>☐</td><td>Ler a trilha R1 a R4 no Processo Comercial</td><td>07 Processo Comercial</td></tr>
     <tr><td>☐</td><td>Abrir o Relatório Consolidado de um cliente e gerar o PDF</td><td>08 Carteiras</td></tr>
@@ -817,7 +832,7 @@ td b{color:var(--navy)}
     <tr><td><b>Enquadramento</b></td><td>A comparação da carteira atual com a política de alocação definida para o cliente.</td></tr>
   </tbody>
 </table>
-<p style="margin-top:18pt;font-size:8.5pt;color:var(--cinza)">Manual do Hub Adami · versão 3.11 · novembro de 2026. Documento de uso interno da Adami Captal. As telas usam dados fictícios. Quando o Hub ganhar novidades, este manual é atualizado e o número de versão muda.</p>
+<p style="margin-top:18pt;font-size:8.5pt;color:var(--cinza)">Manual do Hub Adami · versão 3.35 · novembro de 2026. Documento de uso interno da Adami Captal. As telas usam dados fictícios. Quando o Hub ganhar novidades, este manual é atualizado e o número de versão muda.</p>
 
 <script>
 /* Preenche os números de página do sumário a partir de window.PAGINAS (injetado na segunda passada). */

@@ -847,6 +847,7 @@ html[data-cor="noite"] .eqx{--m-bg:#111F35;--m-tx:#EEF2F8;--m-tx2:#B5C0D0;--m-tx
 .eqaba:hover{color:var(--m-tx)}
 .eqaba.on{color:var(--m-tx);border-bottom-color:#C0A265;font-weight:600}
 .eqform{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 18px;align-items:start}
+@media screen{.cad-grupo{grid-column:1/-1;font:600 12px Inter,"Segoe UI",sans-serif;color:var(--m-tx);margin-top:8px;padding-top:12px;border-top:1px solid var(--m-ln)}.cad-largo{grid-column:1/-1}.cad-form textarea{min-height:76px;padding:10px 12px;border:1px solid var(--m-ln);border-radius:12px;font:14px Inter,"Segoe UI",sans-serif;background:var(--m-in,#fff);color:var(--m-tx);resize:vertical}.cad-det{grid-column:1/-1;border:1px dashed var(--m-ln);border-radius:12px;padding:10px 14px}.cad-det summary{cursor:pointer;font-weight:600;color:var(--m-tx);font-size:13.5px}.cad-det[open] summary{margin-bottom:12px}}
 .eqform label,.eqform .eqrot{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--m-tx3);font-weight:600}
 .eqform input,.eqform select,.eqx .eqsel,.eqx .eqcod{height:44px;padding:0 12px;border:1px solid var(--m-ln);border-radius:12px;
   background:var(--m-in);color:var(--m-tx);font:14px Inter,"Segoe UI",sans-serif;box-sizing:border-box;width:100%}
@@ -1781,7 +1782,7 @@ function blocoAcessosDaPessoa(p){
    (equipe.sql). Excluir só vale para quem não tem cliente: apagar a pessoa
    deixaria os clientes do CRM sem responsável. */
 var PESSOA_ID=null;
-function abrirPessoa(i){ var p=EQUIPE[i]; if(!p) return; PESSOA_ID=p.user_id; ABA_EQ="pessoa"; pintarEquipe(); carregarPagto(p.user_id); }
+function abrirPessoa(i){ var p=EQUIPE[i]; if(!p) return; PESSOA_ID=p.user_id; ABA_EQ="pessoa"; pintarEquipe(); carregarPagto(p.user_id); carregarCadastro(p.email); }
 /* Dados de pagamento (Comissões, 2.97): CPF/CNPJ, PIX e conta para a transferência da comissão.
    Ficam em comissao_dados_pagto; o master e quem opera comissões leem e gravam (comissoes.sql). */
 var PAGTO={};
@@ -1814,6 +1815,73 @@ function salvarPagto(){
     .then(function(){ carregarPagto(uid,"Dados de pagamento salvos."); })
     .catch(function(e){ msgEq(String(e.message||e),true); });
 }
+/* ---------- Ficha de cadastro da pessoa (3.35, equipe_cadastro.sql) ----------
+   Dados pessoais, vínculo, certificações e contato de emergência. Guardada pelo e-mail, para poder ser
+   preenchida já no convite. Só o master e o Financeiro leem e gravam; a auditoria registra quais campos
+   mudaram, nunca os valores. As validades das certificações viram aviso na Agenda (gatilho Certificação). */
+var CAD_GRUPOS=[
+  ["Dados pessoais",[["nome_completo","Nome completo"],["cpf","CPF"],["rg","RG e órgão emissor"],["nascimento","Data de nascimento","date"],
+    ["estado_civil","Estado civil","sel",["","Solteiro(a)","Casado(a)","União estável","Divorciado(a)","Viúvo(a)"]],
+    ["celular","Celular"],["email_pessoal","E-mail pessoal","email"]]],
+  ["Endereço",[["cep","CEP"],["endereco","Rua e número"],["complemento","Complemento"],["bairro","Bairro"],["cidade","Cidade"],["uf","UF"]]],
+  ["Vínculo com a Adami",[["cargo","Cargo ou função"],["area","Área","sel",["","Comercial","Wealth Planning","Especialista de produto","Mesa RV","Financeiro","Operações","Marketing","Diretoria"]],
+    ["vinculo","Tipo de vínculo","sel",["","Sócio(a)","Assessor(a) PJ","CLT","Estágio","Outro"]],["admissao","Data de entrada","date"],
+    ["empresa_pj","Razão social da PJ (se houver)"],["cnpj_pj","CNPJ da PJ"],["gestor","Gestor direto"],
+    ["cod_btg","Código de assessor no BTG"],["registro_ancord","Registro Ancord / CVM"]]],
+  ["Contato de emergência",[["emerg_nome","Nome"],["emerg_parentesco","Parentesco"],["emerg_telefone","Telefone"]]],
+  ["Observações",[["obs","Observações","area"]]]
+];
+var CAD_CERTS=["CPA-10","CPA-20","CEA","CFP","Ancord","CNPI","CGA"];
+var CADASTRO={};
+function formCadastro(px,d){
+  d=d||{}; var certs=d.certificacoes||{};
+  var campo=function(c){
+    var id=px+"_"+c[0], v=d[c[0]]==null?"":String(d[c[0]]), tipo=c[2]||"text";
+    var inp= tipo==="sel" ? '<select id="'+id+'">'+c[3].map(function(o){ return '<option'+(v===o?" selected":"")+'>'+esc(o)+'</option>'; }).join("")+'</select>'
+      : tipo==="area" ? '<textarea id="'+id+'" maxlength="2000" rows="3">'+esc(v)+'</textarea>'
+      : '<input id="'+id+'" type="'+tipo+'" maxlength="160" value="'+esc(v)+'">';
+    return '<div class="eqc'+(tipo==="area"?" cad-largo":"")+'"><label for="'+id+'">'+esc(c[1])+'</label>'+inp+'</div>';
+  };
+  return CAD_GRUPOS.map(function(g){ return '<div class="cad-grupo">'+esc(g[0])+'</div>'+g[1].map(campo).join(""); }).join("")+
+    '<div class="cad-grupo">Certificações (deixe em branco a que a pessoa não tem)</div>'+
+    CAD_CERTS.map(function(c,i){ var id=px+"_cert_"+i;
+      return '<div class="eqc"><label for="'+id+'">'+esc(c)+': válida até</label><input id="'+id+'" type="date" value="'+esc(certs[c]||"")+'"></div>'; }).join("");
+}
+function lerCadastro(px){
+  var d={}, certs={};
+  CAD_GRUPOS.forEach(function(g){ g[1].forEach(function(c){ var e=document.getElementById(px+"_"+c[0]); var v=e?String(e.value||"").trim():""; if(v) d[c[0]]=v; }); });
+  CAD_CERTS.forEach(function(c,i){ var e=document.getElementById(px+"_cert_"+i); if(e&&/^\d{4}-\d{2}-\d{2}$/.test(e.value)) certs[c]=e.value; });
+  if(Object.keys(certs).length) d.certificacoes=certs;
+  return d;
+}
+function carregarCadastro(email,aviso){
+  var k=String(email||"").toLowerCase();
+  if(!aviso) CADASTRO[k]={carregando:true};
+  return api("rpc/equipe_cadastro_ler",{method:"POST",body:{p_email:k}})
+    .then(function(r){ CADASTRO[k]=r||{dados:{}}; })
+    .catch(function(e){ CADASTRO[k]={erro:String(e.message||e)}; })
+    .then(function(){ if(ABA_EQ==="pessoa"||ABA_EQ==="convidar"){ pintarEquipe(); if(aviso) msgEq(aviso); } });
+}
+function blocoCadastro(email){
+  var k=String(email||"").toLowerCase(), c=CADASTRO[k];
+  var h='<h3 class="eqtit">Ficha de cadastro</h3>';
+  if(!c||c.carregando) return h+'<p class="eqsub">Carregando…</p>';
+  if(c.erro) return h+'<p class="eqsub">'+(/equipe_cadastro/.test(c.erro)?"Ainda não instalada no Supabase (equipe_cadastro.sql).":esc(c.erro))+'</p>';
+  return h+'<p class="eqsub">Dados pessoais, vínculo e certificações. Só o master e o Financeiro preenchem. As validades das certificações viram aviso na Agenda da pessoa quando o gatilho "Certificação vencendo" está ligado.'+
+    (c.atualizado_em?' Última alteração: '+esc(quandoCurto(c.atualizado_em))+(c.atualizado_por?' por '+esc(c.atualizado_por):'')+'.':'')+'</p>'+
+    '<div class="eqform cad-form">'+formCadastro("cad",c.dados)+
+    '<button class="btn pri eqconvidar" onclick="salvarCadastro('+jsStr(k)+')">Salvar ficha de cadastro</button></div>';
+}
+function salvarCadastro(email,px,depois){
+  var dados=lerCadastro(px||"cad");
+  msgEq("Salvando a ficha…");
+  return api("rpc/equipe_cadastro_salvar",{method:"POST",body:{p_email:email,p_dados:dados}})
+    .then(function(){ if(depois) return depois(); return carregarCadastro(email,"Ficha de cadastro salva."); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
+}
+/* Completar a ficha de quem ainda não fez o primeiro acesso (lista de convites). */
+var CAD_CONVITE=null;
+function abrirCadastroConvite(email){ CAD_CONVITE=CAD_CONVITE===email?null:email; if(CAD_CONVITE) carregarCadastro(email); else pintarEquipe(); }
 function pessoaAtual(){ for(var i=0;i<EQUIPE.length;i++) if(EQUIPE[i].user_id===PESSOA_ID) return EQUIPE[i]; return null; }
 function quandoCurto(t){
   if(!t) return "nunca";
@@ -1848,6 +1916,7 @@ function blocoPessoa(){
     h+='<p class="eqsub">Revogar bloqueia o login na hora, derruba a sessão aberta e tira a pessoa do CRM. Os clientes e o histórico continuam. Dá para reativar depois.</p>'+
        (eu?'<p class="eqsub">Você não pode revogar o seu próprio acesso.</p>':'<button class="eqbt perigo" onclick="revogarPessoa()">Revogar acesso</button>');
   }
+  h+=blocoCadastro(p.email);
   h+=blocoPagto(p.user_id);
   h+='<h3 class="eqtit">Excluir da equipe</h3>';
   if(eu) h+='<p class="eqsub">Você não pode excluir a si mesmo.</p>';
@@ -2018,6 +2087,8 @@ function blocoConvite(){
         '<label class="eqchk"><input type="checkbox" id="cvRv"> Mesa RV</label>'+
         '<label class="eqchk"><input type="checkbox" id="cvFin"> Financeiro</label>'+
         '<label class="eqchk"><input type="checkbox" id="cvMaster"> Master</label></div></div>'+
+      '<details class="cad-det"><summary>Ficha de cadastro (opcional: dá para completar depois, na ficha da pessoa)</summary>'+
+        '<div class="eqform cad-form">'+formCadastro("cv",{})+'</div></details>'+
       '<button class="btn pri eqconvidar" onclick="enviarConvite()">Convidar e enviar o e-mail</button>'+
     '</div>';
   if(CONVITES.length){
@@ -2026,8 +2097,10 @@ function blocoConvite(){
       h+='<tr><td><div class="eqnome">'+esc(c.nome||"—")+'</div>'+
          '<div class="eqmail">'+esc(c.email)+'</div></td>'+
          '<td><span class="eqpapel">'+esc(({vendedor:"Assessor",especialista:"Especialista",admin:"Admin do CRM"})[c.role]||c.role)+(c.master?" · master":"")+(c.admin?" · administrador":"")+(c.mesa_rv?" · Mesa RV":"")+(c.financeiro?" · Financeiro":"")+'</span></td>'+
-         '<td class="eqacoes"><button class="eqbt" onclick="reenviarConvite('+jsStr(c.email)+')">Reenviar e-mail</button>'+
+         '<td class="eqacoes"><button class="eqbt" onclick="abrirCadastroConvite('+jsStr(c.email)+')">'+(CAD_CONVITE===c.email?'Fechar ficha':'Ficha de cadastro')+'</button>'+
+         '<button class="eqbt" onclick="reenviarConvite('+jsStr(c.email)+')">Reenviar e-mail</button>'+
          '<button class="eqbt perigo" onclick="revogar('+jsStr(c.email)+')">Revogar</button></td></tr>';
+      if(CAD_CONVITE===c.email) h+='<tr><td colspan="3">'+blocoCadastro(c.email)+'</td></tr>';
     });
     h+='</table>';
   }
@@ -2072,9 +2145,15 @@ function enviarConvite(){
     p_email:email, p_nome:nome, p_role:g("cvRole"),
     p_master:c("cvMaster"), p_admin:c("cvAdmin"), p_mesa_rv:c("cvRv"), p_produtos:[], p_financeiro:c("cvFin")}})
     .then(function(){
+      var ficha=lerCadastro("cv");
+      if(Object.keys(ficha).length) return api("rpc/equipe_cadastro_salvar",{method:"POST",body:{p_email:email,p_dados:ficha}})
+        .then(function(){ return ""; },function(e){ return " Atenção: a ficha de cadastro não foi salva ("+String(e.message||e)+"); complete pelo botão Ficha de cadastro na lista de convites."; });
+      return "";
+    })
+    .then(function(avisoFicha){
       msgEq("Convite criado. Enviando o e-mail de boas-vindas…");
       return enviarEmailConvite(email).then(function(){
-        msgEq("Convite enviado. "+nome+" recebeu o e-mail de boas-vindas em "+email+".");
+        msgEq("Convite enviado. "+nome+" recebeu o e-mail de boas-vindas em "+email+"."+avisoFicha,!!avisoFicha);
       },function(err){
         msgEq("Convite criado, mas o e-mail não saiu: "+String(err.message||err)+
               " Avise "+nome+" para entrar em adamicaptal.com.br/hub pelo \"Primeiro acesso\", "+
@@ -2149,7 +2228,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.34";
+var VERSAO="versão 3.35";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -6702,7 +6781,12 @@ function hbChecklistItens(naoLidos){
   var c=INICIO.check; if(!c) return null;
   var crm=podeFerramenta("crm"), it=[];
   it.push({feito:!!c.app,titulo:"Ligue o app autenticador",texto:"Você entra mesmo quando o e-mail atrasar e pode marcar este computador para não pedir o código por 7 dias.",botao:"Ligar agora",acao:"abrirSeguranca()"});
+  /* 3.35: a Agenda do CRM é o ponto de partida do dia do assessor. */
+  if(crm) it.push({feito:!!c.agenda,titulo:"Abra a Agenda e conclua a primeira tarefa do dia",texto:"A Agenda do CRM monta a sua missão do dia: compromissos, clientes para ligar e avisos da carteira do BTG. Fez, marque o círculo.",botao:"Abrir a Agenda",acao:"location.href='crm.html#agenda'"});
+  if(crm&&c.outlook_ligado) it.push({feito:!!c.outlook_meu,titulo:"Confira suas reuniões do Outlook na Agenda",
+    texto:c.outlook_meu?"O seu calendário do Outlook já aparece nos Compromissos.":"O seu calendário ainda não chegou. O e-mail do Hub precisa ser o mesmo do Outlook (@adamicaptal.com.br); se for, avise o master.",botao:"Abrir a Agenda",acao:"location.href='crm.html#agenda'"});
   it.push({feito:hbLer("aw_manual_aberto")==="1",titulo:"Dê uma olhada no manual do Hub",texto:"O passo a passo de cada ferramenta, com exemplos.",botao:"Abrir o manual",acao:"hbAbrirManual()"});
+  it.push({feito:hbLer("aw_celular")==="1",titulo:"Instale o Hub no celular",texto:"Vira um ícone na tela do celular, como um aplicativo, para ver a Agenda fora do escritório.",botao:"Como instalar",acao:"hbComoInstalar()"});
   if(INICIO.avisos) it.push({feito:!naoLidos,titulo:"Leia os avisos da casa",texto:naoLidos?naoLidos+(naoLidos===1?" aviso ainda não lido.":" avisos ainda não lidos."):"Todos lidos.",botao:"Ver avisos",acao:"hbIrAvisos()"});
   if(crm) it.push({feito:!!c.atividade,titulo:"Registre sua primeira atividade no CRM",texto:"Na ficha do cliente, em Atividades e histórico: ligação, reunião ou mensagem.",botao:"Abrir o CRM",acao:"location.href='crm.html'"});
   if(crm&&c.jornada>0) it.push({feito:!c.jornada_sem_contato,titulo:"Marque o próximo contato de quem está em jornada",
@@ -6724,6 +6808,26 @@ function hbChecklistHtml(naoLidos){
         (x.feito?'':'<button type="button" class="hb-pil" onclick="'+x.acao+'">'+esc(x.botao)+'</button>')+'</li>';
     }).join("")+'</ol></section>';
 }
+/* Instruções para pôr o Hub na tela do celular (app.webmanifest). Marca o passo como visto; aberto
+   pelo ícone instalado, marca sozinho. */
+function hbComoInstalar(){
+  hbGravar("aw_celular","1");
+  if(!document.getElementById("celv")){
+    var d=document.createElement("div");
+    d.id="celv"; d.className="eqv";
+    d.onclick=function(e){ if(e.target===d){ d.style.display="none"; render(true); } };
+    document.body.appendChild(d);
+  }
+  var v=document.getElementById("celv");
+  v.innerHTML='<div class="eqx"><h2>Hub no celular</h2>'+
+    '<p class="eqsub">Abra <b>adamicaptal.com.br/hub</b> no navegador do celular e entre com o seu e-mail e senha. Depois:</p>'+
+    '<h3 class="eqtit">iPhone (Safari)</h3><ol class="eqsub"><li>Toque no botão de compartilhar (o quadrado com a seta para cima).</li><li>Role e toque em <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>.</li></ol>'+
+    '<h3 class="eqtit">Android (Chrome)</h3><ol class="eqsub"><li>Toque nos três pontinhos, no canto de cima.</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme.</li></ol>'+
+    '<p class="eqsub">Pronto: o ícone do Hub Adami aparece junto com os outros aplicativos. O código de acesso continua valendo como no computador.</p>'+
+    '<button class="btn pri eqconvidar" onclick="document.getElementById(\'celv\').style.display=\'none\';render(true)">Entendi</button></div>';
+  v.style.display="flex";
+}
+try{ if((window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone) hbGravar("aw_celular","1"); }catch(e){}
 function hbAbrirManual(){ hbGravar("aw_manual_aberto","1"); window.open("ajuda/Manual-do-Hub.pdf","_blank","noopener"); render(true); }
 function hbIrAvisos(){ var a=document.getElementById("hbAvisos"); if(a) a.scrollIntoView({behavior:"smooth",block:"start"}); }
 function hbAvisoAparelhoHtml(){

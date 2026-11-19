@@ -178,7 +178,12 @@ begin
                  where l.responsavel_id = v_uid and l.esteira = 'novo'
                    and not coalesce(l.excluido, false) and not coalesce(l.perdido, false) and not coalesce(l.ganho, false)
                    and l.proximo_contato is null),
-    'aparelho', exists (select 1 from public.acesso_aparelhos where user_id = v_uid and expira_em > now()));
+    'aparelho', exists (select 1 from public.acesso_aparelhos where user_id = v_uid and expira_em > now()),
+    -- 3.35: Agenda (concluiu ao menos uma tarefa ou aviso) e Outlook (integração ligada e o calendário da pessoa chegando).
+    'agenda', exists (select 1 from public.agenda_resolvidos r where r.resolvido_por = v_uid)
+           or exists (select 1 from public.tarefas t where t.dono_id = v_uid and cardinality(t.concluidas) > 0),
+    'outlook_ligado', exists (select 1 from public.agenda_outlook),
+    'outlook_meu', exists (select 1 from public.agenda_outlook o where o.user_id = v_uid));
 end $$;
 
 -- ---------- 3. Reportar problema ----------

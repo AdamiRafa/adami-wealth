@@ -55,7 +55,7 @@
       "Toda conversa com cliente vira uma atividade na ficha, e todo cliente em jornada tem um próximo contato.",
       "Na ficha, Ferramentas para este cliente abre o Wealth Planning, a Liberdade Financeira e o relatório já preenchidos.",
       "Arraste o cartão para a próxima etapa quando a reunião acontecer.",
-      "Agenda: tarefas, próximos contatos e vencimentos. Pode ser compartilhada com a equipe."] },
+      "Agenda: a missão do dia. Compromissos em cima (inclusive o Outlook), tarefas embaixo. Fez, marque o círculo."] },
     processo: { nome: "Processo Comercial", pag: 21, itens: [
       "Segmentos: Advisory até R$ 1 mi, Exclusive de R$ 1 a 5 mi, Private acima de R$ 5 mi.",
       "Trilha do cliente novo: R1 Descoberta, R2 Proposta, R2.1 Consolidação, R3 Liberdade Financeira, R4 Produto.",

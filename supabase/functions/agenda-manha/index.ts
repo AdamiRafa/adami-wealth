@@ -11,7 +11,8 @@
 //  - desde 19/11/2026, os gatilhos que o master ligou (agenda_gatilhos.sql): avisos da carteira pelos dados do BTG
 //    (agenda_btg_montar), processo comercial, indicações dos especialistas, rotina e capacitação. Separados em
 //    Compromissos (o que tem hora ou é reunião) e Tarefas (pela prioridade). O catálogo AG abaixo espelha o
-//    AG_GATILHOS do crm.html (prio, padrão, quando). Mudou lá, muda aqui.
+//    AG_GATILHOS do crm.html (prio, padrão, quando). Mudou lá, muda aqui. Também entram os compromissos do Outlook
+//    (agenda_outlook, função outlook-agenda) e as validades das certificações da ficha de cadastro (equipe_cadastro).
 //
 // Segurança: chamar esta função não dá acesso a nada. A resposta só traz contagens (o
 // detalhe por pessoa vai para os Logs da função). Ela não recebe parâmetro, só envia
@@ -173,7 +174,9 @@ type BtgItem = { gatilho: string; chave: string; lead_id: string; dono_id: strin
   info: { ativos?: string[]; emissor?: string } };
 type Oport = { id: string; lead_id: string; produto: string; nota: string | null; especialista_id: string; dono_id: string | null };
 type Perfil = { id: string; nome: string; role: string | null };
-type Extra = { gat: Gat; btg: BtgItem[]; feitas: Set<string>; oport: Oport[]; perfis: Perfil[] };
+type Ol = { user_id: string; inicio: string; fim: string | null; dia_inteiro: boolean; assunto: string; local: string; online: boolean };
+type Cert = { pessoa: string; cert: string; vence: string };
+type Extra = { gat: Gat; btg: BtgItem[]; feitas: Set<string>; oport: Oport[]; perfis: Perfil[]; outlook: Ol[]; certs: Cert[] };
 
 function caiEm(t: Tarefa, dia: string): boolean {
   if (!t.data || dia < t.data) return false;
@@ -407,9 +410,19 @@ function itensGatilhos(donoId: string, leads: Lead[], ex: Extra, hoje: string, a
       }
     }
   }
+  // Compromissos do Outlook (agenda_outlook): hoje e a prévia de amanhã, no horário de Brasília.
+  for (const ev of ex.outlook) {
+    if (ev.user_id !== donoId) continue;
+    const dia = ev.dia_inteiro ? String(ev.inicio).slice(0, 10) : isoBrasiliaDeTimestamp(ev.inicio);
+    const hm = (ts: string | null) => ts ? new Intl.DateTimeFormat("en-GB", { timeZone: FUSO, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(ts)) : "";
+    const it: Item = { dia: dia ?? "", hora: ev.dia_inteiro ? "" : hm(ev.inicio), titulo: ev.assunto || "(sem assunto)", cliente: "", origem: "Outlook", repete: "",
+      prio: 92, compromisso: true, detalhe: [ev.dia_inteiro ? "dia inteiro" : (ev.fim ? "até " + hm(ev.fim) : ""), ev.local, ev.online ? "online" : ""].filter(Boolean).join(" · ") };
+    if (dia === hoje) doDia.push(it); else if (dia === amanha) proximo.push(it);
+  }
   const pCert = gatOn(ex.gat, "cap_certificacao");
-  if (pCert && Array.isArray(pCert.lista)) {
-    for (const c of pCert.lista as Array<{ pessoa?: string; cert?: string; vence?: string }>) {
+  if (pCert) {
+    const lista = (Array.isArray(pCert.lista) ? pCert.lista : []) as Array<{ pessoa?: string; cert?: string; vence?: string }>;
+    for (const c of lista.concat(ex.certs)) {
       if (!c || c.pessoa !== donoId || !c.cert || !/^\d{4}-\d{2}-\d{2}$/.test(c.vence ?? "")) continue;
       if (soma(c.vence!, -nnum(pCert.dias, 90)) > hoje) continue;
       const chave = "cert:" + String(c.cert).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30) + ":" + c.vence + ":" + donoId;
@@ -462,7 +475,7 @@ function montarAgenda(donoId: string, tarefas: Tarefa[], leads: Lead[], hoje: st
 
 // ---------- e-mail ----------
 const COR: Record<string, string> = { "Tarefa": "#195AB4", "Atribuída": "#7C5CC4", "Próximo contato": "#2F7A56", "Vencimento": "#B3403A", "Régua": "#8A6A18",
-  "Carteira": "#0E7490", "Processo": "#C2410C", "Especialista": "#B4357A", "Rotina": "#5B6676", "Capacitação": "#4D7C0F" };
+  "Carteira": "#0E7490", "Processo": "#C2410C", "Especialista": "#B4357A", "Rotina": "#5B6676", "Capacitação": "#4D7C0F", "Outlook": "#0F6CBD" };
 const F = "font-family:Helvetica, Arial, sans-serif;";
 function linhaHtml(it: Item, comDia: boolean): string {
   const meta = [comDia ? "desde " + curta(it.dia) : "", it.detalhe ?? "", it.cliente, it.origem, it.repete ? "repete " + it.repete : ""].filter(Boolean).join(" · ");
@@ -513,7 +526,7 @@ Deno.serve(async (_req: Request) => {
 
   let perfis: Perfil[], tarefas: Tarefa[], leads: Lead[];
   const emails = new Map<string, string>();
-  const ex: Extra = { gat: {}, btg: [], feitas: new Set(), oport: [], perfis: [] };
+  const ex: Extra = { gat: {}, btg: [], feitas: new Set(), oport: [], perfis: [], outlook: [], certs: [] };
   try {
     perfis = await lerTudo<Perfil>("/rest/v1/profiles?select=id,nome,role&status=eq.ativo");
     ex.perfis = perfis;
@@ -541,6 +554,15 @@ Deno.serve(async (_req: Request) => {
     const rb = await servico("/rest/v1/rpc/agenda_btg_montar", { method: "POST", body: JSON.stringify({ p_dono: null, v_vis: null }) });
     if (rb.ok) { const j = await rb.json(); if (Array.isArray(j)) ex.btg = j as BtgItem[]; }
     else console.error("agenda_btg_montar", rb.status, (await rb.text()).slice(0, 200));
+    ex.outlook = await lerTudo<Ol>("/rest/v1/agenda_outlook?select=user_id,inicio,fim,dia_inteiro,assunto,local,online&inicio=gte." +
+      encodeURIComponent(soma(hoje, -1) + "T03:00:00Z") + "&inicio=lt." + encodeURIComponent(soma(hoje, 5) + "T03:00:00Z"));
+    // Validades das certificações da ficha de cadastro (equipe_cadastro), pelo e-mail ou pela conta.
+    const porEmail = new Map<string, string>(); for (const [id, em] of emails) porEmail.set(em, id);
+    for (const c of await lerTudo<{ email: string; user_id: string | null; dados: { certificacoes?: Record<string, string> } }>("/rest/v1/equipe_cadastro?select=email,user_id,dados")) {
+      const pessoa = c.user_id ?? porEmail.get(c.email);
+      if (!pessoa) continue;
+      for (const [cert, vence] of Object.entries(c.dados?.certificacoes ?? {})) ex.certs.push({ pessoa, cert, vence: String(vence) });
+    }
   } catch (e) {
     console.error("gatilhos", e);
   }
