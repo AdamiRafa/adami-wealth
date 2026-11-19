@@ -12219,6 +12219,11 @@ function agGatilhosAtrasados({ gat, resolvidos, users, donos, hoje }){
 const agOrdenarMissao = (a, b) => (b.prio || 0) - (a.prio || 0) || (b.valor || 0) - (a.valor || 0)
   || (a.hora || '99').localeCompare(b.hora || '99') || a.titulo.localeCompare(b.titulo);
 const agComPrio = (it) => it.prio ? it : { ...it, prio: AG_PRIO_ORIGEM[it.origem] || 50 };
+/* Compromisso = o que tem dia e hora marcados com alguém: tarefa da Agenda do tipo reunião, qualquer tarefa da
+   Agenda com hora, a reunião comercial e o comitê da rotina, e (quando ligado) o Outlook. O resto é tarefa. */
+const AG_ROTINA_COMPROMISSO = { rot_reuniao_semanal: true, rot_comite: true };
+const agEhCompromisso = (it) => it.origem === 'outlook' || AG_ROTINA_COMPROMISSO[it.gatilho] === true
+  || (!!it.tarefa && (it.tipo === 'reuniao' || !!it.hora));
 
 /* ---------- Tela do master: quais gatilhos valem e com que números ---------- */
 function AgendaGatilhos({ gat, users, onSalvar, onClose }){
@@ -12305,8 +12310,8 @@ function AgendaGatilhos({ gat, users, onSalvar, onClose }){
       h('div', { className: 'modal-body gat-corpo' },
         h('p', { className: 'gat-intro' }, 'Escolha quais tarefas o Hub cria sozinho para os assessores. Vale para todos na hora; o assessor não muda nada disso.'),
         h('div', { className: 'gat-cartao on gat-geral' },
-          h('div', { className: 'gat-topo' }, h('strong', null, 'Limite da missão do dia')),
-          h('p', { className: 'gat-desc' }, 'Quantas tarefas aparecem de saída para cada assessor, as mais importantes primeiro. O resto fica em "Mostrar mais". Dinheiro parado em conta não entra na conta: aparece todo.'),
+          h('div', { className: 'gat-topo' }, h('strong', null, 'Limite de tarefas do dia')),
+          h('p', { className: 'gat-desc' }, 'Quantas tarefas aparecem de saída para cada assessor, as mais importantes primeiro. O resto fica em "Mostrar mais". Dinheiro parado em conta aparece todo, na mesma lista, sem gastar o limite. Compromissos (reuniões e ligações marcadas) não entram no limite.'),
           h('div', { className: 'gat-campos' }, campo('geral', { k: 'limite', rot: 'Tarefas por dia', tipo: 'numero' })),
           mudou('geral') ? h('div', { className: 'gat-salvar' },
             h('button', { type: 'button', className: 'btn btn-primary', disabled: salvando === 'geral', onClick: () => salvar('geral') }, 'Salvar')) : null),
@@ -12636,9 +12641,10 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
           title: semTabela ? 'Falta criar a tabela de tarefas no banco' : '' }, h(IconPlus, { size: 15 }), 'Nova tarefa'))),
     h('h2', { className: 'ag-dia-titulo' }, agDataLonga(hoje)),
     h('div', { className: 'pn-pilulas' },
-      h('span', { className: 'pn-pilula' }, resumo.abertas
-        ? agPlural(resumo.abertas, 'tarefa aberta hoje', 'tarefas abertas hoje')
-        : (resumo.total ? 'Tudo feito hoje' : 'Nada marcado para hoje')),
+      (() => { const comp = itensHoje.filter(i => agEhCompromisso(i) && !i.feita).length, tar = resumo.abertas - comp;
+        return h(Fragment, null,
+          h('span', { className: 'pn-pilula' }, comp ? agPlural(comp, 'compromisso hoje', 'compromissos hoje') : 'Nenhum compromisso hoje'),
+          h('span', { className: 'pn-pilula' }, tar ? agPlural(tar, 'tarefa aberta', 'tarefas abertas') : (resumo.total ? 'Tarefas em dia' : 'Nenhuma tarefa'))); })(),
       resumo.feitas ? h('span', { className: 'pn-pilula boa' }, agPlural(resumo.feitas, 'feita', 'feitas')) : null,
       resumo.atrasadas ? h('span', { className: 'pn-pilula ruim' }, agPlural(resumo.atrasadas, 'atrasada', 'atrasadas')) : null,
       resumo.proxima ? h('span', { className: 'pn-pilula alerta' }, 'Próxima às ' + resumo.proxima.hora) : null),
@@ -12646,7 +12652,7 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
       ? h('div', null,
           h('span', { className: 'ag-leitura' }, 'Agenda compartilhada · só para ver'),
           h('div', { className: 'pn-meta' }, nomeQuem + ' · tarefas marcadas na Agenda. Próximo contato, vencimento e régua vêm das fichas dos clientes e não aparecem aqui: a carteira é de cada assessor.'))
-      : h('div', { className: 'pn-meta' }, nomeQuem + ' · a missão do dia: tarefas da Agenda, próximos contatos, régua e os avisos automáticos da carteira, do processo comercial e dos especialistas'),
+      : h('div', { className: 'pn-meta' }, nomeQuem + ' · compromissos (reuniões e ligações marcadas) e as tarefas do dia: próximos contatos, régua e os avisos automáticos da carteira, do processo comercial e dos especialistas'),
     quem === currentUser.id && !semTabela && onCompartilhar ? h('label', { className: 'ag-compartilhar' },
       h('input', { type: 'checkbox', checked: compartilhando, disabled: salvandoComp,
         onChange: e => mudarCompartilhar(e.target.checked) }),
@@ -12685,13 +12691,17 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
       : h('p', { className: 'ag-nota', style: { margin: 0 } }, 'Nada marcado para a próxima semana.'));
 
   const atrasadasVisiveis = todasAtrasadas ? atrasadas : atrasadas.slice(0, AG_ATRASADAS_VISIVEIS);
-  /* Missão do dia: o que está aberto hoje, do mais importante para o menos, até o limite que o master
-     escolheu (na visão da equipe, 50). Dinheiro parado fica à parte e aparece todo. */
+  /* Hoje se divide em Compromissos (o que tem dia e hora marcados: reunião, ligação agendada; depois, o Outlook)
+     e Tarefas (o que precisa ser feito no dia, do mais importante para o menos, até o limite que o master
+     escolheu; na visão da equipe, 50). Dinheiro parado é tarefa como as outras, na mesma lista, mas não gasta
+     o limite: toda conta acima do mínimo aparece. */
   const limite = quem === 'todos' ? 50 : agLimite(ag && ag.gat);
-  const caixa = itensHoje.filter(i => !i.feita && i.semLimite).sort((a, b) => (b.valor || 0) - (a.valor || 0));
-  const fila = itensHoje.filter(i => !i.feita && !i.semLimite).sort(agOrdenarMissao);
-  const filaVisivel = verTudo ? fila : fila.slice(0, limite);
-  const feitasHoje = itensHoje.filter(i => i.feita);
+  const compromissos = itensHoje.filter(agEhCompromisso)
+    .sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99') || a.titulo.localeCompare(b.titulo));
+  const fila = itensHoje.filter(i => !i.feita && !agEhCompromisso(i)).sort(agOrdenarMissao);
+  const filaVisivel = verTudo ? fila : (() => { let n = 0; return fila.filter(i => i.semLimite || n++ < limite); })();
+  const escondidas = fila.length - filaVisivel.length;
+  const feitasHoje = itensHoje.filter(i => i.feita && !agEhCompromisso(i));
   /* Placar do head: por assessor, o que está aberto hoje, o que foi feito hoje e o atrasado. */
   const placar = quem === 'todos' ? (() => {
     const resolvidosHoje = ((ag && ag.resolvidos) || []).filter(r => r.dia === hoje);
@@ -12722,13 +12732,13 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
           mais: atrasadas.length > AG_ATRASADAS_VISIVEIS ? h('button', { className: 'ag-mais', onClick: () => setTodasAtrasadas(v => !v) },
             todasAtrasadas ? 'Mostrar menos' : 'Mostrar as outras ' + (atrasadas.length - AG_ATRASADAS_VISIVEIS)) : null })) : null,
       h('div', null,
-        h('h3', { className: 'ag-secao-titulo' }, 'Missão do dia', h('em', null, fila.length ? String(fila.length) : '')),
-        lista(filaVisivel, semTabela ? 'Nada vindo das fichas para hoje.' : 'Nada pendente para hoje. Use "Nova tarefa" para planejar o dia.', {
-          mais: fila.length > limite ? h('button', { className: 'ag-mais', onClick: () => setVerTudo(v => !v) },
-            verTudo ? 'Mostrar só as ' + limite + ' primeiras' : 'Mostrar mais ' + (fila.length - limite)) : null })),
-      caixa.length ? h('div', null,
-        h('h3', { className: 'ag-secao-titulo' }, 'Dinheiro parado em conta', h('em', null, caixa.length + ' · ' + agReais(caixa.reduce((t, i) => t + (i.valor || 0), 0)))),
-        lista(caixa, '')) : null,
+        h('h3', { className: 'ag-secao-titulo' }, 'Compromissos de hoje', h('em', null, compromissos.length ? String(compromissos.length) : '')),
+        lista(compromissos, 'Nenhuma reunião ou ligação marcada para hoje. Quando o Outlook for ligado, os compromissos dele aparecem aqui.')),
+      h('div', null,
+        h('h3', { className: 'ag-secao-titulo' }, 'Tarefas de hoje', h('em', null, fila.length ? String(fila.length) : '')),
+        lista(filaVisivel, semTabela ? 'Nada vindo das fichas para hoje.' : 'Nenhuma tarefa pendente hoje.', {
+          mais: (escondidas > 0 || verTudo) && fila.length > limite ? h('button', { className: 'ag-mais', onClick: () => setVerTudo(v => !v) },
+            verTudo ? 'Mostrar só as mais importantes' : 'Mostrar mais ' + escondidas) : null })),
       feitasHoje.length ? h('div', null,
         h('h3', { className: 'ag-secao-titulo' }, 'Feitas hoje', h('em', null, String(feitasHoje.length))),
         lista(feitasHoje, '')) : null),
@@ -12916,7 +12926,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.19.4';
+const CRM_VERSAO = 'versão do CRM 2026.11.19.5';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 

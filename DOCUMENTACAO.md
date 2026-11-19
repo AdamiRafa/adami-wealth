@@ -1446,6 +1446,11 @@ Pedido do Emil, inspirado no que a EQI fez: o assessor abre a Agenda e vê só o
   salvar gatilho, indicar cliente) e no banco real com o login do Emil (246 avisos, marcar tira da lista, rotina de outra
   pessoa recusada).
 - **Falta:** o e-mail da manhã (`agenda-manha`) ainda não inclui os gatilhos.
+- **CRM `2026.11.19.5` (19/11, pedido do Emil):** a aba Hoje se divide em **Compromissos de hoje** (o que tem dia e hora
+  com alguém: tarefa da Agenda do tipo reunião, qualquer tarefa da Agenda com hora, a reunião comercial e o comitê da
+  rotina; o Outlook entra aqui quando for ligado; ordem por hora, sem limite) e **Tarefas de hoje** (o resto, pela
+  prioridade, até o limite). O dinheiro parado voltou para dentro de Tarefas ("é tarefa também, não separa"): fica na
+  mesma lista, na sua prioridade, e continua sem gastar o limite. Regra em `agEhCompromisso`.
 
 **E-mail da manhã (`supabase/functions/agenda-manha`).** Chamado pelo `pg_cron`
 ("agenda-manha", `50 9 * * 1-5` em UTC = 6h50 de Brasília) via `pg_net`. Só envia em dia
