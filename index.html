@@ -2193,7 +2193,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.37";
+var VERSAO="versão 3.38";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -6445,10 +6445,12 @@ function carregarInicio(forcar){
   var pCheck=api("rpc/meu_checklist",{method:"POST",body:{}}).catch(function(){ return null; });
   /* 3.37: captação líquida do mês pelo relatório do BTG (crm_captacao, o mesmo do Dashboard do CRM). */
   var pCap=podeFerramenta("crm")?api("rpc/crm_captacao",{method:"POST",body:{}}).catch(function(){ return null; }):Promise.resolve(null);
+  /* 3.38: contas abertas no BTG no mês (crm_contas_novas), no lugar de "Captados no mês" (ganhos marcados no funil). */
+  var pContas=podeFerramenta("crm")?api("rpc/crm_contas_novas",{method:"POST",body:{}}).catch(function(){ return null; }):Promise.resolve(null);
   var pProb=EU.super?api("problemas?select=id&resolvido_em=is.null").then(function(r){ return (r||[]).length; }).catch(function(){ return 0; }):Promise.resolve(0);
-  Promise.all([pAgenda,pRv,pAv,pPode,pNums,pCheck,pProb,pCap]).then(function(r){
+  Promise.all([pAgenda,pRv,pAv,pPode,pNums,pCheck,pProb,pCap,pContas]).then(function(r){
     INICIO.nums=r[4]; INICIO.numsCasa=!!casa; INICIO.check=r[5]; INICIO.problemasAbertos=r[6]||0;
-    INICIO.cap=hbCaptacaoBtg(r[7]);
+    INICIO.cap=hbCaptacaoBtg(r[7]); INICIO.contas=r[8]&&typeof r[8].mes==="number"?r[8]:null;
     INICIO.tarefas=r[0]?(r[0][0]||[]):null; INICIO.leads=r[0]?(r[0][1]||[]):[];
     var hoje=hbIso(new Date());
     if(INICIO.tarefas){ var a=hbAgendaFaixa(INICIO.tarefas,INICIO.leads,hoje,hoje,hoje);
@@ -6667,9 +6669,14 @@ function hbNumerosHtml(){
           hbTend(n.liquidoMes,n.liquidoMesPassadoAteHoje,hbMoeda(n.liquidoMesPassadoAteHoje)+" no mesmo ponto de "+mesAnt),
           "Clientes captados + aportes - resgates, deste mês até hoje. "+mesAnt.charAt(0).toUpperCase()+mesAnt.slice(1)+" inteiro: "+hbMoeda(n.liquidoMesPassado)+"."))+
     card("Clientes na carteira", n.clientes.toLocaleString("pt-BR"),
-      hbTend(n.captadosMes,0,"+"+n.captadosMes+" captado(s) no mês"), "Clientes com patrimônio sob gestão.")+
-    card("Captados no mês", n.captadosMes.toLocaleString("pt-BR"),
-      hbTend(n.captadosMes,n.captadosMesPassado,n.captadosMesPassado+" em "+mesAnt), "Clientes novos que entraram na carteira neste mês.")+
+      INICIO.contas?hbTend(INICIO.contas.mes,0,"+"+INICIO.contas.mes+(INICIO.contas.mes===1?" conta nova no mês":" contas novas no mês")):hbTend(n.captadosMes,0,"+"+n.captadosMes+" captado(s) no mês"),
+      "Clientes com patrimônio sob gestão.")+
+    (INICIO.contas
+      ? card("Contas novas no mês · BTG", INICIO.contas.mes.toLocaleString("pt-BR"),
+          hbTend(INICIO.contas.mes,INICIO.contas.mes_anterior,INICIO.contas.mes_anterior+" em "+mesAnt+" · "+hbMoeda(INICIO.contas.pl_mes)+" nelas hoje"),
+          "Contas abertas no BTG neste mês, pela data de abertura da conta (base de contas do BTG, todo dia útil). Comparação com "+mesAnt+" inteiro.")
+      : card("Ganhos no CRM no mês", n.captadosMes.toLocaleString("pt-BR"),
+          hbTend(n.captadosMes,n.captadosMesPassado,n.captadosMesPassado+" em "+mesAnt), "Clientes marcados como captados no funil do CRM neste mês."))+
   '</section>';
 }
 function viewHub(){
@@ -6717,6 +6724,12 @@ function viewHub(){
     corpoDia+='<p class="hb-vazio" style="margin-top:8px;font-size:12px">A mesma missão do dia da Agenda, de quando você abriu o CRM às '+
       new Date(MIS.em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+'.</p>';
   }
+  else if(MIS&&MIS.dias&&!ehHoje&&dia>MIS.dia&&dia<=hbSoma(MIS.dia,45)){
+    var ddia=MIS.dias[dia]||{n:0,itens:[]};
+    corpoDia=ddia.n?'<ul class="hb-lista">'+ddia.itens.map(function(x){ return hbLinhaMissao(x,false); }).join("")+'</ul>'+
+      (ddia.n>ddia.itens.length?'<p class="hb-vazio" style="margin-top:8px">e mais '+(ddia.n-ddia.itens.length)+' na Agenda</p>':'')
+      :'<p class="hb-vazio">Nada marcado neste dia.</p>';
+  }
   else if(!ag) corpoDia='<p class="hb-vazio">'+(INICIO.estado==="pronto"?"A agenda aparece aqui quando o CRM estiver ligado à sua conta.":"Carregando…")+'</p>';
   else {
     var itensDia=ag.dias[dia]||[];
@@ -6728,7 +6741,15 @@ function viewHub(){
     if(ehHoje&&podeFerramenta("crm")) corpoDia+='<p class="hb-vazio" style="margin-top:8px;font-size:12px">Os avisos automáticos da Agenda (carteira do BTG, processo comercial, especialistas) aparecem aqui depois que você abrir o CRM hoje.</p>';
   }
   var proximos='';
-  if(ag&&ehHoje){
+  if(MIS&&MIS.dias&&ehHoje){
+    var linM=[];
+    for(var km=1;km<=6;km++){ var dkm=hbSoma(hoje,km), dd=MIS.dias[dkm];
+      if(dd&&dd.n) linM.push('<button type="button" class="hb-prox" onclick="hbEscolherDia(\''+dkm+'\')"><span>'+
+        (km===1?"Amanhã":new Date(dkm+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"}))+
+        '</span><b>'+dd.n+(dd.n===1?" item":" itens")+'</b><em>'+esc((dd.itens[0]||{}).t||"")+'</em></button>'); }
+    proximos='<div class="hb-prox-lista"><h3>Próximos dias</h3>'+(linM.length?linM.join(""):'<p class="hb-vazio">Nada marcado na próxima semana.</p>')+'</div>';
+  }
+  else if(ag&&ehHoje){
     var lin=[];
     for(var k=1;k<=6;k++){ var dk=hbSoma(hoje,k), its=(ag.dias[dk]||[]).filter(function(i){ return !i.feita; });
       if(its.length) lin.push('<button type="button" class="hb-prox" onclick="hbEscolherDia(\''+dk+'\')"><span>'+
@@ -6745,7 +6766,7 @@ function viewHub(){
     var celulas='';
     for(var c=0;c<42;c++){
       var dc=hbSoma(ini,c); if(c===35&&dc.slice(0,7)!==mes) break;
-      var n=ag?(ag.dias[dc]||[]).filter(function(i){ return !i.feita; }).length:0;
+      var n=MIS&&MIS.dias?((MIS.dias[dc]||{}).n||0):(ag?(ag.dias[dc]||[]).filter(function(i){ return !i.feita; }).length:0);
       celulas+='<button type="button" class="hb-cal-dia'+(dc.slice(0,7)!==mes?" fora":"")+(dc===hoje?" hoje":"")+(dc===dia?" on":"")+'" onclick="hbEscolherDia(\''+dc+'\')" aria-label="'+dc.slice(8,10)+'/'+dc.slice(5,7)+(n?": "+n+" itens":"")+'">'+
         Number(dc.slice(8,10))+(n?'<i>'+(n>3?'<span></span><span></span><span></span>':new Array(n+1).join('<span></span>'))+'</i>':'')+'</button>';
     }

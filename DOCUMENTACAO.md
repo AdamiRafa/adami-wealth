@@ -792,6 +792,9 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026 (noite): 3.38 e CRM 2026.11.19.12. KPIs com o cartão NNM gerencial (seção 34); cartão aberto em moldura
+e panorama com título; "Net New Money" antigo saiu dos KPIs; tela inicial com "Contas novas no mês · BTG" e o calendário
+e os próximos dias iguais à Agenda**.
  · **19/11/2026 (noite): 3.37 e CRM 2026.11.19.10. A captação do BTG não aparecia (função desfeita junto com um
 teste, seção 33.5); a tela inicial do Hub passou a mostrar a captação do BTG e a mesma missão do dia da Agenda**.
  · **19/11/2026 (fim da tarde): CRM 2026.11.19.9. Captação do BTG (NNM) no Dashboard; Rotina do dia igual à Agenda;
@@ -2721,4 +2724,28 @@ Pedido do Emil: "deixa só a regra de resetar todo início de dia, tira o restan
   (`localStorage.aw_missao`: só títulos, cliente, hora e origem, da própria pessoa e do dia), gravada sempre que o CRM
   monta a Agenda. Sem o CRM aberto no dia, o Hub mostra a conta antiga (tarefas, contato, régua) e avisa que os avisos
   automáticos aparecem depois de abrir o CRM. O número no card do CRM no menu também usa a missão.
+
+---
+
+## 34. NNM gerencial nos KPIs e o resto da tela inicial ligado ao BTG e à Agenda (19/11/2026, Hub 3.38, CRM 2026.11.19.12)
+
+### 34.1 NNM nos KPIs (`crm_nnm`, `btg_captacao.sql`)
+- `crm_nnm(p_de, p_ate)` junta todos os relatórios de captação guardados (120 dias) e, para cada data, usa as linhas do
+  relatório mais recente que a tem. O histórico começa em 19/10/2026 (primeiro relatório: 19/11, com 30 dias) e cresce a
+  cada dia útil. Mesma visibilidade de `crm_captacao`. Testado como Emil (911 linhas, R$ 36,5 mi no período inteiro).
+- KPIs (admin e "Minha carteira" do assessor): cartão **NNM** (líquido do período e assessor escolhidos no topo). Ao abrir:
+  Captação líquida, Entradas, Saídas, De contas novas (contas abertas no período); **NNM por assessor** (assessor → cliente,
+  Excel por cliente e "Excel dos lançamentos") e **NNM por tipo de movimentação** (mercado → assessor → cliente). O cliente
+  abre a ficha. Período antes do primeiro relatório: aviso de onde começam os dados.
+- O "Net New Money" antigo (lançamentos manuais do CRM) saiu da linha Carteira dos KPIs do admin e dos blocos do assessor.
+- `Navegavel`: o cartão aberto vem numa moldura com "Cartão aberto · nome" e Fechar; o `KpiPanorama` ganhou o título
+  "Panorama · sempre à vista" (pedido do Emil: as duas coisas se confundiam). Na impressão a moldura não aparece.
+
+### 34.2 Tela inicial do Hub
+- "Captados no mês" contava os clientes marcados como captados no funil do CRM no mês (deu 0 em novembro: ninguém moveu
+  cartão para captado). Virou **Contas novas no mês · BTG** (`crm_contas_novas()`: contas com `dt_abertura` no mês na
+  base do BTG, com o patrimônio delas hoje e o mês anterior inteiro para comparar). "Clientes na carteira" diz quantas
+  contas novas entraram. Sem a função, volta a "Ganhos no CRM no mês".
+- Calendário lateral e "Próximos dias": usam `aw_missao.dias` (o CRM grava, do dia 1º até 45 dias à frente, o mesmo que a
+  Agenda mostra em Semana/Mês: tarefas, ficha, rotina, capacitação e Outlook). Clicar num dia mostra os itens daquele dia.
 

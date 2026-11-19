@@ -2817,6 +2817,15 @@
   .kn-card-titulo{font-family:'Fraunces',Georgia,serif;font-size:19px;font-weight:600;color:var(--navy);margin:8px 0 4px;line-height:1.25;}
   .kn-corpo{display:none;flex-direction:column;gap:var(--space-4);}
   .kn-corpo.aberto{display:flex;animation:knAbre .18s ease-out;}
+  .kn-moldura.aberto{border:2px solid var(--primary);border-radius:16px;padding:16px 18px 18px;background:var(--surface);box-shadow:0 10px 30px rgba(12,22,38,.08);}
+  .kn-moldura-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+  .kn-moldura-cab span{display:flex;flex-direction:column;gap:2px;}
+  .kn-moldura-cab small{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--primary);font-weight:700;}
+  .kn-moldura-cab strong{font-family:'Fraunces',Georgia,serif;font-size:20px;color:var(--navy);}
+  .kn-panorama{margin-top:18px;}
+  .kn-panorama-cab{display:flex;align-items:baseline;gap:10px;padding:14px 0 6px;border-top:2px dashed var(--border);}
+  .kn-panorama-cab strong{font-family:'Fraunces',Georgia,serif;font-size:18px;color:var(--navy);}
+  .kn-panorama-cab span{font-size:12px;color:var(--ink-faint);}
   @keyframes knAbre{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
   /* O painel do admin era escuro e com coluna de filtros; agora segue o
      Dashboard: fundo claro, uma coluna, cartões brancos. */
@@ -2841,7 +2850,8 @@
   .painel.kn-admin .grafico-svg .grafico-mes{fill:#8A97AB;}
   .painel.kn-admin .bar-track{box-shadow:none;}
   @media print{
-    .kn-grade, .kn-heroi, .kn-filtros{display:none !important;}
+    .kn-grade, .kn-heroi, .kn-filtros, .kn-moldura-cab, .kn-panorama-cab{display:none !important;}
+    .kn-moldura{border:0 !important;box-shadow:none !important;padding:0 !important;}
     .kn-corpo{display:flex !important;}
   }
   @media (max-width:640px){
@@ -9803,6 +9813,9 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
   const prod = useMemo(() => computeProducaoStats(negocios, users), [negocios, users]);
   const evolucao = useMemo(() => computeKpiStats(negocios, negocios, users), [negocios, users]);
   const indicacao = useMemo(() => computeIndicacaoRanking(negocios, leads, filtros, users), [negocios, leads, filtros, users]);
+  const nnmEstado = useNnmBtg(filtros);
+  const nnmAssessor = filtros.assessor && filtros.assessor !== 'all' ? filtros.assessor : null;
+  const nnmCard = nnmResumoCard(nnmEstado, leads, users, nnmAssessor);
 
   const valorDe = (l) => parseValor(l.valorFechado) || parseValor(l.valorPotencial) || 0;
   const fechados = negocios.filter(l => l.ganho);
@@ -9835,6 +9848,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
       numeros:{
         Pipe: { valor: fmtBRLCompact(carteira.emCaptacao), tom:'ouro',
           sub: 'em jogo · ' + captacaoTemp.total + (captacaoTemp.total === 1 ? ' captação' : ' captações') },
+        NNM: nnmCard,
         'Quem indicou': { valor: String(indicacao.porIndicados.reduce((s, r) => s + r.indicados, 0)),
           sub: 'negócios indicados · ' + indicacao.porFechados.reduce((s, r) => s + r.fechados, 0) + ' fechados' }
       } },
@@ -9847,7 +9861,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
         h('span',{className:'painel-secao-nome'},'Carteira'),
         h('span',{className:'painel-secao-desc'},'investimentos sob gestão')
       ),
-      h('div',{className:'painel-linha linha-3'},
+      h('div',{className:'painel-linha linha-2'},
         h(Indicador,{ drill: DR.todos('Carteira sob gestão', 'onshore', l => valorEmCarteira(l) > 0 || valorEmCarteiraOffshore(l) > 0), rotulo:'Total da carteira', largo:true,
           valor: carteira.totalCarteira, formato: fmtBRLCompact,
           /* Onshore e offshore no mesmo número: o contexto diz de que ele é
@@ -9858,12 +9872,15 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
                 : carteira.sobGestao + ' clientes · ' + fmtUSDCompact(carteira.offshore.usd) + ' offshore FORA, sem cotação')
             : carteira.sobGestao + ' de ' + carteira.ativos.length + ' clientes sob gestão' }),
         h(Indicador,{ drill: DR.pipe(), rotulo:'Pipe', tom:'ouro',
-          valor: carteira.emCaptacao, formato: fmtBRLCompact, contexto:'clientes novos e da base' }),
-        h(Indicador,{ rotulo:'Net New Money',
-          tom: carteira.fluxo.liquido < 0 ? 'alerta' : 'verde',
-          valor: carteira.fluxo.liquido, formato: (n) => (n >= 0 ? '+' : '−') + fmtBRLCompact(Math.abs(n)),
-          contexto: fmtBRLCompact(carteira.fluxo.entrou) + ' entrou · ' + fmtBRLCompact(carteira.fluxo.retiradas) + ' saiu' })
+          valor: carteira.emCaptacao, formato: fmtBRLCompact, contexto:'clientes novos e da base' })
+        /* 19/11/2026, pedido do Emil: o Net New Money saiu daqui; agora tem o cartão NNM próprio (relatório do BTG). */
       ),
+
+      h('div',{className:'painel-secao'},
+        h('span',{className:'painel-secao-nome'},'NNM'),
+        h('span',{className:'painel-secao-desc'},'captação líquida do BTG, por assessor e cliente')
+      ),
+      h(NnmGerencial, { estado: nnmEstado, filtros, leads, users, admin: true, onOpen: onOpen || (() => {}) }),
 
       h('div',{className:'painel-secao'},
         h('span',{className:'painel-secao-nome'},'Negócios'),
@@ -10731,8 +10748,12 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
   const maxSegmento = Math.max(1, ...s.porSegmento.map(x => x.valor));
   const maxEtapa = Math.max(1, ...s.porEtapa.map(x => x.count));
   const maxOrigem = Math.max(1, ...s.porOrigem.map(x => x.valor));
+  const nnmEstado = useNnmBtg(periodo);
 
-  return h(Navegavel, { modo: 'blocos', rodape: h(KpiPanorama,{ jornada: scopedLeads, users, admin:false, onOpen: onOpen || (() => {}) }) },
+  return h(Navegavel, { modo: 'blocos', rodape: h(KpiPanorama,{ jornada: scopedLeads, users, admin:false, onOpen: onOpen || (() => {}) }),
+      numeros: { NNM: nnmResumoCard(nnmEstado, scopedLeads, users, null) } },
+    h('div', null, h('h2', { className: 'sr-titulo-nnm' }, 'NNM'),
+      h(NnmGerencial, { estado: nnmEstado, filtros: periodo, leads: scopedLeads, users, admin: false, onOpen: onOpen || (() => {}) })),
     h('div',{className:'print-header'},
       h('h1',null,'Indicadores da assessoria'),
       h('div',{className:'print-meta'}, 'Escopo: ', escopo, ' · ', periodoLabel(periodo),
@@ -10769,13 +10790,7 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
         h('div',{className:'kpi-num'}, fmtBRLCompact(s.emCaptacao)),
         h('div',{className:'kpi-sub'},'clientes novos e captações da base')
       ),
-      h('div',{className:'kpi-tile span2' + (s.fluxo.liquido < 0 ? ' danger' : ' success')},
-        h('div',{className:'kpi-label'},'Net New Money'),
-        h('div',{className:'kpi-num'},
-          (s.fluxo.liquido >= 0 ? '+' : '−') + fmtBRLCompact(Math.abs(s.fluxo.liquido))),
-        h('div',{className:'kpi-sub'},
-          fmtBRLCompact(s.fluxo.entrou), ' entrou · ', fmtBRLCompact(s.fluxo.retiradas), ' saiu')
-      ),
+      /* Net New Money saiu daqui (19/11/2026): agora é o cartão NNM, com o relatório do BTG. */
       h('div',{className:'kpi-tile span2' + (s.fluxo.comRetirada ? ' danger' : '')},
         h('div',{className:'kpi-label'},'Clientes com retirada'),
         h('div',{className:'kpi-num'}, s.fluxo.comRetirada),
@@ -13025,7 +13040,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.19.10';
+const CRM_VERSAO = 'versão do CRM 2026.11.19.12';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -13654,9 +13669,17 @@ function Navegavel({ modo, juntar, numeros, rodape, children }){
             h('div', { className: 'kn-card-titulo' }, g.titulo),
             g.desc ? h('div', { className: 'pn-card-sub' }, g.desc) : null)
     )) : null,
-    grupos.map(g => h('div', { key: g.key + 'c', className: 'kn-corpo' + (aberto === g.key ? ' aberto' : '') },
+    /* Pedido do Emil (19/11/2026): ao abrir um cartão, o conteúdo dele se confundia com o panorama fixo logo abaixo.
+       Agora a seção aberta vem numa moldura com o nome do cartão e "Fechar", e o panorama tem título próprio. */
+    grupos.map(g => h('div', { key: g.key + 'c', className: 'kn-corpo kn-moldura' + (aberto === g.key ? ' aberto' : '') },
+      h('div', { className: 'kn-moldura-cab' },
+        h('span', null, h('small', null, 'Cartão aberto'), h('strong', null, g.titulo)),
+        h('button', { type: 'button', className: 'btn btn-ghost', onClick: () => setAberto(null) }, 'Fechar')),
       g.cabeca, g.corpo)),
-    rodape || null
+    rodape ? h('div', { className: 'kn-panorama' },
+      h('div', { className: 'kn-panorama-cab' }, h('strong', null, 'Panorama'),
+        h('span', null, 'sempre à vista, não depende do cartão aberto')),
+      rodape) : null
   );
 }
 
@@ -13733,13 +13756,13 @@ function baixarExcel(nomeArquivo, colunas, linhas){
   });
 }
 
-function BotaoExcel({ nome, colunas, linhas }){
+function BotaoExcel({ nome, colunas, linhas, rotulo, dica }){
   const [estado, setEstado] = useState('');
   return h('button', { type: 'button', className: 'arv-excel', disabled: !linhas.length || estado === 'gerando',
-    title: 'Baixa esta lista em Excel, um cliente por linha',
+    title: dica || 'Baixa esta lista em Excel, um cliente por linha',
     onClick: (e) => { e.stopPropagation(); setEstado('gerando');
       baixarExcel(nome, colunas, linhas).then(() => setEstado(''), (err) => { console.error(err); setEstado('erro'); }); } },
-    h(IconDownload, { size: 13 }), estado === 'gerando' ? 'Gerando…' : estado === 'erro' ? 'Falhou, tente de novo' : 'Baixar Excel');
+    h(IconDownload, { size: 13 }), estado === 'gerando' ? 'Gerando…' : estado === 'erro' ? 'Falhou, tente de novo' : (rotulo || 'Baixar Excel'));
 }
 
 /* niveis: [{ chave(l), nome(chave, l), cor?(chave, i), ordem?: 'valor'|'nome'|[chaves] }]
@@ -13797,6 +13820,118 @@ function Arvore({ titulo, desc, linhas, niveis, metricas, folha, colunasExcel, n
       h('div', { className: 'arv-cab' }, h('span', { className: 'arv-nome' }, 'Clique para abrir'), metricas.map((m, j) => h('span', { key: j, className: 'arv-num m' + j }, m.titulo)), h('span', { className: 'arv-seta' })),
       render(linhas, 0, '', totalGeral))
       : h('div', { className: 'arv-vazio' }, vazio || 'Nada para mostrar neste recorte.'));
+}
+
+/* ================= NNM gerencial (CRM 2026.11.19.11) =================
+   Pedido do Emil: uma caixa de NNM nos KPIs que abre e deixa navegar (casa → assessor → cliente → lançamento),
+   como um gerencial. Fonte: relatório de captação líquida do BTG, juntando o histórico diário (crm_nnm, btg_captacao.sql).
+   Segue o período e o assessor escolhidos no topo dos KPIs. Só reais (conta no Brasil). */
+function nnmIntervalo(f){
+  const hoje = todayISO();
+  if(!f || !f.periodo || f.periodo === 'all') return { de: null, ate: null };
+  if(f.periodo === 'custom') return { de: f.de || null, ate: f.ate || null };
+  return { de: toISODate(new Date(inicioDoPeriodo(f.periodo))), ate: hoje };
+}
+function useNnmBtg(filtros){
+  const iv = nnmIntervalo(filtros);
+  const [estado, setEstado] = useState({ carregando: true });
+  useEffect(() => {
+    if(MODO_DEMO){ setEstado({ erro: true }); return; }
+    let vivo = true;
+    setEstado(e => ({ ...e, carregando: true }));
+    sb.rpc('crm_nnm', { p_de: iv.de, p_ate: iv.ate }).then(({ data, error }) => {
+      if(vivo) setEstado(error ? { erro: true } : { dados: data || { linhas: [] } });
+    }, () => { if(vivo) setEstado({ erro: true }); });
+    return () => { vivo = false; };
+  }, [iv.de, iv.ate]);
+  return estado;
+}
+/* Agrupa os lançamentos por cliente (e, se pedir, por cliente e mercado), já no recorte do assessor. */
+function nnmLinhas(dados, leads, users, assessorId, porMercado){
+  if(!dados || !dados.linhas) return { clientes: [], lanc: [], entrou: 0, saiu: 0, novos: 0 };
+  const porId = new Map(leads.map(l => [l.id, l]));
+  const nomeU = (id) => ((users.find(u => u.id === id) || {}).nome) || 'Sem assessor';
+  const mapa = new Map(), lanc = [];
+  let entrou = 0, saiu = 0, novos = 0;
+  dados.linhas.forEach(x => {
+    const l = x.lead_id ? porId.get(x.lead_id) : null;
+    const resp = l ? (l.responsavelId || null) : null;
+    if(assessorId && resp !== assessorId) return;
+    const v = Number(x.valor) || 0; if(!v) return;
+    const cliente = l ? ((l.cliente || '').trim() || nomeCliente(l)) : 'Conta ' + (x.conta || '?') + ' (sem ficha no CRM)';
+    const novo = !!x.abertura && dados.de && String(x.abertura) >= dados.de;
+    const mercado = x.mercado || 'Outros';
+    lanc.push({ ...x, cliente, assessor: l ? nomeU(resp) : '', conta: l ? (l.conta || '') : (x.conta || '') });
+    if(v > 0){ entrou += v; if(novo) novos += v; } else saiu -= v;
+    const k = (l ? l.id : 'c:' + x.conta) + (porMercado ? '|' + mercado : '');
+    if(!mapa.has(k)) mapa.set(k, { lead: l, cliente, conta: l ? (l.conta || '') : (x.conta || ''), mercado,
+      assessorId: resp || '—', assessor: l ? nomeU(resp) : 'Sem ficha no CRM', entrou: 0, saiu: 0, liquido: 0, n: 0, novo: false });
+    const c = mapa.get(k);
+    if(v > 0) c.entrou += v; else c.saiu -= v;
+    c.liquido += v; c.n += 1; c.novo = c.novo || novo;
+  });
+  return { clientes: Array.from(mapa.values()), lanc, entrou, saiu, novos };
+}
+function nnmResumoCard(estado, leads, users, assessorId){
+  if(estado.erro) return { valor: '—', sub: 'não consegui ler o relatório do BTG' };
+  if(!estado.dados) return { valor: '…', sub: 'lendo o relatório do BTG' };
+  const r = nnmLinhas(estado.dados, leads, users, assessorId, false);
+  const liq = r.entrou - r.saiu;
+  return { valor: pnSinal(liq), tom: liq >= 0 ? 'boa' : 'ruim', sub: fmtBRLCompact(r.entrou) + ' entrou · ' + fmtBRLCompact(r.saiu) + ' saiu · BTG' };
+}
+function NnmGerencial({ estado, filtros, leads, users, admin, onOpen }){
+  const assessorId = admin && filtros && filtros.assessor && filtros.assessor !== 'all' ? filtros.assessor : null;
+  const iv = nnmIntervalo(filtros);
+  const dados = estado.dados ? { ...estado.dados, de: iv.de || estado.dados.cobre_de } : null;
+  const r = useMemo(() => nnmLinhas(dados, leads, users, assessorId, false), [estado, leads, users, assessorId, iv.de]);
+  const rm = useMemo(() => nnmLinhas(dados, leads, users, assessorId, true), [estado, leads, users, assessorId, iv.de]);
+  if(estado.erro) return h('div', { className: 'kp-caixa' }, h('div', { className: 'arv-vazio' }, 'Não consegui ler o relatório de captação do BTG agora. Tente de novo em instantes.'));
+  if(!estado.dados) return h('div', { className: 'kp-caixa' }, h('div', { className: 'arv-vazio' }, 'Lendo o relatório de captação do BTG…'));
+  const liq = r.entrou - r.saiu;
+  const cobre = estado.dados.cobre_de;
+  const dataBR = (d) => d ? new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+  const aviso = cobre && (!iv.de || iv.de < cobre)
+    ? 'O BTG manda a captação desde ' + dataBR(cobre) + '; antes disso não há relatório. O histórico cresce sozinho a cada dia útil.' : '';
+  const soma = (campo) => (lista) => lista.reduce((t, c) => t + (c[campo] || 0), 0);
+  const metricas = [
+    { titulo: 'Líquido', soma: soma('liquido'), formatar: pnSinal },
+    { titulo: 'Entrou', soma: soma('entrou'), formatar: fmtBRLCompact },
+    { titulo: 'Saiu', soma: soma('saiu'), formatar: n => n ? '−' + fmtBRLCompact(n) : '—' }];
+  const nivelAssessor = { chave: c => c.assessorId, nome: (k, c) => c.assessor };
+  const nivelMercado = { chave: c => c.mercado, nome: k => k.charAt(0) + k.slice(1).toLowerCase() };
+  const folha = { nome: c => c.cliente, abrir: c => c.lead && onOpen(c.lead),
+    meta: c => [c.conta ? 'conta ' + c.conta : null, admin && !assessorId ? c.assessor : null,
+      c.n + (c.n === 1 ? ' lançamento' : ' lançamentos'), c.novo ? 'conta nova' : null].filter(Boolean).join(' · ') };
+  const colunas = [
+    { titulo: 'Cliente', valor: c => c.cliente }, { titulo: 'Conta', valor: c => c.conta }, { titulo: 'Assessor', valor: c => c.assessor },
+    { titulo: 'Entrou (R$)', valor: c => Math.round(c.entrou * 100) / 100 }, { titulo: 'Saiu (R$)', valor: c => Math.round(c.saiu * 100) / 100 },
+    { titulo: 'Líquido (R$)', valor: c => Math.round(c.liquido * 100) / 100 }, { titulo: 'Lançamentos', valor: c => c.n },
+    { titulo: 'Conta nova no período', valor: c => c.novo ? 'sim' : '' }];
+  const colunasLanc = [
+    { titulo: 'Data', valor: x => x.data }, { titulo: 'Cliente', valor: x => x.cliente }, { titulo: 'Conta', valor: x => x.conta },
+    { titulo: 'Assessor', valor: x => x.assessor }, { titulo: 'Mercado', valor: x => x.mercado || '' }, { titulo: 'Tipo', valor: x => x.tipo || '' },
+    { titulo: 'Ativo', valor: x => x.ativo || '' }, { titulo: 'Descrição', valor: x => x.descricao || '' },
+    { titulo: 'Valor (R$)', valor: x => Math.round((Number(x.valor) || 0) * 100) / 100 }];
+  return h('div', { className: 'kp' },
+    h('div', { className: 'painel-linha linha-4' },
+      h(Indicador, { rotulo: 'Captação líquida', valor: liq, formato: pnSinal, tom: liq < 0 ? 'alerta' : 'verde',
+        contexto: 'relatório do BTG · atualizado ' + new Date(estado.dados.atualizado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ' às') }),
+      h(Indicador, { rotulo: 'Entradas', valor: r.entrou, formato: fmtBRLCompact, contexto: r.clientes.filter(c => c.entrou > 0).length + ' clientes' }),
+      h(Indicador, { rotulo: 'Saídas', valor: r.saiu, formato: fmtBRLCompact, tom: r.saiu > 0 ? 'alerta' : '', contexto: r.clientes.filter(c => c.saiu > 0).length + ' clientes' }),
+      h(Indicador, { rotulo: 'De contas novas', valor: r.novos, formato: fmtBRLCompact, tom: 'ouro', contexto: 'contas abertas no período' })),
+    aviso ? h('p', { className: 'arv-desc', style: { margin: 0 } }, aviso) : null,
+    h('div', { className: 'kp-caixa' },
+      h(Arvore, { titulo: 'NNM por ' + (admin && !assessorId ? 'assessor' : 'cliente'),
+        desc: (admin && !assessorId ? 'assessor → cliente' : 'cliente') + ' · clique no cliente para abrir a ficha',
+        linhas: r.clientes, niveis: admin && !assessorId ? [nivelAssessor] : [], metricas, folha,
+        colunasExcel: colunas, nomeExcel: 'NNM por cliente', vazio: 'Nenhuma movimentação no BTG neste período.',
+        extra: h('div', { style: { margin: '-4px 0 10px' } }, h(BotaoExcel, { nome: 'NNM lançamentos', colunas: colunasLanc, linhas: r.lanc, rotulo: 'Excel dos lançamentos', dica: 'Baixa todos os lançamentos do período, um por linha (data, cliente, mercado, tipo, valor)' })) })),
+    h('div', { className: 'kp-caixa' },
+      h(Arvore, { titulo: 'NNM por tipo de movimentação',
+        desc: 'mercado → ' + (admin && !assessorId ? 'assessor → ' : '') + 'cliente · ex.: conta corrente, previdência (portabilidade), renda fixa',
+        linhas: rm.clientes, niveis: admin && !assessorId ? [nivelMercado, nivelAssessor] : [nivelMercado], metricas, folha,
+        colunasExcel: colunas.concat([{ titulo: 'Mercado', valor: c => c.mercado }]), nomeExcel: 'NNM por tipo de movimentação',
+        vazio: 'Nenhuma movimentação no BTG neste período.' })));
 }
 
 /* Panorama fixo dos KPIs: o que fica sempre à vista, abaixo dos cartões.
@@ -15410,9 +15545,20 @@ function App(){
       const hoje = todayISO();
       const m = agMissaoDoDia({ tarefas, ag: agCtxApp, leads, users, donoId: currentUser.id, hoje });
       const enx = (it) => ({ t: it.titulo, c: it.cliente || '', h: it.hora || '', o: (AG_ORIGENS[it.origem] || {}).nome || '', cor: (AG_ORIGENS[it.origem] || {}).cor || '', d: it.dia || '' });
+      /* Calendário e próximos dias do Hub: o mesmo que a Agenda mostra em Semana e Mês (tarefas, ficha, rotina,
+         capacitação e Outlook), do 1º do mês até 45 dias à frente. */
+      const donos = new Set([currentUser.id]), de = hoje.slice(0, 8) + '01', ate = agSoma(hoje, 45);
+      const fixas = (lista) => lista.filter(i => i.origem === 'outlook' || i.origem === 'rotina' || i.origem === 'capacitacao' || !i.gatilho);
+      const dias = {};
+      agendaItens({ tarefas, leads, users, donos, de, ate, hoje })
+        .concat(fixas(agItensGatilhos({ ...agCtxApp, leads, users, donos, de, ate, hoje }))).sort(agOrdenar)
+        .forEach(it => { if(it.feita || !it.dia || it.dia === hoje) return;
+          const d = dias[it.dia] || (dias[it.dia] = { n: 0, itens: [] });
+          d.n += 1; if(d.itens.length < 8) d.itens.push(enx(it)); });
+      dias[hoje] = { n: m.compromissos.filter(i => !i.feita).length + m.fila.length, itens: [] };
       localStorage.setItem('aw_missao', JSON.stringify({ uid: currentUser.id, dia: hoje, em: Date.now(),
         comp: m.compromissos.filter(i => !i.feita).map(enx), tar: m.visiveis.map(enx), nTar: m.fila.length,
-        atr: m.atrasadas.slice(0, 5).map(enx), nAtr: m.atrasadas.length, feitas: m.feitas.length }));
+        atr: m.atrasadas.slice(0, 5).map(enx), nAtr: m.atrasadas.length, feitas: m.feitas.length, dias }));
     } catch(e) {}
   }, [tarefas, agCtxApp, leads, users, currentUser, gatilhos]);
 
