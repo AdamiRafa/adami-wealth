@@ -792,6 +792,8 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026 (noite): CRM 2026.11.19.13. KPIs: "Quem indicou" dentro do cartão Negócios (PJ2) (`juntar` do Navegavel).
+O NNM segue os filtros de período (Este mês, 30/60/90 dias, 12 meses, Tudo, datas) e de assessor**.
  · **19/11/2026 (noite): 3.38 e CRM 2026.11.19.12. KPIs com o cartão NNM gerencial (seção 34); cartão aberto em moldura
 e panorama com título; "Net New Money" antigo saiu dos KPIs; tela inicial com "Contas novas no mês · BTG" e o calendário
 e os próximos dias iguais à Agenda**.

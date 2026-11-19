@@ -9843,14 +9843,13 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
       h(KpiFiltros,{ filtros, onChange:onFiltros, funil:'especialista', users, leads, consolidado:true })
     ),
 
-    h(Navegavel,{ modo:'marcador', juntar:{ Assessoria:'Carteira' },
+    /* 19/11/2026, pedido do Emil: "Quem indicou" vai para dentro de Negócios (PJ2), num cartão só. */
+    h(Navegavel,{ modo:'marcador', juntar:{ Assessoria:'Carteira', 'Quem indicou':'Negócios' },
       rodape: h(KpiPanorama,{ jornada, users, admin:true, onOpen: onOpen || (() => {}) }),
       numeros:{
         Pipe: { valor: fmtBRLCompact(carteira.emCaptacao), tom:'ouro',
           sub: 'em jogo · ' + captacaoTemp.total + (captacaoTemp.total === 1 ? ' captação' : ' captações') },
-        NNM: nnmCard,
-        'Quem indicou': { valor: String(indicacao.porIndicados.reduce((s, r) => s + r.indicados, 0)),
-          sub: 'negócios indicados · ' + indicacao.porFechados.reduce((s, r) => s + r.fechados, 0) + ' fechados' }
+        NNM: nnmCard
       } },
       /* Faixa de números: a leitura de abertura, agora em duas linhas — uma
          por mundo. Investimento (carteira sob gestão, Pipe, fluxo, prazo) e
@@ -9884,7 +9883,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
 
       h('div',{className:'painel-secao'},
         h('span',{className:'painel-secao-nome'},'Negócios'),
-        h('span',{className:'painel-secao-desc'},'consórcio e seguro')
+        h('span',{className:'painel-secao-desc'},'consórcio e seguro (PJ2) · produção, negociação e quem indicou')
       ),
       h('div',{className:'painel-linha linha-2'},
         h(Indicador,{ drill: DR.negocios('Negócios fechados', l => !!l.ganho), rotulo:'Produção', tom:'verde',
@@ -13040,7 +13039,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.19.12';
+const CRM_VERSAO = 'versão do CRM 2026.11.19.13';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
