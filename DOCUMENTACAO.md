@@ -792,6 +792,8 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026 (noite): 3.40. A carteira se liga sozinha à ficha do CRM pela conta ao salvar o Cadastro; 9 clientes
+passados para a Bibiana; e-mail da manhã programado para ligar em 23/11 (seção 35)**.
  · **19/11/2026 (noite): 3.39. Carteiras sem os botões Renomear, Assessor e Excluir mês: o nome vai no Cadastro e o
 assessor vem do BTG; código do assessor puxado do BTG pelo e-mail todo dia útil (seção 35, `assessor_automatico.sql`)**.
  · **19/11/2026 (noite): CRM 2026.11.19.13. KPIs: "Quem indicou" dentro do cartão Negócios (PJ2) (`juntar` do Navegavel).
@@ -2776,7 +2778,18 @@ o excluir mês".
   `excluirMes`). O Cadastro agora tem "Nome do cliente" e mostra o assessor responsável no BTG e o atual no Hub.
   "Novo cliente" já abre o Cadastro depois de criar. Para apagar um mês lançado, não há mais botão: se precisar, é pelo
   banco.
-- **Atenção na instalação:** 9 dos 10 clientes das Carteiras estavam no Hub em nome do Emil, mas as contas são da
-  Bibiana no BTG (5414062). O trigger não mexe em quem já está cadastrado; só troca quando as contas de um cliente
-  mudarem.
+- **Ficha do CRM ligada sozinha (3.40).** Trigger `clientes_zz_ficha_btg`: quando as contas de um cliente mudam e ele
+  não tem `lead_id`, `clientes_ficha_pela_conta(nome, contas)` acha a ficha (funil do assessor, não excluída) com a mesma
+  conta. Se casar mais de uma (pessoa e holding), fica a que começa com o primeiro nome do cliente; empatando, a da conta
+  de maior patrimônio. Ligação existente nunca é trocada. Vale para qualquer quem grava (é só a ligação, não dá acesso).
+- **Feito na instalação (19/11/2026, a pedido do Emil):** códigos do Marcelo (9049619) e do Gabriel (67700131) acertados;
+  as 9 carteiras com conta ligadas às fichas (Alex e Tassio à ficha da pessoa, não à da empresa); os 9 clientes que
+  estavam com o Emil e cujas contas são da Bibiana no BTG (5414062) passaram para a Bibiana (registrado na auditoria).
+  LEONORA, sem conta vinculada, ficou com a Jussara e sem ficha.
+- **Clarissa Centeno** (8927247, 9 contas, R$ 4,7 mi): decisão do Emil, mantém os clientes no BTG mas não acessa o Hub
+  e ninguém assume. As contas dela ficam sem dono no Hub (aparecem só para quem vê todos os clientes).
+- **E-mail da manhã da Agenda:** agendamento único `ligar-agenda-manha` ('30 9 23 11 *' = 23/11 às 6h30 de Brasília)
+  liga o `agenda-manha` (6h50) e se apaga. A partir daí o e-mail sai todo dia útil.
+- Testado como `authenticated` com a sessão do master: cliente novo com conta do Thiago ficou com o Thiago e com a ficha
+  da conta (desfeito no fim).
 

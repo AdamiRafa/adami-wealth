@@ -19,6 +19,12 @@
 --     (as Carteiras são preenchidas por ele). Se nenhuma conta casar, fica como estava.
 --     Salvar só o nome, sem mexer nas contas, não troca o assessor.
 --
+--  3. Ficha do CRM ligada sozinha (pedido do Emil no mesmo dia)
+--     Quando as contas BTG de um cliente mudam e ele ainda não está ligado a uma ficha do CRM,
+--     liga à ficha (funil do assessor, não excluída) cuja conta está entre as vinculadas. Se
+--     mais de uma ficha casar (pessoa e holding, por exemplo), fica a que tem o primeiro nome
+--     do cliente; empatando, a da conta de maior patrimônio. Ligação já feita não é trocada.
+--
 --  Rodar inteiro no SQL Editor (Run without RLS). Pode rodar de novo.
 -- ============================================================
 
@@ -71,5 +77,38 @@ drop trigger if exists clientes_zz_assessor_btg on public.clientes;
 create trigger clientes_zz_assessor_btg before insert or update of contas_btg on public.clientes
   for each row execute function public.clientes_assessor_pelo_btg();
 
+-- Ficha do CRM pela conta.
+create or replace function public.clientes_ficha_pela_conta(p_nome text, p_contas text[])
+returns text language sql stable security definer set search_path = public as $$
+  select l.id
+    from public.leads l
+    left join public.btg_base b on ltrim(b.nr_conta, '0') = ltrim(regexp_replace(l.conta, '\D', '', 'g'), '0')
+   where not coalesce(l.excluido, false) and coalesce(l.funil, 'assessor') = 'assessor' and coalesce(l.conta, '') <> ''
+     and ltrim(regexp_replace(l.conta, '\D', '', 'g'), '0') in
+         (select ltrim(regexp_replace(x, '\D', '', 'g'), '0') from unnest(coalesce(p_contas, '{}')) x)
+   order by (translate(lower(coalesce(l.cliente, '')), 'áàâãéêíóôõúç', 'aaaaeeiooouc')
+             like translate(lower(split_part(btrim(coalesce(p_nome, '')), ' ', 1)), 'áàâãéêíóôõúç', 'aaaaeeiooouc') || '%') desc,
+            b.pl_total desc nulls last, l.id
+   limit 1;
+$$;
+revoke all on function public.clientes_ficha_pela_conta(text, text[]) from public, anon, authenticated;
+
+create or replace function public.clientes_ficha_pelo_btg()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.lead_id is not null then return new; end if;
+  if tg_op = 'UPDATE' and new.contas_btg is not distinct from old.contas_btg then return new; end if;
+  new.lead_id := public.clientes_ficha_pela_conta(new.nome, new.contas_btg);
+  return new;
+end $$;
+revoke all on function public.clientes_ficha_pelo_btg() from public, anon, authenticated;
+drop trigger if exists clientes_zz_ficha_btg on public.clientes;
+create trigger clientes_zz_ficha_btg before insert or update of contas_btg on public.clientes
+  for each row execute function public.clientes_ficha_pelo_btg();
+
 -- Acerta os códigos agora (Marcelo e Gabriel estavam com código interno).
 select public.btg_sincronizar_codigos();
+
+-- Liga agora as carteiras que ainda não têm ficha.
+update public.clientes c set lead_id = public.clientes_ficha_pela_conta(c.nome, c.contas_btg)
+ where c.lead_id is null and cardinality(c.contas_btg) > 0;
