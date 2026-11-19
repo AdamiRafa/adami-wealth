@@ -37,6 +37,7 @@ async function prep(ctx,extra){
         {funil:'assessor',esteira:'novo',perdido:false,ganho:true,ganho_em:ini,criado_em:ant,etapa_desde:ini,valor_fechado:'650.000',movimentacoes:[],excluido:false,responsavel_id:UID}
       ]);
     }
+    if(n==='tutorial_vistos') return j(['hub','crm']);
     if(n==='totp_estado') return j({ativo:false});
     if(n==='totp_iniciar') return j({segredo:'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',uri:'otpauth://totp/Hub%20Adami:ana.ribeiro@adamicaptal.com.br?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=Hub%20Adami'});
     if(n==='meus_acessos') return j([{em:new Date().toISOString(),evento:'entrou_app',navegador:'Mozilla/5.0 (Macintosh) Chrome/130',ip:'189.29.144.10'},{em:new Date(Date.now()-86400e3).toISOString(),evento:'entrou',navegador:'Mozilla/5.0 (iPhone) Safari/17',ip:'189.29.144.10'}]);

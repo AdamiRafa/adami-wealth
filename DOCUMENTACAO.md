@@ -792,7 +792,9 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
- · **19/11/2026 (noite): 3.42. Hub fechado até o lançamento: até 25/11 0h só Emil, Rafael e Bibiana entram
+ · **19/11/2026 (noite): 3.43 e CRM 2026.11.19.14. Tutorial em vídeo do Hub e do CRM no primeiro acesso, com
+"Não mostrar novamente" (seção 38); abertura do Hub para todos passou para quinta, 26/11**.
+ · **19/11/2026 (noite): 3.42. Hub fechado até o lançamento: até 26/11 (quinta) 0h só Emil, Rafael e Bibiana entram
 (seção 37, `lancamento_2511.sql`)**.
  · **19/11/2026 (noite): 3.41. Conferência 360 (seção 36): CRM do assessor rápido de novo (NNM, Captação, Vencimentos,
 Dinheiro parado e Agenda BTG estouravam 8 s), e-mail da manhã só pelo agendamento, carta do mês só o master, registro de
@@ -2841,14 +2843,36 @@ Pedido do Emil: "confere 360 no detalhe em TODAS funções, usabilidade, acessos
 
 ## 37. Hub fechado até o lançamento (19/11/2026, Hub 3.42, `lancamento_2511.sql`)
 
-Pedido do Emil: "deixa só eu, o Rafael e a Bibiana com acesso até quarta-feira, vamos soltar para todo mundo na quarta".
-- `acesso_config.restrito_ate` (25/11/2026 0h de Brasília) e `restrito_a` (ids do Emil, Rafael e Bibiana).
+Pedido do Emil: "deixa só eu, o Rafael e a Bibiana com acesso até quarta-feira, vamos soltar para todo mundo na quarta";
+em seguida, "quinta-feira, por favor". Instalado e testado em 19/11/2026 (assessor recusado com a mensagem, Emil entra).
+- `acesso_config.restrito_ate` (26/11/2026 0h de Brasília) e `restrito_a` (ids do Emil, Rafael e Bibiana).
   `acesso_fechado(uid)` diz se a pessoa ainda está de fora.
 - `acesso_liberado()` passa a responder "não" para quem está de fora: nenhuma política nem função devolve ou grava dado.
 - `liberar_sessao_do_dia()` recusa o login com `fechado: true` e a mensagem de quando o Hub abre; a tela de entrada mostra
   essa mensagem (`encerrarPorVirada(msg)`) e não guarda a sessão.
 - E-mail da manhã: o gatilho `agenda_emails_so_liberados` recusa a reserva do envio de quem está de fora; a função
-  `agenda-manha` registra "já enviado hoje" e pula a pessoa. Assim os e-mails de 23 e 24/11 vão só para os três.
+  `agenda-manha` registra "já enviado hoje" e pula a pessoa. Assim os e-mails de 23, 24 e 25/11 vão só para os três.
 - Abre sozinho na hora marcada. Abrir antes: `update public.acesso_config set restrito_ate = now();`.
-  Mudar a hora: `update public.acesso_config set restrito_ate = '2026-11-25 14:00-03';`.
+  Mudar a hora: `update public.acesso_config set restrito_ate = '2026-11-26 14:00-03';`.
+
+## 38. Tutorial em vídeo no primeiro acesso (19/11/2026, Hub 3.43, CRM 2026.11.19.14, `tutorial.sql`)
+
+Pedido do Emil: "faz um vídeo de tutorial quando todos acessarem o CRM e o Hub pela primeira vez, passando em cada
+função, cada etapa, descrevendo o que faz, com uma caixa de não aparecer novamente; enquanto ele não selecionar, ela vai
+ser apresentada toda vez que ele entrar".
+- **Vídeos:** `ajuda/tutorial-hub.mp4` (3min49, tela inicial, menu, Carteiras e cada ferramenta, ajuda, segurança) e
+  `ajuda/tutorial-crm.mp4` (4min18, Dashboard, Agenda, jornada, ficha, Minha carteira com NNM, Captados, Negócios), com
+  capas `.jpg`. Gravados com Playwright, legendas e moldura no item explicado, **só com dados fictícios**: Hub com o
+  Supabase simulado do manual (`manual-fonte/captura/mock.js`, Ana Ribeiro, Família Exemplo) e CRM na cópia de
+  demonstração (`MODO_DEMO = true`, com mais clientes fictícios na carteira da Ana). H.264, 1280x720, sem áudio.
+  Os roteiros ficaram fora do repositório (gravação de uma vez); para regravar, refazer a partir desta descrição.
+- **Janela:** `comum/tutorial.js`, carregado no Hub e no CRM. Espera a tela inicial (`.hb-ola`) ou o menu do CRM
+  (`.mn-item`), pergunta `tutorial_vistos()` e, se o módulo não está marcado, abre o vídeo com "Não mostrar
+  novamente". Aparece uma vez por dia em cada aba (sessionStorage) até a pessoa marcar; a marca vai para o banco por
+  `tutorial_marcar(modulo)` e vale em qualquer aparelho. O botão ? ganhou "Ver o tutorial em vídeo" (sem a caixa).
+  `localStorage aw_tutorial_gravacao = 1` desliga a janela (usado nas gravações).
+- **Banco:** `tutorial_vistos (user_id, modulo hub|crm, visto_em)`, RLS sem política de leitura (só as duas funções, que
+  conferem `acesso_liberado()`), mais `exige_verificacao`. Mostrar de novo a alguém: apagar a linha da pessoa.
+- O mock do manual responde `tutorial_vistos = ['hub','crm']` para a janela não aparecer nas capturas.
+- O vídeo usa o `default-src 'self'` da CSP (mesmo endereço); a pasta `ajuda/` já é publicada.
 

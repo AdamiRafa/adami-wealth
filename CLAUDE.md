@@ -67,6 +67,8 @@ Barra comum (3.10, seção 26): `comum/barra.js` no `<head>` de todo módulo (bo
 Reportar um problema). Módulo novo carrega `comum/sessao.js` e `comum/barra.js` e ganha uma entrada em
 `AJUDA` no barra.js. O manual do Hub fica em `ajuda/Manual-do-Hub.pdf` (fonte em `manual-fonte/`); se o
 manual mudar, atualize as páginas em `AJUDA[...].pag`. O Hub é instalável no celular (`app.webmanifest`).
+Tutorial em vídeo no primeiro acesso (3.43, seção 38): `comum/tutorial.js` + `ajuda/tutorial-*.mp4`; tela que mudar muito
+pede vídeo regravado, só com dados fictícios.
 A chave *publishable* fica no código do navegador, o que é correto: a proteção está na
 RLS. A *service_role* **nunca** entra em arquivo servido ao navegador.
 

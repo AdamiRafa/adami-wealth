@@ -1,8 +1,8 @@
 -- ============================================================
 --  Acesso restrito até o lançamento (19/11/2026, Hub 3.42). Pedido do Emil: "deixa só eu, o Rafael
---  e a Bibiana com acesso até quarta-feira, vamos soltar para todo mundo na quarta".
+--  e a Bibiana com acesso até quarta-feira, vamos soltar para todo mundo na quarta". Depois: "quinta-feira, por favor".
 --
---  Até acesso_config.restrito_ate (25/11/2026, 0h de Brasília) só quem está em restrito_a entra.
+--  Até acesso_config.restrito_ate (26/11/2026, 0h de Brasília) só quem está em restrito_a entra.
 --  Para os demais:
 --    - acesso_liberado() responde "não", então o banco não devolve nem grava nada (todas as
 --      políticas exige_verificacao e as funções usam essa checagem);
@@ -11,14 +11,14 @@
 --      e a função agenda-manha pula a pessoa como "já enviado hoje").
 --  Na hora marcada abre sozinho, sem precisar rodar nada.
 --    Abrir antes:      update public.acesso_config set restrito_ate = now();
---    Mudar a data:     update public.acesso_config set restrito_ate = '2026-11-25 14:00-03';
+--    Mudar a data:     update public.acesso_config set restrito_ate = '2026-11-26 14:00-03';
 --  Rodar inteiro no SQL Editor (Run without RLS). Pode rodar de novo.
 -- ============================================================
 
 alter table public.acesso_config add column if not exists restrito_ate timestamptz;
 alter table public.acesso_config add column if not exists restrito_a uuid[] not null default '{}';
 update public.acesso_config set
-  restrito_ate = '2026-11-25 00:00:00-03',
+  restrito_ate = '2026-11-26 00:00:00-03',
   restrito_a = array['d5ff1b2f-95e2-46cf-8577-d9d47236aa39',   -- Emil Stade
                      '24e8c324-838a-4e84-8acc-36862383de70',   -- Rafael Adami
                      'f658af86-809d-4586-a478-8240830f4a00']::uuid[];  -- Bibiana Adami
@@ -55,7 +55,7 @@ begin
   end if;
   if public.acesso_fechado(v_uid) then
     return json_build_object('ok', false, 'fechado', true,
-      'msg', 'O Hub abre para toda a equipe na quarta-feira, 25/11, com a apresentação no Teams. Até lá o acesso está fechado.');
+      'msg', 'O Hub abre para toda a equipe na quinta-feira, 26/11. Até lá o acesso está fechado.');
   end if;
   if coalesce((select c.segundo_fator from public.acesso_config c limit 1), true) then
     return json_build_object('ok', false, 'codigo', true, 'msg', 'A verificação em duas etapas está ligada: use o código.');

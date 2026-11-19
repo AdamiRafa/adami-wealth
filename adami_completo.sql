@@ -7648,12 +7648,12 @@ select cron.alter_job(job_id := (select jobid from cron.job where jobname = 'age
     body := '{}'::jsonb, timeout_milliseconds := 60000);
 $c$);
 
--- ===== lancamento_2511.sql (19/11/2026, Hub 3.42) =====
+-- ===== lancamento_2511.sql (19/11/2026, Hub 3.42/3.43) =====
 -- ============================================================
 --  Acesso restrito até o lançamento (19/11/2026, Hub 3.42). Pedido do Emil: "deixa só eu, o Rafael
---  e a Bibiana com acesso até quarta-feira, vamos soltar para todo mundo na quarta".
+--  e a Bibiana com acesso até quarta-feira, vamos soltar para todo mundo na quarta". Depois: "quinta-feira, por favor".
 --
---  Até acesso_config.restrito_ate (25/11/2026, 0h de Brasília) só quem está em restrito_a entra.
+--  Até acesso_config.restrito_ate (26/11/2026, 0h de Brasília) só quem está em restrito_a entra.
 --  Para os demais:
 --    - acesso_liberado() responde "não", então o banco não devolve nem grava nada (todas as
 --      políticas exige_verificacao e as funções usam essa checagem);
@@ -7662,14 +7662,14 @@ $c$);
 --      e a função agenda-manha pula a pessoa como "já enviado hoje").
 --  Na hora marcada abre sozinho, sem precisar rodar nada.
 --    Abrir antes:      update public.acesso_config set restrito_ate = now();
---    Mudar a data:     update public.acesso_config set restrito_ate = '2026-11-25 14:00-03';
+--    Mudar a data:     update public.acesso_config set restrito_ate = '2026-11-26 14:00-03';
 --  Rodar inteiro no SQL Editor (Run without RLS). Pode rodar de novo.
 -- ============================================================
 
 alter table public.acesso_config add column if not exists restrito_ate timestamptz;
 alter table public.acesso_config add column if not exists restrito_a uuid[] not null default '{}';
 update public.acesso_config set
-  restrito_ate = '2026-11-25 00:00:00-03',
+  restrito_ate = '2026-11-26 00:00:00-03',
   restrito_a = array['d5ff1b2f-95e2-46cf-8577-d9d47236aa39',   -- Emil Stade
                      '24e8c324-838a-4e84-8acc-36862383de70',   -- Rafael Adami
                      'f658af86-809d-4586-a478-8240830f4a00']::uuid[];  -- Bibiana Adami
@@ -7706,7 +7706,7 @@ begin
   end if;
   if public.acesso_fechado(v_uid) then
     return json_build_object('ok', false, 'fechado', true,
-      'msg', 'O Hub abre para toda a equipe na quarta-feira, 25/11, com a apresentação no Teams. Até lá o acesso está fechado.');
+      'msg', 'O Hub abre para toda a equipe na quinta-feira, 26/11. Até lá o acesso está fechado.');
   end if;
   if coalesce((select c.segundo_fator from public.acesso_config c limit 1), true) then
     return json_build_object('ok', false, 'codigo', true, 'msg', 'A verificação em duas etapas está ligada: use o código.');
@@ -7738,3 +7738,47 @@ revoke all on function public.agenda_emails_so_liberados() from public, anon, au
 drop trigger if exists agenda_emails_so_liberados on public.agenda_emails;
 create trigger agenda_emails_so_liberados before insert on public.agenda_emails
   for each row execute function public.agenda_emails_so_liberados();
+
+-- ===== tutorial.sql (19/11/2026, Hub 3.43) =====
+-- ============================================================
+--  Tutorial em vídeo do primeiro acesso (19/11/2026, Hub 3.43, comum/tutorial.js).
+--  Guarda quem marcou "Não mostrar novamente" no tutorial do Hub e no do CRM. Enquanto a pessoa não
+--  marca, o vídeo aparece a cada entrada. A tabela não tem política: só as duas funções leem e gravam,
+--  e cada pessoa só mexe na própria marca.
+--  Para mostrar de novo a alguém:  delete from public.tutorial_vistos where user_id = '<id>';
+--  Rodar inteiro no SQL Editor (Run without RLS). Pode rodar de novo.
+-- ============================================================
+create table if not exists public.tutorial_vistos (
+  user_id  uuid not null references auth.users(id) on delete cascade,
+  modulo   text not null check (modulo in ('hub', 'crm')),
+  visto_em timestamptz not null default now(),
+  primary key (user_id, modulo)
+);
+alter table public.tutorial_vistos enable row level security;
+revoke all on public.tutorial_vistos from anon, authenticated;
+
+create or replace function public.tutorial_vistos()
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.acesso_liberado() then raise exception 'Acesso não liberado.'; end if;
+  return coalesce((select jsonb_agg(modulo) from public.tutorial_vistos where user_id = auth.uid()), '[]'::jsonb);
+end $$;
+revoke all on function public.tutorial_vistos() from public, anon;
+grant execute on function public.tutorial_vistos() to authenticated;
+
+create or replace function public.tutorial_marcar(p_modulo text)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  if not public.acesso_liberado() then raise exception 'Acesso não liberado.'; end if;
+  if p_modulo not in ('hub', 'crm') then raise exception 'Módulo inválido.'; end if;
+  insert into public.tutorial_vistos (user_id, modulo) values (auth.uid(), p_modulo)
+  on conflict (user_id, modulo) do update set visto_em = now();
+  return true;
+end $$;
+revoke all on function public.tutorial_marcar(text) from public, anon;
+grant execute on function public.tutorial_marcar(text) to authenticated;
+
+-- Regra da casa: toda tabela com RLS tem a política restritiva exige_verificacao.
+drop policy if exists exige_verificacao on public.tutorial_vistos;
+create policy exige_verificacao on public.tutorial_vistos as restrictive for all to authenticated
+  using ((select public.acesso_liberado())) with check ((select public.acesso_liberado()));

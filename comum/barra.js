@@ -279,6 +279,7 @@
             '<div class="awb-res" id="awbRes" role="listbox"></div></div>' +
           '<div><h3>Nesta tela</h3><ul>' + aj.itens.map(function(t){ return "<li>" + esc(t) + "</li>"; }).join("") + '</ul></div>' +
           '<div class="awb-links">' +
+            (window.AWTutorial && window.AWTutorial.modulo ? '<button type="button" class="awb-link" data-a="tutorial">Ver o tutorial em vídeo</button>' : '') +
             '<a class="awb-link" href="' + MANUAL + '#page=' + aj.pag + '" target="_blank" rel="noopener">Abrir o manual nesta parte</a>' +
             '<button type="button" class="awb-link" data-a="reportar">Reportar um problema</button>' +
           '</div>' +
@@ -291,6 +292,7 @@
       b.onclick = function(){
         var a = b.getAttribute("data-a");
         if(a === "fechar") fechar();
+        else if(a === "tutorial"){ fechar(); if(window.AWTutorial) window.AWTutorial.abrir(); }
         else if(a === "reportar"){ ESTADO.tela = "reportar"; pintar(); }
         else if(a === "voltar"){ ESTADO.tela = "inicio"; pintar(); }
       };
@@ -483,5 +485,5 @@
   setInterval(conferirInatividade, 20000);
   conferirInatividade();
 
-  window.AWBarra = { abrir: abrir, fechar: fechar, erros: function(){ return ERROS.slice(); }, registrar: registrarAcao, marcarUso: function(){ marcarUso(true); } };
+  window.AWBarra = { api: chamar, abrir: abrir, fechar: fechar, erros: function(){ return ERROS.slice(); }, registrar: registrarAcao, marcarUso: function(){ marcarUso(true); } };
 })();

@@ -1,4 +1,4 @@
-# Pasta do manual do Hub (3.10). Só PDF.
+# Pasta do manual do Hub (3.10): o PDF e, desde a 3.43, os vídeos do tutorial (tutorial-hub.mp4, tutorial-crm.mp4).
 # O cabeçalho Content-Security-Policy do Hub (object-src 'none') impede o leitor de PDF
 # do Chrome de abrir o arquivo; aqui ele é retirado. Buscadores não indexam.
 <IfModule mod_headers.c>
