@@ -2660,6 +2660,27 @@
   .pn-linha-quem{font-weight:400;color:var(--ink-faint);}
   .pn-linha-meta{font-family:'IBM Plex Mono',Consolas,monospace;font-size:12.5px;color:var(--ink-muted);white-space:nowrap;}
   .pn-linha-meta.atrasado{color:var(--danger);}
+  .pn-cap .pn-linha{gap:10px;}
+  .ag-rotina{display:flex;flex-direction:column;gap:14px;}
+  .ag-rot-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .ag-rot-topo .pn-pilulas{margin:0;}
+  .ag-rotina .pn-pilula{background:var(--chip,rgba(25,90,180,.08));color:var(--ink);}
+  .ag-rotina .pn-pilula.boa{color:var(--success);} .ag-rotina .pn-pilula.ruim{color:var(--danger);}
+  .ag-rot-ponto{width:10px;height:10px;border-radius:50%;background:var(--ag-cor);flex:0 0 10px;margin:6px 4px 0 6px;}
+  .gat-ordem .gat-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .gat-ordem-lista{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:420px;overflow:auto;}
+  .gat-ordem-lista li{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:var(--surface,#fff);}
+  .gat-ordem-lista li.desligado{opacity:.55;}
+  .gat-ordem-num{font-family:'IBM Plex Mono',Consolas,monospace;font-size:12px;color:var(--ink-faint);width:22px;text-align:right;}
+  .gat-ordem-nome{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .gat-ordem-nome small{color:var(--ink-faint);font-size:11.5px;}
+  .pn-linha-nome.sem-ficha{color:var(--ink-muted);cursor:default;}
+  .pn-cap-ver{border:0;background:none;color:var(--ink-faint);font-size:12px;cursor:pointer;white-space:nowrap;padding:2px 4px;}
+  .pn-cap-ver:hover{color:var(--ink);}
+  .pn-cap-lanc{margin:0 0 8px 12px;padding:6px 10px;border-left:2px solid var(--border);font-family:'IBM Plex Mono',Consolas,monospace;font-size:12px;}
+  .pn-cap-lanc>div{padding:3px 0;color:var(--ink-muted);}
+  .pn-cap-lanc>div.entra{color:var(--success);} .pn-cap-lanc>div.sai{color:var(--danger);}
+  .pn-cap-lanc small{display:block;font-family:inherit;color:var(--ink-faint);font-size:11px;}
   .pn-linha-acao{
     border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:5px 10px;font-size:12px;
     cursor:pointer;color:var(--ink-muted);
@@ -5621,17 +5642,9 @@ function montarAplicacaoBase(res, leads, autor, agora, hoje){
       }];
     }
 
-    /* O alerta é o que devolve a divergência para quem consegue explicá-la.
-       O admin vê o número no resumo; quem liga para o cliente é o assessor,
-       e é no card dele que o aviso precisa estar. */
-    if(a.alerta && !doLote(l.alertas)){
-      novo.alertas = [...(l.alertas || []), {
-        id: uid('al'), lote, tipo: 'divergencia',
-        texto: (off ? 'Saldo offshore do BTG variou ' : 'Saldo do BTG variou ') + (a.delta >= 0 ? '+' : '−') + fmt(Math.abs(a.delta))
-          + ' sem movimentação lançada que explique. Confirmar com o cliente se houve aporte ou resgate.',
-        data: hoje, autor, criadoEm: agora, resolvido: false,
-      }];
-    }
+    /* 19/11/2026, pedido do Emil: a variação de saldo fora da faixa NÃO vira mais aviso "Divergência de saldo" no
+       card. Com o BTG atualizando todo dia (posição, movimentação e captação líquida), o saldo é sempre o do BTG e
+       a explicação está nas movimentações; o aviso só gerava ruído. A variação continua no histórico da ficha. */
     return stampLead(novo);
   });
 
@@ -12016,6 +12029,34 @@ const AG_GAT = AG_GATILHOS.reduce((acc, g) => { acc[g.k] = g; return acc; }, {})
 const AG_LIMITE_PADRAO = 12;
 /* Prioridade das tarefas que não vêm de gatilho, na mesma escala. */
 const AG_PRIO_ORIGEM = { atribuida:88, vencimento:86, manual:78, contato:74, regua:50 };
+/* Hierarquia (CRM 2026.11.19.9). Pedido do Emil: o master põe os tipos de tarefa em ordem, do mais importante
+   para o menos, e os de cima sempre aparecem antes na missão do dia. A ordem fica em agenda_gatilhos, chave
+   "geral", params.ordem (lista de chaves). Entram os gatilhos (menos os que são compromisso, que vão pela hora)
+   e as tarefas que não vêm de gatilho. Tipo novo, que ainda não está na ordem salva, entra no fim da lista. */
+const AG_ORIGENS_TAREFA = [
+  { k:'atribuida',  nome:'Tarefa passada pelo head ou por um master', prio:88, grupoNome:'Tarefas da Agenda' },
+  { k:'vencimento', nome:'Vencimento lançado na ficha do cliente',    prio:86, grupoNome:'Fichas dos clientes' },
+  { k:'manual',     nome:'Tarefa criada pela própria pessoa',         prio:78, grupoNome:'Tarefas da Agenda' },
+  { k:'contato',    nome:'Próximo contato marcado na ficha',          prio:74, grupoNome:'Fichas dos clientes' },
+  { k:'regua',      nome:'Régua de relacionamento',                   prio:50, grupoNome:'Fichas dos clientes' },
+];
+function agHierarquiaBase(){
+  const grupoNome = (g) => ((AG_GRUPOS.find(x => x.k === g) || {}).nome) || '';
+  return AG_ORIGENS_TAREFA.map(o => ({ k: o.k, nome: o.nome, prio: o.prio, grupoNome: o.grupoNome, fixo: true }))
+    .concat(AG_GATILHOS.filter(c => !AG_ROTINA_COMPROMISSO[c.k]).map(c => ({ k: c.k, nome: c.nome, prio: c.prio, grupoNome: grupoNome(c.grupo) })))
+    .sort((a, b) => b.prio - a.prio);
+}
+function agOrdem(gat, ordemSalva){
+  const todos = agHierarquiaBase(), porK = new Map(todos.map(x => [x.k, x]));
+  const salva = Array.isArray(ordemSalva) ? ordemSalva
+    : (gat && gat.geral && gat.geral.params && Array.isArray(gat.geral.params.ordem)) ? gat.geral.params.ordem : [];
+  const vistos = new Set(), out = [];
+  salva.forEach(k => { if(porK.has(k) && !vistos.has(k)){ vistos.add(k); out.push(porK.get(k)); } });
+  /* Sem ordem salva, vale a padrão. Com ordem salva, ela manda; tipo que não está nela (gatilho novo) vai para o fim. */
+  todos.forEach(x => { if(!vistos.has(x.k)){ vistos.add(x.k); out.push(x); } });
+  return out;
+}
+function agPrioMapa(gat){ const m = {}; agOrdem(gat).forEach((x, i) => { m[x.k] = 1000 - i; }); return m; }
 const AG_DIAS_LONGOS = ['Segunda','Terça','Quarta','Quinta','Sexta'];
 
 /* Gatilho ligado? Devolve os números (padrão + o que o master gravou) ou null. gat = { chave: {ligado, params} }. */
@@ -12239,6 +12280,26 @@ const agComPrio = (it) => it.prio ? it : { ...it, prio: AG_PRIO_ORIGEM[it.origem
 const AG_ROTINA_COMPROMISSO = { rot_reuniao_semanal: true, rot_comite: true };
 const agEhCompromisso = (it) => it.origem === 'outlook' || AG_ROTINA_COMPROMISSO[it.gatilho] === true
   || (!!it.tarefa && (it.tipo === 'reuniao' || !!it.hora));
+/* Prioridade pela hierarquia que o master escolheu (agPrioMapa); o que não está nela fica com a prioridade padrão. */
+const agComPrioPor = (mapa) => (it) => { const p = mapa[it.gatilho || it.origem]; return p ? { ...it, prio: p } : agComPrio(it); };
+/* A missão do dia de uma pessoa: o MESMO cálculo da aba Agenda (Hoje), usado também na Rotina do dia do Dashboard,
+   para os dois nunca mostrarem coisas diferentes. */
+function agMissaoDoDia({ tarefas, ag, leads, users, donoId, hoje }){
+  const donos = new Set([donoId]);
+  const base = { tarefas, leads, users, donos, hoje };
+  const ctx = { ...(ag || {}), leads, users, donos, hoje };
+  const comPrio = agComPrioPor(agPrioMapa(ag && ag.gat));
+  const atrasadas = agendaAtrasadas(base).concat(agGatilhosAtrasados(ctx)).map(comPrio);
+  const itens = agendaItens({ ...base, de: hoje, ate: hoje }).concat(agItensGatilhos({ ...ctx, de: hoje, ate: hoje })).map(comPrio);
+  const limite = agLimite(ag && ag.gat);
+  const compromissos = itens.filter(agEhCompromisso)
+    .sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99') || a.titulo.localeCompare(b.titulo));
+  const fila = itens.filter(i => !i.feita && !agEhCompromisso(i)).sort(agOrdenarMissao);
+  let n = 0;
+  const visiveis = fila.filter(i => i.semLimite || n++ < limite);
+  const feitas = itens.filter(i => i.feita && i.origem !== 'outlook');
+  return { atrasadas, compromissos, fila, visiveis, escondidas: fila.length - visiveis.length, feitas, limite };
+}
 
 /* ---------- Tela do master: quais gatilhos valem e com que números ---------- */
 function AgendaGatilhos({ gat, users, onSalvar, onClose }){
@@ -12249,7 +12310,7 @@ function AgendaGatilhos({ gat, users, onSalvar, onClose }){
       const g = gat && gat[c.k];
       r[c.k] = { ligado: g ? !!g.ligado : !!c.ligado, params: { ...c.padrao, ...((g && g.params) || {}) } };
     });
-    r.geral = { ligado: true, params: { limite: agLimite(gat) } };
+    r.geral = { ligado: true, params: { ...((gat && gat.geral && gat.geral.params) || {}), limite: agLimite(gat), ordem: agOrdem(gat).map(x => x.k) } };
     return r;
   };
   const [rasc, setRasc] = useState(inicial);
@@ -12258,7 +12319,7 @@ function AgendaGatilhos({ gat, users, onSalvar, onClose }){
   const salvo = (k) => {
     const g = gat && gat[k];
     const cat = AG_GAT[k];
-    if(k === 'geral') return { ligado: true, params: { limite: agLimite(gat) } };
+    if(k === 'geral') return { ligado: true, params: { ...((gat && gat.geral && gat.geral.params) || {}), limite: agLimite(gat), ordem: agOrdem(gat).map(x => x.k) } };
     return { ligado: g ? !!g.ligado : !!cat.ligado, params: { ...cat.padrao, ...((g && g.params) || {}) } };
   };
   const mudou = (k) => JSON.stringify(rasc[k]) !== JSON.stringify(salvo(k));
@@ -12317,6 +12378,29 @@ function AgendaGatilhos({ gat, users, onSalvar, onClose }){
         h('button', { type: 'button', className: 'btn btn-primary', disabled: salvando === c.k, onClick: () => salvar(c.k) }, salvando === c.k ? 'Salvando...' : 'Salvar')) : null);
   };
   const g = AG_GRUPOS.find(x => x.k === grupo);
+  /* Ordem de prioridade: o master sobe e desce cada tipo; o de cima aparece antes na missão do dia. */
+  const [ordemAberta, setOrdemAberta] = useState(false);
+  const ordem = agOrdem(null, rasc.geral.params.ordem);
+  const mover = (i, d) => {
+    const j = i + d; if(j < 0 || j >= ordem.length) return;
+    const ks = ordem.map(x => x.k); const t = ks[i]; ks[i] = ks[j]; ks[j] = t;
+    setCampo('geral', 'ordem', ks);
+  };
+  const ligadoK = (k) => AG_GAT[k] ? rasc[k].ligado : true;
+  const cartaoOrdem = h('div', { className: 'gat-cartao on gat-geral gat-ordem' },
+    h('div', { className: 'gat-topo' }, h('strong', null, 'Ordem de prioridade'),
+      h('button', { type: 'button', className: 'btn btn-ghost', 'aria-expanded': ordemAberta, onClick: () => setOrdemAberta(v => !v) }, ordemAberta ? 'Fechar' : 'Mudar a ordem')),
+    h('p', { className: 'gat-desc' }, 'Do mais importante para o menos. Na missão do dia, o que está mais acima aparece sempre antes; empate fica com o maior valor. Compromissos (reuniões e ligações com hora) seguem a hora e não entram aqui.'),
+    !ordemAberta ? h('p', { className: 'gat-desc', style: { margin: 0 } }, 'Hoje: ' + ordem.slice(0, 5).map((x, i) => (i + 1) + '. ' + x.nome).join(' · ') + (ordem.length > 5 ? ' …' : ''))
+    : h('ol', { className: 'gat-ordem-lista' }, ordem.map((x, i) => h('li', { key: x.k, className: ligadoK(x.k) ? '' : 'desligado' },
+        h('span', { className: 'gat-ordem-num' }, String(i + 1)),
+        h('span', { className: 'gat-ordem-nome' }, h('strong', null, x.nome), h('small', null, x.grupoNome + (ligadoK(x.k) ? '' : ' · desligado'))),
+        h('button', { type: 'button', className: 'ag-icone', disabled: i === 0, onClick: () => mover(i, -1), 'aria-label': 'Subir ' + x.nome, title: 'Subir' }, '▲'),
+        h('button', { type: 'button', className: 'ag-icone', disabled: i === ordem.length - 1, onClick: () => mover(i, 1), 'aria-label': 'Descer ' + x.nome, title: 'Descer' }, '▼')))),
+    ordemAberta ? h('div', { className: 'gat-salvar' },
+      h('button', { type: 'button', className: 'btn btn-ghost', onClick: () => setCampo('geral', 'ordem', agHierarquiaBase().map(x => x.k)) }, 'Voltar à ordem padrão'),
+      mudou('geral') ? h('button', { type: 'button', className: 'btn btn-ghost', onClick: () => setRasc(rr => ({ ...rr, geral: salvo('geral') })) }, 'Desfazer') : null,
+      h('button', { type: 'button', className: 'btn btn-primary', disabled: salvando === 'geral' || !mudou('geral'), onClick: () => salvar('geral') }, salvando === 'geral' ? 'Salvando...' : 'Salvar a ordem')) : null);
   return h('div', { className: 'overlay', onClick: (e) => { if(e.target === e.currentTarget) onClose(); } },
     h('div', { className: 'modal gat-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Gatilhos da Agenda' },
       h('div', { className: 'modal-head' },
@@ -12330,6 +12414,7 @@ function AgendaGatilhos({ gat, users, onSalvar, onClose }){
           h('div', { className: 'gat-campos' }, campo('geral', { k: 'limite', rot: 'Tarefas por dia', tipo: 'numero' })),
           mudou('geral') ? h('div', { className: 'gat-salvar' },
             h('button', { type: 'button', className: 'btn btn-primary', disabled: salvando === 'geral', onClick: () => salvar('geral') }, 'Salvar')) : null),
+        cartaoOrdem,
         h('div', { className: 'pn-abas gat-abas', role: 'tablist', 'aria-label': 'Grupos de gatilhos' },
           AG_GRUPOS.map(x => {
             const ligados = AG_GATILHOS.filter(c => c.grupo === x.k && rasc[c.k].ligado).length;
@@ -12460,18 +12545,16 @@ function IndicarClientes({ currentUser, users, oportunidades, carregarBase, onCr
 /* Faixa no topo do Dashboard: o dia em uma linha, com atalho para a Agenda. */
 function AgendaFaixa({ tarefas, leads, users, donoId, onAbrir, ag }){
   const hoje = todayISO();
-  const donos = useMemo(() => new Set([donoId]), [donoId]);
-  const r = useMemo(() => agResumo(
-    agendaItens({ tarefas, leads, users, donos, de: hoje, ate: hoje, hoje })
-      .concat(agItensGatilhos({ ...(ag || {}), leads, users, donos, de: hoje, ate: hoje, hoje })),
-    agendaAtrasadas({ tarefas, leads, users, donos, hoje })
-      .concat(agGatilhosAtrasados({ ...(ag || {}), users, donos, hoje }))), [tarefas, leads, users, donos, hoje, ag]);
+  /* Mesmas contas da Agenda e da Rotina do dia (agMissaoDoDia): compromissos e tarefas separados. */
+  const m = useMemo(() => agMissaoDoDia({ tarefas, ag, leads, users, donoId, hoje }), [tarefas, ag, leads, users, donoId, hoje]);
+  const r = useMemo(() => agResumo(m.compromissos.concat(m.fila).concat(m.feitas), m.atrasadas), [m]);
+  const comp = m.compromissos.filter(i => !i.feita).length;
   return h('div', { className: 'ag-faixa' },
     h('span', { className: 'ag-faixa-rotulo' }, 'Agenda de hoje'),
     h('span', { className: 'ag-faixa-txt' },
-      r.abertas ? agPlural(r.abertas, 'tarefa', 'tarefas') + (r.abertas === 1 ? ' aberta' : ' abertas') : 'Nada pendente para hoje',
+      comp || m.fila.length ? [comp ? agPlural(comp, 'compromisso', 'compromissos') : '', m.fila.length ? agPlural(m.fila.length, 'tarefa aberta', 'tarefas abertas') : 'tarefas em dia'].filter(Boolean).join(' · ') : 'Nada pendente para hoje',
       r.proxima ? ' · próxima às ' + r.proxima.hora : '',
-      r.atrasadas ? h('span', { className: 'ag-atraso' }, ' · ' + agPlural(r.atrasadas, 'atrasada', 'atrasadas')) : null),
+      m.atrasadas.length ? h('span', { className: 'ag-atraso' }, ' · ' + agPlural(m.atrasadas.length, 'atrasada', 'atrasadas')) : null),
     h('button', { className: 'btn btn-ghost', onClick: onAbrir }, 'Abrir a Agenda'));
 }
 
@@ -12521,10 +12604,11 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
   const agCtx = { ...(ag || {}), leads, users, donos, hoje };
   /* Rotina e capacitação aparecem também na semana e no mês; o resto dos gatilhos é o estado de hoje. */
   const soFixas = (lista) => lista.filter(i => i.origem === 'outlook' || i.origem === 'rotina' || i.origem === 'capacitacao' || !i.gatilho);
-  const atrasadas = useMemo(() => agendaAtrasadas(base).concat(agGatilhosAtrasados(agCtx)).map(agComPrio),
-    [tarefas, leads, users, donos, hoje, ag]);
+  const comPrio = useMemo(() => agComPrioPor(agPrioMapa(ag && ag.gat)), [ag]);
+  const atrasadas = useMemo(() => agendaAtrasadas(base).concat(agGatilhosAtrasados(agCtx)).map(comPrio),
+    [tarefas, leads, users, donos, hoje, ag, comPrio]);
   const itensHoje = useMemo(() => agendaItens({ ...base, de: hoje, ate: hoje })
-    .concat(agItensGatilhos({ ...agCtx, de: hoje, ate: hoje })).map(agComPrio), [tarefas, leads, users, donos, hoje, ag]);
+    .concat(agItensGatilhos({ ...agCtx, de: hoje, ate: hoje })).map(comPrio), [tarefas, leads, users, donos, hoje, ag, comPrio]);
   const proximos = useMemo(() => agendaItens({ ...base, de: agSoma(hoje, 1), ate: agSoma(hoje, 7) })
     .concat(soFixas(agItensGatilhos({ ...agCtx, de: agSoma(hoje, 1), ate: agSoma(hoje, 7) }))).sort(agOrdenar), [tarefas, leads, users, donos, hoje, ag]);
   const resumo = agResumo(itensHoje, atrasadas);
@@ -12941,7 +13025,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.19.8';
+const CRM_VERSAO = 'versão do CRM 2026.11.19.9';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -13067,7 +13151,87 @@ function PainelLista({ itens, vazio, linha }){
     itens.length ? itens.map(linha) : h('div', { className: 'pn-lista-vazio' }, vazio));
 }
 
-function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFilter, onOpen, onResolverAlerta, onAddActivity }){
+/* Captação do BTG no Dashboard (CRM 2026.11.19.9, btg_captacao.sql). O relatório de captação líquida do BTG (NNM)
+   chega todo dia útil às 15h30 com os últimos 30 dias; aqui entra só o mês corrente. Cada lançamento vai para a
+   ficha pela conta e para o assessor da ficha; conta sem ficha no CRM só entra na visão da casa. "Clientes novos"
+   = conta aberta no BTG neste mês (dt_abertura da base de contas); o resto da entrada é aporte. Valores em reais:
+   o relatório é da conta no Brasil (offshore não entra, e nunca soma com dólar). */
+function pnCaptacaoBtg(cap, leads, users, assessorId){
+  if(!cap || cap.erro || !cap.atualizado_em) return null;
+  const ini = todayISO().slice(0, 8) + '01';
+  const porId = new Map(leads.map(l => [l.id, l]));
+  const nomeU = (id) => ((users.find(u => u.id === id) || {}).nome) || 'Sem assessor';
+  const clientes = new Map(), porAssessor = new Map();
+  let entrou = 0, saiu = 0, novos = 0;
+  (cap.linhas || []).forEach(x => {
+    if(!x.data || x.data < ini) return;
+    const l = x.lead_id ? porId.get(x.lead_id) : null;
+    const resp = l ? (l.responsavelId || null) : null;
+    if(assessorId && resp !== assessorId) return;
+    const v = Number(x.valor) || 0;
+    if(!v) return;
+    const k = l ? l.id : 'conta:' + x.conta;
+    if(!clientes.has(k)) clientes.set(k, { chave: k, leadId: l ? l.id : null,
+      cliente: l ? ((l.cliente || '').trim() || nomeCliente(l)) : 'Conta ' + (x.conta || '?') + ' (sem ficha no CRM)',
+      assessor: l ? nomeU(resp) : '', assessorId: resp, entrou: 0, saiu: 0, liquido: 0, novo: false, lanc: [] });
+    const c = clientes.get(k);
+    const novo = !!x.abertura && String(x.abertura) >= ini;
+    if(v > 0){ entrou += v; c.entrou += v; if(novo) novos += v; } else { saiu -= v; c.saiu -= v; }
+    c.liquido += v; c.novo = c.novo || novo; c.lanc.push(x);
+    porAssessor.set(resp || '—', (porAssessor.get(resp || '—') || 0) + v);
+  });
+  const lista = Array.from(clientes.values());
+  lista.forEach(c => c.lanc.sort((a, b) => String(b.data).localeCompare(String(a.data))));
+  return { em: cap.atualizado_em, entrou, saiu, liquido: entrou - saiu, novos, aportes: entrou - novos,
+    liquidos: lista.slice().sort((a, b) => Math.abs(b.liquido) - Math.abs(a.liquido)),
+    entradas: lista.filter(c => c.entrou > 0).sort((a, b) => b.entrou - a.entrou),
+    saidas: lista.filter(c => c.saiu > 0).sort((a, b) => b.saiu - a.saiu),
+    porAssessor };
+}
+const pnLancTexto = (x) => pnData(x.data) + ' · ' + [x.mercado, x.tipo].filter(Boolean).join(' · ') + (x.ativo ? ' · ' + x.ativo : '') + ' · ' + pnSinal(Number(x.valor) || 0);
+
+/* Rotina do dia no Dashboard (CRM 2026.11.19.9). Pedido do Emil: a rotina não conversava com a Agenda; era um
+   cálculo antigo (contato atrasado, vencimento, régua) sem gatilhos, sem tarefas e sem a ordem da Agenda. Agora é
+   a missão do dia da Agenda (agMissaoDoDia), só para ler: para marcar como feito, abre a Agenda. */
+function RotinaAgenda({ tarefas, ag, leads, users, donoId, nome, onOpen, onAbrirAgenda }){
+  const hoje = todayISO();
+  const m = useMemo(() => agMissaoDoDia({ tarefas: tarefas || [], ag, leads, users, donoId, hoje }), [tarefas, ag, leads, users, donoId, hoje]);
+  const abrir = (it) => { const l = it.leadId ? leads.find(x => x.id === it.leadId) : null; if(l) onOpen(l); };
+  const linha = (it, atrasada) => {
+    const o = AG_ORIGENS[it.origem] || AG_ORIGENS.manual;
+    return h('div', { key: it.chave, className: 'ag-item' + (it.feita ? ' feita' : ''), style: { '--ag-cor': o.cor } },
+      h('span', { className: 'ag-rot-ponto', 'aria-hidden': 'true' }),
+      it.hora ? h('span', { className: 'ag-hora' }, it.hora) : null,
+      h('div', { className: 'ag-item-corpo' },
+        h('div', { className: 'ag-item-titulo' }, it.titulo),
+        it.detalhe ? h('div', { className: 'ag-item-detalhe' }, it.detalhe) : null,
+        h('div', { className: 'ag-item-meta' },
+          atrasada ? h('span', { className: 'ag-atraso' }, 'atrasada desde ' + agDataCurta(it.dia)) : null,
+          it.cliente ? (it.leadId ? h('button', { className: 'ag-cliente', onClick: () => abrir(it) }, it.cliente)
+            : h('span', { className: 'ag-cliente-texto' }, it.cliente)) : null,
+          h('span', { className: 'ag-selo', style: { '--c': o.cor, '--cn': o.corNoite } }, o.nome))));
+  };
+  const secao = (titulo, itens, vazio, extra, atrasada, classe) => h('div', { className: 'ag-rot-secao' },
+    h('h3', { className: 'ag-secao-titulo' + (classe ? ' ' + classe : '') }, titulo, h('em', null, itens.length ? String(itens.length) : '')),
+    h('div', { className: 'ag-lista' }, itens.length ? itens.map(it => linha(it, atrasada)) : h('div', { className: 'ag-vazio' }, vazio)),
+    extra ? h('p', { className: 'ag-nota' }, extra) : null);
+  const compAbertos = m.compromissos.filter(i => !i.feita).length;
+  return h('div', { className: 'ag-rotina' },
+    h('div', { className: 'ag-rot-topo' },
+      h('div', { className: 'pn-pilulas' },
+        h('span', { className: 'pn-pilula' }, compAbertos ? agPlural(compAbertos, 'compromisso hoje', 'compromissos hoje') : 'Nenhum compromisso hoje'),
+        h('span', { className: 'pn-pilula' }, m.fila.length ? agPlural(m.fila.length, 'tarefa aberta', 'tarefas abertas') : 'Tarefas em dia'),
+        m.feitas.length ? h('span', { className: 'pn-pilula boa' }, agPlural(m.feitas.length, 'feita hoje', 'feitas hoje')) : null,
+        m.atrasadas.length ? h('span', { className: 'pn-pilula ruim' }, agPlural(m.atrasadas.length, 'atrasada', 'atrasadas')) : null),
+      h('button', { className: 'btn btn-primary', onClick: onAbrirAgenda }, 'Abrir a Agenda')),
+    h('p', { className: 'ag-nota', style: { marginTop: 0 } }, 'A mesma missão do dia da Agenda' + (nome ? ' de ' + nome : '') + ', na mesma ordem. Para marcar o que foi feito, abra a Agenda.'),
+    m.atrasadas.length ? secao('Atrasadas', m.atrasadas.slice(0, 5), '', m.atrasadas.length > 5 ? 'e mais ' + (m.atrasadas.length - 5) + ' na Agenda' : '', true, 'atrasada') : null,
+    secao('Compromissos de hoje', m.compromissos, 'Nenhuma reunião ou ligação marcada para hoje.'),
+    secao('Tarefas de hoje', m.visiveis, m.feitas.length ? 'Tudo feito por hoje.' : 'Nenhuma tarefa para hoje.',
+      m.escondidas ? 'e mais ' + m.escondidas + ' na Agenda (limite de ' + m.limite + ' por dia)' : ''));
+}
+
+function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFilter, onOpen, onResolverAlerta, onAddActivity, tarefas, ag, onAbrirAgenda }){
   const cotacao = useCotacao();
   const [aba, setAba] = useState('resumo');
   const [aberto, setAberto] = useState(null);
@@ -13080,6 +13244,16 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
   /* Dinheiro parado em conta (19/11/2026): saldo em conta corrente de cada cliente, da base de contas que o BTG
      manda todo dia útil (btg_caixa_crm; só os clientes que a pessoa pode ver). Abaixo de R$ 100 é sobra de
      tarifa e centavo, não entra na lista. */
+  const [capBtg, setCapBtg] = useState(null);
+  useEffect(() => {
+    if(MODO_DEMO) return;
+    let vivo = true;
+    sb.rpc('crm_captacao').then(({ data, error }) => { if(vivo) setCapBtg(error ? { erro: true } : (data || { linhas: [] })); }, () => { if(vivo) setCapBtg({ erro: true }); });
+    return () => { vivo = false; };
+  }, []);
+  const btg = useMemo(() => pnCaptacaoBtg(capBtg, leads, users, assessorId), [capBtg, leads, users, assessorId]);
+  const btgCasa = useMemo(() => casa ? btg : pnCaptacaoBtg(capBtg, leads, users, null), [capBtg, leads, users, casa, btg]);
+  const [cliAberto, setCliAberto] = useState(null);
   const [caixa, setCaixa] = useState(null);
   useEffect(() => {
     if(MODO_DEMO) return;
@@ -13169,7 +13343,8 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
         h('div', { className: 'pn-heroi-nota' }, 'em dólar, não soma com o onshore'))
     ),
     h('div', { className: 'pn-pilulas' },
-      h('span', { className: 'pn-pilula ' + (nnm.liquido >= 0 ? 'boa' : 'ruim') }, (nnm.liquido >= 0 ? '▲ ' : '▼ ') + pnSinal(nnm.liquido) + ' de NNM no mês'),
+      (() => { const liq = btg ? btg.liquido : nnm.liquido;
+        return h('span', { className: 'pn-pilula ' + (liq >= 0 ? 'boa' : 'ruim') }, (liq >= 0 ? '▲ ' : '▼ ') + pnSinal(liq) + ' de NNM no mês' + (btg ? ' (BTG)' : '')); })(),
       h('span', { className: 'pn-pilula' }, fmtBRLCompact(st.emCaptacao) + ' no pipeline'),
       vencimentos.length ? h('span', { className: 'pn-pilula alerta' }, vencimentos.length + (vencimentos.length === 1 ? ' vencimento' : ' vencimentos') + ' em 90 dias') : null
     ),
@@ -13188,8 +13363,47 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
     h('div', { className: 'pn-grupo-titulo' }, h('span', null, titulo), desc ? h('em', null, desc) : null),
     h('div', { className: 'pn-grade' }, cards), listas);
 
+  /* Linha de cliente da captação do BTG: abre a ficha; a seta mostra os lançamentos do mês. */
+  const linhaCap = (c, valor) => {
+    const ab = cliAberto === c.chave;
+    return h('div', { key: c.chave, className: 'pn-cap' },
+      h('div', { className: 'pn-linha' },
+        c.leadId ? h('button', { className: 'pn-linha-nome', onClick: () => abrirLead(c.leadId) }, c.cliente, quem(c), c.novo ? h('span', { className: 'pn-linha-quem' }, ' · conta nova') : null)
+          : h('span', { className: 'pn-linha-nome sem-ficha' }, c.cliente),
+        h('span', { className: 'pn-linha-meta' }, valor),
+        h('button', { className: 'pn-cap-ver', 'aria-expanded': ab, onClick: () => setCliAberto(ab ? null : c.chave) },
+          c.lanc.length + (c.lanc.length === 1 ? ' lançamento ' : ' lançamentos ') + (ab ? '▴' : '▾'))),
+      ab ? h('div', { className: 'pn-cap-lanc' }, c.lanc.map((x, i) => h('div', { key: i, className: (Number(x.valor) || 0) < 0 ? 'sai' : 'entra' },
+        pnLancTexto(x), x.descricao ? h('small', null, x.descricao) : null))) : null);
+  };
+  const capDesc = btg ? 'mês corrente · BTG de ' + new Date(btg.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ' às')
+    : capBtg && capBtg.erro ? 'mês corrente · lançado no CRM (não consegui ler o BTG)' : 'mês corrente · lançado no CRM';
+  const cardsCaptacao = btg ? [
+      h(PainelCard, { key: 'nnm', tom: btg.liquido >= 0 ? 'boa' : 'ruim', label: 'NNM no mês', valor: pnSinal(btg.liquido),
+        sub: fmtBRLCompact(btg.entrou) + ' entrou · ' + fmtBRLCompact(btg.saiu) + ' saiu',
+        aberto: aberto === 'nnm', onClick: () => toggle('nnm') }),
+      h(PainelCard, { key: 'bruta', label: 'Captação bruta', valor: fmtBRLCompact(btg.entrou),
+        sub: fmtBRLCompact(btg.novos) + ' de contas novas · ' + fmtBRLCompact(btg.aportes) + ' em aportes',
+        aberto: aberto === 'aportes', onClick: () => toggle('aportes') }),
+      h(PainelCard, { key: 'saidas', tom: btg.saiu > 0 ? 'ruim' : '', label: 'Saídas no mês', valor: fmtBRLCompact(btg.saiu),
+        sub: btg.saidas.length + (btg.saidas.length === 1 ? ' cliente com saída' : ' clientes com saída'),
+        aberto: aberto === 'saidas', onClick: () => toggle('saidas') })
+    ] : null;
+  const listasCaptacao = btg ? [
+      aberto === 'nnm' ? h(PainelLista, { key: 'l', itens: btg.liquidos, vazio: 'Nenhuma movimentação no BTG este mês.',
+        linha: (c) => linhaCap(c, pnSinal(c.liquido)) }) : null,
+      aberto === 'aportes' ? h(PainelLista, { key: 'l', itens: btg.entradas, vazio: 'Nenhuma entrada no BTG este mês.',
+        linha: (c) => linhaCap(c, '+' + fmtBRL(c.entrou)) }) : null,
+      aberto === 'saidas' ? h(PainelLista, { key: 'l', itens: btg.saidas, vazio: 'Nenhuma saída no BTG este mês.',
+        linha: (c) => linhaCap(c, '−' + fmtBRL(c.saiu)) }) : null
+    ] : null;
+
   const resumo = h('div', null,
-    grupo('Captação', 'mês corrente', [
+    grupo('Captação', capDesc, btg ? cardsCaptacao.concat([
+      h(PainelCard, { key: 'pipe', tom: 'ouro', label: 'Pipeline', valor: fmtBRLCompact(st.emCaptacao),
+        sub: st.captacoes.length + (st.captacoes.length === 1 ? ' cliente no pipeline' : ' clientes no pipeline'),
+        aberto: aberto === 'pipe', onClick: () => toggle('pipe') })
+    ]) : [
       h(PainelCard, { key: 'nnm', tom: nnm.liquido >= 0 ? 'boa' : 'ruim', label: 'NNM no mês', valor: pnSinal(nnm.liquido),
         sub: fmtBRLCompact(nnm.entrou) + ' entrou · ' + fmtBRLCompact(nnm.retiradas) + ' saiu',
         aberto: aberto === 'nnm', onClick: () => toggle('nnm') }),
@@ -13202,18 +13416,18 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
       h(PainelCard, { key: 'pipe', tom: 'ouro', label: 'Pipeline', valor: fmtBRLCompact(st.emCaptacao),
         sub: st.captacoes.length + (st.captacoes.length === 1 ? ' cliente no pipeline' : ' clientes no pipeline'),
         aberto: aberto === 'pipe', onClick: () => toggle('pipe') })
-    ], [
-      aberto === 'nnm' ? h(PainelLista, { key: 'l', itens: movimentos, vazio: 'Nenhuma movimentação lançada este mês.',
+    ], (btg ? listasCaptacao : []).concat([
+      !btg && aberto === 'nnm' ? h(PainelLista, { key: 'l', itens: movimentos, vazio: 'Nenhuma movimentação lançada este mês.',
         linha: (m, i) => linhaCliente(m, (m.sinal > 0 ? '+' : '−') + (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'mv' + i) }) : null,
-      aberto === 'aportes' ? h(PainelLista, { key: 'l', itens: st.aportes, vazio: 'Nenhum aporte lançado este mês.',
+      !btg && aberto === 'aportes' ? h(PainelLista, { key: 'l', itens: st.aportes, vazio: 'Nenhum aporte lançado este mês.',
         linha: (m, i) => linhaCliente(m, (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'ap' + i) }) : null,
       aberto === 'pipe' ? h(PainelLista, { key: 'l', itens: st.captacoes, vazio: 'Ninguém no pipeline nesta visão.',
         linha: (c) => linhaCliente(c, (temperaturaInfo(c.temperatura) ? temperaturaInfo(c.temperatura).label : 'sem temperatura')
           + ' · ' + (c.tipo === 'novo' ? 'novo' : 'carteira') + ' · '
           + (c.custodia === 'offshore' ? fmtUSDCompact : fmtBRLCompact)(c.valorMoeda)) }) : null,
-      aberto === 'saidas' ? h(PainelLista, { key: 'l', itens: st.resgates, vazio: 'Nenhum resgate lançado este mês.',
+      !btg && aberto === 'saidas' ? h(PainelLista, { key: 'l', itens: st.resgates, vazio: 'Nenhum resgate lançado este mês.',
         linha: (m, i) => linhaCliente(m, (m.custodia === 'offshore' ? fmtUSD : fmtBRL)(m.valor) + ' · ' + pnData(m.data), 'rs' + i) }) : null
-    ]),
+    ])),
     grupo('Carteira', 'agora', [
       h(PainelCard, { key: 'contas', tom: st.semAtivar.length ? 'atencao' : '', label: 'Contas abertas vs. ativadas', valor: st.abertas + ' / ' + st.ativadas,
         sub: st.semAtivar.length + (st.semAtivar.length === 1 ? ' ainda sem ativar' : ' ainda sem ativar'),
@@ -13308,24 +13522,33 @@ function Painel({ leads, users, currentUser, isAdmin, vendorFilter, setVendorFil
   );
 
   /* ---------- Rotina / Assessores ---------- */
+  const missaoPorAssessor = useMemo(() => {
+    if(!casa || aba !== 'rotina') return null;
+    const hoje = todayISO(), m = new Map();
+    st.partes.filter(p => p.id).forEach(p => m.set(p.id, agMissaoDoDia({ tarefas: tarefas || [], ag, leads, users, donoId: p.id, hoje })));
+    return m;
+  }, [casa, aba, st, tarefas, ag, leads, users]);
   const rotina = casa
     ? h(Fragment, null, h('div', { className: 'pn-tabela-wrap' },
         h('table', { className: 'pn-tabela' },
           h('thead', null, h('tr', null, h('th', null, 'Assessor'), h('th', { className: 'n' }, 'Onshore'), h('th', { className: 'n' }, 'NNM no mês'),
-            h('th', { className: 'n' }, 'Contato atrasado'), h('th', { className: 'n' }, 'Vencimentos'), h('th', { className: 'n' }, 'Régua'), h('th', null, ''))),
+            h('th', { className: 'n' }, 'Tarefas abertas hoje'), h('th', { className: 'n' }, 'Feitas hoje'), h('th', { className: 'n' }, 'Atrasadas'), h('th', null, ''))),
           h('tbody', null, st.partes.filter(p => p.id).map(p => {
             const doAssessor = st.carteira.filter(c => c.assessorId === p.id).reduce((s, c) => s + c.onshore, 0);
             return h('tr', { key: p.id, onClick: () => { setVendorFilter(p.id); setAba('rotina'); setAberto(null); } },
               h('td', null, h('strong', null, p.nome)),
               h('td', { className: 'n' }, fmtBRLCompact(doAssessor)),
-              h('td', { className: 'n ' + (p.s.nnm.liquido >= 0 ? 'boa' : 'ruim') }, pnSinal(p.s.nnm.liquido)),
-              h('td', { className: 'n' + (p.s.contatosAtrasados.length ? ' ruim' : '') }, p.s.contatosAtrasados.length),
-              h('td', { className: 'n' + (p.s.vencimentos.length ? ' ruim' : '') }, p.s.vencimentos.length),
-              h('td', { className: 'n' }, p.s.regua.length),
+              (() => { const liq = btgCasa ? (btgCasa.porAssessor.get(p.id) || 0) : p.s.nnm.liquido;
+                return h('td', { className: 'n ' + (liq >= 0 ? 'boa' : 'ruim') }, pnSinal(liq)); })(),
+              (() => { const mm = missaoPorAssessor && missaoPorAssessor.get(p.id);
+                return h(Fragment, null,
+                  h('td', { className: 'n' }, mm ? mm.fila.length : '—'),
+                  h('td', { className: 'n' + (mm && mm.feitas.length ? ' boa' : '') }, mm ? mm.feitas.length : '—'),
+                  h('td', { className: 'n' + (mm && mm.atrasadas.length ? ' ruim' : '') }, mm ? mm.atrasadas.length : '—')); })(),
               h('td', { className: 'seta' }, '›'));
           })))),
-        h('div', { className: 'pn-rodape-nota' }, 'Clique num assessor para abrir o painel e a rotina do dia dele.'))
-    : h(Cockpit, { leads, users, currentUser, isAdmin, vendorFilter: assessorId, onOpen, onResolverAlerta, onAddActivity });
+        h('div', { className: 'pn-rodape-nota' }, (btgCasa ? 'NNM no mês pelo relatório de captação do BTG. ' : '') + 'Tarefas, feitas e atrasadas são as da Agenda de cada um. Clique num assessor para abrir o painel e a rotina do dia dele.'))
+    : h(RotinaAgenda, { tarefas, ag, leads, users, donoId: assessorId, nome: assessorId === (currentUser && currentUser.id) ? '' : nomeVisao, onOpen, onAbrirAgenda });
 
   return h('div', { className: 'pn' },
     heroi, abas,
@@ -15321,7 +15544,8 @@ function App(){
           /* O dia de quem está na tela: o próprio, ou o do assessor simulado. */
           h(AgendaFaixa,{ tarefas, leads, users, donoId: simulando ? vendorFilter : currentUser.id, onAbrir:()=>setView('agenda'), ag: agCtxApp }),
           h(Painel,{ leads, users, currentUser, isAdmin, vendorFilter, setVendorFilter,
-            onOpen:setOpenLead, onResolverAlerta:resolverAlerta, onAddActivity:addActivity })) :
+            onOpen:setOpenLead, onResolverAlerta:resolverAlerta, onAddActivity:addActivity,
+            tarefas, ag: agCtxApp, onAbrirAgenda: ()=>setView('agenda') })) :
         view==='agenda' ? h(Agenda,{ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
           podeEditarLead: podeEditar, onSalvarTarefa: salvarTarefa, onApagarTarefa: apagarTarefa,
           onConcluir: concluirTarefa, onOpen: setOpenLead, onResolverAlerta: resolverVencimentoDaAgenda,

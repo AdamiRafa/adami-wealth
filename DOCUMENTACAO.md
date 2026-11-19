@@ -792,6 +792,8 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026 (fim da tarde): CRM 2026.11.19.9. Captação do BTG (NNM) no Dashboard; Rotina do dia igual à Agenda;
+ordem de prioridade dos gatilhos escolhida pelo master; aviso "Divergência de saldo" desligado (seção 33)**.
  · **19/11/2026 (tarde): 3.36 e CRM 2026.11.19.8. Verificação em duas etapas desligada (fica só o acesso que vence à
 meia-noite e a saída por 30 min sem uso); cadastro unificado (a ficha da Equipe também em Comissões > Pessoas e acordos,
 com pagamento junto); proposta, prazo da etapa e negócio parado só para quem mudou de etapa a partir de 19/11 9h (seção 32)**.
@@ -2672,4 +2674,37 @@ Pedido do Emil: "deixa só a regra de resetar todo início de dia, tira o restan
   `crm.html`; `CORTE_PROCESSO`, `moveuNoPipe` na `agenda-manha`): `etapa_desde` depois do corte e mais de 1 minuto
   depois do `criado_em` (quem nasce numa etapa, por cadastro ou importação do BTG, não conta). Negócio com valor em
   captação continua contando.
+
+---
+
+## 33. Captação do BTG, Rotina = Agenda, hierarquia de gatilhos e fim do aviso de divergência (19/11/2026, CRM 2026.11.19.9)
+
+### 33.1 Captação do BTG no Dashboard (`btg_captacao.sql`)
+- O relatório `rm-reports-nnm` (pedido às 15h30, dias úteis) chegou pela primeira vez em 19/11: 911 lançamentos dos últimos
+  30 dias (conta, data, mercado, tipo, valor; positivo entrou, negativo saiu). Em 19/10 a 19/11: R$ 68,3 mi entraram,
+  R$ 31,8 mi saíram, líquido R$ 36,5 mi.
+- `crm_captacao()` devolve as linhas do último arquivo ligadas à ficha pela conta (mesma regra de `btg_caixa_crm`), só as
+  fichas que a pessoa pode ver (`crm_fichas_visiveis`); conta sem ficha só para quem vê todos. Testado como `authenticated`:
+  master 911 linhas (total igual ao do BTG), assessor só as dele; `anon` sem EXECUTE.
+- Dashboard (`pnCaptacaoBtg`): NNM no mês, Captação bruta (contas abertas no mês pelo `dt_abertura` x aportes) e Saídas
+  passam a vir do BTG, mês corrente, por casa, assessor e cliente; cada cliente abre a ficha e mostra os lançamentos. Sem
+  o relatório, volta ao lançado no CRM. A coluna NNM da tabela de assessores também vem do BTG. Só reais (onshore).
+
+### 33.2 Rotina do dia = Agenda
+- A aba Rotina do dia usava o `Cockpit` (contato atrasado, vencimento, régua), sem gatilhos nem tarefas: não batia com a
+  Agenda. Agora `agMissaoDoDia()` calcula a missão do dia uma vez só, e a Agenda (Hoje), a Rotina do dia (`RotinaAgenda`,
+  só leitura, com botão Abrir a Agenda), a faixa "Agenda de hoje" e a tabela de assessores (tarefas abertas, feitas e
+  atrasadas de cada um) usam o mesmo cálculo. Teste no navegador: a lista da Rotina é igual à da Agenda, na mesma ordem.
+
+### 33.3 Ordem de prioridade (hierarquia) dos gatilhos
+- Agenda > Gatilhos > **Ordem de prioridade** > Mudar a ordem: o master sobe e desce cada tipo (gatilhos e as tarefas que
+  não vêm de gatilho: atribuída, vencimento lançado, própria, próximo contato, régua). Salva em `agenda_gatilhos`
+  chave `geral`, `params.ordem`. O de cima vale 1000, o seguinte 999 (`agOrdem`, `agPrioMapa`, `agComPrioPor`); empate fica
+  com o maior valor. Sem ordem salva vale a padrão; com ordem salva, tipo novo vai para o fim. Compromissos seguem a hora.
+- O e-mail da manhã (`agenda-manha` v8, `prioMapa`) segue a mesma ordem.
+
+### 33.4 Aviso "Divergência de saldo" desligado
+- A importação do BTG (tela e `btg-base-auto`, `regras.js` gerado de novo) não cria mais o aviso no card quando o saldo varia
+  fora da faixa; a variação segue no histórico da ficha. Os 68 avisos abertos foram marcados como resolvidos ("Hub Adami
+  (aviso de divergência desligado em 19/11/2026)"), sem apagar, com registro na auditoria.
 

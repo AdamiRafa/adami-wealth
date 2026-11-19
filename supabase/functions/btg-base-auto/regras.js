@@ -531,17 +531,9 @@ function montarAplicacaoBase(res, leads, autor, agora, hoje){
       }];
     }
 
-    /* O alerta é o que devolve a divergência para quem consegue explicá-la.
-       O admin vê o número no resumo; quem liga para o cliente é o assessor,
-       e é no card dele que o aviso precisa estar. */
-    if(a.alerta && !doLote(l.alertas)){
-      novo.alertas = [...(l.alertas || []), {
-        id: uid('al'), lote, tipo: 'divergencia',
-        texto: (off ? 'Saldo offshore do BTG variou ' : 'Saldo do BTG variou ') + (a.delta >= 0 ? '+' : '−') + fmt(Math.abs(a.delta))
-          + ' sem movimentação lançada que explique. Confirmar com o cliente se houve aporte ou resgate.',
-        data: hoje, autor, criadoEm: agora, resolvido: false,
-      }];
-    }
+    /* 19/11/2026, pedido do Emil: a variação de saldo fora da faixa NÃO vira mais aviso "Divergência de saldo" no
+       card. Com o BTG atualizando todo dia (posição, movimentação e captação líquida), o saldo é sempre o do BTG e
+       a explicação está nas movimentações; o aviso só gerava ruído. A variação continua no histórico da ficha. */
     return stampLead(novo);
   });
 

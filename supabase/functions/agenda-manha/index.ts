@@ -168,7 +168,7 @@ type Lead = { id: string; cliente: string; conta: string | null; oportunidade: s
   etapa: string | null; etapa_desde: string | null; ultimo_contato: string | null; ganho_em: string | null;
   valor_em_captacao: unknown; tarefa_tipo?: string };
 type Item = { dia: string; hora: string; titulo: string; cliente: string; origem: string; repete: string;
-  prio?: number; compromisso?: boolean; detalhe?: string; valor?: number };
+  prio?: number; compromisso?: boolean; detalhe?: string; valor?: number; k?: string };
 type Gat = Record<string, { ligado: boolean; params: Record<string, unknown> }>;
 type BtgItem = { gatilho: string; chave: string; lead_id: string; dono_id: string | null; valor: number | null; data: string | null;
   info: { ativos?: string[]; emissor?: string } };
@@ -222,11 +222,11 @@ function itensDaFicha(l: Lead, hoje: string): Item[] {
   const itens: Item[] = [];
   const cliente = nomeCliente(l);
   if (l.proximo_contato) {
-    itens.push({ dia: l.proximo_contato, hora: "", titulo: "Contato agendado" + (l.oportunidade ? " · " + l.oportunidade : ""), cliente, origem: "Próximo contato", repete: "" });
+    itens.push({ dia: l.proximo_contato, hora: "", titulo: "Contato agendado" + (l.oportunidade ? " · " + l.oportunidade : ""), cliente, origem: "Próximo contato", repete: "", k: "contato" });
   }
   for (const a of l.alertas ?? []) {
     if (a.tipo === "vencimento" && a.data && !a.resolvido) {
-      itens.push({ dia: String(a.data), hora: "", titulo: a.texto ? "Vencimento · " + String(a.texto) : "Vencimento", cliente, origem: "Vencimento", repete: "" });
+      itens.push({ dia: String(a.data), hora: "", titulo: a.texto ? "Vencimento · " + String(a.texto) : "Vencimento", cliente, origem: "Vencimento", repete: "", k: "vencimento" });
     }
   }
   if (naCarteira(l)) {
@@ -238,7 +238,7 @@ function itensDaFicha(l: Lead, hoje: string): Item[] {
       const prevista = !datas.length && inicio && criado < inicio
         ? soma(inicio, reguaDeslocamento(String(l.id) + r.tipo, intervalo))
         : soma(datas.length ? datas[datas.length - 1] : criado, intervalo);
-      itens.push({ dia: prevista, hora: "", titulo: r.label + " (régua " + l.segmento + ")", cliente, origem: "Régua", repete: "" });
+      itens.push({ dia: prevista, hora: "", titulo: r.label + " (régua " + l.segmento + ")", cliente, origem: "Régua", repete: "", k: "regua" });
     }
   }
   return itens;
@@ -339,7 +339,7 @@ function itensGatilhos(donoId: string, leads: Lead[], ex: Extra, hoje: string, a
   const eu = ex.perfis.find((p) => p.id === donoId);
   const nomeDe = (id: string) => ex.perfis.find((p) => p.id === id)?.nome ?? "";
   const add = (k: string, titulo: string, l: Lead | undefined, detalhe = "", valor = 0) =>
-    doDia.push({ dia: hoje, hora: "", titulo, cliente: nomeCliente(l), origem: ROTULO_GRUPO[AG[k].grupo], repete: "", prio: AG[k].prio, detalhe, valor });
+    doDia.push({ dia: hoje, hora: "", titulo, cliente: nomeCliente(l), origem: ROTULO_GRUPO[AG[k].grupo], repete: "", prio: AG[k].prio, detalhe, valor, k });
   // Carteira (BTG)
   for (const b of ex.btg) {
     if (ex.feitas.has(b.chave) || !gatOn(ex.gat, b.gatilho)) continue;
@@ -407,7 +407,7 @@ function itensGatilhos(donoId: string, leads: Lead[], ex: Extra, hoje: string, a
       if (!p || (cat.grupo === "capacitacao" && !String(p.titulo ?? "").trim())) continue;
       const hora = /^\d{2}:\d{2}$/.test(String(p.hora ?? "")) ? String(p.hora) : "";
       const item = (dia: string): Item => ({ dia, hora, titulo: tituloRotina(k, p), cliente: "", origem: ROTULO_GRUPO[cat.grupo], repete: "",
-        prio: cat.prio, compromisso: !!ROTINA_COMPROMISSO[k] });
+        prio: cat.prio, compromisso: !!ROTINA_COMPROMISSO[k], k });
       const chave = (dia: string) => (cat.grupo === "rotina" ? "rot:" : "cap:") + k + ":" + dia + ":" + donoId;
       if (rotinaCai(cat, p, hoje) && !ex.feitas.has(chave(hoje))) doDia.push(item(hoje));
       if (rotinaCai(cat, p, amanha)) proximo.push(item(amanha));
@@ -435,10 +435,27 @@ function itensGatilhos(donoId: string, leads: Lead[], ex: Extra, hoje: string, a
       if (soma(c.vence!, -nnum(pCert.dias, 90)) > hoje) continue;
       const chave = "cert:" + String(c.cert).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30) + ":" + c.vence + ":" + donoId;
       if (!ex.feitas.has(chave)) doDia.push({ dia: hoje, hora: "", titulo: "Certificação " + c.cert + (c.vence! < hoje ? " venceu em " : " vence em ") + ddmm(c.vence) + "/" + c.vence!.slice(0, 4),
-        cliente: "", origem: "Capacitação", repete: "", prio: AG.cap_certificacao.prio });
+        cliente: "", origem: "Capacitação", repete: "", prio: AG.cap_certificacao.prio, k: "cap_certificacao" });
     }
   }
   return { doDia, proximo, atrasadas };
+}
+// Hierarquia que o master escolhe na Agenda (crm.html, agOrdem/agPrioMapa): agenda_gatilhos "geral", params.ordem.
+// O de cima vale 1000, o seguinte 999... Tipo que não está na ordem salva vai para o fim.
+const ORIGENS_TAREFA: Record<string, number> = { atribuida: 88, vencimento: 86, manual: 78, contato: 74, regua: 50 };
+function prioMapa(gat: Gat): Record<string, number> {
+  const todos = Object.entries(ORIGENS_TAREFA).map(([k, prio]) => ({ k, prio }))
+    .concat(Object.keys(AG).filter((k) => !ROTINA_COMPROMISSO[k]).map((k) => ({ k, prio: AG[k].prio })))
+    .sort((a, b) => b.prio - a.prio);
+  const porK = new Map(todos.map((x) => [x.k, x]));
+  const salva = Array.isArray(gat.geral?.params?.ordem) ? gat.geral.params.ordem as string[] : [];
+  const vistos = new Set<string>(), out: Array<{ k: string; prio: number }> = [];
+  for (const k of salva) if (porK.has(k) && !vistos.has(k)) { vistos.add(k); out.push(porK.get(k)!); }
+  // Sem ordem salva, vale a padrão; com ordem salva, ela manda e o tipo que não está nela vai para o fim.
+  for (const x of todos) if (!vistos.has(x.k)) { vistos.add(x.k); out.push(x); }
+  const m: Record<string, number> = {};
+  out.forEach((x, i) => { m[x.k] = 1000 - i; });
+  return m;
 }
 const ordenarTarefas = (a: Item, b: Item) => (b.prio ?? 0) - (a.prio ?? 0) || (b.valor ?? 0) - (a.valor ?? 0) || a.titulo.localeCompare(b.titulo);
 
@@ -450,7 +467,8 @@ function montarAgenda(donoId: string, tarefas: Tarefa[], leads: Lead[], hoje: st
     if (t.dono_id !== donoId || !t.email_manha) continue;
     const origemT = t.criado_por && t.criado_por !== t.dono_id ? "Atribuída" : "Tarefa";
     const base = { hora: (t.hora ?? "").slice(0, 5), titulo: t.titulo, cliente: nomeCliente(porLead.get(t.lead_id ?? "")),
-      origem: origemT, repete: repeteTexto(t), prio: PRIO_ORIGEM[origemT], compromisso: t.tipo === "reuniao" || !!t.hora };
+      origem: origemT, repete: repeteTexto(t), prio: PRIO_ORIGEM[origemT], compromisso: t.tipo === "reuniao" || !!t.hora,
+      k: origemT === "Atribuída" ? "atribuida" : "manual" };
     const feitas = t.concluidas ?? [];
     if (caiEm(t, hoje) && !feitas.includes(hoje)) doDia.push({ ...base, dia: hoje });
     if (caiEm(t, amanha)) proximo.push({ ...base, dia: amanha });
@@ -476,6 +494,8 @@ function montarAgenda(donoId: string, tarefas: Tarefa[], leads: Lead[], hoje: st
   }
   const g = itensGatilhos(donoId, leads, ex, hoje, amanha);
   doDia.push(...g.doDia); proximo.push(...g.proximo); atrasadas.push(...g.atrasadas);
+  const rank = prioMapa(ex.gat);
+  for (const it of doDia) if (it.k && rank[it.k]) it.prio = rank[it.k];
   const compromissos = doDia.filter((i) => i.compromisso).sort(ordenar);
   const tarefasDia = doDia.filter((i) => !i.compromisso).sort(ordenarTarefas);
   return { atrasadas: atrasadas.sort(ordenar), compromissos, tarefasDia, doDia, proximo: proximo.sort(ordenar), amanha };
