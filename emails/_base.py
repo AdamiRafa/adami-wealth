@@ -111,12 +111,12 @@ modelos["senha-funcao.html"] = email(
     "icone-chave.png", "Redefinir sua senha", CORPO_SENHA, "Criar nova senha", DEPOIS_SENHA, link="{{LINK}}")
 modelos["agenda-manha.html"] = email(
     "Sua agenda de hoje",
-    "Suas tarefas de hoje e as atrasadas, da Agenda do CRM.",
+    "Seus compromissos e tarefas de hoje, da Agenda do CRM.",
     "icone-agenda.png",
     "{{SAUDACAO}}",
     "{{CONTEUDO}}",
     "Abrir a Agenda",
-    '<p style="margin:0;">Este resumo sai nos dias úteis, por volta das 7h. Para tirar uma tarefa daqui, desmarque "Incluir no e-mail da manhã" nela, na Agenda do CRM.</p>',
+    '<p style="margin:0;">Este resumo sai nos dias úteis, por volta das 7h. Os avisos da carteira usam os dados do BTG do último dia útil. Para tirar um item daqui, marque como feito na Agenda do CRM; nas tarefas criadas por você, também dá para desmarcar "Incluir no e-mail da manhã".</p>',
     link="{{LINK}}")
 
 CORPO_CODIGO = (f'<p style="{P}">Use o código abaixo para entrar no Hub Adami. Ele vale por <strong style="color:{INK};">10 minutos</strong> e só funciona uma vez.</p>'

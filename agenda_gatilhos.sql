@@ -138,20 +138,18 @@ end $$;
 revoke all on function public.agenda_resolver(text, text, text, text, boolean) from public, anon;
 grant execute on function public.agenda_resolver(text, text, text, text, boolean) to authenticated;
 
--- Tarefas que saem dos dados do BTG, prontas para a Agenda. Uma linha por tarefa:
+-- Tarefas que saem dos dados do BTG, prontas para a Agenda. agenda_btg_montar é a interna (sem checagem de acesso;
+-- só o banco e a função agenda-manha do e-mail da manhã, com a chave de serviço, chamam). v_vis = fichas visíveis
+-- (null = todas). Uma linha por tarefa:
 -- {gatilho, chave, lead_id, dono_id, valor, data, info}. "data" é a data do fato (vencimento, aniversário...);
 -- a tarefa vale para hoje. As já resolvidas não voltam. p_dono filtra um assessor (null = todas as fichas visíveis).
-create or replace function public.agenda_btg_itens(p_dono uuid default null)
+create or replace function public.agenda_btg_montar(p_dono uuid, v_vis text[])
 returns jsonb language plpgsql stable security definer set search_path = public as $$
 declare
-  v_vis text[];
   v_hoje date := (now() at time zone 'America/Sao_Paulo')::date;
   g jsonb;
   v_pos bigint; v_mov bigint; v_cad bigint;
 begin
-  if not public.acesso_liberado() then raise exception 'Acesso não liberado.'; end if;
-  if not public.tem_permissao('ferramenta.crm') then return '[]'::jsonb; end if;
-  v_vis := public.crm_fichas_visiveis();
   select coalesce(jsonb_object_agg(chave, params), '{}'::jsonb) into g from public.agenda_gatilhos where ligado;
   select max(id) into v_pos from public.btg_arquivos where servico = 'rm-reports-position-by-date' and status = 'processado';
   select max(id) into v_mov from public.btg_arquivos where servico = 'rm-reports-movement' and status = 'processado';
@@ -251,6 +249,17 @@ begin
       from itens i
      where not exists (select 1 from public.agenda_resolvidos r where r.chave = i.chave)
   ), '[]'::jsonb);
+end $$;
+revoke all on function public.agenda_btg_montar(uuid, text[]) from public, anon, authenticated;
+grant execute on function public.agenda_btg_montar(uuid, text[]) to service_role;
+
+-- Para a tela: só as fichas que a pessoa pode ver.
+create or replace function public.agenda_btg_itens(p_dono uuid default null)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.acesso_liberado() then raise exception 'Acesso não liberado.'; end if;
+  if not public.tem_permissao('ferramenta.crm') then return '[]'::jsonb; end if;
+  return public.agenda_btg_montar(p_dono, public.crm_fichas_visiveis());
 end $$;
 revoke all on function public.agenda_btg_itens(uuid) from public, anon;
 grant execute on function public.agenda_btg_itens(uuid) to authenticated;

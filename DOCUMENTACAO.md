@@ -1439,13 +1439,22 @@ Pedido do Emil, inspirado no que a EQI fez: o assessor abre a Agenda e vê só o
   por `agenda_resolver` (com cliente, só quem vê a ficha; sem cliente, só a própria tarefa: a chave termina no id da
   pessoa). Com cliente, registra também a atividade na ficha. Rotina semanal ou mensal não feita aparece em Atrasadas até
   a próxima.
-- **WhatsApp**: os avisos com telefone na ficha têm o botão com a mensagem pronta (wa.me); o assessor revisa antes de mandar.
 - **Banco aplicado em 19/11** em duas partes sem `drop` (o Supabase pedia confirmação para `drop policy` e o Emil estava
   no celular); o arquivo mantém os `drop ... if exists` para poder rodar de novo no SQL Editor.
 - Testado: Chromium com Supabase simulado (computador e celular, sem sobra lateral; marcar feito, responder indicação,
   salvar gatilho, indicar cliente) e no banco real com o login do Emil (246 avisos, marcar tira da lista, rotina de outra
   pessoa recusada).
-- **Falta:** o e-mail da manhã (`agenda-manha`) ainda não inclui os gatilhos.
+- **E-mail da manhã com os gatilhos (19/11, função `agenda-manha` versão 5):** o e-mail das 6h50 traz as mesmas seções da
+  tela: Compromissos de hoje, Tarefas de hoje (pela prioridade, até 15, "e mais N na Agenda"), Atrasadas e Amanhã. Os avisos
+  do BTG vêm de `agenda_btg_montar(p_dono, v_vis)`, a parte interna de `agenda_btg_itens` (sem checagem de acesso; só
+  `service_role` executa; `agenda_btg_itens` chama ela com as fichas visíveis). O catálogo `AG` da função espelha o
+  `AG_GATILHOS` do `crm.html` (prioridade, padrão, quando): mudou lá, muda aqui. Às 6h50 os avisos da carteira são do último
+  dia útil (o BTG manda a base às 8h30). A régua do e-mail ganhou o Advisory e o início escalonado de 12/11, que faltavam
+  (o e-mail não avisava a régua dos clientes Advisory). Testado com banco e servidor de e-mail falsos (Deno).
+- **Quem recebe:** em 18/11 saíam 6 e-mails por dia útil (Angela, Jussara, Karan, Thiago, Bibiana e Emil); quem não tem nada no
+  dia não recebe. Com os gatilhos, a Tati volta a receber (22 avisos). Gabriel Bassan, Sarah, Enzo, Gabriel Pompeu e Marcelo não
+  têm cliente com conta no CRM e seguem sem e-mail até ter.
+- **CRM `2026.11.19.6`:** saiu o botão de WhatsApp dos avisos (decisão do Emil: o Hub não vai falar com o WhatsApp).
 - **CRM `2026.11.19.5` (19/11, pedido do Emil):** a aba Hoje se divide em **Compromissos de hoje** (o que tem dia e hora
   com alguém: tarefa da Agenda do tipo reunião, qualquer tarefa da Agenda com hora, a reunião comercial e o comitê da
   rotina; o Outlook entra aqui quando for ligado; ordem por hora, sem limite) e **Tarefas de hoje** (o resto, pela

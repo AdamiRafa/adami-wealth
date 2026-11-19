@@ -2997,9 +2997,8 @@
   .ag-legenda-item strong{color:var(--ink);font-weight:600;}
   .ag-legenda-cor{width:10px;height:10px;border-radius:3px;margin-top:3px;flex-shrink:0;}
   .ag-nota{font-size:12px;color:var(--ink-faint);line-height:1.5;margin:8px 0 0;}
-  /* Missão do dia (19/11/2026): detalhe do aviso, WhatsApp, placar do head, gatilhos do master, indicações. */
+  /* Missão do dia (19/11/2026): detalhe do aviso, placar do head, gatilhos do master, indicações. */
   .ag-item-detalhe{font-size:12.5px;color:var(--ink-soft);margin-top:2px;overflow-wrap:anywhere;}
-  .ag-zap{color:#1F8A4C;}
   .ag-heroi-botoes{display:flex;gap:8px;flex-wrap:wrap;}
   .ag-gatilhos-btn{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.28);}
   .ag-gatilhos-btn:hover{background:rgba(255,255,255,.22);}
@@ -12022,35 +12021,8 @@ function agRotinaCai(cat, p, dia){
   if(cat.quando === 'mes') return dia === agDiaDoMes(dia, p.dia_mes);
   return false;
 }
-function agPrimeiroNome(lead){
-  const n = String((lead && (lead.contatoNome || lead.cliente)) || '').trim().split(/\s+/)[0] || '';
-  return n ? n.charAt(0).toUpperCase() + n.slice(1).toLowerCase() : '';
-}
-/* Link do WhatsApp com a mensagem pronta (o assessor revisa antes de mandar). */
-function agLinkZap(lead, texto){
-  let n = String((lead && lead.telefone) || '').replace(/\D/g, '');
-  if(!n) return '';
-  if(n.length === 10 || n.length === 11) n = '55' + n;
-  if(n.length < 12) return '';
-  return 'https://wa.me/' + n + '?text=' + encodeURIComponent(texto);
-}
-function agTextoZap(gatilho, lead, it){
-  const oi = 'Olá' + (agPrimeiroNome(lead) ? ', ' + agPrimeiroNome(lead) : '') + '! ';
-  switch(gatilho){
-    case 'btg_caixa':       return oi + 'Vi que você tem um saldo parado na conta do BTG. Posso te passar uma sugestão de onde aplicar?';
-    case 'btg_vencimento':  return oi + 'Um investimento seu vence no dia ' + agDdMm(it.data) + '. Vamos conversar sobre onde reinvestir?';
-    case 'btg_cotizacao':   return oi + 'O resgate do seu fundo cai na conta no dia ' + agDdMm(it.data) + '. Quer que eu já deixe uma sugestão de aplicação?';
-    case 'btg_aniversario': return 'Feliz aniversário' + (agPrimeiroNome(lead) ? ', ' + agPrimeiroNome(lead) : '') + '! Que seu novo ano seja excelente. Um abraço da equipe Adami Captal.';
-    case 'btg_suitability': return oi + 'Seu perfil de investidor (suitability) vence no dia ' + agDdMm(it.data) + '. Consegue atualizar pelo app do BTG? Se preferir, te ajudo.';
-    case 'btg_ativar':      return oi + 'Sua conta no BTG já está aberta. Vamos conversar sobre o primeiro investimento?';
-    case 'btg_aporte':      return oi + 'Recebemos seu aporte, obrigado pela confiança. Posso te ligar para alinharmos a alocação?';
-    case 'btg_saida':       return oi + 'Vi uma movimentação na sua conta e queria saber se posso ajudar em algo. Podemos conversar?';
-    default:                return oi + 'Tudo bem? Podemos conversar rapidinho?';
-  }
-}
-
 /* As tarefas dos gatilhos entre "de" e "ate". Formato igual ao dos outros itens da Agenda, mais:
-   gatilho, prio, valor, detalhe, semLimite, resolver ('tabela' | 'registro' | 'oportunidade'), zap, link. */
+   gatilho, prio, valor, detalhe, semLimite, resolver ('tabela' | 'registro' | 'oportunidade'), link. */
 function agItensGatilhos({ gat, btgItens, oportunidades, resolvidos, leads, users, donos, de, ate, hoje }){
   const nomeDe = (id) => (users.find(u => u.id === id) || {}).nome || '';
   const porLead = new Map(leads.map(l => [l.id, l]));
@@ -12084,8 +12056,7 @@ function agItensGatilhos({ gat, btgItens, oportunidades, resolvidos, leads, user
         case 'btg_saida': titulo = 'Saída de ' + agReais(b.valor) + ' em ' + agDdMm(b.data) + ': entender o motivo'; break;
       }
       itens.push({ ...base(l, donoId), chave: b.chave, origem: 'carteira', gatilho: b.gatilho, prio: cat.prio, valor: Number(b.valor) || 0,
-        semLimite: !!cat.semLimite, titulo, detalhe, tipo, resolver: 'tabela', data: b.data || '',
-        zap: agLinkZap(l, agTextoZap(b.gatilho, l, b)) });
+        semLimite: !!cat.semLimite, titulo, detalhe, tipo, resolver: 'tabela', data: b.data || '' });
     });
 
     /* Processo comercial: no máximo uma tarefa por ficha, a de maior prioridade. */
@@ -12101,7 +12072,7 @@ function agItensGatilhos({ gat, btgItens, oportunidades, resolvidos, leads, user
       const ganho = l.ganho && l.ganhoEm ? tsToISODate(l.ganhoEm) : '';
       const add = (k, titulo, detalhe, resolver, chave, tipo) => itens.push({ ...base(l, l.responsavelId), chave: chave || ('crm:' + k + ':' + l.id),
         origem: 'processo', gatilho: k, prio: AG_GAT[k].prio, valor: parseValor(l.valorPotencial) || 0, titulo, detalhe,
-        tipo: tipo || 'ligacao', resolver, zap: agLinkZap(l, agTextoZap(k, l, {})) });
+        tipo: tipo || 'ligacao', resolver });
       if(pNovo && l.etapa === 'Cliente Novo' && (l.esteira || 'novo') !== 'base' && !ultimo && agSoma(criado, Number(pNovo.dias) || 0) <= hoje){
         add('crm_lead_novo', 'Primeiro contato com o lead', 'cadastrado em ' + agDdMm(criado), 'registro'); return;
       }
@@ -12602,9 +12573,6 @@ function Agenda({ tarefas, tarefasErro, leads, users, currentUser, podeAtribuir,
                 h('button', { className: 'btn btn-ghost', onClick: fecharRegistro }, 'Cancelar'),
                 h('button', { className: 'btn btn-primary', disabled: !textoRegistro.trim(), onClick: () => salvarRegistro(it) }, 'Registrar contato'))) : null),
       h('div', { className: 'ag-acoes' },
-        it.zap && !it.feita ? h('a', { className: 'ag-icone ag-zap', href: it.zap, target: '_blank', rel: 'noopener noreferrer',
-          'aria-label': 'Mandar mensagem no WhatsApp', title: 'WhatsApp com a mensagem pronta (revise antes de mandar)' },
-          h(Icon, { size: 15, path: 'M21 11.5a8.4 8.4 0 01-12.3 7.5L3 21l2-5.6A8.4 8.4 0 1121 11.5z' })) : null,
         it.link ? h('a', { className: 'ag-icone', href: it.link, target: '_blank', rel: 'noopener noreferrer',
           'aria-label': 'Abrir o material', title: 'Abrir o material' },
           h(Icon, { size: 15, path: 'M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3' })) : null,
@@ -12926,7 +12894,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.19.5';
+const CRM_VERSAO = 'versão do CRM 2026.11.19.6';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
