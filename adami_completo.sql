@@ -6962,3 +6962,132 @@ exception when unique_violation then
 end $$;
 revoke all on function public.oport_resolver(uuid, text, text) from public, anon;
 grant execute on function public.oport_resolver(uuid, text, text) to authenticated;
+
+-- ===================================================================
+-- 19/11/2026: agenda_btg_montar (parte interna dos avisos do BTG, usada pela tela e pelo e-mail da manhã)
+-- ===================================================================
+-- Tarefas que saem dos dados do BTG, prontas para a Agenda. agenda_btg_montar é a interna (sem checagem de acesso;
+-- só o banco e a função agenda-manha do e-mail da manhã, com a chave de serviço, chamam). v_vis = fichas visíveis
+-- (null = todas). Uma linha por tarefa:
+-- {gatilho, chave, lead_id, dono_id, valor, data, info}. "data" é a data do fato (vencimento, aniversário...);
+-- a tarefa vale para hoje. As já resolvidas não voltam. p_dono filtra um assessor (null = todas as fichas visíveis).
+create or replace function public.agenda_btg_montar(p_dono uuid, v_vis text[])
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  v_hoje date := (now() at time zone 'America/Sao_Paulo')::date;
+  g jsonb;
+  v_pos bigint; v_mov bigint; v_cad bigint;
+begin
+  select coalesce(jsonb_object_agg(chave, params), '{}'::jsonb) into g from public.agenda_gatilhos where ligado;
+  select max(id) into v_pos from public.btg_arquivos where servico = 'rm-reports-position-by-date' and status = 'processado';
+  select max(id) into v_mov from public.btg_arquivos where servico = 'rm-reports-movement' and status = 'processado';
+  select max(id) into v_cad from public.btg_arquivos where servico = 'rm-reports-registration-data' and status = 'processado';
+  return coalesce((
+    with lc as (
+      select ld.id, ld.responsavel_id dono, ltrim(regexp_replace(ld.conta, '\D', '', 'g'), '0') k
+        from public.leads ld
+       where not coalesce(ld.excluido, false) and coalesce(ld.funil, 'assessor') = 'assessor' and coalesce(ld.conta, '') <> ''
+         and (p_dono is null or ld.responsavel_id = p_dono)
+         and (v_vis is null or ld.id = any(v_vis))
+    ), base as (
+      select lc.id lead_id, lc.dono, lc.k, b.dados, (b.atualizado_em at time zone 'America/Sao_Paulo')::date dia_base
+        from public.btg_base b join lc on lc.k = ltrim(b.nr_conta, '0')
+    ), pos as (
+      select lc.id lead_id, lc.dono, lc.k, p.dados from public.btg_linhas p join lc on lc.k = ltrim(p.nr_conta, '0')
+       where v_pos is not null and p.arquivo_id = v_pos
+    ), mov as (
+      select lc.id lead_id, lc.dono, lc.k, m.dados from public.btg_linhas m join lc on lc.k = ltrim(m.nr_conta, '0')
+       where v_mov is not null and m.arquivo_id = v_mov and m.dados->>'flag_nnm' = 'SIM'
+         and left(m.dados->>'dt_movimentacao', 10) >= to_char(v_hoje - greatest(coalesce((g->'btg_saida'->>'dias')::int, 3), coalesce((g->'btg_aporte'->>'dias')::int, 3)), 'YYYY-MM-DD')
+    ), itens as (
+      -- dinheiro parado: saldo em conta corrente no dia, acima do mínimo
+      select 'btg_caixa' gatilho, 'caixa:' || k || ':' || dia_base chave, lead_id, dono,
+             public.btg_numero(dados->>'pl_conta_corrente') valor, dia_base::text data, '{}'::jsonb info
+        from base where g ? 'btg_caixa'
+         and public.btg_numero(dados->>'pl_conta_corrente') >= coalesce((g->'btg_caixa'->>'min')::numeric, 10000)
+      union all
+      -- vencimento de renda fixa e COE nos próximos N dias, agrupado por cliente e data
+      select 'btg_vencimento', 'venc:' || k || ':' || d, lead_id, dono, sum(v), d,
+             jsonb_build_object('ativos', jsonb_agg(a order by v desc))
+        from (select lead_id, dono, k, left(dados->>'dt_vencimento', 10) d, public.btg_numero(dados->>'vl_bruto') v,
+                     coalesce(nullif(dados->>'ativo', ''), dados->>'produto') a
+                from pos where g ? 'btg_vencimento' and dados->>'mercado' in ('RENDA FIXA', 'COE')
+                 and left(coalesce(dados->>'dt_vencimento', ''), 10) between to_char(v_hoje, 'YYYY-MM-DD')
+                     and to_char(v_hoje + coalesce((g->'btg_vencimento'->>'dias')::int, 15), 'YYYY-MM-DD')) x
+       group by lead_id, dono, k, d
+      union all
+      -- resgate de fundo em cotização: avisar a data em que o dinheiro cai
+      select 'btg_cotizacao', 'cot:' || k || ':' || d, lead_id, dono, sum(v), d,
+             jsonb_build_object('ativos', jsonb_agg(a order by v desc))
+        from (select lead_id, dono, k, left(dados->>'dt_vencimento', 10) d, public.btg_numero(dados->>'vl_bruto') v,
+                     coalesce(nullif(dados->>'ativo', ''), dados->>'produto') a
+                from pos where g ? 'btg_cotizacao' and dados->>'mercado' ilike 'VALOR EM TR%' and dados->>'sub_mercado' in ('FN', 'PN')
+                 and left(coalesce(dados->>'dt_vencimento', ''), 10) between to_char(v_hoje, 'YYYY-MM-DD')
+                     and to_char(v_hoje + coalesce((g->'btg_cotizacao'->>'dias')::int, 15), 'YYYY-MM-DD')) x
+       group by lead_id, dono, k, d
+      union all
+      -- mesmo emissor acima do limite do FGC (produtos cobertos), uma vez por mês
+      select 'btg_fgc', 'fgc:' || k || ':' || md5(e) || ':' || to_char(v_hoje, 'YYYY-MM'), lead_id, dono, sum(v), null,
+             jsonb_build_object('emissor', e)
+        from (select lead_id, dono, k, coalesce(nullif(dados->>'emissor', ''), '?') e, public.btg_numero(dados->>'vl_bruto') v
+                from pos where g ? 'btg_fgc' and dados->>'mercado' = 'RENDA FIXA'
+                 and dados->>'produto' in ('CDB', 'RDB', 'LC', 'LCI', 'LCA', 'LH', 'LIG')) x
+       group by lead_id, dono, k, e
+      having sum(v) > coalesce((g->'btg_fgc'->>'limite')::numeric, 250000)
+      union all
+      -- conta aberta há pouco e ainda sem dinheiro, uma vez por mês
+      select 'btg_ativar', 'ativar:' || k || ':' || to_char(v_hoje, 'YYYY-MM'), lead_id, dono, null, dados->>'dt_abertura', '{}'::jsonb
+        from base where g ? 'btg_ativar' and coalesce(public.btg_numero(dados->>'pl_total'), 0) = 0
+         and coalesce(dados->>'dt_abertura', '') >= to_char(v_hoje - coalesce((g->'btg_ativar'->>'dias')::int, 90), 'YYYY-MM-DD')
+      union all
+      -- aniversário hoje (na segunda, também o do fim de semana)
+      select 'btg_aniversario', 'aniv:' || k || ':' || extract(year from v_hoje), lead_id, dono, null,
+             to_char(v_hoje, 'YYYY') || '-' || substr(dados->>'dt_nascimento', 4, 2) || '-' || substr(dados->>'dt_nascimento', 1, 2), '{}'::jsonb
+        from base where g ? 'btg_aniversario' and coalesce(dados->>'dt_nascimento', '') ~ '^\d{2}/\d{2}/\d{4}$'
+         and substr(dados->>'dt_nascimento', 4, 2) || substr(dados->>'dt_nascimento', 1, 2) in
+             (to_char(v_hoje, 'MMDD'), case when extract(isodow from v_hoje) = 1 then to_char(v_hoje - 1, 'MMDD') end,
+              case when extract(isodow from v_hoje) = 1 then to_char(v_hoje - 2, 'MMDD') end)
+      union all
+      -- suitability vencendo (cadastro do BTG)
+      select 'btg_suitability', 'suit:' || lc.k || ':' || left(c.dados->>'dt_vencimento_suitability', 10), lc.id, lc.dono, null,
+             left(c.dados->>'dt_vencimento_suitability', 10), '{}'::jsonb
+        from public.btg_linhas c join lc on lc.k = ltrim(c.nr_conta, '0')
+       where g ? 'btg_suitability' and v_cad is not null and c.arquivo_id = v_cad
+         and left(coalesce(c.dados->>'dt_vencimento_suitability', ''), 10) ~ '^\d{4}-\d{2}-\d{2}$'
+         and left(c.dados->>'dt_vencimento_suitability', 10) <= to_char(v_hoje + coalesce((g->'btg_suitability'->>'dias')::int, 30), 'YYYY-MM-DD')
+      union all
+      -- aporte recebido (entrada de dinheiro novo), por dia
+      select 'btg_aporte', 'aporte:' || k || ':' || d, lead_id, dono, sum(v), d, '{}'::jsonb
+        from (select lead_id, dono, k, left(dados->>'dt_movimentacao', 10) d, public.btg_numero(dados->>'vl_bruto') v
+                from mov where g ? 'btg_aporte' and public.btg_numero(dados->>'vl_bruto') > 0
+                 and left(dados->>'dt_movimentacao', 10) >= to_char(v_hoje - coalesce((g->'btg_aporte'->>'dias')::int, 3), 'YYYY-MM-DD')) x
+       group by lead_id, dono, k, d
+      having sum(v) >= coalesce((g->'btg_aporte'->>'min')::numeric, 50000)
+      union all
+      -- saída de dinheiro (resgate para fora do BTG), por dia
+      select 'btg_saida', 'saida:' || k || ':' || d, lead_id, dono, -sum(v), d, '{}'::jsonb
+        from (select lead_id, dono, k, left(dados->>'dt_movimentacao', 10) d, public.btg_numero(dados->>'vl_bruto') v
+                from mov where g ? 'btg_saida' and public.btg_numero(dados->>'vl_bruto') < 0
+                 and left(dados->>'dt_movimentacao', 10) >= to_char(v_hoje - coalesce((g->'btg_saida'->>'dias')::int, 3), 'YYYY-MM-DD')) x
+       group by lead_id, dono, k, d
+      having -sum(v) >= coalesce((g->'btg_saida'->>'min')::numeric, 100000)
+    )
+    select jsonb_agg(jsonb_build_object('gatilho', i.gatilho, 'chave', i.chave, 'lead_id', i.lead_id, 'dono_id', i.dono,
+             'valor', round(i.valor, 2), 'data', i.data, 'info', i.info) order by i.valor desc nulls last)
+      from itens i
+     where not exists (select 1 from public.agenda_resolvidos r where r.chave = i.chave)
+  ), '[]'::jsonb);
+end $$;
+revoke all on function public.agenda_btg_montar(uuid, text[]) from public, anon, authenticated;
+grant execute on function public.agenda_btg_montar(uuid, text[]) to service_role;
+
+-- Para a tela: só as fichas que a pessoa pode ver.
+create or replace function public.agenda_btg_itens(p_dono uuid default null)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.acesso_liberado() then raise exception 'Acesso não liberado.'; end if;
+  if not public.tem_permissao('ferramenta.crm') then return '[]'::jsonb; end if;
+  return public.agenda_btg_montar(p_dono, public.crm_fichas_visiveis());
+end $$;
+revoke all on function public.agenda_btg_itens(uuid) from public, anon;
+grant execute on function public.agenda_btg_itens(uuid) to authenticated;
