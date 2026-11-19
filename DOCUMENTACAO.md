@@ -792,6 +792,8 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026 (noite): 3.39. Carteiras sem os botões Renomear, Assessor e Excluir mês: o nome vai no Cadastro e o
+assessor vem do BTG; código do assessor puxado do BTG pelo e-mail todo dia útil (seção 35, `assessor_automatico.sql`)**.
  · **19/11/2026 (noite): CRM 2026.11.19.13. KPIs: "Quem indicou" dentro do cartão Negócios (PJ2) (`juntar` do Navegavel).
 O NNM segue os filtros de período (Este mês, 30/60/90 dias, 12 meses, Tudo, datas) e de assessor**.
  · **19/11/2026 (noite): 3.38 e CRM 2026.11.19.12. KPIs com o cartão NNM gerencial (seção 34); cartão aberto em moldura
@@ -2750,4 +2752,31 @@ Pedido do Emil: "deixa só a regra de resetar todo início de dia, tira o restan
   contas novas entraram. Sem a função, volta a "Ganhos no CRM no mês".
 - Calendário lateral e "Próximos dias": usam `aw_missao.dias` (o CRM grava, do dia 1º até 45 dias à frente, o mesmo que a
   Agenda mostra em Semana/Mês: tarefas, ficha, rotina, capacitação e Outlook). Clicar num dia mostra os itens daquele dia.
+
+## 35. Assessor automático e Cadastro do cliente com o nome (19/11/2026, Hub 3.39, `assessor_automatico.sql`)
+
+Pedidos do Emil: "não consigo automatizar essa relação do código do assessor?" e "tira o botão renomear e coloca dentro
+de cadastro, tira o de assessor porque quando eu crio o cliente e linko as contas já deve puxar quem é o assessor, e tira
+o excluir mês".
+
+- **Código do assessor vem do BTG.** A base diária (`btg_base`) traz em cada conta o código do assessor (`cge_officer`) e
+  o e-mail dele (`dados->>'email_assessor'`), que é o mesmo e-mail do login no Hub. `btg_sincronizar_codigos()` grava em
+  `perfis.codigo` o código que o BTG usa para aquele e-mail; cada troca vai para a `auditoria` ("BTG (automático)").
+  E-mail com mais de um código no BTG fica de fora. Agendamento `btg-codigos`, dias úteis às 8h50 (depois da base das
+  8h30, antes da importação das 9h15). Não é casamento por nome: é o próprio BTG dizendo de quem é o e-mail. Só o
+  `cron`/dono do banco executa (revogada de `anon` e `authenticated`).
+  A primeira execução acerta Marcelo Junior (A020 → 9049619) e Gabriel Bassan (A016 → 67700131). Os códigos A0xx não eram
+  usados em Comissões. A Clarissa Centeno (8927247, 9 contas) não tem login no Hub: fica sem dono até entrar.
+- **Assessor do cliente nas Carteiras.** Trigger `clientes_zz_assessor_btg` (antes de inserir ou mudar `contas_btg`):
+  quando as contas vinculadas mudam e quem grava é o master, o assessor do cliente passa a ser o dono, no BTG, da conta
+  de maior patrimônio entre as vinculadas (mesmo critério de `btg_conta_info`: `btg_vinculos.cge_officer`, senão
+  `btg_base.cge_officer`), se esse código for de alguém do Hub. Sem casamento, fica como estava. Salvar só o nome não
+  troca o assessor. O nome `zz` faz o trigger rodar depois da normalização das contas (`clientes_contas_btg`).
+- **Tela.** Saíram os botões Renomear, Assessor e Excluir mês (e as funções `renomear`, `transferirCliente`,
+  `excluirMes`). O Cadastro agora tem "Nome do cliente" e mostra o assessor responsável no BTG e o atual no Hub.
+  "Novo cliente" já abre o Cadastro depois de criar. Para apagar um mês lançado, não há mais botão: se precisar, é pelo
+  banco.
+- **Atenção na instalação:** 9 dos 10 clientes das Carteiras estavam no Hub em nome do Emil, mas as contas são da
+  Bibiana no BTG (5414062). O trigger não mexe em quem já está cadastrado; só troca quando as contas de um cliente
+  mudarem.
 

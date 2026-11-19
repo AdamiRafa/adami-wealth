@@ -2193,7 +2193,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.38";
+var VERSAO="versão 3.39";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2812,7 +2812,7 @@ var CAD=null;
 function editarContasBtg(){ abrirCadastro(); }
 function abrirCadastro(){
   var c=cli(); if(!c) return;
-  CAD={id:c.id,nome:c.nome,lista:(c.contas_btg||[]).map(pad9).filter(function(k,i,a){ return k&&a.indexOf(k)===i; }),info:{},sug:null,sugVis:[],erro:""};
+  CAD={id:c.id,nome:c.nome,nomeAntes:c.nome,assessor:c.assessor_id,lista:(c.contas_btg||[]).map(pad9).filter(function(k,i,a){ return k&&a.indexOf(k)===i; }),info:{},sug:null,sugVis:[],erro:""};
   desenharCadastro(); buscarInfoCad();
   api("rpc/btg_sugerir_contas",{method:"POST",body:{p_cliente:c.id}}).then(function(l){ if(CAD){ CAD.sug=l||[]; desenharCadastro(); } }).catch(function(){ if(CAD){ CAD.sug=[]; desenharCadastro(); } });
 }
@@ -2848,7 +2848,10 @@ function desenharCadastro(){
           '<button type="button" class="btn" onclick="cadSug('+i+')">Vincular</button></div>'; }).join("")
     :'';
   d.innerHTML='<div class="eqx" role="dialog" aria-modal="true" aria-label="Cadastro do cliente">'+
-    '<h2>Cadastro de '+esc(CAD.nome)+'</h2>'+
+    '<h2>Cadastro do cliente</h2>'+
+    '<label class="eqsub" for="cadNomeCli" style="display:block;margin:10px 0 4px"><b>Nome do cliente</b></label>'+
+    '<input id="cadNomeCli" maxlength="120" value="'+esc(CAD.nome)+'" oninput="if(CAD)CAD.nome=this.value" style="width:100%;box-sizing:border-box;padding:10px 12px;font-size:15px;border:1px solid #C9D2DE;border-radius:10px">'+
+    '<p class="eqsub" style="margin-top:12px">'+cadAssessorTexto()+'</p>'+
     '<p class="eqsub">Contas do BTG vinculadas a este cliente. São elas que entram em todos os meses da carteira, uma linha por conta, sem repetir. Conta que não está aqui não entra.</p>'+
     (CAD.lista.length?'<table><thead><tr><th>Conta</th><th>Titular no BTG</th><th style="text-align:right">Saldo hoje</th><th></th></tr></thead><tbody>'+linhas+'</tbody></table>'
       :'<p class="eqsub"><b>Nenhuma conta vinculada.</b> Sem conta vinculada, o Hub não sabe quais contas do BTG são deste cliente.</p>')+
@@ -2858,6 +2861,21 @@ function desenharCadastro(){
     sug+
     '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:22px"><button type="button" class="btn" onclick="fecharCadastro()">Cancelar</button>'+
     '<button type="button" class="btn pri" onclick="cadSalvar()">Salvar cadastro</button></div></div>';
+}
+/* 3.39: o assessor do cliente vem do BTG. Ao salvar com contas novas, o banco (clientes_assessor_pelo_btg,
+   assessor_automatico.sql) põe como assessor o dono, no BTG, da conta de maior patrimônio entre as vinculadas,
+   se ele estiver no Hub. Aqui só se mostra o que vai acontecer. */
+function cadAssessorPrevisto(){
+  var melhor=null;
+  CAD.lista.forEach(function(k){ var inf=CAD.info[k]; if(inf&&inf.assessor&&(!melhor||(Number(inf.pl)||0)>(Number(melhor.pl)||0))) melhor=inf; });
+  return melhor;
+}
+function cadAssessorTexto(){
+  var atual=nomeAssessor(CAD.assessor), m=cadAssessorPrevisto();
+  if(!CAD.lista.length) return 'Assessor responsável: <b>'+esc(atual)+'</b>. Ao vincular as contas, o Hub puxa do BTG quem é o assessor.';
+  if(!m) return 'Assessor responsável: <b>'+esc(atual)+'</b>.';
+  return 'Assessor responsável no BTG: <b>'+esc(m.assessor)+'</b> (dono da conta de maior patrimônio). Hoje no Hub: <b>'+esc(atual)+'</b>. '+
+    'Vale o do BTG quando as contas mudam.';
 }
 function cadAdd(){
   if(!CAD) return;
@@ -2874,12 +2892,18 @@ function fecharCadastro(){ CAD=null; var d=document.getElementById("cadv"); if(d
 function cadSalvar(){
   if(!CAD) return;
   var c=db.clientes.filter(function(x){ return x.id===CAD.id; })[0]; if(!c){ fecharCadastro(); return; }
-  var lista=CAD.lista.slice();
+  var lista=CAD.lista.slice(), el=document.getElementById("cadNomeCli");
+  var nome=String(el?el.value:CAD.nome||"").replace(/\s+/g," ").trim();
+  if(!nome){ CAD.erro="Digite o nome do cliente."; desenharCadastro(); return; }
+  var antes=(c.contas_btg||[]).join(","), assAntes=c.assessor_id, nomeAntes=c.nome;
   status("wait","Salvando…");
-  api("clientes?id=eq."+c.id,{method:"PATCH",prefer:"return=representation",body:{contas_btg:lista}})
+  api("clientes?id=eq."+c.id,{method:"PATCH",prefer:"return=representation",body:{nome:nome,contas_btg:lista}})
     .then(function(r){
-      c.contas_btg=(r&&r[0]&&r[0].contas_btg)||lista;
-      registrar("contas BTG",c.nome,c.contas_btg.join(", ")||"nenhuma");
+      var x=(r&&r[0])||{};
+      c.contas_btg=x.contas_btg||lista; c.nome=x.nome||nome; if(x.assessor_id!==undefined) c.assessor_id=x.assessor_id;
+      if(c.nome!==nomeAntes){ registrar("renomeou cliente",nomeAntes,"para "+c.nome); db.clientes.sort(function(a,b){return a.nome.localeCompare(b.nome);}); }
+      if(c.contas_btg.join(",")!==antes) registrar("contas BTG",c.nome,c.contas_btg.join(", ")||"nenhuma");
+      if(c.assessor_id!==assAntes) registrar("trocou assessor",c.nome,"pelo BTG: agora com "+nomeAssessor(c.assessor_id));
       fecharCadastro(); status("ok","Sincronizado");
       if(S.rasc&&S.cliente===c.id) alinharContasBtg(S.rasc,c);
       render(true);
@@ -3008,36 +3032,9 @@ function novoCliente(){
   api("clientes",{method:"POST",prefer:"return=representation",body:{nome:nome.trim(),assessor_id:(SESSAO&&SESSAO.id)||null}})
     .then(function(r){ var c=r[0]; db.clientes.push({id:c.id,nome:c.nome,assessor_id:c.assessor_id});
       db.clientes.sort(function(a,b){return a.nome.localeCompare(b.nome);});
-      S.cliente=c.id; registrar("criou cliente",c.nome,""); status("ok","Sincronizado"); montarRascunho(); render(); }).catch(falha);
-}
-function transferirCliente(){
-  var c=cli(); if(!c) return;
-  if(!EU.admin){ alert("Apenas o administrador pode trocar o assessor de um cliente."); return; }
-  var lista=Object.keys(PERFIS).map(function(k){ return {id:k,nome:PERFIS[k].nome||k}; })
-    .sort(function(a,b){ return a.nome.localeCompare(b.nome); });
-  if(!lista.length){ alert("Nenhum assessor cadastrado."); return; }
-  var txt="Transferir “"+c.nome+"” para qual assessor?\n\n"+
-    lista.map(function(x,i){ return (i+1)+". "+x.nome+(x.id===c.assessor_id?"  (atual)":""); }).join("\n")+
-    "\n\nDigite o numero:";
-  var esc1=prompt(txt); if(!esc1) return;
-  var idx=parseInt(esc1,10)-1;
-  if(isNaN(idx)||idx<0||idx>=lista.length){ alert("Numero invalido."); return; }
-  var novo=lista[idx];
-  if(novo.id===c.assessor_id) return;
-  status("wait","Salvando\u2026");
-  api("clientes?id=eq."+c.id,{method:"PATCH",body:{assessor_id:novo.id}})
-    .then(function(){
-      c.assessor_id=novo.id;
-      registrar("trocou assessor",c.nome,"agora com "+novo.nome);
-      status("ok","Sincronizado"); render();
-    }).catch(falha);
-}
-function renomear(){
-  var c=cli(); if(!c) return;
-  var nome=prompt("Nome do cliente:",c.nome); if(!nome) return;
-  status("wait","Salvando…");
-  api("clientes?id=eq."+c.id,{method:"PATCH",body:{nome:nome.trim()}})
-    .then(function(){ registrar("renomeou cliente",c.nome,"para "+nome.trim()); c.nome=nome.trim(); status("ok","Sincronizado"); render(); }).catch(falha);
+      S.cliente=c.id; registrar("criou cliente",c.nome,""); status("ok","Sincronizado"); montarRascunho(); render();
+      /* 3.39: já abre o Cadastro para vincular as contas; o assessor vem do BTG ao salvar. */
+      abrirCadastro(); }).catch(falha);
 }
 function excluirCliente(){
   var c=cli(); if(!c) return;
@@ -3085,13 +3082,6 @@ function salvarMes(opts){
       if(opts.feito&&/feito_em|column/.test(String(e.message))) e=new Error("Falta instalar o carteiras_feito.sql no Supabase. O mês não foi salvo.");
       falha(e); if(b){b.disabled=false;b.textContent="Salvar mês e ver relatório";}
     });
-}
-function excluirMes(){
-  if(!confirm("Excluir os dados de "+MESES[S.mes-1]+"/"+S.ano+"?")) return;
-  status("wait","Excluindo…");
-  api("lancamentos?cliente_id=eq."+S.cliente+"&mes=eq."+S.mes+"&ano=eq."+S.ano,{method:"DELETE"})
-    .then(function(){ registrar("excluiu lançamento",(cli()||{}).nome||"",MESES[S.mes-1]+"/"+S.ano); delete db.dados[chave(S.cliente,S.mes,S.ano)]; status("ok","Sincronizado"); montarRascunho(); render(); })
-    .catch(falha);
 }
 function falha(e){ status("err","Erro ao salvar"); alert("Não foi possível concluir:\n\n"+e.message); }
 function selCliente(id){ S._chk=false; S.cliente=id; montarRascunho(); render(); }
@@ -4341,10 +4331,7 @@ function viewPreencher(){
   h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
      '<div><div class="sec-title">'+esc(c.nome)+'</div><div class="sec-sub">Lançamento de '+MESES[S.mes-1]+' de '+S.ano+'</div></div>'+
      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" onclick="puxarBtg()" title="Preenche a conta BTG, os ativos do BTG, a alocação e os índices com a Rentabilidade Mensal do BTG">Puxar do BTG</button>'+
-     '<button class="btn" onclick="abrirCadastro()" title="Contas do BTG vinculadas a este cliente">Cadastro</button>'+
-     '<button class="btn" onclick="renomear()">Renomear</button>'+
-     (reg(c.id,S.mes,S.ano)?'<button class="btn" onclick="excluirMes()">Excluir mês</button>':'')+
-     (EU.admin?'<button class="btn" onclick="transferirCliente()">Assessor</button>':'')+
+     '<button class="btn" onclick="abrirCadastro()" title="Nome do cliente, contas do BTG e assessor responsável">Cadastro</button>'+
      '<button class="btn" onclick="excluirCliente()">Excluir cliente</button></div></div></div>'+
      (EU.admin&&c.assessor_id!==EU.id?'<div class="sec-sub" style="margin-top:-8px">Cliente de '+esc(nomeAssessor(c.assessor_id))+'.</div>':'')+
      '<div class="sec-sub" style="margin-top:-8px">Contas BTG vinculadas: '+((c.contas_btg&&c.contas_btg.length)?esc(c.contas_btg.map(pad9).join(", ")):'<b>nenhuma</b>')+
