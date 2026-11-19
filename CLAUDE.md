@@ -180,6 +180,10 @@ execução e fica registrado no histórico.
 - **`execute_sql` com `begin ... rollback` desfaz tudo da chamada**, inclusive o `create function` que veio antes:
   a chamada inteira é uma transação. Crie numa chamada, teste em outra, e confira pela API que a função existe
   (19/11/2026: `crm_captacao` sumiu assim e o Dashboard mostrou captação zero).
+- **Duas alterações na mesma linha num só comando (CTEs com `update`) fazem só uma.** Em 19/11/2026 a troca dos clientes
+  para a Bibiana "não aconteceu" porque o mesmo comando ligava as fichas. Uma alteração por chamada.
+- **Painel que filtra por ficha visível usa `crm_fichas_visiveis()` (uma consulta), nunca `pode_ver_lead()` por linha**:
+  para o assessor isso passava de 8 s (seção 36). Função de servidor chamada só por agendamento exige `x-btg-sync`.
 - **Cache do navegador engana.** Peça Cmd+Shift+R e confira o selo de versão antes de
   investigar qualquer coisa.
 

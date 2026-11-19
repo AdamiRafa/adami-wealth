@@ -16,7 +16,7 @@ begin
    where a.servico = 'rm-reports-nnm' and a.status = 'processado' order by a.id desc limit 1;
   if v_arq is null then return jsonb_build_object('linhas', '[]'::jsonb); end if;
   return jsonb_build_object('atualizado_em', v_em, 'linhas', coalesce((
-    with ld as (
+    with ld as materialized (
       select l.id, ltrim(regexp_replace(l.conta, '\D', '', 'g'), '0') k from public.leads l
        where not coalesce(l.excluido, false) and coalesce(l.conta, '') <> '' and coalesce(l.funil, 'assessor') = 'assessor'),
     li as (select ltrim(coalesce(x.dados->>'nr_conta', ''), '0') k, x.dados d from public.btg_linhas x where x.arquivo_id = v_arq)
@@ -60,7 +60,7 @@ begin
     sel as (select li.d, li.dados, ltrim(coalesce(li.dados->>'nr_conta', ''), '0') k
               from li join ult on ult.d = li.d and ult.a = li.arquivo_id
              where (p_de is null or li.d >= p_de) and (p_ate is null or li.d <= p_ate)),
-    ld as (
+    ld as materialized (
       select l.id, ltrim(regexp_replace(l.conta, '\D', '', 'g'), '0') k from public.leads l
        where not coalesce(l.excluido, false) and coalesce(l.conta, '') <> '' and coalesce(l.funil, 'assessor') = 'assessor')
     select jsonb_agg(jsonb_build_object(
@@ -92,7 +92,7 @@ begin
     with b as (
       select ltrim(b.nr_conta, '0') k, left(b.dados->>'dt_abertura', 10)::date ab, coalesce(b.pl_total, 0) pl
         from public.btg_base b where coalesce(b.dados->>'dt_abertura', '') ~ '^\d{4}-\d{2}-\d{2}'),
-    ld as (
+    ld as materialized (
       select l.id, ltrim(regexp_replace(l.conta, '\D', '', 'g'), '0') k from public.leads l
        where not coalesce(l.excluido, false) and coalesce(l.conta, '') <> '' and coalesce(l.funil, 'assessor') = 'assessor'),
     x as (select b.*, ld.id from b left join ld on ld.k = b.k where v_vis is null or ld.id = any(v_vis))

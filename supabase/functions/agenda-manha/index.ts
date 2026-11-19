@@ -542,7 +542,19 @@ async function lerTudo<T>(caminho: string): Promise<T[]> {
   }
 }
 
-Deno.serve(async (_req: Request) => {
+/* Só o agendamento chama (3.41): ele manda o cabeçalho x-btg-sync com o token do Vault, o mesmo das funções do
+   BTG. Sem isso, qualquer pessoa com o endereço disparava o e-mail da manhã para a equipe inteira. */
+async function chamadaAutorizada(req: Request): Promise<boolean> {
+  const tk = req.headers.get("x-btg-sync") ?? "";
+  if (!tk) return false;
+  try {
+    const r = await servico("/rest/v1/rpc/btg_sync_token_ok", { method: "POST", body: JSON.stringify({ p: tk }) });
+    return r.ok && (await r.text()).trim() === "true";
+  } catch (_) { return false; }
+}
+
+Deno.serve(async (req: Request) => {
+  if (!(await chamadaAutorizada(req))) return resposta({ erro: "não autorizado" }, 401);
   const agora = agoraEmBrasilia();
   if (agora.diaSemana > 5 || agora.hora < 6 || agora.hora >= 11) {
     return resposta({ ok: true, enviados: 0, motivo: "fora do horário (dia útil, 6h às 11h de Brasília)" });

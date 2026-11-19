@@ -33,6 +33,8 @@
 
   .layout{display:grid;grid-template-columns:190px 1fr 380px;gap:20px;padding:20px;align-items:start}
   @media(max-width:1200px){.layout{grid-template-columns:1fr}}
+  /* 3.41: a coluna do meio encolhe; antes, em tela de 1280 px a coluna "Gerar documentos" saía da tela. Só tela. */
+  @media screen and (min-width:1201px){.layout{grid-template-columns:190px minmax(0,1fr) minmax(300px,380px)}}
   nav.lado{position:sticky;top:70px}
   nav.lado a{display:block;padding:7px 10px;font-size:12.5px;color:var(--muted);
     text-decoration:none;border-left:2px solid transparent;cursor:pointer}
@@ -133,7 +135,7 @@
 
 <header>
   <span class="cab-tit"><span class="cab-eb">Ferramentas</span><b>Gerador de Planos Patrimoniais</b></span>
-  <span class="sub cab-ver">versão 2.76</span>
+  <span class="sub cab-ver">versão 2.77</span>
   <span class="dir">
     <span class="selo bom" id="selo">—</span>
     <button class="btn ghost" onclick="novoDoPadrao()">Novo</button>

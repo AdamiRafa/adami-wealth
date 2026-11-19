@@ -792,6 +792,9 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026 (noite): 3.41. Conferência 360 (seção 36): CRM do assessor rápido de novo (NNM, Captação, Vencimentos,
+Dinheiro parado e Agenda BTG estouravam 8 s), e-mail da manhã só pelo agendamento, carta do mês só o master, registro de
+atividades com o autor real, Planos Patrimoniais em tela de 1280 px e abas da Carteira no celular**.
  · **19/11/2026 (noite): 3.40. A carteira se liga sozinha à ficha do CRM pela conta ao salvar o Cadastro; 9 clientes
 passados para a Bibiana; e-mail da manhã programado para ligar em 23/11 (seção 35)**.
  · **19/11/2026 (noite): 3.39. Carteiras sem os botões Renomear, Assessor e Excluir mês: o nome vai no Cadastro e o
@@ -2792,4 +2795,45 @@ o excluir mês".
   liga o `agenda-manha` (6h50) e se apaga. A partir daí o e-mail sai todo dia útil.
 - Testado como `authenticated` com a sessão do master: cliente novo com conta do Thiago ficou com o Thiago e com a ficha
   da conta (desfeito no fim).
+
+## 36. Conferência 360 (19/11/2026, Hub 3.41, Planos 2.77, `seguranca_341.sql`)
+
+Pedido do Emil: "confere 360 no detalhe em TODAS funções, usabilidade, acessos". O que foi olhado e o resultado:
+
+**Banco e acessos**
+- Todas as tabelas de `public` com RLS; nenhuma tabela nem função que devolve dado aberta para quem não entrou (`anon`).
+  As 11 tabelas sem política (acesso_*, btg_rent_*, btg_token, catálogos de permissão) são de propósito: só funções leem.
+- As funções `security definer` que o navegador chama conferem acesso (`acesso_liberado()` direto ou por `tem_permissao`,
+  `meu_cliente`, `oport_pode_indicar`, `pode_publicar_aviso`). As que não conferem são as do próprio login.
+- Testado como assessor real (Thiago, papel `authenticated`, sessão do dia simulada e desfeita): vê só as próprias fichas
+  (138), não lê Comissões nem dados de pagamento, não atualiza a base do BTG.
+- **Corrigido, lentidão do assessor:** `crm_fichas_visiveis()` chamava `pode_ver_lead()` ficha por ficha. Para o assessor,
+  Captação levava 5,2 s e o NNM passava de 8 s; os registros mostraram erro 500 em Captação, Vencimentos, Dinheiro parado
+  e itens do BTG na Agenda às 16h de 19/11. Reescrita numa consulta só, com a mesma regra; conferido para as 15 pessoas
+  (listas idênticas). Nas três funções do `btg_captacao.sql` a lista de fichas virou `materialized` (o banco cruzava
+  cada lançamento com cada ficha, ~800 mil comparações). Agora: Captação 0,13 s, NNM 0,28 s (assessor); 0,4 e 0,5 s (master).
+  **Não volte a chamar `pode_ver_lead()` por linha em função de painel.**
+- **Corrigido, registro de atividades:** a tabela `auditoria` aceitava qualquer nome de autor vindo do navegador. O
+  gatilho `auditoria_autor` põe o e-mail do login e a hora do servidor (gravações do próprio banco seguem como vêm).
+- **Corrigido, comentários do mês:** `cartas` era gravável por qualquer pessoa com Carteiras e o texto sai no relatório
+  de todos os clientes. Três políticas restritivas `cartas_*_master` (só `eh_admin()` grava); a aba some para quem não é
+  master (`tabC`, `setTab`).
+- Funções de formatação do BTG (`btg_conta`, `btg_numero`...) tiradas do `anon`.
+
+**Rotinas e funções do servidor**
+- 16 agendamentos sem nenhuma falha em 7 dias.
+- Das 11 Edge Functions, as que não exigem login no portão recusam chamada sem credencial, exceto o `agenda-manha`, que
+  aceitava qualquer chamada: entre 6h e 11h alguém de fora disparava o e-mail da manhã para a equipe (antes do lançamento,
+  inclusive). **Corrigido:** versão 9 exige o cabeçalho `x-btg-sync` com o token do Vault, como `btg-base-auto`; o
+  agendamento `agenda-manha` foi alterado para mandar o cabeçalho (o `ligar-agenda-manha` de 23/11 só liga o job).
+  `enviar-senha` é público de propósito (pede o e-mail).
+
+**Telas**
+- Os 15 módulos abertos no celular (390 px, dia) e no computador (1280 px, noite) sem erro de JavaScript.
+- **Corrigido:** Planos Patrimoniais em 1280 px jogava a coluna "Gerar documentos" para fora da tela
+  (`minmax(0,1fr)`, só tela); abas da Carteira no celular empurravam a página para o lado (rolam dentro da barra).
+- Visão de assessor conferida: menu só com as ferramentas liberadas, abas de master escondidas na Carteira, CRM sem erro.
+- Valores dentro de `onclick` gerado por texto: todos são ids `uuid`/`bigint` do banco ou datas formatadas (seguros).
+- `@media (max-width)` sem `screen` em alguns módulos: ficaram como estão, porque hoje também valem na impressão e os
+  PDFs atuais foram validados assim. Trocar mudaria o PDF; só mexer junto com a medição página a página.
 
