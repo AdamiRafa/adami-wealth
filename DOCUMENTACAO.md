@@ -812,6 +812,10 @@ inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da AP
 
 ## 14. Pendências
 
+- **E-mail da manhã DESLIGADO de propósito (18/11/2026, pedido do Emil):** o lançamento oficial da Agenda nova é na semana
+  de 23/11. O agendamento `agenda-manha` do pg_cron está com `active = false` (nada foi apagado; a função `agenda-manha`
+  versão 5 continua instalada e pronta). Para religar: `select cron.alter_job(job_id := (select jobid from cron.job where
+  jobname = 'agenda-manha'), active := true);`. Há uma tarefa na Agenda do Emil em 23/11 para lembrar.
 - **E-mail próprio (05/11/2026):** caixa `hub@adamicaptal.com.br` criada, SMTP do
   Supabase e função `enviar-convite` configurados; boas-vindas confirmado chegando.
   Falta colar de novo o modelo de redefinir senha da 2.85 (link com `token_hash`) e o
