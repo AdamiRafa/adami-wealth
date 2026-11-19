@@ -2616,7 +2616,8 @@ Pedido do Emil: ao criar o acesso de um assessor, ter a ficha completa, como o F
 - Agendamento `outlook-agenda` (`*/30 9-23 * * 1-5`, UTC: a cada 30 min das 6h às 20h de Brasília) **nasce desligado**.
 - CRM: `fetchOutlook` lê a tabela; os itens entram em **Compromissos de hoje** com a etiqueta Outlook (azul), hora de
   Brasília, "até HH:MM", local e "online"; não têm círculo de concluir e não contam no placar nem no número do menu.
-- E-mail da manhã (`agenda-manha`, versão 6): mesmos compromissos, hoje e a prévia de amanhã.
+- E-mail da manhã (`agenda-manha`, versão 6): mesmos compromissos, hoje e a prévia de amanhã. Da ficha de cadastro lê só
+  `dados->certificacoes` (CPF e endereço não saem do banco).
 - **Como ligar** (depois do Microsoft 365): cadastrar os três Secrets; `select cron.alter_job(job_id := (select jobid
   from cron.job where jobname = 'outlook-agenda'), active := true);`; rodar uma vez à mão e conferir a resposta
   (`pessoas`, `lidas`, `compromissos`, `sem_acesso`, `falhas`).

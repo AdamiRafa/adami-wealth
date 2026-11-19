@@ -558,10 +558,11 @@ Deno.serve(async (_req: Request) => {
       encodeURIComponent(soma(hoje, -1) + "T03:00:00Z") + "&inicio=lt." + encodeURIComponent(soma(hoje, 5) + "T03:00:00Z"));
     // Validades das certificações da ficha de cadastro (equipe_cadastro), pelo e-mail ou pela conta.
     const porEmail = new Map<string, string>(); for (const [id, em] of emails) porEmail.set(em, id);
-    for (const c of await lerTudo<{ email: string; user_id: string | null; dados: { certificacoes?: Record<string, string> } }>("/rest/v1/equipe_cadastro?select=email,user_id,dados")) {
+    // Só as certificações: o resto da ficha (CPF, endereço) não sai do banco.
+    for (const c of await lerTudo<{ email: string; user_id: string | null; certificacoes: Record<string, string> | null }>("/rest/v1/equipe_cadastro?select=email,user_id,certificacoes:dados->certificacoes")) {
       const pessoa = c.user_id ?? porEmail.get(c.email);
       if (!pessoa) continue;
-      for (const [cert, vence] of Object.entries(c.dados?.certificacoes ?? {})) ex.certs.push({ pessoa, cert, vence: String(vence) });
+      for (const [cert, vence] of Object.entries(c.certificacoes ?? {})) ex.certs.push({ pessoa, cert, vence: String(vence) });
     }
   } catch (e) {
     console.error("gatilhos", e);
