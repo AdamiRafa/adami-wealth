@@ -43,7 +43,8 @@ insert into public.agenda_gatilhos (chave, ligado, params) values
   ('crm_parado', true, '{"dias":15}'),
   ('crm_boas_vindas', true, '{}'),
   ('crm_indicacao', true, '{"dias":60}'),
-  ('crm_revisao_anual', true, '{"dias":365}'),
+  ('crm_revisao_anual', false, '{"dias":365}'),
+  ('esp_oportunidade', true, '{}'),
   ('rot_cenario', false, '{"titulo":"Ler o cenário do dia","hora":"08:30"}'),
   ('rot_prospeccao', false, '{"titulo":"Bloco de prospecção","meta":10,"hora":"10:00"}'),
   ('rot_registro', false, '{"titulo":"Registrar as atividades do dia no CRM","hora":"17:30"}'),
@@ -253,3 +254,126 @@ begin
 end $$;
 revoke all on function public.agenda_btg_itens(uuid) from public, anon;
 grant execute on function public.agenda_btg_itens(uuid) to authenticated;
+
+-- ===================================================================
+-- Indicações dos especialistas de produto (19/11/2026). O especialista (seguro, consórcio...) escolhe na base os
+-- clientes com perfil para o produto; cada indicação vira tarefa na Agenda do assessor responsável pela ficha.
+-- O especialista vê, para escolher, nome, assessor e patrimônio por classe dos clientes da base do BTG (sem telefone
+-- nem e-mail). O assessor responde "falei com o cliente" ou "sem interesse"; o especialista acompanha.
+-- ===================================================================
+create table if not exists public.oportunidades_produto (
+  id uuid primary key default gen_random_uuid(),
+  lead_id text not null,
+  produto text not null,
+  nota text,
+  especialista_id uuid not null,
+  dono_id uuid,
+  status text not null default 'aberta' check (status in ('aberta', 'feita', 'sem_interesse', 'cancelada')),
+  criado_em timestamptz not null default now(),
+  resolvido_em timestamptz,
+  resolvido_por uuid,
+  resposta text
+);
+create unique index if not exists oportunidades_produto_aberta on public.oportunidades_produto (lead_id, produto) where status = 'aberta';
+create index if not exists oportunidades_produto_dono on public.oportunidades_produto (dono_id, status);
+alter table public.oportunidades_produto enable row level security;
+drop policy if exists oportunidades_ler on public.oportunidades_produto;
+create policy oportunidades_ler on public.oportunidades_produto for select to authenticated
+  using ((select public.is_ativo()) and (especialista_id = (select auth.uid()) or dono_id = (select auth.uid())
+         or (select public.is_admin()) or (select public.eh_super())));
+drop policy if exists exige_verificacao on public.oportunidades_produto;
+create policy exige_verificacao on public.oportunidades_produto as restrictive for all to authenticated
+  using ((select public.acesso_liberado())) with check ((select public.acesso_liberado()));
+drop policy if exists exige_ferramenta on public.oportunidades_produto;
+create policy exige_ferramenta on public.oportunidades_produto as restrictive for all to authenticated
+  using ((select public.tem_permissao('ferramenta.crm'))) with check ((select public.tem_permissao('ferramenta.crm')));
+
+-- Quem pode indicar: especialista ativo no CRM, administrador do CRM ou master.
+create or replace function public.oport_pode_indicar()
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.acesso_liberado() and public.tem_permissao('ferramenta.crm') and (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.status = 'ativo' and p.role = 'especialista')
+    or public.is_admin() or public.eh_super());
+$$;
+revoke all on function public.oport_pode_indicar() from public, anon;
+grant execute on function public.oport_pode_indicar() to authenticated;
+
+-- A base para o especialista escolher: clientes do funil do assessor com conta no BTG, com o perfil da base diária.
+create or replace function public.oport_base(p_produto text default null)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare v_hoje date := (now() at time zone 'America/Sao_Paulo')::date;
+begin
+  if not public.oport_pode_indicar() then raise exception 'Só especialista, administrador do CRM ou master.'; end if;
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+             'lead_id', l.id, 'cliente', l.cliente, 'assessor', pr.nome, 'segmento', l.segmento, 'tipo_pessoa', l.tipo_pessoa,
+             'pl_total', public.btg_numero(b.dados->>'pl_total'),
+             'pl_previdencia', public.btg_numero(b.dados->>'pl_previdencia'),
+             'pl_renda_fixa', public.btg_numero(b.dados->>'pl_renda_fixa'),
+             'pl_fundos', public.btg_numero(b.dados->>'pl_fundos'),
+             'pl_renda_variavel', public.btg_numero(b.dados->>'pl_renda_variavel'),
+             'idade', case when coalesce(b.dados->>'dt_nascimento', '') ~ '^\d{2}/\d{2}/\d{4}$'
+                           then extract(year from age(v_hoje, to_date(b.dados->>'dt_nascimento', 'DD/MM/YYYY')))::int end,
+             'profissao', nullif(b.dados->>'profissao', ''), 'estado_civil', nullif(b.dados->>'estado_civil', ''),
+             'perfil', nullif(b.dados->>'perfil_investidor', ''), 'cidade', nullif(b.dados->>'endereco_cidade', ''),
+             'indicada', exists (select 1 from public.oportunidades_produto o
+                                  where o.lead_id = l.id and o.status = 'aberta' and o.produto = coalesce(p_produto, o.produto)))
+           order by public.btg_numero(b.dados->>'pl_total') desc nulls last)
+      from public.leads l
+      join public.btg_base b on ltrim(b.nr_conta, '0') = ltrim(regexp_replace(l.conta, '\D', '', 'g'), '0')
+      left join public.profiles pr on pr.id = l.responsavel_id
+     where not coalesce(l.excluido, false) and coalesce(l.funil, 'assessor') = 'assessor' and coalesce(l.conta, '') <> ''
+       and not coalesce(l.perdido, false)), '[]'::jsonb);
+end $$;
+revoke all on function public.oport_base(text) from public, anon;
+grant execute on function public.oport_base(text) to authenticated;
+
+create or replace function public.oport_criar(p_leads text[], p_produto text, p_nota text)
+returns int language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  if not public.oport_pode_indicar() then raise exception 'Só especialista, administrador do CRM ou master.'; end if;
+  if coalesce(btrim(p_produto), '') = '' or length(p_produto) > 60 then raise exception 'Informe o produto.'; end if;
+  if coalesce(array_length(p_leads, 1), 0) = 0 or array_length(p_leads, 1) > 300 then raise exception 'Escolha de 1 a 300 clientes.'; end if;
+  insert into public.oportunidades_produto (lead_id, produto, nota, especialista_id, dono_id)
+  select l.id, btrim(p_produto), left(nullif(btrim(p_nota), ''), 1000), auth.uid(), l.responsavel_id
+    from public.leads l
+   where l.id = any(p_leads) and not coalesce(l.excluido, false) and coalesce(l.funil, 'assessor') = 'assessor'
+  on conflict (lead_id, produto) where status = 'aberta' do nothing;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function public.oport_criar(text[], text, text) from public, anon;
+grant execute on function public.oport_criar(text[], text, text) to authenticated;
+
+-- O assessor da ficha (ou o administrador) responde; quem indicou pode cancelar.
+create or replace function public.oport_resolver(p_id uuid, p_status text, p_resposta text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare o public.oportunidades_produto; v_dono uuid;
+begin
+  if not public.acesso_liberado() or not public.is_ativo() or not public.tem_permissao('ferramenta.crm') then
+    raise exception 'Acesso não liberado.';
+  end if;
+  if p_status not in ('feita', 'sem_interesse', 'cancelada', 'aberta') then raise exception 'Situação inválida.'; end if;
+  select * into o from public.oportunidades_produto where id = p_id;
+  if o.id is null then raise exception 'Indicação não encontrada.'; end if;
+  select responsavel_id into v_dono from public.leads where id = o.lead_id;
+  if p_status = 'cancelada' then
+    if o.especialista_id <> auth.uid() and not public.is_admin() and not public.eh_super() then
+      raise exception 'Só quem indicou cancela.';
+    end if;
+  elsif v_dono is distinct from auth.uid() and o.especialista_id <> auth.uid() and not public.is_admin() and not public.eh_super() then
+    raise exception 'Só o assessor do cliente responde.';
+  end if;
+  update public.oportunidades_produto
+     set status = p_status, resposta = left(nullif(btrim(p_resposta), ''), 1000),
+         resolvido_em = case when p_status = 'aberta' then null else now() end,
+         resolvido_por = case when p_status = 'aberta' then null else auth.uid() end,
+         dono_id = coalesce(v_dono, dono_id)
+   where id = p_id;
+  return true;
+exception when unique_violation then
+  raise exception 'Já existe outra indicação aberta deste produto para o cliente.';
+end $$;
+revoke all on function public.oport_resolver(uuid, text, text) from public, anon;
+grant execute on function public.oport_resolver(uuid, text, text) to authenticated;

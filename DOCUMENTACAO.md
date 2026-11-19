@@ -1406,6 +1406,47 @@ local (sem compartilhar não vê; compartilhado vê e não altera, conclui nem a
 código do dia nada responde; head vê tudo; anon recusado) e no Chromium com o banco simulado (computador e
 celular).
 
+**Missão do dia e gatilhos (19/11/2026, CRM `2026.11.19.4`, `agenda_gatilhos.sql`, também no fim do `adami_completo.sql`).**
+Pedido do Emil, inspirado no que a EQI fez: o assessor abre a Agenda e vê só o que precisa fazer no dia, na ordem certa.
+- **Missão do dia** (aba Hoje): tudo o que está aberto hoje, do mais importante para o menos (`prio` de cada gatilho;
+  tarefa atribuída 88, vencimento manual 86, própria 78, próximo contato 74, régua 50), até o limite que o master escolhe
+  (padrão 12; "Mostrar mais" abre o resto). **Dinheiro parado** fica numa seção à parte e aparece todo (decisão do Emil:
+  "todos os saldos são tarefas", a partir de R$ 10 mil, no próprio dia). Seção "Feitas hoje" embaixo. Na visão "Toda a
+  equipe", o limite é 50 e aparece o **Placar de hoje** (abertas, feitas e atrasadas por pessoa).
+- **Gatilhos** (botão no herói da Agenda, só master): liga/desliga e números de cada um. O catálogo (nome, explicação,
+  campos, padrão, prioridade) é `AG_GATILHOS` no `crm.html`; o banco guarda só `agenda_gatilhos` (chave, ligado, params),
+  gravado por `agenda_gatilho_definir` (só master, com auditoria). A chave `geral` guarda o limite do dia. Grupos:
+  - **Carteira (BTG)**, montados no banco por `agenda_btg_itens()` (só fichas visíveis; 0,2 s com o login do Emil):
+    dinheiro parado (`pl_conta_corrente` da base, mínimo), vencimento de RF/COE (posição, 15 dias), resgate de fundo em
+    cotização, acima do FGC (CDB/RDB/LC/LCI/LCA/LH/LIG por emissor acima de R$ 250 mil, uma vez por mês), conta aberta sem
+    dinheiro (abertura nos últimos 90 dias, uma vez por mês), aniversário (`dt_nascimento` da base, DD/MM/AAAA; na segunda
+    também o do fim de semana), suitability (cadastro do BTG, quando chegar), aporte e saída (movimentação com
+    `flag_nnm = SIM`: positivo é aporte, negativo é saída; mínimos de R$ 50 mil e R$ 100 mil, últimos 3 dias).
+  - **Processo comercial**, calculados no navegador pela ficha (uma tarefa por ficha, a mais importante): primeiro contato do
+    lead, follow-up da proposta (R2 sem contato há 5 dias), prazo da etapa (`SLA_DIAS`), negócio parado (15 dias sem
+    contato), boas-vindas e revisões do captado (dia 1, 7 e 30), pedir indicação (60 dias), revisão anual (desligada: a
+    régua cobre). Resolvem-se registrando o contato, que vai para a ficha.
+  - **Especialistas**: tela **Indicar clientes** (menu, para especialista, admin do CRM e master). `oport_base()` mostra a
+    base com conta no BTG (nome, assessor, segmento, idade, profissão, patrimônio, previdência e renda fixa; sem telefone e
+    sem e-mail), com filtros. `oport_criar()` grava em `oportunidades_produto` (uma aberta por cliente e produto); vira
+    tarefa do assessor da ficha, que responde "Falei com o cliente" ou "Sem interesse" (`oport_resolver`, registra na
+    ficha). Quem indicou acompanha e pode cancelar. Decisão: o especialista passa a ver nome e patrimônio da base para
+    escolher; o Emil aprovou em 19/11.
+  - **Rotina** e **Capacitação**: tarefas fixas para todo assessor ativo (`role = vendedor`): diárias, semanais ou
+    mensais (mensal no fim de semana passa para a segunda), conteúdo e produto da semana (com link; sem título não
+    aparece), certificações vencendo (lista pessoa, certificação, vencimento). Começam desligadas.
+- **Feito**: aviso do BTG, rotina, capacitação, indicação de cliente e revisão anual gravam a chave em `agenda_resolvidos`
+  por `agenda_resolver` (com cliente, só quem vê a ficha; sem cliente, só a própria tarefa: a chave termina no id da
+  pessoa). Com cliente, registra também a atividade na ficha. Rotina semanal ou mensal não feita aparece em Atrasadas até
+  a próxima.
+- **WhatsApp**: os avisos com telefone na ficha têm o botão com a mensagem pronta (wa.me); o assessor revisa antes de mandar.
+- **Banco aplicado em 19/11** em duas partes sem `drop` (o Supabase pedia confirmação para `drop policy` e o Emil estava
+  no celular); o arquivo mantém os `drop ... if exists` para poder rodar de novo no SQL Editor.
+- Testado: Chromium com Supabase simulado (computador e celular, sem sobra lateral; marcar feito, responder indicação,
+  salvar gatilho, indicar cliente) e no banco real com o login do Emil (246 avisos, marcar tira da lista, rotina de outra
+  pessoa recusada).
+- **Falta:** o e-mail da manhã (`agenda-manha`) ainda não inclui os gatilhos.
+
 **E-mail da manhã (`supabase/functions/agenda-manha`).** Chamado pelo `pg_cron`
 ("agenda-manha", `50 9 * * 1-5` em UTC = 6h50 de Brasília) via `pg_net`. Só envia em dia
 útil entre 6h e 11h de Brasília, reserva o envio em `agenda_emails` antes de mandar (não

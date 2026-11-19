@@ -55,7 +55,8 @@ sai pela Edge Function `supabase/functions/enviar-convite` (colada à mão no Su
 redefinir senha pela `enviar-senha`, o e-mail da manhã da Agenda pela `agenda-manha` e o código
 de acesso de 6 dígitos pela `codigo-acesso`. Os
 modelos são gerados por `emails/_base.py`, que grava cada um dentro da sua função.
-Agenda do CRM: tabela `tarefas` (`agenda.sql`); detalhes na seção 19 da documentação.
+Agenda do CRM: tabela `tarefas` (`agenda.sql`); missão do dia, gatilhos do master e indicações dos especialistas em
+`agenda_gatilhos.sql`; detalhes na seção 19 da documentação.
 Relatório ao cliente (3.20, seção 28): função `relatorio-enviar`; destinatários só de `clientes.emails_relatorio`
 e só com o mês feito. A carteira liga à ficha do CRM por `clientes.lead_id`.
 Visual 2026 (seção 20): vidro, menu lateral e modo noite; camada comum dos módulos em
