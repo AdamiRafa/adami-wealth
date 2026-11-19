@@ -177,6 +177,9 @@ execução e fica registrado no histórico.
 - **Função testada como dono do banco não prova nada.** O navegador roda como `authenticated`, com limite de 8 s e
   as checagens de permissão. `pode_ver_lead()` por linha zerou Vencimentos e Dinheiro parado no painel (seção 23.18).
   Teste com `set local role authenticated`, claims de usuário real e `statement_timeout = '8s'`.
+- **`execute_sql` com `begin ... rollback` desfaz tudo da chamada**, inclusive o `create function` que veio antes:
+  a chamada inteira é uma transação. Crie numa chamada, teste em outra, e confira pela API que a função existe
+  (19/11/2026: `crm_captacao` sumiu assim e o Dashboard mostrou captação zero).
 - **Cache do navegador engana.** Peça Cmd+Shift+R e confira o selo de versão antes de
   investigar qualquer coisa.
 

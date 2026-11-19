@@ -792,6 +792,8 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026 (noite): 3.37 e CRM 2026.11.19.10. A captação do BTG não aparecia (função desfeita junto com um
+teste, seção 33.5); a tela inicial do Hub passou a mostrar a captação do BTG e a mesma missão do dia da Agenda**.
  · **19/11/2026 (fim da tarde): CRM 2026.11.19.9. Captação do BTG (NNM) no Dashboard; Rotina do dia igual à Agenda;
 ordem de prioridade dos gatilhos escolhida pelo master; aviso "Divergência de saldo" desligado (seção 33)**.
  · **19/11/2026 (tarde): 3.36 e CRM 2026.11.19.8. Verificação em duas etapas desligada (fica só o acesso que vence à
@@ -2707,4 +2709,16 @@ Pedido do Emil: "deixa só a regra de resetar todo início de dia, tira o restan
 - A importação do BTG (tela e `btg-base-auto`, `regras.js` gerado de novo) não cria mais o aviso no card quando o saldo varia
   fora da faixa; a variação segue no histórico da ficha. Os 68 avisos abertos foram marcados como resolvidos ("Hub Adami
   (aviso de divergência desligado em 19/11/2026)"), sem apagar, com registro na auditoria.
+
+### 33.5 Correção: a captação não aparecia, e a tela inicial do Hub passou a falar a língua da Agenda
+- **O erro (meu):** `crm_captacao()` e a `meu_checklist()` nova foram criadas no mesmo `execute_sql` que, em seguida,
+  abria `begin` ... `rollback` para testar como `authenticated`. Numa chamada só, tudo é uma transação: o `rollback` final
+  desfez também a criação. O teste passava (dentro da transação) e a função não existia. O Dashboard recebia
+  "função não encontrada" (PGRST202) e mostrava "não consegui ler o BTG". Reinstaladas em chamadas próprias e conferidas
+  depois pela API (anon recebe 401 "permission denied", ou seja, a função existe). Armadilha nova no CLAUDE.md.
+- **Tela inicial do Hub (3.37):** "Captação líquida do mês · BTG" soma `crm_captacao()` do dia 1º até hoje (fallback: a
+  conta antiga do CRM). O quadro Hoje e as pílulas usam a missão do dia que o CRM guarda neste navegador
+  (`localStorage.aw_missao`: só títulos, cliente, hora e origem, da própria pessoa e do dia), gravada sempre que o CRM
+  monta a Agenda. Sem o CRM aberto no dia, o Hub mostra a conta antiga (tarefas, contato, régua) e avisa que os avisos
+  automáticos aparecem depois de abrir o CRM. O número no card do CRM no menu também usa a missão.
 

@@ -13025,7 +13025,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.19.9';
+const CRM_VERSAO = 'versão do CRM 2026.11.19.10';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 
@@ -15400,6 +15400,21 @@ function App(){
     /* Mover para Contato Futuro encerra a indicação; sair de lá a reabre. */
     sincronizarJornada(atualizado);
   };
+
+  /* Missão do dia para a tela inicial do Hub (CRM 2026.11.19.10). O Hub não refaz o cálculo dos gatilhos: o CRM
+     guarda neste navegador (localStorage "aw_missao") o resumo do dia de quem está logado, e a tela inicial mostra
+     o mesmo que a Agenda. Só títulos, cliente e hora; vale só para o dia e para a mesma pessoa. */
+  useEffect(() => {
+    if(!currentUser || MODO_DEMO || !gatilhos) return;
+    try {
+      const hoje = todayISO();
+      const m = agMissaoDoDia({ tarefas, ag: agCtxApp, leads, users, donoId: currentUser.id, hoje });
+      const enx = (it) => ({ t: it.titulo, c: it.cliente || '', h: it.hora || '', o: (AG_ORIGENS[it.origem] || {}).nome || '', cor: (AG_ORIGENS[it.origem] || {}).cor || '', d: it.dia || '' });
+      localStorage.setItem('aw_missao', JSON.stringify({ uid: currentUser.id, dia: hoje, em: Date.now(),
+        comp: m.compromissos.filter(i => !i.feita).map(enx), tar: m.visiveis.map(enx), nTar: m.fila.length,
+        atr: m.atrasadas.slice(0, 5).map(enx), nAtr: m.atrasadas.length, feitas: m.feitas.length }));
+    } catch(e) {}
+  }, [tarefas, agCtxApp, leads, users, currentUser, gatilhos]);
 
   /* Contador da Agenda no menu: o que está aberto hoje mais o atrasado. */
   const contAgenda = useMemo(() => {

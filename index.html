@@ -2193,7 +2193,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.36";
+var VERSAO="versão 3.37";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -6443,9 +6443,12 @@ function carregarInicio(forcar){
     api("configuracoes?select=valor&chave=eq.usd_brl").catch(function(){ return []; })
   ]).then(function(x){ var cot=x[1]&&x[1][0]?Number(x[1][0].valor):null; return window.AWCarteira.numeros(x[0],cot,new Date()); }).catch(function(){ return null; }):Promise.resolve(null);
   var pCheck=api("rpc/meu_checklist",{method:"POST",body:{}}).catch(function(){ return null; });
+  /* 3.37: captação líquida do mês pelo relatório do BTG (crm_captacao, o mesmo do Dashboard do CRM). */
+  var pCap=podeFerramenta("crm")?api("rpc/crm_captacao",{method:"POST",body:{}}).catch(function(){ return null; }):Promise.resolve(null);
   var pProb=EU.super?api("problemas?select=id&resolvido_em=is.null").then(function(r){ return (r||[]).length; }).catch(function(){ return 0; }):Promise.resolve(0);
-  Promise.all([pAgenda,pRv,pAv,pPode,pNums,pCheck,pProb]).then(function(r){
+  Promise.all([pAgenda,pRv,pAv,pPode,pNums,pCheck,pProb,pCap]).then(function(r){
     INICIO.nums=r[4]; INICIO.numsCasa=!!casa; INICIO.check=r[5]; INICIO.problemasAbertos=r[6]||0;
+    INICIO.cap=hbCaptacaoBtg(r[7]);
     INICIO.tarefas=r[0]?(r[0][0]||[]):null; INICIO.leads=r[0]?(r[0][1]||[]):[];
     var hoje=hbIso(new Date());
     if(INICIO.tarefas){ var a=hbAgendaFaixa(INICIO.tarefas,INICIO.leads,hoje,hoje,hoje);
@@ -6470,6 +6473,7 @@ function hbFiltrar(txt){
 function hbSemAcento(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
 function hbAppsDoGrupo(gr){ return APPS.filter(function(a){ return (a.grupo||"ferramentas")===gr.id && podeFerramenta(a.id); }); }
 function hbContApp(a){
+  if(a.id==="crm"){ var mi=hbMissao(); if(mi){ var nm=mi.nTar+mi.nAtr; return nm?{n:nm,quente:mi.nAtr>0}:null; } }
   if(a.id==="crm"&&INICIO.agenda){ var n=INICIO.agenda.hoje.length+INICIO.agenda.atrasadas.length; return n?{n:n,quente:INICIO.agenda.atrasadas.length>0}:null; }
   if(a.id==="rv"&&INICIO.rv) return {n:INICIO.rv,quente:false};
   return null;
@@ -6607,6 +6611,23 @@ function hbApagarAviso(id){
   api("avisos?id=eq."+id,{method:"DELETE"}).then(function(){ carregarInicio(true); })
     .catch(function(e){ alert("Não foi possível excluir: "+e.message); });
 }
+/* Captação do mês pelo BTG: soma as linhas do mês corrente (o banco já filtra o que a pessoa pode ver). */
+function hbCaptacaoBtg(c){
+  if(!c||!c.atualizado_em||!c.linhas) return null;
+  var ini=hbIso(new Date()).slice(0,8)+"01", ent=0, sai=0;
+  c.linhas.forEach(function(x){ if(!x.data||x.data<ini) return; var v=Number(x.valor)||0; if(v>0) ent+=v; else sai-=v; });
+  return { entrou:ent, saiu:sai, liquido:ent-sai, em:c.atualizado_em };
+}
+/* Missão do dia que o CRM guardou neste navegador (aw_missao): a mesma lista da Agenda, com os avisos automáticos. */
+function hbMissao(){
+  try{ var m=JSON.parse(localStorage.getItem("aw_missao")||"null");
+    return m&&m.uid===EU.id&&m.dia===hbIso(new Date())?m:null; }catch(e){ return null; }
+}
+function hbLinhaMissao(x,atrasada){
+  return '<li class="hb-it'+(atrasada?" atrasada":"")+'" style="--cor:'+esc(x.cor||"#195AB4")+'">'+
+    '<span class="hb-it-hora">'+(atrasada?'<em>atrasada</em>':(esc(x.h)||"—"))+'</span>'+
+    '<span class="hb-it-txt"><b>'+esc(x.t)+'</b><span>'+esc([x.c,x.o,atrasada&&x.d?"desde "+x.d.slice(8,10)+"/"+x.d.slice(5,7):""].filter(Boolean).join(" · "))+'</span></span></li>';
+}
 function hbLinhaItem(i,atrasada){
   return '<li class="hb-it'+(i.feita?" feita":"")+(atrasada?" atrasada":"")+'" style="--cor:'+i.cor+'">'+
     '<span class="hb-it-hora">'+(atrasada?'<em>atrasada</em>':(i.hora||"—"))+'</span>'+
@@ -6638,9 +6659,13 @@ function hbNumerosHtml(){
     card("Sob gestão"+(INICIO.numsCasa?" · casa":""), hbMoeda(n.sobGestao),
       pctSob===null?hbTend(0,null,"sem base no fim de "+mesAnt):hbTend(n.sobGestao,n.sobGestaoMesPassado,(pctSob>=0?"+":"")+pctSob.toLocaleString("pt-BR",{maximumFractionDigits:1})+"% desde o fim de "+mesAnt),
       "Patrimônio sob gestão hoje"+(n.comOffshore?", offshore convertido pela cotação do CRM":", só onshore (sem cotação do dólar no CRM)")+". Mesma conta do Dashboard do CRM.")+
-    card("Captação líquida do mês", hbMoeda(n.liquidoMes),
-      hbTend(n.liquidoMes,n.liquidoMesPassadoAteHoje,hbMoeda(n.liquidoMesPassadoAteHoje)+" no mesmo ponto de "+mesAnt),
-      "Clientes captados + aportes - resgates, deste mês até hoje. "+mesAnt.charAt(0).toUpperCase()+mesAnt.slice(1)+" inteiro: "+hbMoeda(n.liquidoMesPassado)+".")+
+    (INICIO.cap
+      ? card("Captação líquida do mês · BTG", hbMoeda(INICIO.cap.liquido),
+          hbTend(INICIO.cap.liquido,0,hbMoeda(INICIO.cap.entrou)+" entrou · "+hbMoeda(INICIO.cap.saiu)+" saiu"),
+          "Relatório de captação líquida do BTG (NNM), do dia 1º até hoje. Atualiza todo dia útil às 15h30. Mesma conta do Dashboard do CRM.")
+      : card("Captação líquida do mês", hbMoeda(n.liquidoMes),
+          hbTend(n.liquidoMes,n.liquidoMesPassadoAteHoje,hbMoeda(n.liquidoMesPassadoAteHoje)+" no mesmo ponto de "+mesAnt),
+          "Clientes captados + aportes - resgates, deste mês até hoje. "+mesAnt.charAt(0).toUpperCase()+mesAnt.slice(1)+" inteiro: "+hbMoeda(n.liquidoMesPassado)+"."))+
     card("Clientes na carteira", n.clientes.toLocaleString("pt-BR"),
       hbTend(n.captadosMes,0,"+"+n.captadosMes+" captado(s) no mês"), "Clientes com patrimônio sob gestão.")+
     card("Captados no mês", n.captadosMes.toLocaleString("pt-BR"),
@@ -6656,13 +6681,20 @@ function viewHub(){
   var hoje=hbIso(agora);
   var dataLonga=agora.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
   dataLonga=dataLonga.charAt(0).toUpperCase()+dataLonga.slice(1);
-  var ag=hbAgendaAtual(), av=INICIO.avisos;
+  var ag=hbAgendaAtual(), av=INICIO.avisos, MIS=hbMissao();
   var naoLidos=av?av.filter(function(a){ return !a.lido_por_mim&&new Date(a.publicar_em).getTime()<=Date.now(); }).length:0;
   var doDiaHoje=ag?(ag.dias[hoje]||[]).filter(function(i){ return !i.feita; }):[];
   var hhmm=String(hora).padStart(2,"0")+":"+String(agora.getMinutes()).padStart(2,"0");
   var proxima=doDiaHoje.filter(function(i){ return i.hora&&i.hora>=hhmm; })[0];
   var chips=[];
   if(INICIO.estado!=="pronto") chips.push('<span class="hb-chip">carregando o seu dia…</span>');
+  else if(MIS){
+    if(MIS.comp.length) chips.push('<span class="hb-chip">'+MIS.comp.length+(MIS.comp.length===1?" compromisso":" compromissos")+'</span>');
+    chips.push('<span class="hb-chip">'+MIS.nTar+(MIS.nTar===1?" tarefa aberta":" tarefas abertas")+'</span>');
+    if(MIS.nAtr) chips.push('<span class="hb-chip ruim">'+MIS.nAtr+(MIS.nAtr===1?" atrasada":" atrasadas")+'</span>');
+    if(MIS.feitas) chips.push('<span class="hb-chip bom">'+MIS.feitas+(MIS.feitas===1?" feita hoje":" feitas hoje")+'</span>');
+    if(naoLidos) chips.push('<span class="hb-chip bom">'+naoLidos+(naoLidos===1?" aviso novo":" avisos novos")+'</span>');
+  }
   else {
     if(ag) chips.push('<span class="hb-chip">'+doDiaHoje.length+(doDiaHoje.length===1?" tarefa hoje":" tarefas hoje")+'</span>');
     if(ag&&ag.atrasadas.length) chips.push('<span class="hb-chip ruim">'+ag.atrasadas.length+(ag.atrasadas.length===1?" atrasada":" atrasadas")+'</span>');
@@ -6676,7 +6708,16 @@ function viewHub(){
   var tituloDia=ehHoje?"Hoje":new Date(dia+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
   tituloDia=tituloDia.charAt(0).toUpperCase()+tituloDia.slice(1);
   var corpoDia;
-  if(!ag) corpoDia='<p class="hb-vazio">'+(INICIO.estado==="pronto"?"A agenda aparece aqui quando o CRM estiver ligado à sua conta.":"Carregando…")+'</p>';
+  if(MIS&&ehHoje){
+    var listaM=MIS.atr.map(function(x){ return hbLinhaMissao(x,true); }).concat(MIS.comp.map(function(x){ return hbLinhaMissao(x,false); }))
+      .concat(MIS.tar.slice(0,8).map(function(x){ return hbLinhaMissao(x,false); }));
+    var resto=(MIS.nAtr-MIS.atr.length)+(MIS.nTar-Math.min(8,MIS.tar.length));
+    corpoDia=listaM.length?'<ul class="hb-lista">'+listaM.join("")+'</ul>'+(resto>0?'<p class="hb-vazio" style="margin-top:8px">e mais '+resto+' na Agenda</p>':'')
+      :'<p class="hb-vazio">Nada pendente para hoje.</p>';
+    corpoDia+='<p class="hb-vazio" style="margin-top:8px;font-size:12px">A mesma missão do dia da Agenda, de quando você abriu o CRM às '+
+      new Date(MIS.em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+'.</p>';
+  }
+  else if(!ag) corpoDia='<p class="hb-vazio">'+(INICIO.estado==="pronto"?"A agenda aparece aqui quando o CRM estiver ligado à sua conta.":"Carregando…")+'</p>';
   else {
     var itensDia=ag.dias[dia]||[];
     var atr=ehHoje?ag.atrasadas:[];
@@ -6684,6 +6725,7 @@ function viewHub(){
       ? '<ul class="hb-lista">'+atr.slice(0,5).map(function(i){ return hbLinhaItem(i,true); }).join("")+itensDia.map(function(i){ return hbLinhaItem(i,false); }).join("")+'</ul>'+
         (atr.length>5?'<p class="hb-vazio" style="margin-top:8px">e mais '+(atr.length-5)+' atrasada(s) na Agenda</p>':'')
       : '<p class="hb-vazio">'+(ehHoje?"Nada marcado para hoje.":"Nada marcado neste dia.")+'</p>';
+    if(ehHoje&&podeFerramenta("crm")) corpoDia+='<p class="hb-vazio" style="margin-top:8px;font-size:12px">Os avisos automáticos da Agenda (carteira do BTG, processo comercial, especialistas) aparecem aqui depois que você abrir o CRM hoje.</p>';
   }
   var proximos='';
   if(ag&&ehHoje){
