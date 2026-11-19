@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="comum/sessao.js"></script>
 <script src="comum/barra.js"></script>
+<script src="comum/cadastro.js"></script>
 <meta http-equiv="Cache-Control" content="no-store, max-age=0">
 <title>Comissões — Adami Captal</title>
 <!-- Comissões 2.0 (Hub 2.98, 07/11/2026). Quem opera é o Financeiro (comissoes.operar); o master vê e,
@@ -168,7 +169,7 @@ details.mais{margin:12px 0 0;border:1px dashed #CBD7E8;border-radius:12px;paddin
 <body>
 <div id="app"><p class="vazio">Carregando…</p></div>
 <script>
-var VERSAO="Comissões 2.5";
+var VERSAO="Comissões 2.6";
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
 var SESSAO=null;
@@ -1214,15 +1215,30 @@ function telaPessoas(){
         '<td class="n">'+(n(a.remuneracao_minima)?brl(a.remuneracao_minima):"—")+'</td><td class="n">'+(opera()?'<button class="link" onclick="editarPessoa(\''+p.user_id+'\')">Editar</button>':'<button class="link" onclick="editarPessoa(\''+p.user_id+'\')">Ver</button>')+'</td></tr>'; }).join("")+
     '</tbody></table></div></div>';
 }
-function editarPessoa(uid){ ABA="pessoas"; ED={tipo:"pessoa",uid:uid}; MSG=null; pintar(); window.scrollTo(0,0); }
+/* 3.36: cadastro unificado. A ficha de cadastro (equipe_cadastro, a mesma da Equipe do Hub) aparece aqui junto
+   com pagamento e acordo; os campos vêm de comum/cadastro.js. */
+function editarPessoa(uid){
+  ABA="pessoas"; ED={tipo:"pessoa",uid:uid,ficha:null}; MSG=null; pintar(); window.scrollTo(0,0);
+  var p=pessoa(uid)||{}, ed=ED;
+  rpc("equipe_cadastro_ler",{p_email:String(p.email||"").toLowerCase()})
+    .then(function(r){ ed.ficha=r||{dados:{}}; },function(e){ ed.ficha={erro:String(e.message||e)}; })
+    .then(function(){ if(ED===ed) pintar(); });
+}
 function campo(id,rot,val,cls,extra){ return '<label class="c'+(cls?" "+cls:"")+'">'+rot+'<input id="'+id+'" value="'+esc(val==null?"":val)+'"'+(extra||"")+(opera()?"":" disabled")+'></label>'; }
 function numBR(x){ return x==null||x===""?"":String(x).replace(".",","); }
 function formPessoa(){
-  var p=pessoa(ED.uid)||{}, d=p.pagto||{}, a=p.acordo||{};
+  var p=pessoa(ED.uid)||{}, d=p.pagto||{}, a=p.acordo||{}, f=ED.ficha;
+  var ficha=!f?'<p class="sub">Carregando a ficha de cadastro…</p>'
+    : f.erro?'<p class="sub">Ficha de cadastro: '+(/equipe_cadastro/.test(f.erro)?"ainda não instalada no Supabase (equipe_cadastro.sql).":esc(f.erro))+'</p>'
+    : AWCadastro.form("fc",f.dados,{desabilitado:!opera(),
+        campo:function(rot,id,inp,largo){ return '<label class="c'+(largo?" toda":"")+'" for="'+id+'">'+esc(rot)+inp+'</label>'; },
+        grupo:function(t,campos){ return '<h4>'+esc(t)+'</h4><div class="grade">'+campos+'</div>'; }});
   var h='<div class="cartao form"><h3>'+esc(p.nome)+' <span class="sub">'+esc(p.email||"")+'</span></h3>'+
+    '<p class="sub">Ficha de cadastro: a mesma que o master vê na Equipe do Hub.'+(f&&f.atualizado_em?' Última alteração: '+esc(quando(f.atualizado_em))+(f.atualizado_por?' por '+esc(f.atualizado_por):'')+'.':'')+'</p>'+
+    ficha+
     '<h4>Pagamento</h4><div class="grade"><label class="c larga">Empresa padrão (quando a regra ou o ajuste não diz qual paga)<select id="pEmp"'+(opera()?"":" disabled")+'><option value="">Nenhuma</option>'+
       (P.empresas||[]).map(function(e){ return '<option value="'+e.id+'"'+(d.empresa_id===e.id?" selected":"")+'>'+esc(e.nome)+' ('+pc(e.pct_imposto)+' de imposto)</option>'; }).join("")+'</select></label>'+
-    campo("pNome","Nome completo",d.nome_completo,"larga")+campo("pCpf","CPF ou CNPJ",d.cpf_cnpj)+campo("pTit","Titular da conta",d.titular)+
+    campo("pCpf","CPF ou CNPJ que recebe",d.cpf_cnpj)+campo("pTit","Titular da conta",d.titular)+
     campo("pPixT","Tipo da chave PIX",d.pix_tipo)+campo("pPix","Chave PIX",d.pix_chave,"larga")+campo("pBanco","Banco",d.banco)+campo("pAg","Agência",d.agencia)+campo("pConta","Conta",d.conta)+campo("pTipo","Tipo de conta",d.tipo_conta)+
     campo("pObs","Observação",d.observacao,"toda")+'</div>'+
     '<h4>Nomes nas planilhas <span class="sub">(um por linha: como o BTG, a administradora etc. escrevem o nome dele)</span></h4>'+
@@ -1239,13 +1255,15 @@ function formPessoa(){
 function numOuVazio(id){ var s=v(id).trim(); return s===""?"":String(lerValor(s)); }
 function salvarPessoa(){
   var uid=ED.uid; bloquear();
-  var pg={empresa_id:v("pEmp")||null,nome_completo:v("pNome"),cpf_cnpj:v("pCpf"),titular:v("pTit"),pix_tipo:v("pPixT"),pix_chave:v("pPix"),banco:v("pBanco"),agencia:v("pAg"),
+  var p=pessoa(uid)||{}, temFicha=!!(ED.ficha&&!ED.ficha.erro&&document.getElementById("fc_nome_completo")), ficha=temFicha?AWCadastro.ler("fc"):null;
+  var pg={empresa_id:v("pEmp")||null,nome_completo:(ficha&&ficha.nome_completo)||((p.pagto||{}).nome_completo)||"",cpf_cnpj:v("pCpf"),titular:v("pTit"),pix_tipo:v("pPixT"),pix_chave:v("pPix"),banco:v("pBanco"),agencia:v("pAg"),
     conta:v("pConta"),tipo_conta:v("pTipo"),observacao:v("pObs"),nomes_planilha:v("pNomes").split(/\r?\n/).map(function(x){ return x.trim(); }).filter(Boolean)};
   var ac={funcao:v("aFun"),salario:numOuVazio("aSal"),remuneracao_minima:numOuVazio("aMin"),bonificacao:numOuVazio("aBon"),luvas_ano:numOuVazio("aLuv"),anos_luvas:numOuVazio("aAnosL"),
     custo_fixo_pct:numOuVazio("aCusto"),tamanho_carteira:numOuVazio("aCart"),roa_liquido:numOuVazio("aRoa"),data_contratacao:v("aData"),segmento:v("aSeg"),senioridade:v("aSen"),
     conv_ano1:numOuVazio("aC1"),conv_ano2:numOuVazio("aC2"),conv_ano3:numOuVazio("aC3"),conv_ano4:numOuVazio("aC4"),
     com_ano1:numOuVazio("aK1"),com_ano2:numOuVazio("aK2"),com_ano3:numOuVazio("aK3"),com_ano4:numOuVazio("aK4"),obs:v("aObs")};
-  rpc("comissao_dados_pagto_salvar",{p_user:uid,p:pg}).then(function(){ return rpc("comissao_acordo_salvar",{p_user:uid,p:ac}); })
+  (ficha?rpc("equipe_cadastro_salvar",{p_email:String(p.email||"").toLowerCase(),p_dados:ficha}):Promise.resolve())
+    .then(function(){ return rpc("comissao_dados_pagto_salvar",{p_user:uid,p:pg}); }).then(function(){ return rpc("comissao_acordo_salvar",{p_user:uid,p:ac}); })
     .then(function(){ ED=null; MSG={texto:"Dados de "+nomeP(uid)+" salvos.",tipo:"ok"}; return carregar(); }).catch(falhou);
 }
 

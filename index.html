@@ -1182,6 +1182,7 @@ html[data-cor="noite"] .hb-cal-dia.on{background:#EEF2F8;color:#05132A}
 </main>
 
 <script src="comum/carteira.js"></script>
+<script src="comum/cadastro.js"></script>
 <script src="comum/barra.js"></script>
 <!-- 3.26: a planilha (xlsx) e o leitor de PDF (pdfjs) carregam só quando alguém importa ou
      exporta um arquivo (carregarXlsx / carregarPdfjs), não na abertura do Hub. -->
@@ -1240,6 +1241,10 @@ function hojeBR(){
 /* Antes de gravar, pega o token mais novo que outra aba (o CRM) possa ter gravado,
    para não sobrescrever um token novo com o velho da memória. */
 function persistirSessao(){ sessaoDeOutraAba(); try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){} }
+/* 3.36: o banco diz se ainda pede o código de 6 dígitos (estado_acesso.segundo_fator). Guardado
+   neste navegador só para a tela já abrir certa; quem decide é o banco. */
+var SEGUNDO_FATOR=(function(){ try{ return localStorage.getItem("aw_2f")!=="0"; }catch(e){ return true; } })();
+function lerSegundoFator(st){ if(st&&typeof st.segundo_fator==="boolean"){ SEGUNDO_FATOR=st.segundo_fator; try{ localStorage.setItem("aw_2f",SEGUNDO_FATOR?"1":"0"); }catch(e){} } }
 function sessaoLiberada(){ return !!(SESSAO&&SESSAO.access_token&&SESSAO.dia===hojeBR()); }
 function codigoPendente(){ return !!(SESSAO&&SESSAO.access_token&&SESSAO.dia!==hojeBR()&&SESSAO.login_dia===hojeBR()); }
 function novaSessaoPendente(){ if(!SESSAO) return; SESSAO.login_dia=hojeBR(); SESSAO.dia=null; persistirSessao(); }
@@ -1437,6 +1442,7 @@ function fecharSeguranca(){
    Segurança abre sozinha e só fecha depois de ligar. O código do e-mail continua valendo
    para todos (3.28, seguranca_328.sql): o app é um segundo caminho. */
 function conferirAppObrigatorio(){
+  if(!SEGUNDO_FATOR) return;
   api("rpc/app_obrigatorio",{method:"POST",body:{}}).then(function(r){
     if(r&&r.obrigatorio&&!r.ativo){ abrirSeguranca(true); }
   }).catch(function(){});
@@ -1468,11 +1474,15 @@ function segLinhas(lista,comNome){
 }
 function telaSeguranca(){
   var h='<h2>Segurança</h2>'+
-    (SEG.obrigatorio&&!(SEG.app&&SEG.app.ativo)?'<div class="note err" style="margin:0 0 12px"><b>Obrigatório para master e financeiro:</b> ligue o app autenticador agora. Leva 1 minuto. Depois disso, você pode entrar com o código do app no celular ou com o do e-mail, os dois valem.</div>':'')+
-    '<div class="mfa-status on">Verificação em duas etapas ativa</div>'+
-    '<p class="eqsub" style="margin-top:12px">Toda entrada no Hub pede, depois da senha, um código de 6 números: o do e-mail ou o do app autenticador. '+
-    'O acesso vale até a meia-noite: no dia seguinte, todo mundo entra de novo. Num computador lembrado, só a senha.</p>'+
-    blocoApp()+blocoAparelhos()+
+    (SEGUNDO_FATOR&&SEG.obrigatorio&&!(SEG.app&&SEG.app.ativo)?'<div class="note err" style="margin:0 0 12px"><b>Obrigatório para master e financeiro:</b> ligue o app autenticador agora. Leva 1 minuto. Depois disso, você pode entrar com o código do app no celular ou com o do e-mail, os dois valem.</div>':'')+
+    (SEGUNDO_FATOR?
+      '<div class="mfa-status on">Verificação em duas etapas ativa</div>'+
+      '<p class="eqsub" style="margin-top:12px">Toda entrada no Hub pede, depois da senha, um código de 6 números: o do e-mail ou o do app autenticador. '+
+      'O acesso vale até a meia-noite: no dia seguinte, todo mundo entra de novo. Num computador lembrado, só a senha.</p>'+
+      blocoApp()+blocoAparelhos()
+    : '<div class="mfa-status on">Acesso que vence todo dia</div>'+
+      '<p class="eqsub" style="margin-top:12px">Para entrar no Hub, e-mail e senha. O acesso vale até a meia-noite: no dia seguinte, todo mundo entra de novo com a senha. '+
+      'Sem uso por 30 minutos, o Hub também sai sozinho.</p>')+
     '<h3 class="seg-tit">Seus últimos acessos</h3>';
   if(SEG.meus===null) h+='<p class="eqsub err">Não foi possível carregar os acessos.'+(SEG.erro?' '+esc(SEG.erro):'')+'</p>';
   else h+=segLinhas(SEG.meus,false);
@@ -1654,7 +1664,7 @@ function pintarRegistro(){
   if(foco){ var b=document.getElementById("regBusca"); if(b){ b.focus(); b.setSelectionRange(b.value.length,b.value.length); } }
 }
 function sairDeTodos(){
-  if(!confirm("Sair do Hub em todos os aparelhos, inclusive neste? Você vai precisar entrar de novo, com senha e código.")) return;
+  if(!confirm("Sair do Hub em todos os aparelhos, inclusive neste? Você vai precisar entrar de novo"+(SEGUNDO_FATOR?", com senha e código.":" com a senha.")+"")) return;
   var tk=SESSAO&&SESSAO.access_token;
   api("rpc/registrar_saida_geral",{method:"POST",body:{}}).catch(function(){}).then(function(){
     return tk?fetch(SB_URL+"/auth/v1/logout?scope=global",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk}}).catch(function(){}):null;
@@ -1786,74 +1796,22 @@ function abrirPessoa(i){ var p=EQUIPE[i]; if(!p) return; PESSOA_ID=p.user_id; AB
 /* Dados de pagamento (Comissões, 2.97): CPF/CNPJ, PIX e conta para a transferência da comissão.
    Ficam em comissao_dados_pagto; o master e quem opera comissões leem e gravam (comissoes.sql). */
 var PAGTO={};
-function carregarPagto(uid,aviso){
-  if(!aviso) PAGTO[uid]={carregando:true};
-  api("rpc/comissao_dados_pagto_ler",{method:"POST",body:{p_user:uid}})
-    .then(function(d){ PAGTO[uid]=d||{}; if(PESSOA_ID===uid&&ABA_EQ==="pessoa"){ pintarEquipe(); if(aviso) msgEq(aviso); } })
-    .catch(function(e){ PAGTO[uid]={erro:String(e.message||e)}; if(PESSOA_ID===uid&&ABA_EQ==="pessoa") pintarEquipe(); });
-}
-function blocoPagto(uid){
-  var d=PAGTO[uid];
-  var h='<h3 class="eqtit">Dados para pagamento da comissão</h3>';
-  if(!d||d.carregando) return h+'<p class="eqsub">Carregando…</p>';
-  if(d.erro) return h+'<p class="eqsub">'+(/comissao_dados_pagto/.test(d.erro)?"Ainda não instalado no Supabase (comissoes.sql).":esc(d.erro))+'</p>';
-  var cp=function(id,rot,val,ph){ return '<div class="eqc"><label for="'+id+'">'+rot+'</label><input id="'+id+'" maxlength="160" value="'+esc(val||"")+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+'></div>'; };
-  var sel=function(id,rot,val,ops){ return '<div class="eqc"><label for="'+id+'">'+rot+'</label><select id="'+id+'">'+ops.map(function(o){ return '<option'+(val===o?" selected":"")+'>'+o+'</option>'; }).join("")+'</select></div>'; };
-  return h+'<p class="eqsub">Usados pelo Financeiro para transferir a comissão. Só o master e o Financeiro veem.</p><div class="eqform">'+
-    cp("pgNome","Nome completo",d.nome_completo)+cp("pgDoc","CPF ou CNPJ",d.cpf_cnpj)+
-    sel("pgPixT","Tipo de PIX",d.pix_tipo||"",["","CPF","CNPJ","E-mail","Celular","Aleatória"])+cp("pgPix","Chave PIX",d.pix_chave)+
-    cp("pgBanco","Banco",d.banco)+cp("pgAg","Agência",d.agencia)+cp("pgConta","Conta",d.conta)+
-    sel("pgTipoC","Tipo de conta",d.tipo_conta||"",["","Corrente","Poupança","Pagamento"])+
-    cp("pgTit","Titular da conta",d.titular,"se for outra pessoa ou a empresa")+cp("pgObs","Observação",d.observacao)+
-    '<button class="btn pri eqconvidar" onclick="salvarPagto()">Salvar dados de pagamento</button></div>';
-}
-function salvarPagto(){
-  var uid=PESSOA_ID, g=function(id){ var e=document.getElementById(id); return e?e.value:""; };
-  msgEq("Salvando…");
-  api("rpc/comissao_dados_pagto_salvar",{method:"POST",body:{p_user:uid,p:{nome_completo:g("pgNome"),cpf_cnpj:g("pgDoc"),pix_tipo:g("pgPixT"),pix_chave:g("pgPix"),
-    banco:g("pgBanco"),agencia:g("pgAg"),conta:g("pgConta"),tipo_conta:g("pgTipoC"),titular:g("pgTit"),observacao:g("pgObs")}}})
-    .then(function(){ carregarPagto(uid,"Dados de pagamento salvos."); })
-    .catch(function(e){ msgEq(String(e.message||e),true); });
+function carregarPagto(uid,silencioso){
+  if(!silencioso) PAGTO[uid]={carregando:true};
+  return api("rpc/comissao_dados_pagto_ler",{method:"POST",body:{p_user:uid}})
+    .then(function(d){ PAGTO[uid]=d||{}; },function(e){ PAGTO[uid]={erro:String(e.message||e)}; })
+    .then(function(){ if(!silencioso&&PESSOA_ID===uid&&ABA_EQ==="pessoa") pintarEquipe(); });
 }
 /* ---------- Ficha de cadastro da pessoa (3.35, equipe_cadastro.sql) ----------
    Dados pessoais, vínculo, certificações e contato de emergência. Guardada pelo e-mail, para poder ser
    preenchida já no convite. Só o master e o Financeiro leem e gravam; a auditoria registra quais campos
    mudaram, nunca os valores. As validades das certificações viram aviso na Agenda (gatilho Certificação). */
-var CAD_GRUPOS=[
-  ["Dados pessoais",[["nome_completo","Nome completo"],["cpf","CPF"],["rg","RG e órgão emissor"],["nascimento","Data de nascimento","date"],
-    ["estado_civil","Estado civil","sel",["","Solteiro(a)","Casado(a)","União estável","Divorciado(a)","Viúvo(a)"]],
-    ["celular","Celular"],["email_pessoal","E-mail pessoal","email"]]],
-  ["Endereço",[["cep","CEP"],["endereco","Rua e número"],["complemento","Complemento"],["bairro","Bairro"],["cidade","Cidade"],["uf","UF"]]],
-  ["Vínculo com a Adami",[["cargo","Cargo ou função"],["area","Área","sel",["","Comercial","Wealth Planning","Especialista de produto","Mesa RV","Financeiro","Operações","Marketing","Diretoria"]],
-    ["vinculo","Tipo de vínculo","sel",["","Sócio(a)","Assessor(a) PJ","CLT","Estágio","Outro"]],["admissao","Data de entrada","date"],
-    ["empresa_pj","Razão social da PJ (se houver)"],["cnpj_pj","CNPJ da PJ"],["gestor","Gestor direto"],
-    ["cod_btg","Código de assessor no BTG"],["registro_ancord","Registro Ancord / CVM"]]],
-  ["Contato de emergência",[["emerg_nome","Nome"],["emerg_parentesco","Parentesco"],["emerg_telefone","Telefone"]]],
-  ["Observações",[["obs","Observações","area"]]]
-];
-var CAD_CERTS=["CPA-10","CPA-20","CEA","CFP","Ancord","CNPI","CGA"];
+/* 3.36: os campos vêm de comum/cadastro.js (o mesmo usado em Comissões > Pessoas e acordos). */
 var CADASTRO={};
-function formCadastro(px,d){
-  d=d||{}; var certs=d.certificacoes||{};
-  var campo=function(c){
-    var id=px+"_"+c[0], v=d[c[0]]==null?"":String(d[c[0]]), tipo=c[2]||"text";
-    var inp= tipo==="sel" ? '<select id="'+id+'">'+c[3].map(function(o){ return '<option'+(v===o?" selected":"")+'>'+esc(o)+'</option>'; }).join("")+'</select>'
-      : tipo==="area" ? '<textarea id="'+id+'" maxlength="2000" rows="3">'+esc(v)+'</textarea>'
-      : '<input id="'+id+'" type="'+tipo+'" maxlength="160" value="'+esc(v)+'">';
-    return '<div class="eqc'+(tipo==="area"?" cad-largo":"")+'"><label for="'+id+'">'+esc(c[1])+'</label>'+inp+'</div>';
-  };
-  return CAD_GRUPOS.map(function(g){ return '<div class="cad-grupo">'+esc(g[0])+'</div>'+g[1].map(campo).join(""); }).join("")+
-    '<div class="cad-grupo">Certificações (deixe em branco a que a pessoa não tem)</div>'+
-    CAD_CERTS.map(function(c,i){ var id=px+"_cert_"+i;
-      return '<div class="eqc"><label for="'+id+'">'+esc(c)+': válida até</label><input id="'+id+'" type="date" value="'+esc(certs[c]||"")+'"></div>'; }).join("");
-}
-function lerCadastro(px){
-  var d={}, certs={};
-  CAD_GRUPOS.forEach(function(g){ g[1].forEach(function(c){ var e=document.getElementById(px+"_"+c[0]); var v=e?String(e.value||"").trim():""; if(v) d[c[0]]=v; }); });
-  CAD_CERTS.forEach(function(c,i){ var e=document.getElementById(px+"_cert_"+i); if(e&&/^\d{4}-\d{2}-\d{2}$/.test(e.value)) certs[c]=e.value; });
-  if(Object.keys(certs).length) d.certificacoes=certs;
-  return d;
-}
+var CAD_ESTILO={campo:function(rot,id,inp,largo){ return '<div class="eqc'+(largo?" cad-largo":"")+'"><label for="'+id+'">'+esc(rot)+'</label>'+inp+'</div>'; },
+  grupo:function(t,campos){ return '<div class="cad-grupo">'+esc(t)+'</div>'+campos; }};
+function formCadastro(px,d,pagto){ return AWCadastro.form(px,d,{campo:CAD_ESTILO.campo,grupo:CAD_ESTILO.grupo,pagto:pagto||null}); }
+function lerCadastro(px){ return AWCadastro.ler(px); }
 function carregarCadastro(email,aviso){
   var k=String(email||"").toLowerCase();
   if(!aviso) CADASTRO[k]={carregando:true};
@@ -1862,21 +1820,29 @@ function carregarCadastro(email,aviso){
     .catch(function(e){ CADASTRO[k]={erro:String(e.message||e)}; })
     .then(function(){ if(ABA_EQ==="pessoa"||ABA_EQ==="convidar"){ pintarEquipe(); if(aviso) msgEq(aviso); } });
 }
-function blocoCadastro(email){
-  var k=String(email||"").toLowerCase(), c=CADASTRO[k];
+/* Ficha única: cadastro (equipe_cadastro) e, para quem já tem conta (uid), o pagamento da comissão
+   (comissao_dados_pagto). Um botão salva os dois. Convite sem conta: só o cadastro. */
+function blocoCadastro(email,uid){
+  var k=String(email||"").toLowerCase(), c=CADASTRO[k], pg=uid?PAGTO[uid]:null;
   var h='<h3 class="eqtit">Ficha de cadastro</h3>';
-  if(!c||c.carregando) return h+'<p class="eqsub">Carregando…</p>';
+  if(!c||c.carregando||(pg&&pg.carregando)) return h+'<p class="eqsub">Carregando…</p>';
   if(c.erro) return h+'<p class="eqsub">'+(/equipe_cadastro/.test(c.erro)?"Ainda não instalada no Supabase (equipe_cadastro.sql).":esc(c.erro))+'</p>';
-  return h+'<p class="eqsub">Dados pessoais, vínculo e certificações. Só o master e o Financeiro preenchem. As validades das certificações viram aviso na Agenda da pessoa quando o gatilho "Certificação vencendo" está ligado.'+
-    (c.atualizado_em?' Última alteração: '+esc(quandoCurto(c.atualizado_em))+(c.atualizado_por?' por '+esc(c.atualizado_por):'')+'.':'')+'</p>'+
-    '<div class="eqform cad-form">'+formCadastro("cad",c.dados)+
+  var pagto=uid&&pg&&!pg.erro?pg:null;
+  return h+'<p class="eqsub">Dados pessoais, vínculo, pagamento e certificações, a mesma ficha que o Financeiro vê em Comissões &gt; Pessoas e acordos. Só o master e o Financeiro preenchem. As validades das certificações viram aviso na Agenda da pessoa quando o gatilho "Certificação vencendo" está ligado.'+
+    (c.atualizado_em?' Última alteração: '+esc(quandoCurto(c.atualizado_em))+(c.atualizado_por?' por '+esc(c.atualizado_por):'')+'.':'')+
+    (uid?'':' Os dados de pagamento entram depois do primeiro acesso.')+'</p>'+
+    (uid&&pg&&pg.erro?'<p class="eqsub">Pagamento: '+(/comissao_dados_pagto/.test(pg.erro)?"ainda não instalado no Supabase (comissoes.sql).":esc(pg.erro))+'</p>':'')+
+    '<div class="eqform cad-form">'+formCadastro("cad",c.dados,pagto)+
     '<button class="btn pri eqconvidar" onclick="salvarCadastro('+jsStr(k)+')">Salvar ficha de cadastro</button></div>';
 }
-function salvarCadastro(email,px,depois){
-  var dados=lerCadastro(px||"cad");
+function salvarCadastro(email){
+  var dados=lerCadastro("cad"), p=pessoaAtual(), uid=ABA_EQ==="pessoa"&&p&&String(p.email||"").toLowerCase()===email?p.user_id:null;
+  var pg=uid?AWCadastro.lerPagto("cad",dados.nome_completo||((PAGTO[uid]||{}).nome_completo)||""):null;
   msgEq("Salvando a ficha…");
   return api("rpc/equipe_cadastro_salvar",{method:"POST",body:{p_email:email,p_dados:dados}})
-    .then(function(){ if(depois) return depois(); return carregarCadastro(email,"Ficha de cadastro salva."); })
+    .then(function(){ if(pg) return api("rpc/comissao_dados_pagto_salvar",{method:"POST",body:{p_user:uid,p:pg}}); })
+    .then(function(){ return uid?carregarPagto(uid,true):null; })
+    .then(function(){ return carregarCadastro(email,"Ficha de cadastro salva."); })
     .catch(function(e){ msgEq(String(e.message||e),true); });
 }
 /* Completar a ficha de quem ainda não fez o primeiro acesso (lista de convites). */
@@ -1902,12 +1868,12 @@ function blocoPessoa(){
     '<div class="eqform">'+
       '<div class="eqc"><label for="pNome">Nome</label><input id="pNome" maxlength="80" value="'+esc(p.nome||"")+'"></div>'+
       '<div class="eqc"><label for="pEmail">E-mail de acesso</label><input id="pEmail" type="email" maxlength="200" value="'+esc(p.email||"")+'"></div>'+
-      '<p class="eqsub eqform-nota">Trocar o e-mail troca o login da pessoa, e o código de acesso passa a chegar no e-mail novo. Avise a pessoa antes.</p>'+
+      '<p class="eqsub eqform-nota">Trocar o e-mail troca o login da pessoa: ela passa a entrar com o e-mail novo. Avise a pessoa antes.</p>'+
       '<button class="btn pri eqconvidar" onclick="salvarPessoa()">Salvar alterações</button>'+
     '</div>'+
-    '<h3 class="eqtit">App autenticador</h3>'+
+    (SEGUNDO_FATOR?'<h3 class="eqtit">App autenticador</h3>'+
     '<p class="eqsub">Perdeu ou trocou de celular? Zere o app: a pessoa continua entrando pelo código do e-mail e liga o app de novo em Segurança.</p>'+
-    '<button class="eqbt" onclick="zerarAppPessoa()">Zerar app autenticador</button>'+
+    '<button class="eqbt" onclick="zerarAppPessoa()">Zerar app autenticador</button>':'')+
     '<h3 class="eqtit">Acesso</h3>';
   if(p.revogado){
     h+='<p class="eqsub">O acesso está bloqueado: a pessoa não consegue entrar no Hub nem no CRM. Os clientes e o histórico continuam como estavam.</p>'+
@@ -1916,8 +1882,7 @@ function blocoPessoa(){
     h+='<p class="eqsub">Revogar bloqueia o login na hora, derruba a sessão aberta e tira a pessoa do CRM. Os clientes e o histórico continuam. Dá para reativar depois.</p>'+
        (eu?'<p class="eqsub">Você não pode revogar o seu próprio acesso.</p>':'<button class="eqbt perigo" onclick="revogarPessoa()">Revogar acesso</button>');
   }
-  h+=blocoCadastro(p.email);
-  h+=blocoPagto(p.user_id);
+  h+=blocoCadastro(p.email,p.user_id);
   h+='<h3 class="eqtit">Excluir da equipe</h3>';
   if(eu) h+='<p class="eqsub">Você não pode excluir a si mesmo.</p>';
   else if(temClientes) h+='<p class="eqsub">Para excluir, transfira antes '+(p.qtd_leads||0)+' cliente(s) do CRM e '+(p.qtd_carteiras||0)+
@@ -1953,7 +1918,7 @@ function reativarPessoa(){
   var p=pessoaAtual(); if(!p) return;
   msgEq("Reativando…");
   api("rpc/equipe_reativar",{method:"POST",body:{p_user_id:p.user_id}})
-    .then(function(){ return recarregarEquipe("Acesso reativado. A pessoa entra com a mesma senha e o código do e-mail."); })
+    .then(function(){ return recarregarEquipe("Acesso reativado. A pessoa entra com a mesma senha."); })
     .catch(function(e){ msgEq(String(e.message||e),true); });
 }
 function excluirPessoa(){
@@ -2228,7 +2193,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.35";
+var VERSAO="versão 3.36";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -6780,7 +6745,7 @@ function hbGravar(k,v){ try{ if(v===null) localStorage.removeItem(k); else local
 function hbChecklistItens(naoLidos){
   var c=INICIO.check; if(!c) return null;
   var crm=podeFerramenta("crm"), it=[];
-  it.push({feito:!!c.app,titulo:"Ligue o app autenticador",texto:"Você entra mesmo quando o e-mail atrasar e pode marcar este computador para não pedir o código por 7 dias.",botao:"Ligar agora",acao:"abrirSeguranca()"});
+  if(SEGUNDO_FATOR) it.push({feito:!!c.app,titulo:"Ligue o app autenticador",texto:"Você entra mesmo quando o e-mail atrasar e pode marcar este computador para não pedir o código por 7 dias.",botao:"Ligar agora",acao:"abrirSeguranca()"});
   /* 3.35: a Agenda do CRM é o ponto de partida do dia do assessor. */
   if(crm) it.push({feito:!!c.agenda,titulo:"Abra a Agenda e conclua a primeira tarefa do dia",texto:"A Agenda do CRM monta a sua missão do dia: compromissos, clientes para ligar e avisos da carteira do BTG. Fez, marque o círculo.",botao:"Abrir a Agenda",acao:"location.href='crm.html#agenda'"});
   if(crm&&c.outlook_ligado) it.push({feito:!!c.outlook_meu,titulo:"Confira suas reuniões do Outlook na Agenda",
@@ -6823,7 +6788,7 @@ function hbComoInstalar(){
     '<p class="eqsub">Abra <b>adamicaptal.com.br/hub</b> no navegador do celular e entre com o seu e-mail e senha. Depois:</p>'+
     '<h3 class="eqtit">iPhone (Safari)</h3><ol class="eqsub"><li>Toque no botão de compartilhar (o quadrado com a seta para cima).</li><li>Role e toque em <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>.</li></ol>'+
     '<h3 class="eqtit">Android (Chrome)</h3><ol class="eqsub"><li>Toque nos três pontinhos, no canto de cima.</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme.</li></ol>'+
-    '<p class="eqsub">Pronto: o ícone do Hub Adami aparece junto com os outros aplicativos. O código de acesso continua valendo como no computador.</p>'+
+    '<p class="eqsub">Pronto: o ícone do Hub Adami aparece junto com os outros aplicativos. Você entra com o mesmo e-mail e senha do computador.</p>'+
     '<button class="btn pri eqconvidar" onclick="document.getElementById(\'celv\').style.display=\'none\';render(true)">Entendi</button></div>';
   v.style.display="flex";
 }
@@ -7335,19 +7300,35 @@ function abrirLinkDireto(){
    confere o código (verificar_codigo). Sem o seguranca.sql instalado, entra como
    antes: o banco ainda não exige nada. */
 function segundaEtapa(){
-  CODIGO_ESTADO="enviando"; mostrarCodigo(null);
   return api("rpc/estado_acesso",{method:"POST",body:{}}).then(function(st){
+    lerSegundoFator(st);
     if(st&&st.liberado){ marcarLiberado(); return prosseguirLogin(); }
-    return entrarPeloAparelho().then(function(ok){
-      if(ok){ marcarLiberado(); return prosseguirLogin(); }
-      return enviarCodigo();
-    });
+    /* 3.36: sem o segundo fator (acesso_config.segundo_fator = false), a senha de hoje basta.
+       O banco só libera se o login foi criado hoje (liberar_sessao_do_dia, seguranca_335.sql). */
+    if(st&&st.segundo_fator===false){
+      return api("rpc/liberar_sessao_do_dia",{method:"POST",body:{}}).then(function(r){
+        if(r&&r.ok){ marcarLiberado(); return prosseguirLogin(); }
+        if(r&&r.codigo) return fluxoCodigo();
+        encerrarPorVirada();
+      },function(){ return fluxoCodigo(); });
+    }
+    return fluxoCodigo();
   },function(err){
     if(/PGRST202|estado_acesso|could not find the function/i.test(String(err&&err.message))){
       marcarLiberado(); return prosseguirLogin();
     }
     if(!SESSAO){ render(); return; }
     CODIGO_ESTADO=""; mostrarCodigo("Não foi possível falar com o servidor. Tente de novo em instantes.","erro");
+  });
+}
+/* O caminho com código (e-mail ou app), usado quando o segundo fator está ligado. */
+function fluxoCodigo(){
+  CODIGO_ESTADO="enviando"; mostrarCodigo(null);
+  return Promise.resolve().then(function(){
+    return entrarPeloAparelho().then(function(ok){
+      if(ok){ marcarLiberado(); return prosseguirLogin(); }
+      return enviarCodigo();
+    });
   });
 }
 /* ---------- Aparelho lembrado (3.10) ----------
@@ -7443,7 +7424,7 @@ function encerrarPorVirada(){
   db={clientes:[],dados:{},cartas:{}}; S.cliente=null; S.rasc=null; S.app=null;
   MODO_LOGIN="entrar";
   render();
-  document.getElementById("view").innerHTML=viewLogin("Por segurança, o acesso ao Hub vale até a meia-noite. Entre de novo com e-mail, senha e o código do e-mail.",true);
+  document.getElementById("view").innerHTML=viewLogin("Por segurança, o acesso ao Hub vale até a meia-noite. Entre de novo com e-mail e senha"+(SEGUNDO_FATOR?" e o código do e-mail.":".")+"",true);
 }
 setInterval(function(){ if(SESSAO&&SESSAO.dia&&SESSAO.dia!==hojeBR()) encerrarPorVirada(); },60000);
 document.addEventListener("visibilitychange",function(){
@@ -7552,6 +7533,7 @@ if(TOKEN_RECUPERACAO){
   /* Confere no banco se esta sessão confirmou o código hoje. Quem entrou antes de a
      verificação ser ligada (ou teve a liberação apagada) vai para a tela do código. */
   api("rpc/estado_acesso",{method:"POST",body:{}}).then(function(st){
+    lerSegundoFator(st);
     if(st&&st.exige&&!st.liberado&&SESSAO){ SESSAO.dia=null; SESSAO.login_dia=hojeBR(); persistirSessao(); segundaEtapa(); }
   }).catch(function(){});
   carregar().then(function(){

@@ -36,13 +36,13 @@
   }
   /* Ajuda de cada tela. "pag" é a página do capítulo no PDF do manual. */
   var AJUDA = {
-    inicio: { nome: "Tela inicial", pag: 10, itens: [
+    inicio: { nome: "Tela inicial", pag: 9, itens: [
       "Os números do alto são os mesmos do Dashboard do CRM. Clique para abrir o CRM.",
       "Hoje mostra as tarefas da Agenda do CRM. Clique num dia do calendário para ver o que há nele.",
       "Avisos da casa: abra e clique em Marcar como lido.",
-      "Segurança (menu da esquerda): ligue o app autenticador para não depender do e-mail. Para master e financeiro, ele é obrigatório.",
+      "Segurança (menu da esquerda): seus últimos acessos e o botão Sair de todos os aparelhos. O acesso vale até a meia-noite.",
       "Depois de 30 minutos sem uso, o Hub sai sozinho. Num computador lembrado, para voltar basta a senha."] },
-    carteiras: { nome: "Carteiras", pag: 23, itens: [
+    carteiras: { nome: "Carteiras", pag: 22, itens: [
       "Escolha o cliente à esquerda e o mês no alto (setas ou calendário). Ponto verde: mês feito; amarelo: falta marcar.",
       "Preencher: arraste o Relatório de Performance do BTG (PDF) na área do alto. Ele preenche a conta do BTG, todos os ativos com a rentabilidade, os índices e os próximos vencimentos.",
       "A Conferência mostra o que não bate. Clique no nome para ir direto ao ativo; marque Conferido no que já viu. Com tudo certo, Salvar e marcar como feito.",
@@ -51,49 +51,49 @@
       "Enviar ao cliente (no Relatório): manda o PDF por e-mail, só com o mês marcado como feito. O e-mail do cliente fica no Preencher.",
       "PDF de todos faz os relatórios do mês de todos os seus clientes, um arquivo por cliente.",
       "Os números vêm do lançamento do mês, feito pela administração na aba Preencher."] },
-    crm: { nome: "CRM", pag: 14, itens: [
+    crm: { nome: "CRM", pag: 13, itens: [
       "Toda conversa com cliente vira uma atividade na ficha, e todo cliente em jornada tem um próximo contato.",
       "Na ficha, Ferramentas para este cliente abre o Wealth Planning, a Liberdade Financeira e o relatório já preenchidos.",
       "Arraste o cartão para a próxima etapa quando a reunião acontecer.",
       "Agenda: a missão do dia. Compromissos em cima (inclusive o Outlook), tarefas embaixo. Fez, marque o círculo."] },
-    processo: { nome: "Processo Comercial", pag: 21, itens: [
+    processo: { nome: "Processo Comercial", pag: 20, itens: [
       "Segmentos: Advisory até R$ 1 mi, Exclusive de R$ 1 a 5 mi, Private acima de R$ 5 mi.",
       "Trilha do cliente novo: R1 Descoberta, R2 Proposta, R2.1 Consolidação, R3 Liberdade Financeira, R4 Produto.",
       "Cliente da base começa na R2 (Entrada)."] },
-    diagnostico: { nome: "Wealth Planning", pag: 28, itens: [
+    diagnostico: { nome: "Wealth Planning", pag: 27, itens: [
       "Preencha à esquerda; o relatório se monta sozinho à direita.",
       "Aberto pela ficha do CRM, nome, idade e patrimônio já vêm preenchidos. Confira.",
       "Salvar no CRM grava o PDF na ficha do cliente.",
       "As projeções são estimativas em valores de hoje e não garantem resultado."] },
-    patrimonial: { nome: "Planos Patrimoniais", pag: 32, itens: [
+    patrimonial: { nome: "Planos Patrimoniais", pag: 31, itens: [
       "Preencha as seções à esquerda e confira o quadro Consistência.",
       "Plano Patrimonial e Análise de Enquadramento saem em Word.",
       "Salvar JSON guarda o preenchimento para continuar depois."] },
-    imobiliario: { nome: "Relatório Imobiliário", pag: 34, itens: [
+    imobiliario: { nome: "Relatório Imobiliário", pag: 33, itens: [
       "Cliente, Imóveis, Projetos e Histórico, nessa ordem; o que falta aparece em vermelho.",
       "Muitos imóveis: Baixar modelo, preencher a planilha e Importar planilha.",
       "Gerar PPTX cria a apresentação. Salvar projeto guarda para o mês seguinte."] },
-    alocacao: { nome: "Política de Alocação", pag: 35, itens: [
+    alocacao: { nome: "Política de Alocação", pag: 34, itens: [
       "Material do comitê do mês. Escolha o mês e use Baixar PDF.",
       "Leia as Alterações no mês: é o que muda na conversa com os clientes."] },
-    rv: { nome: "Mesa RV", pag: 36, itens: [
+    rv: { nome: "Mesa RV", pag: 35, itens: [
       "Escolha o tipo de operação, preencha os campos e confira a prévia do card.",
       "Baixar imagem para o grupo ou Copiar imagem para colar no WhatsApp.",
       "Registrar e encerrar no histórico é com a Mesa RV."] },
-    boletas: { nome: "Controle de Boletas", pag: 37, itens: [
+    boletas: { nome: "Controle de Boletas", pag: 36, itens: [
       "Informe o cliente e o valor disponível; cada ativo boletado atualiza o quanto falta alocar.",
       "Copiar resumo para mandar à mesa. Salvar no CRM grava o PDF na ficha."] },
-    liberdade: { nome: "Liberdade Financeira", pag: 38, itens: [
+    liberdade: { nome: "Liberdade Financeira", pag: 37, itens: [
       "Tudo em valores reais, já descontada a inflação.",
       "Aberta pela ficha do CRM, nome, idade e patrimônio já vêm preenchidos.",
       "Salvar no CRM grava a simulação em PDF na ficha do cliente."] },
-    agio: { nome: "Ágio e Troca de Ativos", pag: 38, itens: [
+    agio: { nome: "Ágio e Troca de Ativos", pag: 37, itens: [
       "Ativo atual: valor na curva e taxa. Ativo novo: valor que será aplicado e a taxa nova.",
       "O resultado mostra em quantos meses a taxa nova compensa o deságio."] },
-    simulador: { nome: "Simulador de Receita RV", pag: 38, itens: [
+    simulador: { nome: "Simulador de Receita RV", pag: 37, itens: [
       "Para swing trade e estruturadas: clientes, volume por cliente, ordens e ROA.",
       "Os cartões do alto mostram a receita do escritório, a sua e quanto da meta está coberto."] },
-    "minha-comissao": { nome: "Minha comissão", pag: 41, itens: [
+    "minha-comissao": { nome: "Minha comissão", pag: 40, itens: [
       "Aparece depois que o Financeiro fecha e libera o mês.",
       "Por categoria ou por cliente; clique numa linha para ver o detalhe.",
       "Dúvida em algum valor: anote cliente, conta e produto e fale com o Financeiro."] },

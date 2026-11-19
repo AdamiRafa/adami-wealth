@@ -58,7 +58,7 @@ create or replace function public.equipe_cadastro_salvar(p_email text, p_dados j
 returns boolean language plpgsql security definer set search_path = public as $$
 declare v_email text := lower(btrim(coalesce(p_email, ''))); v_uid uuid; v_antes jsonb; v_mudou text;
 begin
-  if not public.equipe_cadastro_pode() then raise exception 'Só o master e o Financeiro editam a ficha de cadastro.'; end if;
+  if not (public.acesso_liberado() and (public.eh_super() or public.com_pode_operar())) then raise exception 'Só o master e o Financeiro editam a ficha de cadastro.'; end if;
   if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'E-mail inválido.'; end if;
   if p_dados is null or jsonb_typeof(p_dados) <> 'object' then raise exception 'Ficha inválida.'; end if;
   if length(p_dados::text) > 30000 then raise exception 'Ficha grande demais.'; end if;

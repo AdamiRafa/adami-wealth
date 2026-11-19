@@ -140,8 +140,10 @@ execução e fica registrado no histórico.
   escrita; ver `DOCUMENTACAO.md` seção 5.
 - **Filtrar no navegador não é segurança.** Restrição de acesso se resolve no banco, com
   política.
-- **Verificação em duas etapas por e-mail ou app autenticador (2.91 e 3.01) e acesso que vence à meia-noite (seção 22).**
-  Com o app ligado, o aparelho pode ser lembrado por 7 dias (3.10, seção 26): só o código é dispensado, a senha não.
+- **Acesso que vence à meia-noite (seção 22).** Desde a 3.36 (19/11/2026, pedido do Emil) a verificação em duas etapas
+  está **desligada** (`acesso_config.segundo_fator = false`, `seguranca_335.sql`): entra-se com e-mail e senha, e
+  `liberar_sessao_do_dia()` só libera login criado hoje. Código, app e aparelho lembrado continuam instalados, sem uso;
+  religar é `update public.acesso_config set segundo_fator = true`. Não religue sem o Emil pedir.
   Toda tabela com RLS tem a política restritiva `exige_verificacao`; tabela nova também precisa
   ter. Função nova que devolve ou grava dado checa `acesso_liberado()` (as funções de permissão
   já checam) e nunca fica executável para `anon`: o Supabase dá EXECUTE ao `anon` por padrão,

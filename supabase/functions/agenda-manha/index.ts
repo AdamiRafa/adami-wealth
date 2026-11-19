@@ -281,6 +281,13 @@ const AG: Record<string, Cat> = {
 const ROTINA_COMPROMISSO: Record<string, boolean> = { rot_reuniao_semanal: true, rot_comite: true };
 const PRIO_ORIGEM: Record<string, number> = { "Atribuída": 88, "Vencimento": 86, "Tarefa": 78, "Próximo contato": 74, "Régua": 50 };
 const SLA_DIAS: Record<string, number> = { "R1": 3, "R2": 7, "R2.1": 7, "R3": 7 };
+// Prazo da etapa, proposta e negócio parado só para quem mudou de etapa a partir daqui (crm.html, agMoveuNoPipe):
+// os clientes da base nasceram na R2 e não são proposta sem retorno.
+const CORTE_PROCESSO = Date.parse("2026-11-19T12:00:00Z");
+const moveuNoPipe = (l: Lead) => {
+  const t = l.etapa_desde ? Date.parse(l.etapa_desde) : 0, c = l.criado_em ? Date.parse(l.criado_em) : 0;
+  return !!t && t >= CORTE_PROCESSO && (!c || t - c > 60000);
+};
 const ROTULO_GRUPO: Record<string, string> = { carteira: "Carteira", processo: "Processo", especialista: "Especialista", rotina: "Rotina", capacitacao: "Capacitação" };
 
 function gatOn(gat: Gat, k: string): Record<string, unknown> | null {
@@ -363,10 +370,11 @@ function itensGatilhos(donoId: string, leads: Lead[], ex: Extra, hoje: string, a
     const diasEtapa = diasEntre(naEtapa, hoje), semContato = diasEntre(ultimo || naEtapa, hoje);
     const ganho = l.ganho && l.ganho_em ? isoBrasiliaDeTimestamp(l.ganho_em) ?? "" : "";
     if (pNovo && l.etapa === "Cliente Novo" && (l.esteira || "novo") !== "base" && !ultimo && soma(criado, Number(pNovo.dias) || 0) <= hoje) { add("crm_lead_novo", "Primeiro contato com o lead", l); continue; }
-    if (pProp && !ganho && l.etapa === "R2" && diasEtapa >= nnum(pProp.dias, 5) && semContato >= nnum(pProp.dias, 5)) { add("crm_proposta", "Follow-up da proposta (sem retorno há " + semContato + " dias)", l); continue; }
+    const moveu = moveuNoPipe(l);
+    if (pProp && !ganho && moveu && l.etapa === "R2" && diasEtapa >= nnum(pProp.dias, 5) && semContato >= nnum(pProp.dias, 5)) { add("crm_proposta", "Follow-up da proposta (sem retorno há " + semContato + " dias)", l); continue; }
     const sla = SLA_DIAS[l.etapa ?? ""];
-    if (pSla && !ganho && sla && diasEtapa > sla && semContato >= sla) { add("crm_sla", l.etapa + " há " + diasEtapa + " dias: marcar a próxima reunião", l); continue; }
-    const emAndamento = ["R1", "R2", "R2.1", "R3", "R4"].includes(l.etapa ?? "") || ((l.esteira || "novo") === "base" && valorNum(l.valor_em_captacao) > 0);
+    if (pSla && !ganho && moveu && sla && diasEtapa > sla && semContato >= sla) { add("crm_sla", l.etapa + " há " + diasEtapa + " dias: marcar a próxima reunião", l); continue; }
+    const emAndamento = (moveu && ["R1", "R2", "R2.1", "R3", "R4"].includes(l.etapa ?? "")) || ((l.esteira || "novo") === "base" && valorNum(l.valor_em_captacao) > 0);
     if (pParado && !ganho && emAndamento && semContato >= nnum(pParado.dias, 15)) { add("crm_parado", "Negócio parado há " + semContato + " dias", l); continue; }
     if (pBoas && ganho) {
       let feito = false;

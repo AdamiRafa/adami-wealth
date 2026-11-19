@@ -5189,6 +5189,13 @@ function identificarExport(linhas){
 
 /* SLA entre etapas, em dias, conforme o processo comercial. */
 const SLA_DIAS = { 'R1':3, 'R2':7, 'R2.1':7, 'R3':7 };
+/* Agenda (CRM 2026.11.19.8): os gatilhos de etapa só olham movimentações a partir daqui. Mesmo corte em
+   supabase/functions/agenda-manha (CORTE_PROCESSO). */
+const AG_CORTE_PROCESSO = Date.parse('2026-11-19T12:00:00Z');
+function agMoveuNoPipe(l){
+  const t = l.etapaDesde;
+  return !!t && t >= AG_CORTE_PROCESSO && (!l.criadoEm || t - l.criadoEm > 60000);
+}
 
 /* O funil importa: 'R1' se chama "Apresentação institucional" na Jornada e
    continua sendo só "R1" no funil de produto. Sem ele, a busca acha sempre a
@@ -11948,12 +11955,12 @@ const AG_GATILHOS = [
     desc:'Prospect cadastrado sem nenhum contato registrado.',
     campos:[{ k:'dias', rot:'Prazo depois do cadastro (dias)', tipo:'numero' }] },
   { k:'crm_sla', grupo:'processo', nome:'Prazo da etapa vencido', prio:68, ligado:true, padrao:{},
-    desc:'Cliente parado na R1, R2, R2.1 ou R3 além do prazo do processo (3, 7, 7 e 7 dias) e sem contato nesse tempo.', campos:[] },
+    desc:'Cliente parado na R1, R2, R2.1 ou R3 além do prazo do processo (3, 7, 7 e 7 dias) e sem contato nesse tempo. Só para quem mudou de etapa a partir de 19/11/2026.', campos:[] },
   { k:'crm_proposta', grupo:'processo', nome:'Proposta sem retorno', prio:70, ligado:true, padrao:{ dias:5 },
-    desc:'Cliente na R2 (proposta) sem contato há alguns dias: fazer o follow-up.',
+    desc:'Cliente que foi para a R2 (proposta) e está sem contato há alguns dias: fazer o follow-up. Só para quem mudou de etapa a partir de 19/11/2026; os clientes da base que já estavam na R2 não entram.',
     campos:[{ k:'dias', rot:'Dias sem retorno', tipo:'numero' }] },
   { k:'crm_parado', grupo:'processo', nome:'Negócio parado no pipeline', prio:52, ligado:true, padrao:{ dias:15 },
-    desc:'Negócio em andamento sem nenhum contato registrado: atualizar ou encerrar.',
+    desc:'Negócio em andamento sem nenhum contato registrado: atualizar ou encerrar. Conta quem mudou de etapa a partir de 19/11/2026 ou tem valor em captação.',
     campos:[{ k:'dias', rot:'Dias sem contato', tipo:'numero' }] },
   { k:'crm_boas_vindas', grupo:'processo', nome:'Cliente captado: boas-vindas e primeiras revisões', prio:64, ligado:true, padrao:{},
     desc:'Boas-vindas no dia seguinte à captação, conferência no 7º dia e primeira revisão no 30º.', campos:[] },
@@ -12082,7 +12089,11 @@ function agItensGatilhos({ gat, btgItens, oportunidades, resolvidos, certs, outl
         semLimite: !!cat.semLimite, titulo, detalhe, tipo, resolver: 'tabela', data: b.data || '' });
     });
 
-    /* Processo comercial: no máximo uma tarefa por ficha, a de maior prioridade. */
+    /* Processo comercial: no máximo uma tarefa por ficha, a de maior prioridade.
+       Prazo da etapa, proposta sem retorno e negócio parado só valem para quem MUDOU de etapa no pipeline a
+       partir de 19/11/2026 9h (agMoveuNoPipe). Pedido do Emil: os 800+ clientes da base nasceram na R2 (a primeira
+       etapa da base) e apareciam como "proposta sem retorno". Quem nasce numa etapa (cadastro ou importação do
+       BTG) não conta; conta quando alguém arrasta o cartão. */
     const pNovo = agGat(gat, 'crm_lead_novo'), pSla = agGat(gat, 'crm_sla'), pProp = agGat(gat, 'crm_proposta'),
       pParado = agGat(gat, 'crm_parado'), pBoas = agGat(gat, 'crm_boas_vindas'), pInd = agGat(gat, 'crm_indicacao'),
       pRev = agGat(gat, 'crm_revisao_anual');
@@ -12099,15 +12110,16 @@ function agItensGatilhos({ gat, btgItens, oportunidades, resolvidos, certs, outl
       if(pNovo && l.etapa === 'Cliente Novo' && (l.esteira || 'novo') !== 'base' && !ultimo && agSoma(criado, Number(pNovo.dias) || 0) <= hoje){
         add('crm_lead_novo', 'Primeiro contato com o lead', 'cadastrado em ' + agDdMm(criado), 'registro'); return;
       }
-      if(pProp && !ganho && l.etapa === 'R2' && diasEtapa >= (Number(pProp.dias) || 5) && semContato >= (Number(pProp.dias) || 5)){
+      const moveu = agMoveuNoPipe(l);
+      if(pProp && !ganho && moveu && l.etapa === 'R2' && diasEtapa >= (Number(pProp.dias) || 5) && semContato >= (Number(pProp.dias) || 5)){
         add('crm_proposta', 'Follow-up da proposta', 'sem retorno há ' + agPlural(semContato, 'dia', 'dias'), 'registro'); return;
       }
       const sla = SLA_DIAS[l.etapa];
-      if(pSla && !ganho && sla && diasEtapa > sla && semContato >= sla){
+      if(pSla && !ganho && moveu && sla && diasEtapa > sla && semContato >= sla){
         add('crm_sla', etapaCurta(l.etapa, l.funil) + ' há ' + agPlural(diasEtapa, 'dia', 'dias') + ': marcar a próxima reunião',
           'prazo da etapa: ' + agPlural(sla, 'dia', 'dias'), 'registro'); return;
       }
-      const emAndamento = ['R1','R2','R2.1','R3','R4'].indexOf(l.etapa) !== -1 || ((l.esteira || 'novo') === 'base' && parseValor(l.valorEmCaptacao) > 0);
+      const emAndamento = (moveu && ['R1','R2','R2.1','R3','R4'].indexOf(l.etapa) !== -1) || ((l.esteira || 'novo') === 'base' && parseValor(l.valorEmCaptacao) > 0);
       if(pParado && !ganho && emAndamento && semContato >= (Number(pParado.dias) || 15)){
         add('crm_parado', 'Negócio parado há ' + agPlural(semContato, 'dia', 'dias'), 'atualizar ou encerrar', 'registro'); return;
       }
@@ -12929,7 +12941,7 @@ function AgendaForm({ inicial, nova, users, leads, currentUser, podeAtribuir, po
    aparece desligado e dizendo isso, em vez de sumir: o lugar do número já fica
    marcado no painel. Dinheiro parado vai avisar QUALQUER valor em conta
    (decisão de 05/11/2026). */
-const CRM_VERSAO = 'versão do CRM 2026.11.19.7';
+const CRM_VERSAO = 'versão do CRM 2026.11.19.8';
 const PN_CORES = ['#195AB4','#0F766E','#B08A2E','#7C5CC4','#C2557A','#4A7FC9','#2F7A56','#8A97A8'];
 const PN_FILTRO_MES = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
 

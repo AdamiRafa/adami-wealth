@@ -792,6 +792,9 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026 (tarde): 3.36 e CRM 2026.11.19.8. Verificação em duas etapas desligada (fica só o acesso que vence à
+meia-noite e a saída por 30 min sem uso); cadastro unificado (a ficha da Equipe também em Comissões > Pessoas e acordos,
+com pagamento junto); proposta, prazo da etapa e negócio parado só para quem mudou de etapa a partir de 19/11 9h (seção 32)**.
  · **19/11/2026: 3.35 e CRM 2026.11.19.7. Ficha de cadastro da pessoa na Equipe (preenchível já no convite); Outlook
 preparado na Agenda e no e-mail da manhã (aguarda o Microsoft 365); certificações da ficha viram aviso na Agenda;
 Primeiros passos do assessor com Agenda, Outlook e celular; manual com o capítulo da Agenda novo (seção 31)**.
@@ -2631,4 +2634,42 @@ Pedido do Emil: ao criar o acesso de um assessor, ter a ficha completa, como o F
 - Manual 3.35: capítulo da Agenda reescrito (missão do dia, compromissos e tarefas, origens, círculo de concluir,
   Indicar clientes), tela nova `imgj/11-crm-agenda.jpg` com dados fictícios, checklist do primeiro dia com Agenda e
   Outlook. Páginas dos capítulos não mudaram (`AJUDA[...].pag` igual). Margens medidas: corpo a 20 mm ou mais.
+
+---
+
+## 32. Sem código no login, cadastro unificado e gatilhos de etapa (19/11/2026, Hub 3.36, CRM 2026.11.19.8)
+
+### 32.1 Verificação em duas etapas desligada (`seguranca_335.sql`)
+Pedido do Emil: "deixa só a regra de resetar todo início de dia, tira o restante das regras".
+- `acesso_config.segundo_fator` (novo, `false`). `estado_acesso()` devolve `segundo_fator`. O Hub (`segundaEtapa`) chama
+  `liberar_sessao_do_dia()` em vez de mandar o código; ela só libera a sessão se o login (`auth.sessions.created_at`) foi
+  criado hoje no horário de Brasília, então renovar um token de ontem não libera nada. O resto da proteção não mudou:
+  `acesso_liberado()`, as políticas `exige_verificacao` em todas as tabelas, o agendamento `acesso-virada` (0h01 derruba
+  todas as sessões) e a saída por 30 minutos sem uso (`comum/barra.js`). O registro anota "Entrou" como antes.
+- `app_obrigatorio()` só obriga o app (master e financeiro) com o segundo fator ligado. A tela de Segurança mostra
+  "Acesso que vence todo dia" e esconde o app e os aparelhos lembrados; a Equipe esconde "Zerar app"; Primeiros passos
+  tira "Ligue o app autenticador". O navegador guarda a última resposta em `localStorage.aw_2f` só para abrir a tela certa.
+- Tudo do código (função `codigo-acesso`, `verificar_codigo`, app, aparelhos) segue instalado. Para religar:
+  `update public.acesso_config set segundo_fator = true;` (o Hub volta a pedir o código no próximo login).
+- Testado como `authenticated`: login de hoje libera; login de ontem e sessão de outra pessoa não; `anon` sem EXECUTE.
+- Manual 3.36: capítulos 2 e 3 reescritos sem código e sem app; páginas da ajuda (`AJUDA[...].pag`) recuadas em 1.
+
+### 32.2 Cadastro unificado (`comum/cadastro.js`)
+- Um componente (`AWCadastro.form`, `ler`, `lerPagto`) com os campos da ficha e do pagamento, usado na Equipe do Hub
+  (master) e em Comissões > Pessoas e acordos (Financeiro). Cada página passa como desenhar campo e grupo.
+- Equipe: um bloco "Ficha de cadastro" com dados pessoais, endereço, vínculo, contato de emergência, observações,
+  **pagamento da comissão** (para quem já tem conta) e certificações; um botão salva `equipe_cadastro_salvar` e
+  `comissao_dados_pagto_salvar`. O nome completo é um só (o da ficha vai também para o pagamento).
+- Comissões: o formulário da pessoa abre com a ficha em cima, depois pagamento (sem o nome repetido) e acordo. Salvar grava
+  as três coisas. Quem só vê Comissões vê a ficha com os campos travados.
+- `equipe_cadastro_salvar` passou a exigir master ou quem **opera** Comissões (`com_pode_operar`); ler continua com
+  master ou quem vê Comissões.
+
+### 32.3 Gatilhos de etapa só com movimentação nova
+- Os 822 clientes da base estão na R2 (a primeira etapa da base) e apareciam como "Follow-up da proposta"; o prazo da
+  etapa e o negócio parado tinham o mesmo problema. Agora `crm_proposta`, `crm_sla` e a parte por etapa do `crm_parado`
+  só valem quando o cartão **mudou de etapa** a partir de 19/11/2026 9h (`AG_CORTE_PROCESSO`, `agMoveuNoPipe` no
+  `crm.html`; `CORTE_PROCESSO`, `moveuNoPipe` na `agenda-manha`): `etapa_desde` depois do corte e mais de 1 minuto
+  depois do `criado_em` (quem nasce numa etapa, por cadastro ou importação do BTG, não conta). Negócio com valor em
+  captação continua contando.
 
