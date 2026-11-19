@@ -258,13 +258,16 @@ td b{color:var(--navy)}
   <thead><tr><th style="width:28%">Área</th><th>O que mostra</th></tr></thead>
   <tbody>
     <tr><td><b>Saudação e data</b></td><td>Seu nome e quantas tarefas você tem hoje. O botão <b>Abrir a Agenda</b> leva direto à agenda do CRM.</td></tr>
-    <tr><td><b>Números</b></td><td>Patrimônio sob gestão, captação líquida do mês, clientes na carteira e captações do mês, com a tendência em relação ao mês anterior.</td></tr>
+    <tr><td><b>Números</b></td><td>Patrimônio sob gestão, captação líquida do mês pelo relatório do BTG, clientes na carteira e contas novas abertas no BTG no mês, com a comparação com o mês anterior. Clique num número para ver de onde ele vem.</td></tr>
     <tr><td><b>Hoje</b></td><td>As tarefas e reuniões do dia que estão na Agenda do CRM, com horário.</td></tr>
     <tr><td><b>Próximos dias</b></td><td>O que vem a seguir na agenda.</td></tr>
     <tr><td><b>Calendário</b></td><td>O mês atual. Os dias com compromisso ficam marcados. Clique num dia para ver o que há nele.</td></tr>
     <tr><td><b>Avisos da casa</b></td><td>Comunicados da gestão: comitês, novidades, prazos. Os fixados aparecem primeiro. Ao abrir um aviso, ele conta como lido.</td></tr>
   </tbody>
 </table>
+<h3>O tutorial em vídeo</h3>
+<p>Na primeira vez que você entra no Hub, e depois no CRM, abre uma janela com um vídeo de uns 4 minutos que passa por cada tela e explica o que ela faz. O vídeo volta a aparecer a cada entrada até você marcar <b>Não mostrar novamente</b> e clicar em <b>Fechar</b>. Para rever depois, é só clicar no botão <b>?</b> e em <b>Ver o tutorial em vídeo</b>.</p>
+<figure class="m80"><img src="imgj/69-tutorial.jpg"><figcaption>O tutorial do primeiro acesso, com a caixa Não mostrar novamente.</figcaption></figure>
 <h3>Primeiros passos</h3>
 <p>Enquanto houver algo do começo por fazer, a tela inicial mostra o quadro <b>Primeiros passos no Hub</b>: abrir a Agenda e concluir a primeira tarefa, instalar o Hub no celular, abrir o manual, ler os avisos, registrar a primeira atividade no CRM e marcar o próximo contato de quem está em jornada. Cada item é conferido pelo próprio Hub e fica verde sozinho quando você faz. O quadro some quando tudo estiver feito, ou se você clicar em <b>Ocultar</b>.</p>
 <figure class="m80"><img src="imgj/60-inicio-passos.jpg"><figcaption>Primeiros passos na tela inicial, com o botão de cada item.</figcaption></figure>
@@ -281,6 +284,7 @@ td b{color:var(--navy)}
 <ul>
   <li><b>Busca</b>: digite parte do nome do cliente, o número da conta ou o nome de uma ferramenta. Clientes do CRM abrem direto na ficha; clientes das Carteiras abrem no relatório. Atalho: <b>Ctrl + K</b> (no Mac, <b>Cmd + K</b>), de qualquer tela.</li>
   <li><b>Nesta tela</b>: o essencial da tela em que você está e o link para a página certa deste manual.</li>
+  <li><b>Ver o tutorial em vídeo</b> (na tela inicial e no CRM): o mesmo vídeo do primeiro acesso.</li>
   <li><b>Reportar um problema</b>: escreva o que aconteceu e clique em Enviar. A foto da tela, a versão e os erros do navegador vão juntos, sem você precisar copiar nada.</li>
 </ul>
 <figure class="m80"><img src="imgj/61-ajuda.jpg"><figcaption>O painel do botão ?, com a busca, a ajuda da tela e o Reportar um problema.</figcaption></figure>
@@ -362,7 +366,7 @@ td b{color:var(--navy)}
 <div class="nota"><span class="t">Regra de ouro</span><p>Toda conversa com cliente vira uma atividade, e todo cliente ativo tem um próximo contato marcado. É isso que faz a agenda, os alertas e os números da equipe funcionarem.</p></div>
 
 <h2>Dashboard</h2>
-<p>A visão geral da sua carteira e da sua produção. Mostra o patrimônio sob gestão (onshore e offshore), o Net New Money do mês, a captação bruta, resgates, o que está em captação e os alertas: contatos atrasados, vencimentos, dinheiro parado na conta, receita gerada.</p>
+<p>A visão geral da sua carteira e da sua produção. Mostra o patrimônio sob gestão (onshore e offshore, sempre separados), o Net New Money do mês, a captação bruta, as saídas, o pipeline e os alertas: contatos atrasados, vencimentos, dinheiro parado na conta, contas abertas sem dinheiro e receita gerada. A captação do mês vem do relatório de captação líquida do BTG, lançamento por lançamento; clique no cartão para ver os clientes e os lançamentos.</p>
 <figure class="m80"><img src="imgj/20-crm-dashboard-casa.jpg"><figcaption>Dashboard: resumo da carteira, captação do mês e alertas. Clique em qualquer número para ver os clientes por trás dele.</figcaption></figure>
 <p>As abas <b>Resumo</b>, <b>Carteira</b> e <b>Rotina</b> mostram a mesma carteira por ângulos diferentes: os números do mês, a distribuição por segmento e temperatura, e a disciplina de contatos.</p>
 <figure class="m80"><img src="imgj/21-crm-dash-carteira.jpg"><figcaption>Aba Carteira: distribuição do patrimônio por cliente e por segmento.</figcaption></figure>
@@ -388,12 +392,12 @@ td b{color:var(--navy)}
   <li>Fez? Marque o <b>círculo</b> à esquerda. O item vai para <b>Feitas hoje</b>; se estiver ligado a um cliente, vira uma atividade na ficha. Marcou sem querer, é só desfazer em Feitas hoje.</li>
   <li>Para criar a sua própria tarefa, clique em <b>+ Nova tarefa</b>: título, tipo (ligação, reunião, e-mail ou tarefa interna), data, horário, repetição e, se quiser, o cliente.</li>
 </ol>
-<p>As abas <b>Semana</b> e <b>Mês</b> mostram o que vem pela frente. A opção <b>Compartilhar minha agenda com a equipe</b> deixa os colegas verem os seus compromissos, só para leitura; o head comercial e os masters veem sempre. Quem é master escolhe em <b>Gatilhos</b> quais avisos automáticos a casa usa.</p>
+<p>As abas <b>Semana</b> e <b>Mês</b> mostram o que vem pela frente. A opção <b>Compartilhar minha agenda com a equipe</b> deixa os colegas verem os seus compromissos, só para leitura; o head comercial e os masters veem sempre. Quem é master escolhe em <b>Gatilhos</b> quais avisos automáticos a casa usa e, no cartão <b>Ordem de prioridade</b>, a hierarquia entre eles: o que está mais acima aparece primeiro na lista de todos. O follow-up de proposta, o prazo da etapa e o negócio parado só valem para clientes que andaram no pipe; quem veio da base não vira proposta sem retorno.</p>
 <p><b>Indicar clientes</b> (para especialistas de produto): no menu do CRM, filtre a base por patrimônio, idade, profissão ou cidade, marque os clientes com perfil, escreva o porquê e envie. Cada indicação vira uma tarefa na Agenda do assessor do cliente.</p>
 
 <h2>Minha carteira, Captados e Desqualificados</h2>
 <ul>
-  <li><b>Minha carteira</b>: os clientes que já estão no escritório, com patrimônio, movimentações e vencimentos.</li>
+  <li><b>Minha carteira</b>: os seus indicadores, no período que você escolher no topo (Este mês, 30, 60 ou 90 dias, 12 meses ou datas): total da carteira, pipe, onboarding, composição e clientes com retirada. O cartão <b>NNM</b> abre a captação líquida pelo relatório do BTG, por cliente e por mercado, com Excel dos lançamentos. Embaixo, o <b>Panorama</b> (carteira por segmento e pipe por temperatura) fica sempre à vista.</li>
   <li><b>Captados</b>: quem já teve a captação efetivada.</li>
   <li><b>Desqualificados</b>: quem saiu da jornada, com o motivo. Dá para reativar.</li>
 </ul>
@@ -474,7 +478,7 @@ td b{color:var(--navy)}
   <div class="regua"></div>
   <p class="lead">Todo mês, as posições de cada cliente são lançadas e o Hub gera o Relatório Consolidado de Investimentos: um PDF com a identidade da Adami, pronto para enviar ao cliente.</p>
 </section>
-<p>O módulo tem quatro abas: <b>Preencher</b> (lançamento do mês, feito pela administração), <b>Comentários do mês</b>, <b>Relatório</b> e <b>Histórico</b>. À esquerda fica a lista de clientes; o mês de referência fica no alto, com setas e um calendário. No calendário e na lista, um ponto verde indica mês <b>feito</b> (conferido e marcado como pronto) e um ponto amarelo, mês lançado que ainda falta marcar.</p>
+<p>O módulo tem quatro abas: <b>Preencher</b> (lançamento do mês) e <b>Comentários do mês</b>, as duas da administração, <b>Relatório</b> e <b>Histórico</b>. À esquerda fica a lista de clientes; o mês de referência fica no alto, com setas e um calendário. No calendário e na lista, um ponto verde indica mês <b>feito</b> (conferido e marcado como pronto) e um ponto amarelo, mês lançado que ainda falta marcar.</p>
 
 <h2>Relatório: o que o assessor usa</h2>
 <ol class="passos">
@@ -520,9 +524,10 @@ td b{color:var(--navy)}
 </table>
 <p>No alto do Preencher fica a <b>Conferência do mês</b>, que se atualiza enquanto os dados são preenchidos: mostra cada instituição (atualizada ou ainda com valores do mês anterior), se a soma dos ativos bate com o saldo das contas e o que diverge do mês anterior (categoria trocada, posição igual sem rentabilidade, ativo novo ou que saiu, campo faltando). Depois de uma importação, mostra também o que ela mudou, com <b>Desfazer importação</b>. Linhas em amarelo ainda são do mês anterior; campos com borda vermelha estão faltando. Com tudo conferido, <b>Salvar e marcar como feito</b> dá o mês como pronto e oferece o próximo cliente pendente.</p>
 <p>O botão <b>Puxar do BTG</b> busca os dados das contas do BTG automaticamente. O mês seguinte herda as contas do anterior: só é preciso atualizar os valores.</p>
+<p>O botão <b>Cadastro</b> guarda o <b>nome do cliente</b> e as <b>contas do BTG</b> vinculadas a ele. Ao vincular as contas e salvar, o Hub faz duas coisas sozinho: põe como assessor responsável o dono, no BTG, da conta de maior patrimônio (o código de cada assessor vem do BTG todo dia útil) e liga a carteira à ficha do CRM que tem a mesma conta. Cliente novo já abre o Cadastro depois de criado. Para trocar o nome, é no Cadastro.</p>
 
 <h3>Comentários do mês</h3>
-<p>Texto que abre o relatório: o resumo do mês e a visão para os próximos meses. É escrito uma vez e vale para todos os clientes daquele mês.</p>
+<p>Texto que abre o relatório: o resumo do mês e a visão para os próximos meses. É escrito uma vez, pela administração, e vale para todos os clientes daquele mês.</p>
 <figure class="meia"><img src="imgj/51-cart-carta.jpg"><figcaption>Editor dos Comentários do mês.</figcaption></figure>
 
 <div class="nota"><span class="t">Como ler os números</span><p>A rentabilidade da carteira é a média das contas ponderada pelo saldo de abertura de cada uma, e os meses são compostos, nunca somados. Por isso, num mês com aporte grande, o resultado em reais pode subir muito sem que a rentabilidade em % acompanhe. A rentabilidade offshore é em dólar e não inclui a variação cambial; isso está escrito no rodapé do relatório.</p></div>
@@ -787,7 +792,7 @@ td b{color:var(--navy)}
     <tr><td><b>Enquadramento</b></td><td>A comparação da carteira atual com a política de alocação definida para o cliente.</td></tr>
   </tbody>
 </table>
-<p style="margin-top:18pt;font-size:8.5pt;color:var(--cinza)">Manual do Hub Adami · versão 3.36 · novembro de 2026. Documento de uso interno da Adami Captal. As telas usam dados fictícios. Quando o Hub ganhar novidades, este manual é atualizado e o número de versão muda.</p>
+<p style="margin-top:18pt;font-size:8.5pt;color:var(--cinza)">Manual do Hub Adami · versão 3.43 · novembro de 2026. Documento de uso interno da Adami Captal. As telas usam dados fictícios. Quando o Hub ganhar novidades, este manual é atualizado e o número de versão muda.</p>
 
 <script>
 /* Preenche os números de página do sumário a partir de window.PAGINAS (injetado na segunda passada). */

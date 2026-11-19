@@ -792,6 +792,9 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **19/11/2026 (noite): 3.44. Manual do Hub na versão 3.43 (47 páginas): tutorial em vídeo, números do BTG na tela
+inicial, captação e NNM do BTG no CRM, ordem de prioridade dos gatilhos, Cadastro da carteira com nome, assessor e ficha
+automáticos, carta só da administração. Páginas do botão ? acertadas (capítulos 6 em diante andaram 1 ou 2 páginas)**.
  · **19/11/2026 (noite): 3.43 e CRM 2026.11.19.14. Tutorial em vídeo do Hub e do CRM no primeiro acesso, com
 "Não mostrar novamente" (seção 38); abertura do Hub para todos passou para quinta, 26/11**.
  · **19/11/2026 (noite): 3.42. Hub fechado até o lançamento: até 26/11 (quinta) 0h só Emil, Rafael e Bibiana entram
