@@ -792,6 +792,8 @@ própria Jornada, marcado como página atual). Com o link a mais, o topo não ca
 os links vão para o botão de menu (o mesmo do celular) e ficam só os botões; de 1181 a 1320 px os espaços diminuem.
 Medido em 901, 960, 1024, 1100, 1180, 1280 e 1366 px sem nada passar da borda. PDF do Compliance refeito (41 folhas,
 versão de 18/11/2026), gerado fora do repositório**.
+ · **20/11/2026: 3.45. Conferência de senhas e chaves (seção 39): nenhuma exposta; o repositório é público, então
+números de conta e saldos de clientes reais saíram da documentação e do exemplo do Cadastro**.
  · **19/11/2026 (noite): 3.44. Manual do Hub na versão 3.43 (47 páginas): tutorial em vídeo, números do BTG na tela
 inicial, captação e NNM do BTG no CRM, ordem de prioridade dos gatilhos, Cadastro da carteira com nome, assessor e ficha
 automáticos, carta só da administração. Páginas do botão ? acertadas (capítulos 6 em diante andaram 1 ou 2 páginas)**.
@@ -1036,8 +1038,8 @@ geral, resolvida com `dataDeSerialExcel()` (conferido batendo exatamente com
 caixa — não calcula nada, não compara com o NNM que a Movimentação geral calcula, não
 salva no banco.** O Emil pediu pra avisar quando for a hora de "imputar" esse dado; até
 lá fica só reconhecido. Primeira conferência rápida feita à mão (não publicada na tela):
-outubro/2026 soma R$ 32.461.433,91 de captação bruta nesse arquivo contra
-R$ 31.939.268,86 do NNM calculado pela Movimentação geral — diferença de ~1,6%, esperado
+outubro/2026 soma a captação bruta nesse arquivo contra
+o NNM calculado pela Movimentação geral — diferença de ~1,6%, esperado
 dado que são metodologias diferentes, mas é o número a cruzar quando o Emil pedir pra
 processar.
 
@@ -1935,13 +1937,13 @@ quem sumiu, saldo nunca vira movimentação, faixa de 0,5%, nada grava antes de 
   diretório central do zip, aceita entradas sem compressão ou deflate (sem zip64), descompacta em fluxo com
   `DecompressionStream("deflate-raw")` e guarda o original como `.zip`. Testado com Deno (60.000 linhas em
   pedaços, latin1, UTF-8, zip cortado).
-- **Conferido contra o PDF do BTG, outubro/2026:** conta 004181763, saldo 9.742.602,87, resultado 110.937,01,
-  1,224%; conta 004181148, 19.191.168,14, 191.674,54, 1,075%. Idênticos ao centavo.
+- **Conferido contra o PDF do BTG, outubro/2026:** duas contas de clientes (saldo, resultado e
+  rentabilidade). Idênticos ao centavo.
 - **account-link e account-base** pedidos fora da janela voltam com "Relatório não disponível. Por favor,
   aguarde a próxima janela de execução." (gravado como erro em `btg_arquivos`). O agendamento da manhã já pede
   na hora certa.
 - **Calibrado com o arquivo real (3.31):** `market_id` vem em código curto (RF, FN, RV, OF, PV, CRY, DRV);
-  mapa em `MERCADO_BTG` no index.html. Antes, FN e PV caíam em Renda Fixa (na conta 004181763 eram 5,9 mi de
+  mapa em `MERCADO_BTG` no index.html. Antes, FN e PV caíam em Renda Fixa (numa das contas conferidas eram milhões de
   9,7 mi). COE vem como RF com nome "COE...". Previdência, cripto e derivativo vêm sem nome; `nomeProdutoBtg`
   monta um. Estratégias: Pós-fixado, Pré-fixado, Inflação, Retorno Absoluto (MM), Renda Variável, Alternativo
   e "Outros" (saldo em conta e provisões, fica fora da alocação). A soma das estratégias bate com `auc_end`.
@@ -1986,7 +1988,7 @@ em 07/10. Desde 17/11 o BTG manda a base todo dia útil às 8h30, mas ela só en
 
 ### 23.12. Cadastro do cliente nas Carteiras: contas do BTG vinculadas (Hub 3.32, 19/11/2026, `carteiras_cadastro.sql`)
 
-Pedido do Emil com print do André: em novembro a conta do BTG apareceu duas vezes ("BTG 004180373", vinda do
+Pedido do Emil com print de um cliente: em novembro a conta do BTG apareceu duas vezes ("BTG 00xxxxxxx", vinda do
 Puxar do BTG, e "BTG", trazida de outubro). Causa: `herdarOnshore` reconhecia a conta só pelo nome, e o Puxar do
 BTG dava outro nome à mesma conta.
 
@@ -1996,7 +1998,7 @@ BTG dava outro nome à mesma conta.
   código; checa `acesso_liberado()`). Substitui o `prompt()` antigo.
 - **`alinharContasBtg(r, cliente, semNovas)`**: o cadastro manda nas contas do BTG em reais do mês. Roda ao abrir o
   mês, depois do Puxar do BTG, do Relatório de Performance e ao salvar o cadastro. Cada conta vinculada fica uma
-  vez só, com o nome padrão "BTG 004180373" (`nomeBtg`, 9 dígitos) e `conta_btg`; repetida sai (fica a que tem
+  vez só, com o nome padrão "BTG 00xxxxxxx" (`nomeBtg`, 9 dígitos) e `conta_btg`; repetida sai (fica a que tem
   lançamento no mês); a linha sem número sai se todas as contas já têm linha, ou vira a conta que falta se sobrar uma
   só; linha com lançamento nunca sai sozinha (vira aviso); conta do BTG fora do cadastro sem lançamento sai; conta
   vinculada que falta entra zerada (não em mês já salvo). O que mudou aparece numa nota acima das contas. Sem
@@ -2015,7 +2017,7 @@ dias), assíncrono, pelo webhook `performance-report` (cadastrado pelo Emil em 1
 relatório fica fixo por 3 horas depois de pedido.
 
 - **Aviso do BTG:** só `url`, `fileSize`, `lastModified`, `signedURLExpirationDate`. Conta e período vêm no nome do
-  arquivo: `performance_004180373_2026-10-01_2026-10-31.zip`, com o PDF `performance_004180373_2026-10-01_2026-10-31<ruído>.pdf`
+  arquivo: `performance_<conta>_2026-10-01_2026-10-31.zip`, com o PDF `performance_<conta>_2026-10-01_2026-10-31<ruído>.pdf`
   dentro (conferido em 18/11). `contaDoNome` (9 dígitos) e `periodoDoNome` leem o nome; o código do pedido
   (`x-id-pactual`) não volta no aviso.
 - **btg-webhook (versão 6):** guarda o zip original e cada PDF em `btg/performance-report/pdf/AAAA-MM/<conta>.pdf` e grava
@@ -2029,7 +2031,7 @@ relatório fica fixo por 3 horas depois de pedido.
   arrastado. Política `btg_performance_ler` em `storage.objects`: só baixa quem enxerga um cliente com aquela conta
   (`btg_pode_ler_pdf`, com `acesso_liberado()`); a restritiva `exige_verificacao` já vale para `storage.objects`.
 - Testado: receptor com zip montado de um PDF real (o PDF sai idêntico, conta e período certos), pedido real de uma conta
-  (chegou em segundos), tela com Supabase simulado (faixa, download, leitura do PDF: conta 004181763, saldo 9.742.602,87,
+  (chegou em segundos), tela com Supabase simulado (faixa, download, leitura do PDF de uma conta real, saldo conferido,
   51 ativos; mês sem relatório mostra o aviso).
 
 ### 23.14. Puxar do BTG pelo relatório; sem PDF manual e sem alocação digitada (Hub 3.34, 19/11/2026)
@@ -2480,7 +2482,7 @@ sem ela, cai no leitor antigo do Detalhamento. Lê:
 - vencimento exato pelo Detalhamento dos Ativos, casado pelo saldo bruto;
 - nome curto no padrão da casa (`btgNomeCurto`): "BANCO ORIGINAL S/A - CDB-CDB9245OQHW" vira "CDB BANCO ORIGINAL",
   "BACEN-... - NTNB" vira "NTN-B".
-No PDF de exemplo que o Emil mandou (outubro/2026): 51 ativos somando R$ 5.719.934,43, exatamente o total do BTG;
+No PDF de exemplo que o Emil mandou (outubro/2026): 51 ativos somando exatamente o total do BTG;
 a diferença para o saldo (R$ 2.157,78) é conta corrente e valor em trânsito.
 
 **Na tela.** Área "Subir o Relatório de Performance do BTG" no alto do Preencher (arrastar ou clicar).
@@ -2878,4 +2880,18 @@ ser apresentada toda vez que ele entrar".
   conferem `acesso_liberado()`), mais `exige_verificacao`. Mostrar de novo a alguém: apagar a linha da pessoa.
 - O mock do manual responde `tutorial_vistos = ['hub','crm']` para a janela não aparecer nas capturas.
 - O vídeo usa o `default-src 'self'` da CSP (mesmo endereço); a pasta `ajuda/` já é publicada.
+
+## 39. Conferência de senhas e chaves (20/11/2026, Hub 3.45)
+
+Pedido do Emil: "vê se tem alguma chave API ou senha que está no código, exposta".
+- **Nenhuma senha ou chave secreta no código nem no histórico** (166 versões): procurado `service_role`, `sb_secret_`,
+  JWT, token do GitHub, chave privada, AWS, senha com valor. As funções do servidor leem tudo do cofre do Supabase
+  (`SMTP_SENHA`, `BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_KEY`, `SUPABASE_SERVICE_ROLE_KEY`); a publicação lê
+  `FTP_SENHA` dos Secrets do GitHub; o `btg_sync_token` é sorteado no próprio banco (Vault). `webhook/btg.php` não tem senha.
+- A chave `sb_publishable_...` aparece em vários arquivos **de propósito**: é pública, a proteção está na RLS.
+- O segredo TOTP de `manual-fonte/captura/mock.js` é o valor de teste conhecido (`JBSWY3DP...`), não é de ninguém.
+- **Achado:** o repositório `AdamiRafa/adami-wealth` é **público** (fork de `emilstade/adami-wealth`). Sem senhas, mas
+  qualquer um lê código, SQL e documentação. Havia números de conta e saldos de clientes reais na documentação e uma
+  conta real como exemplo no Cadastro; trocados por texto genérico e por `001234567`. O histórico antigo ainda guarda
+  esses números: a correção de verdade é tornar o repositório privado (o original também).
 

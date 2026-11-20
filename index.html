@@ -2196,7 +2196,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 3.44";
+var VERSAO="versão 3.45";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2550,7 +2550,7 @@ function herdarOnshore(){
   contasDe(ant,"BRL").forEach(function(c){
     if(n(c.saldo)<=0) return;
     if(tem[chaveConta(c)]) return;
-    /* 3.32: a mesma conta do BTG com outro nome ("BTG" e "BTG 004180373") não volta repetida */
+    /* 3.32: a mesma conta do BTG com outro nome ("BTG" e "BTG 001234567") não volta repetida */
     var kc=ehLinhaBtg(c)&&numDaConta(c); if(kc&&tem["#"+kc]) return;
     var o={nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0,moeda:"BRL"};
     if(c.conta_btg) o.conta_btg=c.conta_btg; if(c.antes) o.antes=c.antes;
@@ -2723,7 +2723,7 @@ function contaAcum(id,nome,mes,ano,nMeses,antes,num){
   for(var i=0;i<nMeses;i++){
     var r=reg(id,p.mes,p.ano);
     if(r){
-      /* 3.32: conta do BTG pelo número primeiro (o nome mudou de "BTG" para "BTG 004180373") */
+      /* 3.32: conta do BTG pelo número primeiro (o nome mudou de "BTG" para "BTG 001234567") */
       var achou=num?r.contas.filter(function(c){ return ehLinhaBtg(c)&&numDaConta(c)===num; }):[];
       if(!achou.length) achou=r.contas.filter(function(c){ return (c.nome||"")===nome; });
       if(!achou.length&&antes) achou=r.contas.filter(function(c){ return (c.nome||"")===antes; });
@@ -2888,7 +2888,7 @@ function cadAdd(){
   if(!CAD) return;
   var el=document.getElementById("cadNova"), v=semZeros(el&&el.value);
   CAD.erro="";
-  if(!v||v.length<4||v.length>12){ CAD.erro="Digite só os números da conta (ex.: 004180373)."; desenharCadastro(); return; }
+  if(!v||v.length<4||v.length>12){ CAD.erro="Digite só os números da conta (ex.: 001234567)."; desenharCadastro(); return; }
   var k=pad9(v);
   if(CAD.lista.indexOf(k)<0) CAD.lista.push(k);
   desenharCadastro(); buscarInfoCad();
@@ -3762,7 +3762,7 @@ function numContaNome(s){ var m=String(s||"").match(/(\d{4,})\s*$/); return m?m[
 function numDaConta(x){ return semZeros(x.conta_btg)||numContaNome(x.nome); }
 function ehLinhaBtg(x){ return curDe(x)==="BRL"&&/^(btg|necton)$/.test(instChave(x.inst||x.nome)); }
 function contasBtgBrl(r){ return r.contas.filter(ehLinhaBtg); }
-/* 3.32: número da conta como o BTG escreve (9 dígitos) e o nome padrão da linha: "BTG 004180373" */
+/* 3.32: número da conta como o BTG escreve (9 dígitos) e o nome padrão da linha: "BTG 001234567" */
 function pad9(num){ var s=semZeros(num); return s?(s.length<9?("000000000"+s).slice(-9):s):""; }
 function nomeBtg(num){ return "BTG "+pad9(num); }
 function dadosConta(x){ return [x.apl,x.res,x.rendRs,x.rendPct].filter(function(v){ return Math.abs(n(v))>0.00001; }).length; }
